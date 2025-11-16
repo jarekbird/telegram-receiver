@@ -1,5 +1,5 @@
 {
-  "name": "telegram-receiver",
+  "name": "jarek-va",
   "version": "1.0.0",
   "description": "Telegram webhook receiver that forwards messages to Cursor Runner API",
   "main": "dist/index.js",
@@ -32,7 +32,7 @@
     "nodejs"
   ],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",
     "dotenv": "^16.3.1",
@@ -47,6 +47,8 @@
     "@types/node": "^20.10.5",
     "@types/supertest": "^2.0.16",
     "@types/sinon": "^17.0.2",
+    "@types/bullmq": "^5.1.0",
+    "@types/ioredis": "^5.0.0",
     "@playwright/test": "^1.40.1",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
     "@typescript-eslint/parser": "^6.15.0",
