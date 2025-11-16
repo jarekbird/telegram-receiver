@@ -1,5 +1,5 @@
 {
-  "name": "jarek-va",
+  "name": "telegram-receiver",
   "version": "1.0.0",
   "description": "Telegram webhook receiver that forwards messages to Cursor Runner API",
   "main": "dist/index.js",
