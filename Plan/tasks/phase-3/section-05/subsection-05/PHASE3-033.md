@@ -6,17 +6,200 @@
 
 ## Description
 
-Review and improve review api response times in the codebase to ensure best practices.
+Review and improve API response times in the codebase to ensure best practices. This task focuses on measuring, analyzing, and optimizing API endpoint response times, identifying performance bottlenecks, and ensuring efficient handling of requests throughout the application.
+
+Reference the Rails implementation patterns where applicable to understand expected response time behavior and ensure the TypeScript implementation follows Node.js best practices for API performance.
 
 ## Checklist
 
-- [ ] Measure API endpoint response times
+### Response Time Measurement and Monitoring
+- [ ] Set up response time measurement tools
+  - Configure Express middleware for response time tracking (e.g., `response-time` middleware)
+  - Set up request timing instrumentation
+  - Configure logging to include response times
+  - Set up performance monitoring in production (if applicable)
+- [ ] Establish response time baselines
+  - Measure baseline response times for all endpoints
+  - Measure response times under normal load
+  - Measure response times under peak load
+  - Document response time percentiles (p50, p95, p99)
+- [ ] Monitor response time trends
+  - Track response time changes over time
+  - Identify endpoints with degrading performance
+  - Monitor response time spikes and their causes
+  - Track response times per endpoint category
+
+### Endpoint-Specific Analysis
+- [ ] Review health check endpoint (`GET /health`)
+  - Measure response time (should be < 10ms)
+  - Verify no unnecessary operations
+  - Check for blocking operations
+  - Ensure minimal dependencies
+- [ ] Review Telegram webhook endpoint (`POST /telegram/webhook`)
+  - Measure end-to-end response time
+  - Measure time to acknowledge request (should be < 200ms)
+  - Review time spent in authentication/validation
+  - Check for synchronous operations that could be async
+  - Verify webhook response is sent quickly (before processing)
+- [ ] Review cursor-runner callback endpoint (`POST /cursor-runner/callback`)
+  - Measure response time for callback processing
+  - Review time spent updating Redis state
+  - Check for blocking operations in callback handler
+  - Verify callback response is sent promptly
+- [ ] Review admin endpoints (if any)
+  - Measure response times for admin operations
+  - Review authentication overhead
+  - Check for unnecessary operations
+
+### Database Query Performance
+- [ ] Review Redis query patterns
+  - Measure Redis operation times (GET, SET, DEL)
+  - Check for Redis connection overhead
+  - Review Redis query batching opportunities
+  - Verify Redis connection pooling is efficient
+- [ ] Review database query times (if applicable)
+  - Measure query execution times
+  - Identify slow queries (> 100ms)
+  - Check for N+1 query problems
+  - Review query optimization opportunities
+- [ ] Review query caching
+  - Check if frequently accessed data is cached
+  - Review cache hit rates
+  - Verify cache invalidation doesn't cause delays
+  - Check for cache warming strategies
+
+### External API Call Performance
+- [ ] Review Telegram API call times
+  - Measure time for sending messages via TelegramService
+  - Measure time for downloading files
+  - Review retry logic and timeout handling
+  - Check for connection reuse (HTTP keep-alive)
+  - Verify API calls are not blocking request handling
+- [ ] Review Cursor Runner API call times
+  - Measure time for execute/iterate calls
+  - Review timeout configurations
+  - Check for connection pooling
+  - Verify async handling of long-running operations
+- [ ] Review ElevenLabs API call times (if applicable)
+  - Measure speech-to-text API call times
+  - Measure text-to-speech API call times
+  - Review timeout and retry configurations
+  - Check for connection reuse
+
+### Asynchronous Operation Review
+- [ ] Review async/await patterns
+  - Verify operations are properly awaited
+  - Check for unnecessary sequential operations that could be parallel
+  - Review Promise.all() usage for parallel operations
+  - Verify no blocking synchronous operations in async handlers
+- [ ] Review background job processing
+  - Measure time to enqueue jobs (should be < 50ms)
+  - Review job processing times (separate from API response)
+  - Check for jobs that should be fire-and-forget
+  - Verify long-running operations are moved to background jobs
+- [ ] Review event loop blocking
+  - Check for CPU-intensive operations in request handlers
+  - Review synchronous file operations
+  - Check for large JSON parsing/serialization
+  - Verify heavy computations are offloaded to workers or jobs
+
+### Middleware Performance
+- [ ] Review middleware execution times
+  - Measure authentication middleware overhead
+  - Measure validation middleware overhead
+  - Review logging middleware performance
+  - Check for unnecessary middleware on fast paths
+- [ ] Review error handling middleware
+  - Measure error handling overhead
+  - Verify error handling doesn't add significant latency
+  - Check for error logging performance
+- [ ] Review request parsing middleware
+  - Measure JSON body parsing time
+  - Review body size limits and their impact
+  - Check for streaming vs buffering trade-offs
+
+### Network and Connection Performance
+- [ ] Review HTTP connection handling
+  - Verify HTTP keep-alive is enabled
+  - Check connection pooling configuration
+  - Review connection timeout settings
+  - Measure connection establishment overhead
+- [ ] Review request/response size
+  - Check for unnecessarily large request bodies
+  - Review response payload sizes
+  - Verify compression is enabled (gzip/brotli)
+  - Check for streaming large responses
+
+### Bottleneck Identification
 - [ ] Identify slow endpoints
-- [ ] Review database query times
-- [ ] Review external API call times
-- [ ] Check for blocking operations
-- [ ] Identify bottlenecks
+  - List endpoints with response time > 200ms (p95)
+  - List endpoints with response time > 500ms (p95)
+  - Prioritize endpoints by traffic volume and response time
+  - Document slow endpoint analysis
+- [ ] Identify blocking operations
+  - Find synchronous file operations
+  - Identify synchronous network calls
+  - Check for synchronous database operations
+  - Review CPU-intensive operations in request handlers
+- [ ] Identify sequential operations that could be parallel
+  - Review operations that don't depend on each other
+  - Check for opportunities to use Promise.all()
+  - Review waterfall patterns that could be parallelized
+- [ ] Identify unnecessary operations
+  - Check for redundant API calls
+  - Review unnecessary data transformations
+  - Check for over-fetching data
+  - Review unnecessary logging or monitoring overhead
+
+### Performance Optimization Opportunities
+- [ ] Review caching strategies
+  - Identify cacheable responses
+  - Review cache key strategies
+  - Check for cache invalidation overhead
+  - Verify cache hit rates are optimal
+- [ ] Review data processing optimization
+  - Check for unnecessary data transformations
+  - Review JSON parsing/serialization overhead
+  - Check for inefficient data structures
+  - Review string manipulation efficiency
+- [ ] Review memory allocation patterns
+  - Check for unnecessary object creation in hot paths
+  - Review buffer allocation strategies
+  - Check for memory pressure affecting GC pauses
+- [ ] Review code-level optimizations
+  - Check for inefficient algorithms
+  - Review loop optimizations
+  - Check for unnecessary function calls
+  - Review regex performance
+
+### Response Time Targets and SLAs
+- [ ] Define response time targets
+  - Set target response times per endpoint type
+  - Define p95 and p99 targets
+  - Set maximum acceptable response times
+  - Document SLA requirements
+- [ ] Set up response time alerts
+  - Configure alerts for slow endpoints
+  - Set up alerts for response time degradation
+  - Configure alerts for SLA violations
+  - Review alert thresholds
+
+### Documentation and Reporting
 - [ ] Document performance metrics
+  - Document baseline response times for all endpoints
+  - Document response time percentiles (p50, p95, p99)
+  - Create performance dashboard or report
+  - Document performance trends over time
+- [ ] Document performance improvements
+  - Document optimizations made
+  - Document performance gains achieved
+  - Create performance improvement recommendations
+  - Document future optimization opportunities
+- [ ] Document performance testing procedures
+  - Document how to measure response times
+  - Document performance testing tools and setup
+  - Create performance regression test procedures
+  - Document performance monitoring setup
 
 ## Notes
 
