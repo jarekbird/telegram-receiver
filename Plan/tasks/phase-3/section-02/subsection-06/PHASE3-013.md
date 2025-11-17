@@ -6,23 +6,54 @@
 
 ## Description
 
-Review and improve fix any type-related issues in the codebase to ensure best practices.
+Review and fix any type-related issues in the codebase to ensure TypeScript best practices are followed. This task addresses specific type issues identified in previous tasks (PHASE3-010, PHASE3-011, PHASE3-012), including replacing `any` types with proper types, fixing type errors, and improving type definitions.
+
+## Known Issues to Address
+
+Based on previous task reviews, the following type issues have been identified:
+
+1. **Test Utilities** (`tests/helpers/testUtils.ts`):
+   - `createMockFn` function uses `any[]` in generic constraint (line 15)
+   - ESLint warnings: 2 warnings for `@typescript-eslint/no-explicit-any` on line 15
+   - Generic constraint `(...args: any[]) => any` could be improved to use `unknown[]` or more specific types
 
 ## Checklist
 
-- [ ] Fix all identified type issues
-- [ ] Replace `any` with proper types
-- [ ] Add missing type annotations
-- [ ] Fix type errors
-- [ ] Improve type definitions
-- [ ] Verify no type errors remain
+### 1. Fix Known Type Issues
+- [ ] Fix `createMockFn` in `tests/helpers/testUtils.ts`:
+  - Replace `any[]` with `unknown[]` in the generic constraint
+  - Consider using `Parameters<T>` and `ReturnType<T>` utility types
+  - Ensure the function maintains type safety while being more specific
+- [ ] Run `npm run lint` and fix all `@typescript-eslint/no-explicit-any` warnings
+- [ ] Verify no ESLint type-related warnings remain
+
+### 2. Review and Fix Additional Type Issues
+- [ ] Run `npm run type-check` to identify any TypeScript compilation errors
+- [ ] Review all `any` types in the codebase and replace with proper types
+- [ ] Check for unsafe type assertions (`as any`, `as unknown as any`)
+- [ ] Review and fix any implicit `any` types
+- [ ] Check for `@ts-ignore` or `@ts-expect-error` comments and verify they're necessary
+
+### 3. Improve Type Definitions
+- [ ] Review type definitions for clarity and correctness
+- [ ] Ensure all function parameters have explicit types where needed
+- [ ] Ensure all function return types are properly annotated or inferred
+- [ ] Verify type definitions match actual usage patterns
+
+### 4. Verification
+- [ ] Run `npm run type-check` and verify no type errors remain
+- [ ] Run `npm run lint` and verify no type-related warnings remain
+- [ ] Run `npm test` to ensure all tests still pass after type fixes
+- [ ] Document any type-related decisions or trade-offs made
 
 ## Notes
 
 - This task is part of Phase 3: Holistic Review and Best Practices
 - Section: 2. TypeScript Best Practices
-- Focus on identifying issues and improvements
-- Document findings and decisions
+- This task builds on the findings from PHASE3-010 (generic type usage), PHASE3-011 (type safety verification), and PHASE3-012 (type inference)
+- Focus on fixing actual type issues rather than making unnecessary changes
+- When replacing `any` types, prefer `unknown` with proper type guards over `any`
+- Document any architectural decisions regarding type choices
 
 - Task can be completed independently by a single agent
 
