@@ -6,26 +6,125 @@
 
 ## Description
 
-Review and improve fix identified node.js best practice issues in the codebase to ensure best practices.
+Fix all identified Node.js best practice issues from the previous review tasks (PHASE3-015 through PHASE3-020). This task consolidates and addresses all issues found during the Node.js best practices review phase, ensuring the codebase adheres to Node.js and TypeScript best practices.
+
+This task should be executed after the review tasks (PHASE3-015 through PHASE3-020) have been completed and have identified specific issues. The goal is to systematically fix all identified issues across all areas of Node.js best practices.
+
+## Context
+
+This task consolidates fixes for issues identified in:
+- **PHASE3-015**: Node.js style guide compliance issues
+- **PHASE3-016**: Error handling pattern issues
+- **PHASE3-017**: Callback pattern and callback hell issues
+- **PHASE3-018**: Resource cleanup issues
+- **PHASE3-019**: Logging practice issues
+- **PHASE3-020**: Security best practice issues
 
 ## Checklist
 
-- [ ] Fix all identified issues
-- [ ] Refactor callback patterns
-- [ ] Improve error handling
-- [ ] Add resource cleanup
-- [ ] Improve logging
-- [ ] Fix security issues
-- [ ] Verify improvements
+### Style Guide Compliance Fixes (from PHASE3-015)
+- [ ] Fix ESLint warnings and errors identified in PHASE3-015
+- [ ] Fix Prettier formatting issues
+- [ ] Correct naming convention violations (camelCase, PascalCase)
+- [ ] Fix module pattern inconsistencies (ES modules vs CommonJS)
+- [ ] Replace console.log with proper logger usage
+- [ ] Fix TypeScript type issues (remove `any`, add proper types)
+- [ ] Fix unused variables/imports
+- [ ] Standardize code formatting (semicolons, quotes, indentation)
+- [ ] Update ESLint/Prettier config if needed based on findings
+
+### Error Handling Fixes (from PHASE3-016)
+- [ ] Fix non-Error values being thrown (replace with Error instances)
+- [ ] Fix custom error class definitions (proper Error inheritance)
+- [ ] Fix try-catch patterns (remove over-catching, add missing error handling)
+- [ ] Fix empty catch blocks or silent error swallowing
+- [ ] Fix error context preservation (add context when wrapping errors)
+- [ ] Improve error messages (make them descriptive and actionable)
+- [ ] Fix error propagation issues (remove unnecessary re-throwing)
+- [ ] Fix async/await error handling (add missing error handling)
+- [ ] Fix TypeScript error type usage (replace `any` with proper error types)
+
+### Callback Pattern Fixes (from PHASE3-017)
+- [ ] Convert callback hell patterns to async/await
+- [ ] Promisify callback-based Node.js APIs using `util.promisify`
+- [ ] Refactor deeply nested callbacks (reduce nesting to ≤ 2 levels)
+- [ ] Fix callback error handling (ensure error-first convention)
+- [ ] Convert callback-based functions to Promise-based or async/await
+- [ ] Fix mixed callback/Promise patterns (standardize on async/await)
+- [ ] Convert stream event callbacks to async iterators where appropriate
+- [ ] Fix Express middleware callback patterns (convert to async handlers)
+
+### Resource Cleanup Fixes (from PHASE3-018)
+- [ ] Add missing file handle cleanup (close files, destroy streams)
+- [ ] Add database connection cleanup (close connections, return to pool)
+- [ ] Add Redis connection cleanup (quit/disconnect on shutdown)
+- [ ] Add HTTP connection cleanup (close Axios instances, destroy streams)
+- [ ] Implement graceful shutdown handlers (SIGTERM/SIGINT)
+- [ ] Add Express server cleanup (close server on shutdown)
+- [ ] Add BullMQ queue cleanup (close queues and workers)
+- [ ] Add stream cleanup (close/destroy streams properly)
+- [ ] Remove event listeners to prevent memory leaks
+- [ ] Clear timers (setTimeout, setInterval) properly
+- [ ] Add try-finally blocks for resource cleanup
+- [ ] Fix resource cleanup in error scenarios
+
+### Logging Practice Fixes (from PHASE3-019)
+- [ ] Replace all console.log with logger.info()
+- [ ] Replace all console.error with logger.error()
+- [ ] Replace all console.warn with logger.warn()
+- [ ] Replace all console.debug with logger.debug()
+- [ ] Add missing error stack traces to error logging
+- [ ] Fix incorrect log level usage (info vs error vs warn)
+- [ ] Add context/metadata to log entries (request_id, operation, etc.)
+- [ ] Remove or redact sensitive data from logs
+- [ ] Improve log message clarity and consistency
+- [ ] Fix missing error logging in catch blocks
+- [ ] Ensure error logging matches Rails pattern (error class, message, stack trace)
+
+### Security Fixes (from PHASE3-020)
+- [ ] Remove hardcoded secrets and move to environment variables
+- [ ] Fix insecure environment variable handling
+- [ ] Add missing input validation
+- [ ] Fix SQL injection risks (if applicable)
+- [ ] Fix XSS vulnerabilities
+- [ ] Add missing security headers
+- [ ] Fix CORS configuration issues
+- [ ] Fix authentication/authorization issues
+- [ ] Remove sensitive data from error messages
+- [ ] Fix insecure file operations
+- [ ] Update dependencies with known vulnerabilities
+- [ ] Fix insecure HTTP requests (ensure HTTPS)
+
+### Verification and Testing
+- [ ] Run ESLint and fix all remaining issues
+- [ ] Run Prettier and ensure consistent formatting
+- [ ] Run TypeScript compiler and fix all type errors
+- [ ] Run all tests and ensure they pass
+- [ ] Verify no new issues introduced by fixes
+- [ ] Test error handling improvements
+- [ ] Test resource cleanup (verify no leaks)
+- [ ] Test logging improvements
+- [ ] Test security fixes
+- [ ] Document all fixes made
+
+## Best Practices
+
+1. **Fix systematically**: Address issues from each review task category before moving to the next
+2. **Test after fixes**: Run tests after each category of fixes to ensure nothing breaks
+3. **Maintain functionality**: Ensure fixes don't change application behavior (only improve code quality)
+4. **Document changes**: Document significant refactorings and why they were made
+5. **Follow patterns**: Use established patterns from the codebase when fixing similar issues
+6. **Verify improvements**: Run linting, formatting, and tests after all fixes are complete
 
 ## Notes
 
 - This task is part of Phase 3: Holistic Review and Best Practices
 - Section: 3. Node.js Best Practices
-- Focus on identifying issues and improvements
-- Document findings and decisions
-
-- Task can be completed independently by a single agent
+- This task should be executed after PHASE3-015 through PHASE3-020 are completed
+- Focus on fixing identified issues, not discovering new ones
+- Document all fixes with specific file locations and line numbers
+- Ensure fixes maintain application functionality while improving code quality
+- Task can be completed independently by a single agent, but may require multiple passes
 
 ## Related Tasks
 
