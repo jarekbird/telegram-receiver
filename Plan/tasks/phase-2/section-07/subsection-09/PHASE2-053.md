@@ -6,24 +6,122 @@
 
 ## Description
 
-Convert add error handling to texttospeechservice from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/eleven_labs_*.rb` files.
+Add comprehensive error handling to the ElevenLabsTextToSpeechService TypeScript implementation, converting the error handling patterns from the Rails version. This includes implementing error handling in the `buildHttp` and `executeRequest` private methods, as well as error handling in the public `synthesize` and `synthesizeToIo` methods. Reference `jarek-va/app/services/eleven_labs_text_to_speech_service.rb` for the complete error handling implementation.
+
+The error handling is implemented in:
+- `build_http` method (lines 116-126): Connection and timeout errors during HTTP client setup
+- `execute_request` method (lines 128-170): HTTP response errors, connection errors, and timeout errors during request execution
+- `synthesize` method (lines 74-75): JSON parsing errors
+- `synthesize_to_io` method (lines 108-109): JSON parsing errors
 
 ## Checklist
 
-- [ ] Add ConnectionError handling
-- [ ] Add TimeoutError handling
-- [ ] Add SynthesisError handling
-- [ ] Add InvalidResponseError handling
-- [ ] Handle array and hash error responses
-- [ ] Log errors appropriately
+- [ ] Implement ConnectionError handling in `buildHttp` method:
+  - Catch connection errors (ECONNREFUSED, EHOSTUNREACH, SocketError equivalents in Node.js)
+  - Raise ConnectionError with message: "Failed to connect to ElevenLabs: {error.message}"
+- [ ] Implement TimeoutError handling in `buildHttp` method:
+  - Catch timeout errors during HTTP client setup (Net::OpenTimeout, Net::ReadTimeout equivalents)
+  - Raise TimeoutError with message: "Request to ElevenLabs timed out: {error.message}"
+- [ ] Implement ConnectionError handling in `executeRequest` method:
+  - Catch connection errors during request execution (ECONNREFUSED, EHOSTUNREACH, SocketError equivalents)
+  - Raise ConnectionError with message: "Failed to connect to ElevenLabs: {error.message}"
+- [ ] Implement TimeoutError handling in `executeRequest` method:
+  - Catch timeout errors during request execution (Net::OpenTimeout, Net::ReadTimeout equivalents)
+  - Raise TimeoutError with message: "Request to ElevenLabs timed out: {error.message}"
+- [ ] Implement SynthesisError handling in `executeRequest` method:
+  - Check if HTTP response is not successful (status code >= 400)
+  - Log error: "ElevenLabs API error: {statusCode} - Response body: {responseBody[0..500]}"
+  - Parse error response body as JSON (handle JSON parsing failures gracefully)
+  - Handle array error responses: Extract messages from array items (error['msg'] || error[:msg] || error.toString())
+  - Handle hash error responses: Extract from 'detail', 'error', or 'message' fields
+  - Handle nested array in 'detail' field: Extract messages from array items if detail is an array
+  - Join multiple error messages with '; ' separator
+  - Raise SynthesisError with extracted error message
+  - Log JSON parsing failures: "Failed to parse error response as JSON"
+- [ ] Implement InvalidResponseError handling in `synthesize` method:
+  - Catch JSON parsing errors (JSON::ParserError equivalents)
+  - Raise InvalidResponseError with message: "Failed to parse response: {error.message}"
+- [ ] Implement InvalidResponseError handling in `synthesizeToIo` method:
+  - Catch JSON parsing errors (JSON::ParserError equivalents)
+  - Raise InvalidResponseError with message: "Failed to parse response: {error.message}"
+- [ ] Ensure all error logging uses appropriate log levels:
+  - Info level for request/response logging
+  - Error level for API errors and parsing failures
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 7. ElevenLabs Services Conversion
-- Reference the Rails implementation for behavior
+- **Rails Reference**: `jarek-va/app/services/eleven_labs_text_to_speech_service.rb` (lines 116-170 for error handling)
+
+### Implementation Details from Rails:
+
+1. **Error Classes** (already defined in PHASE2-050):
+   - `ElevenLabsTextToSpeechServiceError` (base error class)
+   - `ConnectionError` extends base error
+   - `TimeoutError` extends base error
+   - `InvalidResponseError` extends base error
+   - `SynthesisError` extends base error
+
+2. **buildHttp Error Handling** (lines 116-126):
+   - Catches `Errno::ECONNREFUSED`, `Errno::EHOSTUNREACH`, `SocketError` → raises `ConnectionError`
+   - Catches `Net::OpenTimeout`, `Net::ReadTimeout` → raises `TimeoutError`
+   - In Node.js, equivalent errors are:
+     - Connection errors: `ECONNREFUSED`, `EHOSTUNREACH`, `ENOTFOUND` error codes
+     - Timeout errors: `ETIMEDOUT` error code or timeout events from HTTP client
+
+3. **executeRequest Error Handling** (lines 128-170):
+   - Logs request: `"ElevenLabsTextToSpeechService: POST {uri.path}"`
+   - Logs response: `"ElevenLabsTextToSpeechService: Response {code} {message}"`
+   - For non-success responses (not `Net::HTTPSuccess`):
+     - Logs error: `"ElevenLabs API error: {code} - Response body: {body[0..500]}"`
+     - Parses error body as JSON (wrapped in try-catch for JSON parsing failures)
+     - Handles array responses: Maps array items to extract `error['msg']` or `error[:msg]` or `error.to_s`
+     - Handles hash responses: Extracts from `error_body['detail']` or `error_body['error']` or `error_body['message']`
+     - Handles nested array in detail: If `error_body['detail']` is an array, maps items to extract messages
+     - Joins multiple messages with `'; '` separator
+     - Raises `SynthesisError` with extracted message
+     - Logs JSON parsing failures: `"Failed to parse error response as JSON"`
+   - Catches `Net::OpenTimeout`, `Net::ReadTimeout` → raises `TimeoutError`
+   - Catches `Errno::ECONNREFUSED`, `Errno::EHOSTUNREACH`, `SocketError` → raises `ConnectionError`
+
+4. **synthesize Error Handling** (lines 74-75):
+   - Catches `JSON::ParserError` → raises `InvalidResponseError` with message: `"Failed to parse response: {e.message}"`
+   - Note: This is for JSON parsing errors, though the response is binary audio data, so this may be defensive programming
+
+5. **synthesizeToIo Error Handling** (lines 108-109):
+   - Catches `JSON::ParserError` → raises `InvalidResponseError` with message: `"Failed to parse response: {e.message}"`
+   - Note: This is for JSON parsing errors, though the response is binary audio data, so this may be defensive programming
+
+6. **Error Response Parsing Logic** (lines 139-159):
+   - First attempts to parse response body as JSON
+   - If parsing succeeds:
+     - Checks if error_body is an Array:
+       - Maps each item to extract message: `error['msg'] || error[:msg] || error.to_s`
+       - Joins messages with `'; '` if any messages found
+     - Checks if error_body is a Hash:
+       - Extracts message from: `error_body['detail'] || error_body['error'] || error_body['message']`
+       - If `error_body['detail']` is an Array:
+         - Maps each item to extract message: `error['msg'] || error[:msg] || error.to_s`
+         - Joins messages with `'; '` if any messages found
+   - If JSON parsing fails, uses default error message: `"HTTP {code}: {message}"`
+   - Logs JSON parsing failures at error level
+
+7. **Node.js Error Equivalents**:
+   - `Errno::ECONNREFUSED` → `error.code === 'ECONNREFUSED'`
+   - `Errno::EHOSTUNREACH` → `error.code === 'EHOSTUNREACH'`
+   - `SocketError` → `error.code === 'ENOTFOUND'` or similar socket errors
+   - `Net::OpenTimeout` → HTTP client timeout events or `error.code === 'ETIMEDOUT'`
+   - `Net::ReadTimeout` → HTTP client timeout events or `error.code === 'ETIMEDOUT'`
+   - `JSON::ParserError` → `SyntaxError` when parsing JSON or try-catch around `JSON.parse()`
+
+8. **Logging Requirements**:
+   - Use info level for: Request logging, response logging
+   - Use error level for: API errors, JSON parsing failures
 
 - Task can be completed independently by a single agent
+- This task assumes the class structure from PHASE2-050, PHASE2-051, and PHASE2-052 are already in place
+- Error classes should already be defined from PHASE2-050
 
 ## Related Tasks
 
