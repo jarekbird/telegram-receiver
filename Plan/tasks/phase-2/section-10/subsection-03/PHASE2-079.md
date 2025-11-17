@@ -19,22 +19,28 @@ The method:
 
 ### Core Method Structure
 - [ ] Create `handleMessage` method that accepts a Telegram message object
-- [ ] Extract `chat_id` from `message.chat.id`
-- [ ] Extract `text` from `message.text`
+- [ ] Extract `chat_id` from `message.chat.id` (handle case where `chat` may be undefined/null)
+- [ ] Extract `text` from `message.text` (may be undefined/null for non-text messages)
 - [ ] Extract `message_id` from `message.message_id`
-- [ ] Log the incoming message for debugging
+- [ ] Log the incoming message for debugging (include chat_id and text in log)
 
 ### Audio Detection and Transcription
-- [ ] Track `original_was_audio` flag before processing (using `extractAudioFileId` helper)
+- [ ] Track `original_was_audio` flag BEFORE checking for audio (using `extractAudioFileId` helper) - this flag determines response format
 - [ ] Check for audio/voice using `extractAudioFileId` method (checks voice, audio, and document with audio mime_type)
 - [ ] If audio detected:
   - [ ] Call `transcribeAudio` method with file_id, chat_id, and message_id
-  - [ ] Handle transcription errors:
-    - [ ] Send error message to user if transcription fails
-    - [ ] Return early if transcription fails
-    - [ ] Truncate error messages to fit Telegram's 4096 character limit
+  - [ ] Handle transcription result (empty/falsy check):
+    - [ ] If transcription returns empty/falsy value, send error message to user and return early
+    - [ ] Error message: "❌ Sorry, I couldn't transcribe the audio message. Please try again or send a text message."
+  - [ ] Handle transcription exceptions:
+    - [ ] Wrap transcription call in try-catch block
+    - [ ] On exception, log error with stack trace
+    - [ ] Truncate error message to 4000 characters (to leave room for prefix text, Telegram limit is 4096)
+    - [ ] Send error message: "❌ Error transcribing audio: {truncated_error}. Please try again or send a text message."
+    - [ ] Return early after sending error
   - [ ] Replace `text` variable with transcribed text
-  - [ ] Update message object with transcribed text (create copy to avoid mutation issues)
+  - [ ] Create a copy of message object (to avoid mutation issues) and update `message.text` with transcribed text
+  - [ ] Log successful transcription (first 50 characters for debugging)
 
 ### Message Forwarding
 - [ ] Call `forwardToCursorRunner` method with:
@@ -53,10 +59,14 @@ The method:
 
 ### Response Handling
 - [ ] Determine response type based on:
-  - [ ] If `original_was_audio` is true AND `SystemSetting.disabled('allow_audio_output')` is false:
+  - [ ] If `original_was_audio` is true AND `SystemSetting.disabled('allow_audio_output')` returns false (i.e., audio output is NOT disabled):
     - [ ] Call `sendTextAsAudio` method with chat_id, result.say, and message_id
-  - [ ] Otherwise:
-    - [ ] Call `TelegramService.sendMessage` with chat_id, result.say, message_id, and parse_mode: 'HTML'
+  - [ ] Otherwise (if original was not audio OR audio output is disabled):
+    - [ ] Call `TelegramService.sendMessage` with:
+      - [ ] chat_id
+      - [ ] text: result.say
+      - [ ] reply_to_message_id: message_id
+      - [ ] parse_mode: 'HTML'
 
 ### Error Handling
 - [ ] Wrap transcription logic in try-catch block
@@ -84,14 +94,18 @@ The method:
 
 - The method processes both regular messages and edited messages (they use the same handler)
 - Audio detection checks three sources: `message.voice`, `message.audio`, and `message.document` (with audio mime_type)
-- The `original_was_audio` flag is tracked BEFORE transcription to determine response format
-- Transcription errors are handled gracefully with user feedback
+- The `original_was_audio` flag is tracked BEFORE checking for audio (line 67 in Rails) to determine response format - this ensures we know if the original message was audio even if transcription fails
+- Transcription has two error paths:
+  1. Empty/falsy result: Sends user-friendly error message and returns early
+  2. Exception: Catches exception, logs with stack trace, truncates error to 4000 chars (leaves room for prefix), sends error message, and returns early
 - Messages are forwarded to cursor-runner unless they are local commands (/start, /help, /status)
 - Response format (audio vs text) depends on:
-  - Whether the original message was audio
-  - Whether audio output is disabled via SystemSetting
+  - Whether the original message was audio (`original_was_audio` flag)
+  - Whether audio output is disabled via SystemSetting (`SystemSetting.disabled('allow_audio_output')`)
 - The method uses `processLocalMessage` for local command handling when not forwarded
-- Error messages sent to users should be truncated to fit Telegram's 4096 character limit
+- Error messages sent to users should be truncated to 4000 characters (to leave room for prefix text, Telegram limit is 4096)
+- The message object is copied before mutation to avoid side effects (Rails uses `message.dup`)
+- Successful transcriptions are logged (first 50 characters for debugging)
 
 ### Related Methods (may be implemented in other tasks)
 
