@@ -10,22 +10,20 @@ Create comprehensive tests for the BullMQ queue system, converting the queue sys
 
 **Rails Implementation Reference:**
 - `jarek-va/spec/config/sidekiq_spec.rb` - Sidekiq configuration tests:
-  - Tests Sidekiq module loading and configuration methods
-  - Tests default job options (retry: 3, backtrace: true)
-  - Tests Redis URL configuration from environment
-  - Tests ActiveJob adapter configuration
-  - Tests Sidekiq YAML configuration file existence and environment-specific settings
+  - Tests Sidekiq module loading and configuration methods (lines 6-12)
+  - Tests default job options (retry: 3, backtrace: true) (lines 14-22)
+  - Tests Redis URL configuration from environment (lines 24-30)
+  - Tests Sidekiq YAML configuration file existence and environment-specific settings (lines 53-68)
+  - Note: ActiveJob adapter configuration tests (lines 33-50) are not applicable - BullMQ is used directly, not as an adapter
 - `jarek-va/spec/jobs/application_job_spec.rb` - Base job tests:
-  - Tests job configuration (inheritance from ActiveJob::Base, default queue name)
-  - Tests retry configuration (retry_on, discard_on)
-  - Tests job enqueueing (perform_later, with arguments, to different queues)
-  - Tests job retry behavior
-- `jarek-va/spec/routes/sidekiq_routes_spec.rb` - Sidekiq routes tests:
-  - Tests Sidekiq Web UI mounting at /sidekiq
-  - Tests Sidekiq::Web application availability
+  - Tests job configuration (inheritance from ActiveJob::Base, default queue name) (lines 16-24)
+  - Tests retry configuration (retry_on, discard_on) (lines 26-52)
+  - Tests job enqueueing (perform_later, with arguments, to different queues) (lines 54-76)
+  - Tests job retry behavior (lines 78-93)
 - `jarek-va/spec/support/sidekiq.rb` - Sidekiq test helpers:
-  - Clears ActiveJob test queue before each test
-  - Includes ActiveJob testing helpers
+  - Clears ActiveJob test queue before each test (lines 4-9)
+  - Includes ActiveJob testing helpers (line 12)
+- Note: `jarek-va/spec/routes/sidekiq_routes_spec.rb` (Sidekiq Web UI tests) is not applicable - BullMQ does not have a built-in web UI like Sidekiq
 
 **Node.js Implementation:**
 - Create `tests/unit/jobs/queue.test.ts` to test queue configuration and operations
@@ -41,11 +39,11 @@ Create comprehensive tests for the BullMQ queue system, converting the queue sys
 
 - [ ] Create `tests/unit/jobs/queue.test.ts` file
   - [ ] Test queue configuration:
-    - [ ] Test BullMQ Connection instance creation
-    - [ ] Test queue connection utility (`getQueueConnection()`)
-    - [ ] Test default job options (retry: 3, exponential backoff)
-    - [ ] Test environment-specific queue configuration (development, test, production)
-    - [ ] Test Redis URL configuration from environment
+    - [ ] Test BullMQ Connection instance creation (equivalent to Sidekiq module loading)
+    - [ ] Test queue connection utility (`getQueueConnection()` from PHASE2-014)
+    - [ ] Test default job options (retry: 3, exponential backoff) - matching Rails `retry: 3`
+    - [ ] Test environment-specific queue configuration (development, test, production) - from queue config (PHASE2-013), not YAML file
+    - [ ] Test Redis URL configuration from environment (REDIS_URL env var)
   - [ ] Test queue operations:
     - [ ] Test Queue instance creation with connection
     - [ ] Test queue name configuration
@@ -102,21 +100,20 @@ Create comprehensive tests for the BullMQ queue system, converting the queue sys
 - Section: 3. Queue System Setup (BullMQ)
 - **Rails Files to Reference:**
   - `jarek-va/spec/config/sidekiq_spec.rb` - Sidekiq configuration tests:
-    - Lines 6-12: Sidekiq module loading and configuration methods
-    - Lines 14-22: Default job options (retry: 3, backtrace: true)
-    - Lines 24-30: Redis URL configuration from environment
-    - Lines 33-50: ActiveJob adapter configuration
-    - Lines 53-68: Sidekiq YAML configuration file tests
+    - Lines 6-12: Sidekiq module loading and configuration methods (test BullMQ Connection/Queue initialization)
+    - Lines 14-22: Default job options (retry: 3, backtrace: true) - test BullMQ default job options
+    - Lines 24-30: Redis URL configuration from environment - test queue connection utility
+    - Lines 33-50: ActiveJob adapter configuration - NOT APPLICABLE (BullMQ is used directly, not as an adapter)
+    - Lines 53-68: Sidekiq YAML configuration file tests - NOT APPLICABLE (BullMQ doesn't use YAML config files; test environment-specific settings from queue config instead)
   - `jarek-va/spec/jobs/application_job_spec.rb` - Base job tests:
-    - Lines 16-24: Job configuration (inheritance, default queue name)
-    - Lines 26-52: Retry and discard configuration
-    - Lines 54-76: Job enqueueing tests (with arguments, different queues)
-    - Lines 78-93: Job retry behavior tests
-  - `jarek-va/spec/routes/sidekiq_routes_spec.rb` - Sidekiq routes tests:
-    - Lines 6-20: Sidekiq Web UI mounting and availability tests
+    - Lines 16-24: Job configuration (inheritance, default queue name) - test BaseJobProcessor class structure
+    - Lines 26-52: Retry and discard configuration - test retry/discard logic in base job processor
+    - Lines 54-76: Job enqueueing tests (with arguments, different queues) - test job enqueueing with BullMQ Queue.add()
+    - Lines 78-93: Job retry behavior tests - test retry behavior with BullMQ
   - `jarek-va/spec/support/sidekiq.rb` - Sidekiq test helpers:
-    - Lines 4-9: Clear ActiveJob test queue before each test
-    - Line 12: Include ActiveJob testing helpers
+    - Lines 4-9: Clear ActiveJob test queue before each test - implement queue cleanup helpers
+    - Line 12: Include ActiveJob testing helpers - create BullMQ test utilities
+  - Note: `jarek-va/spec/routes/sidekiq_routes_spec.rb` is NOT APPLICABLE - BullMQ does not have a built-in web UI like Sidekiq's Web UI
 - **Dependencies:**
   - Requires BullMQ to be installed (completed in PHASE2-012)
   - Requires queue connection utility (completed in PHASE2-014)
@@ -136,11 +133,15 @@ Create comprehensive tests for the BullMQ queue system, converting the queue sys
   - Test configuration: default options, environment-specific settings, queue names
 - **Key Differences from Rails:**
   - Rails: Uses ActiveJob::TestHelper for testing (clears queues automatically)
-  - Node.js: Must manually clear queues or use test utilities
+  - Node.js: Must manually clear queues or use test utilities (implement in queueHelpers.ts)
   - Rails: Sidekiq tests use ActiveJob test adapter in test environment
-  - Node.js: BullMQ requires explicit Queue/Worker instances for testing
+  - Node.js: BullMQ requires explicit Queue/Worker instances for testing (no adapter pattern)
   - Rails: Tests can use `have_enqueued_job` matchers
-  - Node.js: Must check queue state directly or use BullMQ's job inspection methods
+  - Node.js: Must check queue state directly or use BullMQ's job inspection methods (e.g., `queue.getJobs()`)
+  - Rails: Sidekiq has built-in Web UI (tested in sidekiq_routes_spec.rb)
+  - Node.js: BullMQ does not have a built-in web UI (no equivalent tests needed)
+  - Rails: Sidekiq uses YAML configuration file (sidekiq.yml)
+  - Node.js: BullMQ uses TypeScript configuration files (no YAML config to test)
 - **Testing Patterns:**
   - Unit tests: Mock Queue/Worker instances, test configuration and options
   - Integration tests: Use real Queue/Worker instances with test Redis
