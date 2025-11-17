@@ -38,6 +38,8 @@ The method should delete the Telegram webhook by calling the Telegram Bot API's 
   - Re-raise the exception to allow callers to handle errors appropriately
 - The method should use the Telegram Bot API client's `deleteWebhook` method (or equivalent HTTP call)
 - Follow the same pattern as `setWebhook` and `webhookInfo` methods for consistency
+- Return value: The method should return the result of the API call (or void/undefined if no meaningful return value). When the bot token is blank, the method should return early (undefined/void)
+- Early return behavior: If the telegram bot token is blank, return early without making the API call (consistent with other TelegramService methods)
 
 - Task can be completed independently by a single agent
 
