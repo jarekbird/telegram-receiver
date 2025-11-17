@@ -6,20 +6,30 @@
 
 ## Description
 
-Install Jest dependencies
+Install and verify Jest dependencies for the test suite. Jest is the testing framework used for unit and integration tests in the Node.js/TypeScript application (equivalent to RSpec in the Rails jarek-va application).
 
 ## Checklist
 
-- [ ] Install `jest` as dev dependency
-- [ ] Install `@types/jest` as dev dependency
-- [ ] Install `ts-jest` as dev dependency
-- [ ] Verify all packages installed
+- [ ] Check if `jest` is already installed in `package.json` (may already be present)
+- [ ] Install `jest` as dev dependency if not already installed: `npm install --save-dev jest`
+- [ ] Check if `@types/jest` is already installed in `package.json` (may already be present)
+- [ ] Install `@types/jest` as dev dependency if not already installed: `npm install --save-dev @types/jest`
+- [ ] Check if `ts-jest` is already installed in `package.json` (may already be present)
+- [ ] Install `ts-jest` as dev dependency if not already installed: `npm install --save-dev ts-jest`
+- [ ] Verify all packages are listed in `package.json` devDependencies section
+- [ ] Run `npm list jest @types/jest ts-jest` to confirm installation
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 10. Test Suite Setup
 - Task can be completed independently by a single agent
+- **Current State**: As of validation, Jest dependencies (`jest`, `@types/jest`, `ts-jest`) are already installed in `package.json` devDependencies. The task should verify installation and install only if missing.
+- Jest replaces RSpec (used in jarek-va Rails app) for the Node.js/TypeScript test suite
+- Required packages:
+  - `jest`: Testing framework
+  - `@types/jest`: TypeScript type definitions for Jest
+  - `ts-jest`: TypeScript preprocessor for Jest to handle TypeScript files
 
 ## Related Tasks
 
