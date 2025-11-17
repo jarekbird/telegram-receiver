@@ -6,22 +6,139 @@
 
 ## Description
 
-Convert test all routes from Rails to TypeScript/Node.js. Reference `jarek-va/config/routes.rb`.
+Create comprehensive route tests for all API endpoints, converting from Rails route tests to TypeScript/Node.js. This task creates route tests that verify all routes are properly registered and route to the correct controllers/handlers.
+
+Reference:
+- `jarek-va/config/routes.rb` - Complete route definitions
+- `jarek-va/spec/routes/telegram_routes_spec.rb` - Telegram route tests
+- `jarek-va/spec/routes/cursor_runner_routes_spec.rb` - Cursor runner route tests
+- `jarek-va/spec/routes/sidekiq_routes_spec.rb` - Sidekiq route tests
+
+## Rails Routes Reference
+
+From `jarek-va/config/routes.rb`, the application defines the following routes:
+
+1. **Health routes**:
+   - `GET /health` → `health#show`
+   - `GET /` (root) → `health#show`
+
+2. **Agent tools route**:
+   - `POST /agent-tools` → `agent_tools#create`
+
+3. **Cursor-runner routes** (scoped under `/cursor-runner`):
+   - `POST /cursor-runner/cursor/execute` → `cursor_runner#execute`
+   - `POST /cursor-runner/cursor/iterate` → `cursor_runner#iterate`
+   - `POST /cursor-runner/callback` → `cursor_runner_callback#create`
+   - `POST /cursor-runner/git/clone` → `cursor_runner#clone`
+   - `GET /cursor-runner/git/repositories` → `cursor_runner#repositories`
+   - `POST /cursor-runner/git/checkout` → `cursor_runner#checkout`
+   - `POST /cursor-runner/git/push` → `cursor_runner#push`
+   - `POST /cursor-runner/git/pull` → `cursor_runner#pull`
+
+4. **Telegram routes** (scoped under `/telegram`):
+   - `POST /telegram/webhook` → `telegram#webhook`
+   - `POST /telegram/set_webhook` → `telegram#set_webhook`
+   - `GET /telegram/webhook_info` → `telegram#webhook_info`
+   - `DELETE /telegram/webhook` → `telegram#delete_webhook`
+
+5. **Sidekiq route**:
+   - `/sidekiq` → Sidekiq::Web (mounted Rack app)
 
 ## Checklist
 
-- [ ] Test health endpoint
-- [ ] Test telegram webhook endpoint
-- [ ] Test telegram admin endpoints
-- [ ] Test callback endpoint
-- [ ] Verify authentication
-- [ ] Verify error handling
+### Health Routes Tests
+- [ ] Create `tests/unit/routes/health.routes.test.ts`
+- [ ] Test `GET /health` routes to health controller
+- [ ] Test `GET /` (root) routes to health controller
+
+### Agent Tools Routes Tests
+- [ ] Create `tests/unit/routes/agent-tools.routes.test.ts`
+- [ ] Test `POST /agent-tools` routes to agent tools controller
+
+### Cursor Runner Routes Tests
+- [ ] Create `tests/unit/routes/cursor-runner.routes.test.ts`
+- [ ] Test `POST /cursor-runner/cursor/execute` routes to cursor runner controller
+- [ ] Test `POST /cursor-runner/cursor/iterate` routes to cursor runner controller
+- [ ] Test `POST /cursor-runner/callback` routes to cursor runner callback controller
+- [ ] Test `POST /cursor-runner/git/clone` routes to cursor runner controller
+- [ ] Test `GET /cursor-runner/git/repositories` routes to cursor runner controller
+- [ ] Test `POST /cursor-runner/git/checkout` routes to cursor runner controller
+- [ ] Test `POST /cursor-runner/git/push` routes to cursor runner controller
+- [ ] Test `POST /cursor-runner/git/pull` routes to cursor runner controller
+
+### Telegram Routes Tests
+- [ ] Create `tests/unit/routes/telegram.routes.test.ts`
+- [ ] Test `POST /telegram/webhook` routes to telegram controller
+- [ ] Test `POST /telegram/set_webhook` routes to telegram controller
+- [ ] Test `GET /telegram/webhook_info` routes to telegram controller
+- [ ] Test `DELETE /telegram/webhook` routes to telegram controller
+
+### Sidekiq Routes Tests
+- [ ] Create `tests/unit/routes/sidekiq.routes.test.ts`
+- [ ] Test that `/sidekiq` route is mounted (if applicable in Express/Node.js context)
+
+### Route Test Structure
+- [ ] Use Jest/Supertest for route testing
+- [ ] Test that routes exist and route to correct handlers
+- [ ] Verify route path matching (exact paths, path prefixes)
+- [ ] Verify HTTP method matching (GET, POST, DELETE, etc.)
+- [ ] Test route parameter extraction (if applicable)
+
+## Implementation Notes
+
+### Route Testing Pattern
+
+Route tests should verify that routes are properly registered and route to the correct handlers. In Express.js, this can be done using Supertest:
+
+```typescript
+import request from 'supertest';
+import app from '../../src/app';
+
+describe('Health Routes', () => {
+  describe('GET /health', () => {
+    it('routes to health controller', async () => {
+      const response = await request(app).get('/health');
+      expect(response.status).toBe(200);
+      // Verify it routes to health controller by checking response
+    });
+  });
+
+  describe('GET /', () => {
+    it('routes to health controller', async () => {
+      const response = await request(app).get('/');
+      expect(response.status).toBe(200);
+    });
+  });
+});
+```
+
+### Reference Rails Route Tests
+
+The Rails route tests (`jarek-va/spec/routes/*_routes_spec.rb`) use RSpec routing tests that verify routes map to controllers:
+
+```ruby
+expect(post: '/telegram/webhook').to route_to('telegram#webhook')
+```
+
+In Express/TypeScript, we verify routes by making actual HTTP requests and verifying they reach the correct handlers.
+
+### Route Test Organization
+
+- Create separate test files for each route group (health, agent-tools, cursor-runner, telegram, sidekiq)
+- Place tests in `tests/unit/routes/` directory
+- Follow naming convention: `{route-group}.routes.test.ts`
+
+### Missing Routes in Rails Tests
+
+Note: The Rails `cursor_runner_routes_spec.rb` only tests callback, iterate, and execute routes. It does NOT test the git routes (clone, repositories, checkout, push, pull). This task should include tests for ALL routes defined in `routes.rb`, including the git routes.
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 11. Routes Configuration
-- Reference the Rails implementation for behavior
+- Route tests verify routing configuration, not controller functionality (controller tests are separate)
+- Reference the Rails route test files for test structure and coverage
+- Ensure all routes from `routes.rb` are tested, including git routes that may not have Rails route tests
 
 - Task can be completed independently by a single agent
 
