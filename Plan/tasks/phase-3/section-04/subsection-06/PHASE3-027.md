@@ -21,9 +21,9 @@ Review and refactor code organization issues in the codebase to ensure best prac
   - [ ] Utilities in `src/utils/`
   - [ ] Types in `src/types/`
   - [ ] Configuration in `src/config/`
-  - [ ] Jobs in `src/jobs/` (if created per PHASE3-022)
-  - [ ] Errors in `src/errors/` (if created per PHASE3-022)
-  - [ ] Validators in `src/validators/` (if created per PHASE3-022)
+  - [ ] Jobs in `src/jobs/` (created per PHASE3-022 - verify exists)
+  - [ ] Errors in `src/errors/` (created per PHASE3-022 - verify exists)
+  - [ ] Validators in `src/validators/` (created per PHASE3-022 - verify exists)
 - [ ] Check for files in wrong locations (e.g., business logic in controllers, routes in services)
 - [ ] Verify no source files are in root directory (except `src/index.ts`)
 - [ ] Check that configuration files are in root (jest.config.ts, playwright.config.ts, tsconfig.json, etc.)
@@ -46,6 +46,8 @@ Review and refactor code organization issues in the codebase to ensure best prac
 
 - [ ] Scan all TypeScript files in `src/` for duplicate code patterns
 - [ ] Review test files for duplicate test utilities or patterns
+  - [ ] **SPECIFIC FROM PHASE3-026**: Review mock reset functions in `tests/mocks/` - `resetTelegramApiMocks()`, `resetCursorRunnerApiMocks()`, and `resetRedisMocks()` all follow identical patterns and should be abstracted
+  - [ ] **SPECIFIC FROM PHASE3-026**: Review fixture creation patterns - `createTelegramMessage()` and `createCursorRunnerResponse()` follow similar override patterns that could be abstracted
 - [ ] Check for repeated error handling patterns that could be unified
 - [ ] Identify duplicate validation logic that could be extracted
 - [ ] Look for repeated API call patterns that could be abstracted
@@ -57,8 +59,10 @@ Review and refactor code organization issues in the codebase to ensure best prac
 
 - [ ] Review existing utilities in `src/utils/` (when files exist)
 - [ ] Check if test utilities in `tests/helpers/` could be moved to `src/utils/` for production use
-  - [ ] Review `tests/helpers/testUtils.ts` - identify utilities that could be shared
-  - [ ] Review `tests/helpers/apiHelpers.ts` - check if HTTP_STATUS constants should be in `src/utils/`
+  - [ ] Review `tests/helpers/testUtils.ts` - identify utilities that could be shared (waitFor, createMockFn, randomString, randomEmail, randomInt, expectRejection)
+  - [ ] **SPECIFIC FROM PHASE3-026**: Review `tests/helpers/apiHelpers.ts` - check if `HTTP_STATUS` constants should be moved to `src/utils/` for production use
+  - [ ] **SPECIFIC FROM PHASE3-026**: Create generic `resetMockObject()` utility function to replace duplicate mock reset functions in `tests/mocks/`
+  - [ ] **SPECIFIC FROM PHASE3-026**: Consider creating generic `createFixture()` utility to replace duplicate fixture creation patterns
 - [ ] Create shared utilities for common patterns:
   - [ ] Error handling utilities
   - [ ] Validation utilities
@@ -114,16 +118,36 @@ Review and refactor code organization issues in the codebase to ensure best prac
 - Section: 4. Code Organization
 - Focus on identifying issues and improvements based on `docs/architecture.md`
 - Document findings and decisions
-- Current codebase state: `src/` directory structure exists but is mostly empty; test utilities exist in `tests/helpers/`
+- Current codebase state: 
+  - `src/` directory structure exists but is mostly empty (only `src/index.ts` exists, all other directories are empty with `.gitkeep` files)
+  - Test utilities exist in `tests/helpers/`:
+    - `testUtils.ts` - General test utilities (waitFor, createMockFn, randomString, randomEmail, randomInt, expectRejection)
+    - `apiHelpers.ts` - API test helpers (createTestRequest, HTTP_STATUS constants, header helpers)
+  - Test mocks exist in `tests/mocks/`:
+    - `telegramApi.ts` - Mock Telegram API with resetTelegramApiMocks()
+    - `cursorRunnerApi.ts` - Mock Cursor Runner API with resetCursorRunnerApiMocks()
+    - `redis.ts` - Mock Redis client with resetRedisMocks()
+  - Test fixtures exist in `tests/fixtures/`:
+    - `telegramMessages.ts` - Telegram message fixtures with createTelegramMessage()
+    - `apiResponses.ts` - API response fixtures with createCursorRunnerResponse()
 - Reference findings from previous tasks:
-  - PHASE3-022: Identified missing directories (`src/jobs/`, `src/errors/`, `src/validators/`)
+  - PHASE3-022: ✅ **COMPLETED** - Created missing directories (`src/jobs/`, `src/errors/`, `src/validators/`) - verify they still exist
   - PHASE3-023: Review naming conventions consistency
   - PHASE3-024: Review module boundaries
   - PHASE3-025: Review import/export patterns
-  - PHASE3-026: Review code reusability
+  - PHASE3-026: **SPECIFIC FINDINGS TO ADDRESS**:
+    - Mock reset functions (`resetTelegramApiMocks()`, `resetCursorRunnerApiMocks()`, `resetRedisMocks()`) follow identical patterns - should be abstracted
+    - Fixture creation patterns (`createTelegramMessage()`, `createCursorRunnerResponse()`) follow similar override patterns - should be abstracted
+    - `HTTP_STATUS` constants in `apiHelpers.ts` should be reviewed for potential move to `src/utils/`
 - When reviewing, consider both existing code and patterns that should be established for future code
 - Pay special attention to test utilities - ensure they follow DRY principles and are reusable
 - Consider creating shared utilities early to establish patterns for future development
+- **This task consolidates findings from PHASE3-022 through PHASE3-026** - focus on implementing the specific improvements identified in those tasks, especially from PHASE3-026
+- Since `src/` is mostly empty, most work will involve:
+  1. Reviewing and refactoring test code organization
+  2. Creating shared utilities based on test code patterns
+  3. Establishing patterns for future production code
+  4. Verifying directory structure matches architecture documentation
 
 - Task can be completed independently by a single agent
 
