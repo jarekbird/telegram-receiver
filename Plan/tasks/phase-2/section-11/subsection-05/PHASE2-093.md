@@ -27,6 +27,8 @@ Reference `jarek-va/config/routes.rb` for the complete route structure. The Rail
    - `GET /telegram/webhook_info`
    - `DELETE /telegram/webhook`
 
+**Note**: The Rails application also mounts Sidekiq Web UI at `/sidekiq` (line 40 in `routes.rb`). Since Sidekiq is Ruby-specific, this route is not included in this conversion task. A Node.js equivalent (e.g., BullMQ dashboard) should be implemented in a separate task if background job monitoring UI is needed.
+
 ## Rails Implementation Reference
 
 From `jarek-va/config/routes.rb`:
@@ -63,8 +65,14 @@ Rails.application.routes.draw do
     get 'webhook_info', to: 'telegram#webhook_info'
     delete 'webhook', to: 'telegram#delete_webhook'
   end
+
+  # Sidekiq Web UI (mount in development/staging only, protect in production)
+  require 'sidekiq/web'
+  mount Sidekiq::Web => '/sidekiq'
 end
 ```
+
+**Note**: The Sidekiq Web UI mount is Ruby-specific and not included in this conversion task. A Node.js equivalent (e.g., BullMQ dashboard) should be implemented separately if background job monitoring UI is needed.
 
 ## Checklist
 
@@ -152,12 +160,13 @@ Routes should be mounted in this order:
 - This task assumes route files have been created in previous tasks (PHASE2-089 through PHASE2-092)
 - Route files should already exist:
   - `src/routes/health.routes.ts` (created in PHASE2-090)
-  - `src/routes/agent-tools.routes.ts` (should exist from PHASE2-089 structure)
-  - `src/routes/cursor-runner.routes.ts` (should exist from PHASE2-089 structure, callback route added in PHASE2-092)
-  - `src/routes/telegram.routes.ts` (created in PHASE2-091)
+  - `src/routes/agent-tools.routes.ts` (created in PHASE2-089)
+  - `src/routes/cursor-runner.routes.ts` (created in PHASE2-089, callback route added in PHASE2-092)
+  - `src/routes/telegram.routes.ts` (created in PHASE2-091) - **Note**: PHASE2-091 mentions `telegram-routes.ts` but should be `telegram.routes.ts` to match naming convention used in PHASE2-089
 - Reference the Rails implementation (`jarek-va/config/routes.rb`) for exact route structure
 - The main application entry point (`src/index.ts`) is currently empty and needs to be fully implemented
 - Global middleware (JSON parser, error handling) should be applied before route mounting
+- **Sidekiq Web UI**: The Rails application mounts Sidekiq Web UI at `/sidekiq` (line 40 in `routes.rb`), but this is Ruby-specific and not included in this conversion. A Node.js equivalent (e.g., BullMQ dashboard) should be implemented separately if needed.
 - Task can be completed independently by a single agent
 
 ## Related Tasks
