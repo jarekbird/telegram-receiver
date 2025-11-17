@@ -6,21 +6,51 @@
 
 ## Description
 
-Create test setup file
+Create and enhance the test setup file (`tests/setup.ts`) for the TypeScript/Node.js application. This file replaces the Rails test setup files (`spec/spec_helper.rb` and `spec/rails_helper.rb`) and provides global test configuration, setup hooks, and cleanup hooks that run before and after all tests.
+
+The setup file should:
+- Set the test environment variable
+- Configure Jest timeout settings
+- Provide global setup hooks (`beforeAll`) for initializing test infrastructure
+- Provide global cleanup hooks (`afterAll`) for cleaning up after all tests complete
+- Set up any global mocks or test utilities needed across all tests
+
+**Rails Equivalent**: This task converts the functionality from `spec/spec_helper.rb` and `spec/rails_helper.rb` in the jarek-va Rails application. The Rails helpers set `ENV['RAILS_ENV'] = 'test'`, load the Rails environment, include FactoryBot, load support files, and configure Sidekiq test helpers to clear queues before each test.
 
 ## Checklist
 
-- [ ] Open `tests/setup.ts` file
-- [ ] Set `process.env.NODE_ENV` to 'test'
+- [ ] Open `tests/setup.ts` file (file already exists, needs enhancement)
+- [ ] Ensure `process.env.NODE_ENV` is set to 'test' (already present, verify)
+- [ ] Ensure `jest.setTimeout(10000)` is configured (already present, verify)
 - [ ] Add `beforeAll` hook for global test setup
+  - [ ] Clear/reset any global mocks (Redis, Telegram API, Cursor Runner API)
+  - [ ] Set up test environment variables if needed
+  - [ ] Initialize any test infrastructure (e.g., test database connections, Redis connections)
 - [ ] Add `afterAll` hook for global test cleanup
-- [ ] Export any test utilities if needed
+  - [ ] Clean up any resources created during tests
+  - [ ] Close connections (database, Redis, etc.)
+  - [ ] Verify no test leaks or hanging promises
+- [ ] Add `beforeEach` hook for per-test setup (optional, but recommended)
+  - [ ] Clear mocks before each test to ensure test isolation
+  - [ ] Reset Redis mocks using `resetRedisMocks()` from `tests/mocks/redis.ts`
+  - [ ] Reset Telegram API mocks using `resetTelegramApiMocks()` from `tests/mocks/telegramApi.ts`
+- [ ] Add `afterEach` hook for per-test cleanup (optional, but recommended)
+  - [ ] Clear any test-specific state
+  - [ ] Ensure no async operations are left hanging
+- [ ] Add JSDoc comments explaining the purpose of each hook
+- [ ] Export any test utilities if needed (or reference existing utilities in `tests/helpers/testUtils.ts`)
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 10. Test Suite Setup
 - Task can be completed independently by a single agent
+- The `tests/setup.ts` file already exists with basic configuration and needs to be enhanced with setup/cleanup hooks
+- This file is automatically loaded by Jest via `setupFilesAfterEnv` configuration in `jest.config.ts` (configured in PHASE1-043)
+- The setup file runs before each test file, similar to how `rails_helper.rb` runs before each RSpec test file
+- Unlike Rails which uses `before` blocks in `spec/support/sidekiq.rb` to clear queues, Jest uses `beforeEach` hooks for per-test setup
+- Mock reset functions are available in `tests/mocks/redis.ts` and `tests/mocks/telegramApi.ts` and should be used in `beforeEach` hooks
+- Test utilities are available in `tests/helpers/testUtils.ts` and don't need to be re-exported from setup.ts
 
 ## Related Tasks
 
