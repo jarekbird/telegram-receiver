@@ -6,22 +6,73 @@
 
 ## Description
 
-Create application entry point
+Create the application entry point in `src/index.ts`. This file serves as the main entry point for the Node.js application, similar to `config.ru` in Rails. It imports the Express app instance (created in PHASE1-010), starts the HTTP server, and handles server lifecycle events including graceful shutdown.
+
+The entry point should:
+- Import the Express app instance from `src/app.ts`
+- Read port and host configuration from environment variables (defaulting to PORT=3000 and HOST='0.0.0.0', matching Rails Puma defaults)
+- Start the HTTP server and log startup information (port, environment, etc.)
+- Handle server startup errors (e.g., port already in use, permission denied)
+- Implement graceful shutdown handlers for SIGTERM and SIGINT signals
+- Handle uncaught exceptions and unhandled promise rejections
+- Ensure proper cleanup on shutdown
 
 ## Checklist
 
-- [ ] Open `src/index.ts` file
-- [ ] Import app from `./app`
-- [ ] Import environment configuration (to be created)
-- [ ] Create function to start server
-- [ ] Call server start function
-- [ ] Add error handling for server startup
+- [ ] Open `src/index.ts` file (create if it doesn't exist)
+- [ ] Import Express app instance from `./app`
+- [ ] Import environment variables (use `process.env` directly or import from a config module if one exists)
+- [ ] Define port constant (default: `process.env.PORT || 3000`, matching Rails default)
+- [ ] Define host constant (default: `process.env.HOST || '0.0.0.0'`, matching Rails Puma default)
+- [ ] Create `startServer()` function that:
+  - Creates HTTP server from Express app
+  - Starts listening on the configured port and host
+  - Logs startup information (port, environment, app name/version if available)
+  - Handles server startup errors (EADDRINUSE, EACCES, etc.)
+- [ ] Implement graceful shutdown handler:
+  - Listen for SIGTERM and SIGINT signals
+  - Close server gracefully (stop accepting new connections, wait for existing requests to complete)
+  - Exit process with appropriate code
+- [ ] Add global error handlers:
+  - Handle uncaught exceptions
+  - Handle unhandled promise rejections
+  - Log errors appropriately
+- [ ] Call `startServer()` function to start the application
+- [ ] Ensure proper TypeScript types are used
+
+## Implementation Notes
+
+### Rails Equivalent
+- Rails uses `config.ru` (Rack entry point) which calls `Rails.application.load_server`
+- Server configuration is in `config/puma.rb` with defaults: PORT=3000, environment from RAILS_ENV
+- Rails automatically handles graceful shutdown via Puma
+
+### Node.js/Express Best Practices
+- Use `app.listen(port, host, callback)` to start the server
+- Handle `EADDRINUSE` error (port already in use) with a clear error message
+- Handle `EACCES` error (permission denied) with a clear error message
+- Implement graceful shutdown to allow in-flight requests to complete
+- Set a timeout for graceful shutdown (e.g., 10 seconds) before force exit
+- Log server startup information for debugging and monitoring
+
+### Environment Variables
+- `PORT`: Server port (default: 3000, matching Rails)
+- `HOST`: Server host (default: '0.0.0.0', matching Rails Puma)
+- `NODE_ENV`: Environment (development, test, production)
+
+### Error Handling
+- Server startup errors should be caught and logged with clear messages
+- Uncaught exceptions should be logged and the process should exit
+- Unhandled promise rejections should be logged and the process should exit
+- Graceful shutdown should handle cleanup of resources (database connections, Redis connections, etc.)
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 4. Express.js Framework Setup
 - Task can be completed independently by a single agent
+- The Express app instance must be created first (PHASE1-010)
+- Environment configuration can be handled via `process.env` directly or through a config module (to be created in a later task)
 
 ## Related Tasks
 
