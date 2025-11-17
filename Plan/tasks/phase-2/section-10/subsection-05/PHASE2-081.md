@@ -8,22 +8,29 @@
 
 Convert the `extract_audio_file_id` utility method from Rails to TypeScript/Node.js. This function extracts audio file IDs from Telegram messages, supporting voice messages, audio files, and audio documents. Reference `jarek-va/app/jobs/telegram_message_job.rb` lines 298-312.
 
-The function checks for audio content in three ways:
-1. Voice messages (most common for speech) - checks `message.voice.file_id`
-2. Audio files - checks `message.audio.file_id`
-3. Documents with audio mime types - checks `message.document.file_id` if `document.mime_type` starts with `'audio/'`
+The function checks for audio content in three ways, in this specific order:
+1. **Voice messages** (most common for speech) - checks `message.voice.file_id` if `message.voice` exists
+2. **Audio files** - checks `message.audio.file_id` if `message.audio` exists
+3. **Documents with audio mime types** - checks `message.document.file_id` if `message.document` exists AND `message.document.mime_type` starts with `'audio/'`
 
-Returns the file_id if found, or null/undefined if no audio content is detected.
+**Implementation Notes:**
+- The function should check these conditions in the order listed above (voice first, then audio, then document)
+- Use optional chaining (`?.`) or equivalent safe navigation to handle missing properties
+- Return the `file_id` string if found, or `null`/`undefined` if no audio content is detected
+- The function should handle null/undefined message parameter gracefully
+- For documents, only return the file_id if the mime_type starts with the string `'audio/'` (case-sensitive check)
 
 ## Checklist
 
-- [ ] Create `extractAudioFileId` utility function
-- [ ] Check for `message.voice.file_id` (voice messages)
-- [ ] Check for `message.audio.file_id` (audio files)
-- [ ] Check for `message.document.file_id` when `document.mime_type` starts with `'audio/'` (audio documents)
-- [ ] Return file_id string if found, or null/undefined if not found
-- [ ] Handle null/undefined message gracefully
-- [ ] Handle missing nested properties safely (use optional chaining or equivalent)
+- [ ] Create `extractAudioFileId` utility function with signature: `extractAudioFileId(message: TelegramMessage | null | undefined): string | null | undefined`
+- [ ] Check for `message.voice.file_id` FIRST (voice messages) - return immediately if found
+- [ ] Check for `message.audio.file_id` SECOND (audio files) - return immediately if found
+- [ ] Check for `message.document.file_id` THIRD when `document.mime_type` starts with `'audio/'` (audio documents) - return immediately if found
+- [ ] Return `file_id` string if found, or `null`/`undefined` if no audio content is detected
+- [ ] Handle null/undefined message parameter gracefully (return null/undefined)
+- [ ] Handle missing nested properties safely using optional chaining (`?.`) or equivalent
+- [ ] Ensure checks are performed in the correct order (voice → audio → document)
+- [ ] For document check, verify `mime_type` exists and starts with `'audio/'` before returning file_id
 
 ## Notes
 
