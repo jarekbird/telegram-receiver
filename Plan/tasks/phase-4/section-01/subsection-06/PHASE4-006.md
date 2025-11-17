@@ -182,7 +182,7 @@ Unused code detection should cover:
 - [ ] Run unimported to identify unused files and dependencies
 - [ ] Run ESLint with unused-imports plugin to identify unused imports
 - [ ] Run depcheck to identify unused npm dependencies
-- [ ] Run TypeScript compiler with strict unused checks: `tsc --noUnusedLocals --noUnusedParameters`
+- [ ] Run TypeScript compiler with strict unused checks: `tsc --noEmit` (unused locals/parameters checks are already enabled in tsconfig.json)
 - [ ] Generate comprehensive unused code report
 - [ ] Identify all unused exports
 - [ ] Identify all unused imports
