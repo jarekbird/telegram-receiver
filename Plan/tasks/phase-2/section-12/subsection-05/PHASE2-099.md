@@ -19,23 +19,25 @@ Create comprehensive tests for middleware authentication functionality, converti
    - Without authentication when webhook secret is configured → returns 401 Unauthorized
    - Without authentication when webhook secret is NOT configured (blank/empty) → accepts request (200 OK)
    - With valid `X-Telegram-Bot-Api-Secret-Token` header → accepts request (200 OK)
+   - Note: Rails tests don't explicitly test invalid secret (only missing vs valid), but testing invalid secret ensures robustness
 
 2. **Admin Authentication Tests** (`telegram_controller_spec.rb`):
    - Without admin authentication → returns 401 Unauthorized (for all admin routes: set_webhook, webhook_info, delete_webhook)
    - With valid `X-Admin-Secret` header → accepts request (200 OK)
    - Admin routes tested: `POST /telegram/set_webhook`, `GET /telegram/webhook_info`, `DELETE /telegram/webhook`
+   - Note: Rails tests only explicitly test header authentication, but Rails code supports query/body params (checked via `params[:admin_secret]` or `params['admin_secret']`). Testing query/body params ensures complete coverage of supported functionality.
 
 3. **Cursor-Runner Callback Authentication Tests** (`cursor_runner_callback_controller_spec.rb`):
    - Without authentication → returns 401 Unauthorized
    - With valid `X-Webhook-Secret` header → accepts request (200 OK)
-   - With valid `X-Cursor-Runner-Secret` header → accepts request (200 OK)
-   - With valid `secret` query parameter → accepts request (200 OK)
+   - With valid `secret` query parameter → accepts request (200 OK) (explicitly tested in Rails)
    - When webhook secret is not configured (blank/empty) → accepts request without secret (200 OK) - development mode
+   - Note: Rails code supports `X-Cursor-Runner-Secret` header (checked via `request.headers['X-Cursor-Runner-Secret']`), but Rails tests don't explicitly test it. Testing this header ensures complete coverage of supported functionality.
 
 4. **Agent Tools Authentication Tests** (`agent_tools_controller_spec.rb`):
    - Without authentication → returns 401 Unauthorized
    - With valid `X-EL-Secret` header → accepts request (200 OK)
-   - With valid `Authorization: Bearer <secret>` header → accepts request (200 OK)
+   - Note: Rails code supports `Authorization: Bearer <secret>` header (checked via `request.headers['Authorization']&.gsub(/^Bearer /, '')`), but Rails tests don't explicitly test it. Testing this header ensures complete coverage of supported functionality.
 
 **Prerequisites**:
 - PHASE2-096: Create webhook authentication middleware (must exist: `src/middleware/telegram-webhook-auth.middleware.ts`)
@@ -82,7 +84,9 @@ Create comprehensive tests for middleware authentication functionality, converti
   - [ ] Request with incorrect `X-Admin-Secret` header → returns 401 Unauthorized
   - [ ] Request with incorrect `admin_secret` query param → returns 401 Unauthorized
 - [ ] Test secret priority (header > query > body):
-  - [ ] When both header and query param are provided, header takes precedence
+  - [ ] When both header and query param are provided, header takes precedence (even if header value is incorrect, query param is not checked)
+  - [ ] When header is missing but query param is provided, query param is used
+  - [ ] When both header and query param are missing but body param is provided, body param is used
 - [ ] Verify error response format:
   - [ ] Returns 401 status code
   - [ ] Returns appropriate error message/body
@@ -109,7 +113,8 @@ Create comprehensive tests for middleware authentication functionality, converti
   - [ ] Returns 401 status code
   - [ ] Returns JSON error: `{ error: 'Unauthorized' }`
 - [ ] Test secret priority (header > query):
-  - [ ] When both header and query param are provided, header takes precedence
+  - [ ] When both header and query param are provided, header takes precedence (even if header value is incorrect, query param is not checked)
+  - [ ] When header is missing but query param is provided, query param is used
 
 ### Agent Tools Authentication Tests
 
@@ -146,7 +151,7 @@ Create comprehensive tests for middleware authentication functionality, converti
 - Use `supertest` for integration tests with actual Express routes
 - Test environment variables should be set in test setup:
   - `TELEGRAM_WEBHOOK_SECRET` for telegram webhook auth tests
-  - `WEBHOOK_SECRET` for admin auth and cursor-runner callback auth tests
+  - `WEBHOOK_SECRET` for admin auth, cursor-runner callback auth, and agent tools auth tests (all use the same `webhook_secret` config value in Rails)
 - Test both success and failure scenarios
 - Test edge cases: missing secrets, blank secrets, invalid secrets, multiple secret sources
 - Verify middleware calls `next()` on success and returns error response on failure
