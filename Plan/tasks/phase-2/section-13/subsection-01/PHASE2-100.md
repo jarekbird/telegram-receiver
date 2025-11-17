@@ -6,21 +6,42 @@
 
 ## Description
 
-Convert create service test fixtures from Rails to TypeScript/Node.js.
+Create service test fixtures for Telegram updates. These fixtures should provide reusable test data for Telegram update objects that match the Telegram Bot API format, including message updates, edited messages, and callback queries.
+
+## Rails Reference
+
+Reference the following Rails test files for examples of Telegram update structures:
+- `jarek-va/spec/controllers/telegram_controller_spec.rb` - Shows update structures for messages, edited_messages, and callback_queries
+- `jarek-va/spec/jobs/telegram_message_job_spec.rb` - Shows message update structures with commands and non-command messages
+- `jarek-va/app/jobs/telegram_message_job.rb` - Shows how updates are processed (handles `update['message']`, `update['edited_message']`, `update['callback_query']`)
 
 ## Checklist
 
 - [ ] Create `tests/fixtures/telegram-updates.ts`
-- [ ] Create sample message updates
-- [ ] Create sample callback queries
-- [ ] Create sample edited messages
-- [ ] Export fixtures
+- [ ] Create sample message updates:
+  - [ ] Command message (`/start` command)
+  - [ ] Command message (`/help` command)
+  - [ ] Command message (`/status` command)
+  - [ ] Non-command text message (for forwarding to cursor-runner)
+  - [ ] Message with minimal required fields (for edge case testing)
+- [ ] Create sample callback queries:
+  - [ ] Callback query with data and message reference
+  - [ ] Callback query with minimal fields
+- [ ] Create sample edited messages:
+  - [ ] Edited message with text update
+  - [ ] Edited message with minimal fields
+- [ ] Export all fixtures for use in tests
+- [ ] Include helper function to create custom updates with overrides (similar to existing `createTelegramMessage` pattern)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 13. Testing
 - Reference the Rails implementation for behavior
+- Telegram updates follow the format: `{ 'message': {...} }`, `{ 'edited_message': {...} }`, or `{ 'callback_query': {...} }`
+- Update objects should match the Telegram Bot API Update structure
+- Consider creating fixtures that match the test data used in Rails specs (see `telegram_controller_spec.rb` and `telegram_message_job_spec.rb`)
+- The existing `tests/fixtures/telegramMessages.ts` file contains some fixtures but uses `update_id` at the top level; this new file should focus on the update wrapper structure used by the application
 
 - Task can be completed independently by a single agent
 
