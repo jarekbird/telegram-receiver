@@ -1,4 +1,4 @@
-# PHASE1-049: Configure test coverage
+# PHASE1-049: Verify test coverage configuration
 
 **Section**: 10. Test Suite Setup
 **Subsection**: 10.8
@@ -6,20 +6,34 @@
 
 ## Description
 
-Configure test coverage
+Verify that test coverage is properly configured and working. This task validates the coverage configuration set up in PHASE1-043 (Jest configuration) and PHASE1-046 (test scripts). The coverage configuration should match the requirements: collect coverage from source files, generate reports in multiple formats (text, lcov, HTML), and store them in the coverage directory.
 
 ## Checklist
 
-- [ ] Run `npm run test:coverage`
-- [ ] Verify coverage report is generated
-- [ ] Check coverage directory exists
-- [ ] Verify HTML coverage report is accessible
+- [ ] Verify `jest.config.ts` exists and contains coverage configuration
+- [ ] Verify `collectCoverageFrom` includes `src/**/*.ts` and excludes test files and type definitions
+- [ ] Verify `coverageDirectory` is set to `'coverage'`
+- [ ] Verify `coverageReporters` array includes `['text', 'lcov', 'html']`
+- [ ] Verify `package.json` contains `"test:coverage": "jest --coverage"` script
+- [ ] Run `npm run test:coverage` and verify it executes without errors
+- [ ] Verify coverage report is generated in the `coverage/` directory
+- [ ] Verify `coverage/` directory contains HTML report files (index.html, base.css, etc.)
+- [ ] Verify `coverage/` directory contains `lcov.info` file (for CI/CD integration)
+- [ ] Verify `coverage/` directory is listed in `.gitignore` (should be ignored from version control)
+- [ ] Open `coverage/index.html` in a browser and verify it displays coverage report correctly
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 10. Test Suite Setup
 - Task can be completed independently by a single agent
+- **This is a verification task** - coverage configuration is set up in PHASE1-043 (Jest configuration) and PHASE1-046 (test scripts)
+- This task validates that coverage is properly configured and generates reports correctly
+- The coverage configuration replaces any test coverage setup that would have been in Rails (RSpec with SimpleCov or similar)
+- Coverage reports are generated in multiple formats:
+  - **text**: Console output showing coverage percentages
+  - **lcov**: Machine-readable format for CI/CD integration (coverage/lcov.info)
+  - **html**: Human-readable HTML report for viewing in browser (coverage/index.html)
 
 ## Related Tasks
 
