@@ -6,18 +6,108 @@
 
 ## Description
 
-improve naming conventions to improve code quality and maintainability.
+Improve naming conventions throughout the telegram-receiver codebase to enhance code quality, readability, and maintainability. This task involves reviewing all source code files, identifying naming inconsistencies, and ensuring adherence to TypeScript/Node.js naming conventions.
+
+## Scope
+
+This task covers:
+- All source files in `src/` directory (controllers, services, models, routes, middleware, utils, types, config)
+- All test files in `tests/` directory
+- Configuration files (TypeScript config, ESLint config, etc.)
+- Documentation files that reference code elements
+
+## TypeScript/Node.js Naming Conventions to Follow
+
+### Variables and Functions
+- Use **camelCase** for variables, functions, and methods
+- Use descriptive names that clearly indicate purpose
+- Avoid abbreviations unless they're widely understood
+- Use verb-noun pattern for functions (e.g., `sendMessage`, `processUpdate`)
+- Use noun pattern for variables (e.g., `messageId`, `userId`)
+
+### Classes and Interfaces
+- Use **PascalCase** for classes, interfaces, types, and enums
+- Use descriptive names that indicate what they represent
+- Interfaces should typically be nouns (e.g., `TelegramMessage`, `WebhookUpdate`)
+- Classes should be nouns (e.g., `TelegramService`, `CursorRunnerClient`)
+
+### Constants
+- Use **UPPER_SNAKE_CASE** for module-level constants
+- Use **camelCase** for constants within classes/functions if they're not exported
+- Examples: `HTTP_STATUS`, `MAX_RETRY_ATTEMPTS`, `DEFAULT_TIMEOUT`
+
+### File Names
+- Use **camelCase** for TypeScript files (e.g., `telegramService.ts`, `webhookController.ts`)
+- Use **kebab-case** for configuration files (e.g., `tsconfig.json`, `.eslintrc.json`)
+- Test files should match source file names with `.test.ts` or `.spec.ts` suffix
+
+### Private Members
+- Prefix private class members with underscore if needed (though TypeScript `private` keyword is preferred)
+- Use `_` prefix for intentionally unused parameters (e.g., `_unusedParam`)
+
+### Boolean Variables/Functions
+- Use `is`, `has`, `should`, `can`, `will` prefixes for boolean values
+- Examples: `isValid`, `hasPermission`, `shouldRetry`, `canProcess`, `willExpire`
+
+### Event Handlers/Callbacks
+- Use `on` or `handle` prefix for event handlers
+- Examples: `onMessage`, `handleWebhook`, `onError`
 
 ## Checklist
 
-- [ ] Review naming inconsistencies
-- [ ] Rename variables for clarity
-- [ ] Rename functions for clarity
-- [ ] Rename classes for clarity
-- [ ] Update all references
-- [ ] Verify naming conventions
-- [ ] Document naming standards
-- [ ] Update code style guide
+- [ ] Review all source files in `src/` directory for naming inconsistencies
+- [ ] Review all test files in `tests/` directory for naming consistency
+- [ ] Identify variables that don't follow camelCase convention
+- [ ] Identify functions that don't follow camelCase convention or verb-noun pattern
+- [ ] Identify classes/interfaces that don't follow PascalCase convention
+- [ ] Identify constants that don't follow UPPER_SNAKE_CASE convention
+- [ ] Check for abbreviations that should be spelled out
+- [ ] Check for unclear or ambiguous names
+- [ ] Check for boolean variables missing `is`/`has`/`should` prefixes
+- [ ] Check for event handlers missing `on`/`handle` prefixes
+- [ ] Rename all identified inconsistencies
+- [ ] Update all references to renamed elements
+- [ ] Verify no broken imports or references
+- [ ] Run linter to ensure no naming-related errors
+- [ ] Run tests to ensure all functionality still works
+- [ ] Document naming standards in `docs/naming-conventions.md`
+- [ ] Update ESLint configuration if needed to enforce naming conventions
+- [ ] Update code style guide documentation
+
+## Common Issues to Look For
+
+1. **Inconsistent Case Usage**
+   - Mixing camelCase and snake_case
+   - Mixing PascalCase and camelCase for classes
+   - Inconsistent constant naming
+
+2. **Unclear Names**
+   - Single-letter variables (except loop counters)
+   - Abbreviations without context
+   - Generic names like `data`, `item`, `obj`, `temp`
+
+3. **Missing Prefixes**
+   - Boolean variables without `is`/`has`/`should` prefixes
+   - Event handlers without `on`/`handle` prefixes
+   - Private members without proper visibility modifiers
+
+4. **Inconsistent Patterns**
+   - Functions that don't follow verb-noun pattern
+   - Variables that don't clearly indicate their type or purpose
+   - Classes that don't clearly indicate their responsibility
+
+5. **File Naming Issues**
+   - Inconsistent file naming conventions
+   - Test files that don't match source file names
+
+## Documentation Requirements
+
+Create or update `docs/naming-conventions.md` with:
+- Overview of naming conventions used in the project
+- Examples of correct naming for each type (variables, functions, classes, constants)
+- Examples of incorrect naming to avoid
+- Guidelines for specific scenarios (event handlers, boolean values, etc.)
+- References to TypeScript/Node.js style guides
 
 ## Notes
 
@@ -25,6 +115,9 @@ improve naming conventions to improve code quality and maintainability.
 - Section: 3. Refactoring
 - Focus on identifying and fixing code quality issues
 - Document all findings and improvements
+- Ensure all changes maintain backward compatibility where possible
+- Update imports and references when renaming exported elements
+- Run full test suite after making changes to ensure nothing is broken
 
 - Task can be completed independently by a single agent
 
