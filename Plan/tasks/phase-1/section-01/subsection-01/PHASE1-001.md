@@ -19,6 +19,8 @@ Create package.json
 - [ ] Set `keywords` array to ["telegram", "webhook", "bot", "cursor-runner", "typescript", "nodejs"]
 - [ ] Set `author` field (optional, can be left empty)
 - [ ] Set `license` field to "MIT"
+- [ ] Set `engines` field (optional, can specify Node.js and npm version requirements, e.g., `{"node": ">=18.0.0", "npm": ">=9.0.0"}`)
+- [ ] Note: `dependencies` and `devDependencies` will be added in later tasks as needed
 
 ## Notes
 
