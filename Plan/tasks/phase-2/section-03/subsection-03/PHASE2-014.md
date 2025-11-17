@@ -57,6 +57,7 @@ Create a queue connection utility that provides a singleton Redis connection ins
   - Requires BullMQ to be installed (completed in PHASE2-012)
   - Requires queue configuration to exist (completed in PHASE2-013)
   - Uses `REDIS_URL` environment variable (should be set in Docker: `redis://redis:6379/0`)
+  - Note: This is separate from the Redis connection utility (`src/utils/redis.ts` from PHASE2-009). BullMQ's `Connection` class is a wrapper specifically for BullMQ queue operations, while the Redis utility provides direct Redis client access for other services.
 - **Implementation Details:**
   - BullMQ's `Connection` class wraps the Redis connection and can be shared across multiple `Queue` and `Worker` instances
   - The connection utility should provide a singleton pattern to ensure all queues and workers use the same Redis connection
