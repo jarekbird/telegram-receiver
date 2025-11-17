@@ -32,8 +32,8 @@ Integrate logger utility in the application entry point (`src/index.ts`) to repl
 - [ ] Replace `console.error()` calls with `logger.error()` for startup error handling
 - [ ] Add error logging for server startup failures:
   - [ ] Wrap server startup in try-catch or use error callback
-  - [ ] Use `logger.error()` to log startup errors with full error details
-  - [ ] Ensure error logging includes stack traces (logger utility should handle this automatically for Error objects)
+  - [ ] Use `logger.error()` to log startup errors, passing the Error object directly (e.g., `logger.error('Server startup error:', error)`)
+  - [ ] Ensure error logging includes stack traces (logger utility should handle this automatically for Error objects - it will detect Error objects and log both the error message and stack trace, matching Rails patterns)
 - [ ] Verify all console.log/console.error statements are replaced with logger methods
 - [ ] Ensure error logging matches Rails patterns (includes stack traces for Error objects)
 
@@ -49,7 +49,7 @@ Integrate logger utility in the application entry point (`src/index.ts`) to repl
   - `jarek-va/app/controllers/application_controller.rb` (lines 10-11) - Error logging with full backtraces
   - Rails automatically logs server startup (Puma logs include environment and port information)
 - **Server Startup**: The `src/index.ts` file (created in PHASE1-028) should already have server startup code using `app.listen()`. This task replaces console.log/console.error with logger methods.
-- **Error Handling**: When logging errors, the logger utility (from PHASE1-032) should automatically detect Error objects and include stack traces, matching Rails error logging patterns.
+- **Error Handling**: When logging errors, pass the Error object directly to `logger.error()` (e.g., `logger.error('Server startup error:', error)`). The logger utility (from PHASE1-032) should automatically detect Error objects and include stack traces, matching Rails error logging patterns where errors are logged with both the error message and full backtrace.
 - **Usage Pattern**: Replace console statements like:
   ```typescript
   // Before (from PHASE1-028):
