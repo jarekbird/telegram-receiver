@@ -6,22 +6,61 @@
 
 ## Description
 
-Convert implement store_pending_request method from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/cursor_runner_callback_service.rb`.
+Implement the `storePendingRequest` method in the CursorRunnerCallbackService class. This method stores pending cursor-runner request information in Redis with TTL support. It takes a unique request ID, data object, and optional TTL, then stores the serialized JSON data in Redis with automatic expiration.
+
+Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callback_service.rb` (lines 24-32) for complete behavior details.
 
 ## Checklist
 
-- [ ] Implement `storePendingRequest` method
-- [ ] Generate Redis key with prefix
-- [ ] Serialize data to JSON
-- [ ] Store with TTL using SETEX
-- [ ] Add error handling
-- [ ] Log operation
+- [ ] Implement `storePendingRequest(requestId: string, data: object, ttl?: number)` method
+  - Method signature: `requestId` (required string), `data` (required object), `ttl` (optional number, defaults to `DEFAULT_TTL` constant which is 3600 seconds / 1 hour)
+  - Return type: `void` (method doesn't return a value)
+- [ ] Use private `redisKey(requestId: string)` helper method to generate Redis key with prefix
+  - The helper method prepends `REDIS_KEY_PREFIX` constant (`'cursor_runner_callback:'`) to the request ID
+- [ ] Serialize data object to JSON string using `JSON.stringify(data)`
+- [ ] Store serialized JSON in Redis using `redis.setex(key, ttl, jsonString)`
+  - Use the generated Redis key
+  - Use provided `ttl` parameter or default to `DEFAULT_TTL` (3600 seconds)
+  - Store the JSON stringified data
+- [ ] Add error handling for Redis operations
+  - Handle Redis connection errors
+  - Handle serialization errors (if any)
+  - Log errors appropriately
+- [ ] Log successful operation with info level
+  - Log message should include: request ID and TTL value
+  - Format: `"Stored pending cursor-runner request: {requestId}, TTL: {ttl}s"`
+  - Use the project's logging system (check existing logger usage in the codebase)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 6. CursorRunnerCallbackService Conversion
-- Reference the Rails implementation for behavior
+- Subsection: 6.2
+- Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callback_service.rb` (lines 24-32) for complete behavior details
+
+**Rails Implementation Details:**
+- Method signature: `store_pending_request(request_id, data, ttl: DEFAULT_TTL)`
+- Uses `redis_key(request_id)` private helper to generate key with `REDIS_KEY_PREFIX` prefix
+- Serializes data with `data.to_json`
+- Uses `@redis.setex(key, ttl, data.to_json)` to store with TTL
+- Logs: `Rails.logger.info("Stored pending cursor-runner request: #{request_id}, TTL: #{ttl}s")`
+- No explicit error handling in Rails version (relies on Redis client exceptions)
+
+**TypeScript Implementation Requirements:**
+- Method name: `storePendingRequest` (camelCase conversion from Ruby snake_case)
+- Parameters: `requestId: string`, `data: object`, `ttl?: number` (optional, defaults to `DEFAULT_TTL`)
+- Use the private `redisKey()` helper method that should already exist from PHASE2-039
+- Use `JSON.stringify()` for serialization (TypeScript/Node.js equivalent of Ruby's `to_json`)
+- Use Redis client's `setex()` method (check if project uses `redis` or `ioredis` package)
+- Add proper error handling (try/catch) for Redis operations and log errors
+- Use appropriate logger (check project's logging setup - may be console.log, winston, pino, etc.)
+- Ensure method is added to the `CursorRunnerCallbackService` class created in PHASE2-039
+
+**Dependencies:**
+- Assumes `CursorRunnerCallbackService` class structure exists (from PHASE2-039)
+- Assumes `REDIS_KEY_PREFIX` and `DEFAULT_TTL` constants exist
+- Assumes private `redisKey()` helper method exists
+- Assumes Redis client instance is available as private property
 
 - Task can be completed independently by a single agent
 
