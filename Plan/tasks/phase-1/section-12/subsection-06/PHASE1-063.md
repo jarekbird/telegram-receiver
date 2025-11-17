@@ -6,18 +6,94 @@
 
 ## Description
 
-Update main README
+Create or update the main `README.md` file in the telegram-receiver project root. The README should provide comprehensive documentation for developers working on the project, including project overview, setup instructions, development guidelines, API information, and testing procedures.
+
+**Reference**: Use `Plan/app-description.md` for project description details and `package.json` for project metadata, dependencies, and available scripts.
 
 ## Checklist
 
-- [ ] Open `README.md` (create if doesn't exist)
-- [ ] Add project description
+- [ ] Create `README.md` in project root (if it doesn't exist)
+- [ ] Add project title and brief description
+  - Reference `Plan/app-description.md` for detailed project overview
+  - Mention that this is a Node.js/TypeScript conversion of the jarek-va Rails application
+  - Describe core functionality: Telegram webhook handling, Cursor Runner integration, message processing
+- [ ] Add project structure section
+  - Document the `src/` directory structure (controllers, services, routes, models, middleware, utils, types, config)
+  - Mention `tests/` directory for test files
+  - Reference `Plan/` directory for conversion planning documents
+- [ ] Add requirements/prerequisites section
+  - Node.js version (check `package.json` engines field, currently >=18.0.0)
+  - npm version (check `package.json` engines field, currently >=9.0.0)
+  - Redis (required for BullMQ job queues and callback state management)
+  - Environment variables needed (see Environment Variables section)
 - [ ] Add installation instructions
+  - `npm install` command
+  - Note about Node.js and npm version requirements
+- [ ] Add environment variables section
+  - List all required environment variables (from `Plan/app-description.md`):
+    - `TELEGRAM_BOT_TOKEN` - Telegram bot token from BotFather
+    - `TELEGRAM_WEBHOOK_SECRET` - Secret token for webhook authentication
+    - `TELEGRAM_WEBHOOK_BASE_URL` - Base URL for webhook registration
+    - `CURSOR_RUNNER_URL` - URL of the Cursor Runner service
+    - `CURSOR_RUNNER_TIMEOUT` - Request timeout in seconds (default: 300)
+    - `REDIS_URL` - Redis connection URL
+    - `ELEVENLABS_API_KEY` - API key for ElevenLabs services (optional)
+    - `WEBHOOK_SECRET` - Admin secret for management endpoints
+  - Mention `.env` file setup (create from `.env.example` if it exists)
 - [ ] Add development setup instructions
-- [ ] Add API documentation link
+  - Redis setup (local installation or Docker)
+  - Running the development server (`npm run dev`)
+  - Building the project (`npm run build`)
+  - Running the production server (`npm start`)
+- [ ] Add available scripts section
+  - Document all npm scripts from `package.json`:
+    - Build scripts (`build`, `build:watch`)
+    - Development (`dev`)
+    - Testing (`test`, `test:watch`, `test:coverage`, `test:unit`, `test:integration`, `test:e2e`, `test:all`)
+    - Code quality (`lint`, `lint:fix`, `format`, `format:check`, `type-check`)
+  - Explain what each script does
 - [ ] Add testing instructions
-- [ ] Add Docker instructions
-- [ ] Add CI/CD status badge (if applicable)
+  - Unit tests: `npm run test:unit`
+  - Integration tests: `npm run test:integration`
+  - E2E tests: `npm run test:e2e`
+  - Coverage: `npm run test:coverage`
+  - All tests: `npm run test:all`
+- [ ] Add API endpoints section
+  - Public endpoints:
+    - `POST /telegram/webhook` - Receives Telegram updates (authenticated via secret token)
+  - Admin endpoints (require `X-Admin-Secret` header):
+    - `POST /telegram/set_webhook` - Set webhook URL
+    - `GET /telegram/webhook_info` - Get webhook information
+    - `DELETE /telegram/webhook` - Delete webhook
+  - Callback endpoints:
+    - `POST /cursor-runner/callback` - Receives callbacks from Cursor Runner
+  - Health check endpoint (if implemented):
+    - `GET /health` - Health check endpoint
+- [ ] Add code quality section
+  - Linting: `npm run lint` and `npm run lint:fix`
+  - Formatting: `npm run format` and `npm run format:check`
+  - Type checking: `npm run type-check`
+- [ ] Add deployment section
+  - Mention `deploy.sh` script for automated deployment
+  - Note that deploy script runs tests, linting, commits, and pushes
+- [ ] Add Docker instructions (if Dockerfile exists)
+  - Docker build command
+  - Docker run command
+  - Docker Compose setup (if docker-compose.yml exists)
+  - Note: Skip this section if Docker configuration doesn't exist yet
+- [ ] Add CI/CD status badge (if CI/CD is configured)
+  - Add badge for CI/CD status if GitHub Actions or similar is set up
+  - Note: Skip this section if CI/CD is not configured yet
+- [ ] Add project status section
+  - Mention this is Phase 1 of the conversion project
+  - Reference `Plan/CONVERSION_STEPS.md` for conversion progress
+- [ ] Add related documentation links
+  - Link to `Plan/app-description.md` for detailed application description
+  - Link to `Plan/CONVERSION_STEPS.md` for conversion plan
+  - Link to API documentation if it exists
+- [ ] Add license section (check `package.json` for license, currently MIT)
+- [ ] Add contributing guidelines (if applicable)
+- [ ] Ensure README follows markdown best practices and is well-formatted
 
 ## Notes
 
