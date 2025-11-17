@@ -13,10 +13,17 @@ Review and improve input validation in the codebase to ensure best practices. Th
 The Rails application uses `params.permit()` for strong parameters and manual validation:
 
 1. **TelegramController** (`app/controllers/telegram_controller.rb`):
-   - `webhook`: Receives JSON Telegram updates (no explicit permit, relies on JSON parsing)
-   - `set_webhook`: Receives `url` and `secret_token` params (no explicit permit)
-   - `webhook_info`: No params
-   - `delete_webhook`: No params
+   - `webhook`: 
+     - Receives JSON Telegram updates (no explicit permit, relies on JSON parsing)
+     - Checks Content-Type header for `application/json` (uses `request.content_type&.include?('application/json')`)
+     - Extracts update from `request.parameters` or `params`, removes controller/action/format/telegram keys
+     - Authenticates via `authenticate_webhook` before_action (checks `X-Telegram-Bot-Api-Secret-Token` header)
+   - `set_webhook`: 
+     - Receives `url` and `secret_token` params (no explicit permit)
+     - Authenticates via `authenticate_admin` (checks `X-Admin-Secret` header or `admin_secret` param)
+     - Uses default webhook URL if `url` param not provided
+   - `webhook_info`: No params, requires admin authentication
+   - `delete_webhook`: No params, requires admin authentication
 
 2. **CursorRunnerCallbackController** (`app/controllers/cursor_runner_callback_controller.rb`):
    - `create`: Uses `params.permit()` with specific allowed fields:
@@ -24,11 +31,17 @@ The Rails application uses `params.permit()` for strong parameters and manual va
      - `iterations`, `maxIterations`, `max_iterations`, `output`, `error`
      - `exitCode`, `exit_code`, `duration`, `timestamp`
    - Validates `request_id` is present (returns 400 if blank)
-   - Normalizes camelCase/snake_case field names
-   - Handles boolean conversion for `success` field
+   - Normalizes camelCase/snake_case field names via `normalize_result()` method
+   - Handles boolean conversion for `success` field (converts string "true"/"false", 1/0, true/false to boolean)
+   - Sanitizes output by removing ANSI escape sequences via `clean_ansi_escape_sequences()` method
+   - Truncates output to max length (3500 chars in debug mode, 4000 chars otherwise) before sending to Telegram
+   - Authenticates via `authenticate_webhook` before_action (checks `X-Webhook-Secret` or `X-Cursor-Runner-Secret` header, or `secret` param)
 
 3. **AgentToolsController** (`app/controllers/agent_tools_controller.rb`):
-   - Receives tool requests (validation patterns to be reviewed)
+   - `create`: Receives tool requests
+   - Uses `validate_request_params` before_action to check `params[:tool]` is present (returns 400 if missing)
+   - Does NOT use `params.permit()` - directly accesses `params[:tool]`, `params[:args]`, `params[:conversation_id]`
+   - Authenticates via `authenticate_webhook` before_action (checks `X-EL-Secret` header or `Authorization: Bearer <token>`)
 
 ## Checklist
 
@@ -57,21 +70,28 @@ The Rails application uses `params.permit()` for strong parameters and manual va
   - [ ] Validate `url` parameter format (if provided in set_webhook)
   - [ ] Validate `secret_token` parameter (if provided in set_webhook)
   - [ ] Validate URL is valid format (not malicious)
+  - [ ] Validate `admin_secret` parameter/header (checked in `authenticate_admin` but not explicitly permitted)
   - [ ] Check for parameter injection vulnerabilities
 
 - [ ] Review agent tools endpoint (`POST /agent-tools`)
   - [ ] Validate request body structure
-  - [ ] Validate required fields
-  - [ ] Check for allowed fields only
+  - [ ] Validate `tool` parameter is present (Rails uses `validate_request_params` before_action)
+  - [ ] Validate `args` parameter structure (if provided)
+  - [ ] Validate `conversation_id` parameter format (if provided)
+  - [ ] Consider using `params.permit()` equivalent to restrict allowed fields (Rails doesn't use permit here)
+  - [ ] Validate authentication header (`X-EL-Secret` or `Authorization: Bearer <token>`)
 
 ### Input Sanitization
 
 - [ ] Review all string inputs for sanitization
   - [ ] Sanitize `output` and `error` fields from cursor-runner callbacks
-  - [ ] Remove ANSI escape sequences from output (as done in Rails)
-  - [ ] Sanitize Telegram message text before processing
+  - [ ] Remove ANSI escape sequences from output (as done in Rails `clean_ansi_escape_sequences()` method)
+  - [ ] Remove carriage return/newline sequences (`\r\n` -> `\n`) and strip whitespace
+  - [ ] Sanitize Telegram message text before processing (escape HTML entities when using HTML parse_mode)
+  - [ ] Escape HTML entities in TelegramService when sending messages with HTML parse_mode (prevents Telegram parsing errors)
   - [ ] Validate and sanitize URLs in admin endpoints
   - [ ] Check for XSS vulnerabilities in user-controlled data
+  - [ ] Truncate long outputs to prevent exceeding Telegram's 4096 character message limit
 
 - [ ] Review file path handling
   - [ ] Validate file paths don't contain directory traversal (`../`)
@@ -81,12 +101,14 @@ The Rails application uses `params.permit()` for strong parameters and manual va
 ### Type Validation
 
 - [ ] Review type checking for all endpoints
-  - [ ] Validate numeric fields are numbers (not strings)
+  - [ ] Validate numeric fields are numbers (not strings) - `iterations`, `max_iterations`, `exit_code`, `duration`
   - [ ] Validate boolean fields are booleans (handle string conversions)
-  - [ ] Validate string fields are strings
-  - [ ] Validate array/object structures match expected types
+    - Rails `normalize_result()` handles: `true`, `'true'`, `1`, `'1'` -> `true`; `false`, `'false'`, `0`, `'0'`, `nil` -> `false`
+  - [ ] Validate string fields are strings - `request_id`, `repository`, `branch_name`, `output`, `error`, `timestamp`
+  - [ ] Validate array/object structures match expected types (Telegram update structure)
   - [ ] Use TypeScript types for compile-time validation
   - [ ] Add runtime type validation where needed (using validation library like Zod or Joi)
+  - [ ] Handle default values for optional fields (e.g., `iterations` defaults to 0, `max_iterations` defaults to 25)
 
 ### Injection Vulnerabilities
 
@@ -120,18 +142,35 @@ The Rails application uses `params.permit()` for strong parameters and manual va
 ### Request Size Limits
 
 - [ ] Review Express body parser limits
-  - [ ] Verify `express.json()` has appropriate `limit` option
-  - [ ] Verify `express.urlencoded()` has appropriate `limit` option
-  - [ ] Set reasonable limits to prevent DoS attacks
+  - [ ] Verify `express.json()` has appropriate `limit` option (Rails doesn't set explicit limits)
+  - [ ] Verify `express.urlencoded()` has appropriate `limit` option (if used)
+  - [ ] Set reasonable limits to prevent DoS attacks (e.g., 10MB for JSON, 1MB for URL-encoded)
+  - [ ] Consider Telegram update size limits (Telegram API has its own limits)
+  - [ ] Consider cursor-runner callback size limits (output/error fields can be large)
   - [ ] Document size limits in configuration
+  - [ ] Handle 413 Payload Too Large errors gracefully
 
 ### Validation Gaps
 
 - [ ] Identify endpoints missing validation
+  - [ ] TelegramController `webhook` - no explicit permit, relies on JSON parsing
+  - [ ] TelegramController `set_webhook` - no explicit permit for `url` and `secret_token`
+  - [ ] AgentToolsController `create` - no explicit permit, only checks `tool` presence
 - [ ] Identify fields missing type checking
+  - [ ] `url` parameter in `set_webhook` - should validate URL format
+  - [ ] `secret_token` parameter - should validate format/character restrictions
+  - [ ] `args` parameter in agent tools - should validate structure if it's an object
+  - [ ] `conversation_id` parameter - should validate format if it has a specific structure
 - [ ] Identify missing sanitization steps
+  - [ ] Telegram update data before processing (currently passed directly to job)
+  - [ ] File paths when downloading from Telegram (check for directory traversal)
 - [ ] Check for validation inconsistencies across endpoints
+  - [ ] Some endpoints use `params.permit()`, others don't
+  - [ ] Some endpoints validate required fields, others don't
+  - [ ] Authentication patterns vary (header names, param names)
 - [ ] Review error handling for validation failures
+  - [ ] Ensure consistent error response format (400 Bad Request for validation errors)
+  - [ ] Ensure error messages don't leak sensitive information
 
 ### Validation Strategy Documentation
 
@@ -157,6 +196,20 @@ The Rails application uses `params.permit()` for strong parameters and manual va
 - Section: 6. Security Review
 - Focus on identifying issues and improvements
 - Document findings and decisions
+
+- **Key Rails Validation Patterns to Replicate:**
+  - `params.permit()` equivalent for whitelisting allowed fields
+  - Boolean conversion handling (string "true"/"false" -> boolean)
+  - camelCase/snake_case normalization
+  - ANSI escape sequence removal from output
+  - Output truncation to prevent exceeding Telegram limits
+  - HTML entity escaping for Telegram messages
+
+- **Current Rails Validation Gaps (to improve in Node.js version):**
+  - TelegramController endpoints don't use `params.permit()`
+  - AgentToolsController doesn't use `params.permit()`
+  - No explicit URL format validation in `set_webhook`
+  - No explicit request body size limits
 
 - Task can be completed independently by a single agent
 
