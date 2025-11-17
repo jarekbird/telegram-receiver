@@ -6,22 +6,53 @@
 
 ## Description
 
-Create error handling middleware
+Create error handling middleware that catches all unhandled errors and returns a standardized error response matching the Rails `ApplicationController` error handling pattern (see `jarek-va/app/controllers/application_controller.rb`).
+
+The middleware should:
+- Catch all errors thrown in route handlers and middleware
+- Log error details (error name/class, message, and stack trace)
+- Return a standardized JSON error response matching the Rails format
+- Set appropriate HTTP status code (500 for internal server errors)
 
 ## Checklist
 
 - [ ] Create `src/middleware/error-handler.middleware.ts` file
-- [ ] Create error handler function with 4 parameters (err, req, res, next)
-- [ ] Log error details
-- [ ] Return appropriate error response (status 500)
+- [ ] Create error handler function with 4 parameters `(err: Error, req: Request, res: Response, next: NextFunction)`
+- [ ] Log error details using `console.error()`:
+  - Log error name/class: `err.constructor.name` or `err.name`
+  - Log error message: `err.message`
+  - Log stack trace: `err.stack`
+- [ ] Return JSON error response matching Rails format:
+  ```json
+  {
+    "ok": false,
+    "say": "Sorry, I encountered an error processing your request.",
+    "result": {
+      "error": "<error message>"
+    }
+  }
+  ```
+- [ ] Set HTTP status code to 500 (internal server error)
+- [ ] Handle case where response has already been sent (check `res.headersSent`)
 - [ ] Export error handler function
-- [ ] Import and apply in `src/app.ts` (after all routes)
+- [ ] Import and apply in `src/app.ts` (after all routes, as the last middleware)
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 6. Request/Response Middleware
 - Task can be completed independently by a single agent
+- **Rails Reference**: The jarek-va Rails application uses `rescue_from StandardError` in `ApplicationController` (see `jarek-va/app/controllers/application_controller.rb`) which:
+  - Logs error class, message, and backtrace
+  - Returns JSON: `{ ok: false, say: '...', result: { error: ... } }`
+  - Sets status to `:internal_server_error` (500)
+- **Logging**: Use `console.error()` for now. Logger integration will be added in PHASE1-035
+- **Error Response Format**: Must match the Rails format exactly to maintain API consistency:
+  - `ok: false` - indicates request failure
+  - `say: "Sorry, I encountered an error processing your request."` - user-friendly message
+  - `result: { error: "<error message>" }` - error details
+- **Express Error Handler**: Express error handling middleware must have exactly 4 parameters `(err, req, res, next)` to be recognized as an error handler. It should be registered after all routes and other middleware.
+- **Response Already Sent**: Check `res.headersSent` before attempting to send a response to avoid "Cannot set headers after they are sent" errors
 
 ## Related Tasks
 
