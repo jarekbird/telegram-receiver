@@ -6,23 +6,81 @@
 
 ## Description
 
-Convert create elevenlabstexttospeechservice class structure from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/eleven_labs_*.rb` files.
+Create the ElevenLabsTextToSpeechService class structure from Rails to TypeScript/Node.js. This service converts text to speech using the ElevenLabs API. Reference `jarek-va/app/services/eleven_labs_text_to_speech_service.rb` for the complete implementation.
+
+The service handles:
+- Text-to-speech synthesis via ElevenLabs API
+- Saving synthesized audio to files
+- Returning synthesized audio as streams/IO objects
+- Error handling for connection, timeout, and API errors
 
 ## Checklist
 
 - [ ] Create `src/services/elevenlabs-text-to-speech-service.ts` file
-- [ ] Define class structure
-- [ ] Add constructor with api_key, timeout, model_id, voice_id
-- [ ] Define API constants
-- [ ] Add custom error classes
+- [ ] Define class structure `ElevenLabsTextToSpeechService`
+- [ ] Add constructor with optional parameters: `api_key`, `timeout`, `model_id`, `voice_id`
+  - Constructor should read from config/environment if parameters not provided
+  - Constructor should validate that api_key is present (throw error if missing)
+- [ ] Define API constants:
+  - `API_BASE_URL = 'https://api.elevenlabs.io'`
+  - `TEXT_TO_SPEECH_ENDPOINT = '/v1/text-to-speech'`
+  - `DEFAULT_TIMEOUT = 60` (seconds)
+  - `DEFAULT_MODEL_ID = 'eleven_turbo_v2_5'`
+  - `DEFAULT_VOICE_ID = 'vfaqCOvlrKi4Zp7C2IAm'`
+  - `DEFAULT_OUTPUT_FORMAT = 'mp3_44100_128'` (MP3 format, 44.1kHz, 128kbps)
+- [ ] Add custom error classes (extending Error):
+  - `ElevenLabsTextToSpeechServiceError` (base error class)
+  - `ConnectionError` (connection failures)
+  - `TimeoutError` (request timeouts)
+  - `InvalidResponseError` (invalid API responses)
+  - `SynthesisError` (synthesis failures)
+- [ ] Add private properties: `apiKey`, `timeout`, `modelId`, `voiceId`
+- [ ] Add public method signature: `voiceIdConfigured(): boolean` (checks if voice_id is configured)
+- [ ] Add public method signature: `synthesize(text: string, options?: { outputPath?: string, voiceSettings?: object }): Promise<string>` (returns path to audio file)
+- [ ] Add public method signature: `synthesizeToStream(text: string, options?: { voiceSettings?: object }): Promise<ReadableStream>` (returns audio stream)
+- [ ] Add private method signature: `buildHttp(uri: URL): HttpClient` (builds HTTP client with SSL and timeout)
+- [ ] Add private method signature: `executeRequest(http: HttpClient, request: HttpRequest, uri: URL): Promise<HttpResponse>` (executes request with error handling)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 7. ElevenLabs Services Conversion
-- Reference the Rails implementation for behavior
+- Reference the Rails implementation at `jarek-va/app/services/eleven_labs_text_to_speech_service.rb` for complete behavior details
+
+### Implementation Details from Rails:
+
+1. **Constructor behavior**:
+   - All parameters are optional and have defaults from config/environment
+   - Validates `api_key` is present, throws error if missing
+   - Uses Rails config values: `elevenlabs_api_key`, `elevenlabs_tts_model_id`, `elevenlabs_voice_id`
+
+2. **Error handling**:
+   - `build_http` catches connection errors (ECONNREFUSED, EHOSTUNREACH, SocketError) and raises `ConnectionError`
+   - `build_http` catches timeout errors (Net::OpenTimeout, Net::ReadTimeout) and raises `TimeoutError`
+   - `execute_request` handles HTTP error responses, parsing JSON error bodies and extracting error messages
+   - Error response parsing handles both array and hash formats from ElevenLabs API
+   - Raises `SynthesisError` for non-success HTTP responses
+   - Raises `InvalidResponseError` for JSON parsing failures
+
+3. **API request details**:
+   - Endpoint: `POST /v1/text-to-speech/{voice_id}`
+   - Headers: `xi-api-key`, `Content-Type: application/json`, `Accept: audio/mpeg`
+   - Request body includes: `text`, `model_id`, `output_format`, optional `voice_settings`
+   - Response is binary audio data (MP3 format)
+
+4. **File handling**:
+   - `synthesize` saves audio to file (uses temp directory with random filename if `output_path` not provided)
+   - `synthesize_to_io` returns audio as IO/stream object
+   - Uses `SecureRandom.hex(8)` for generating temp filenames in Rails
+
+5. **Dependencies**:
+   - HTTP client (Net::HTTP in Rails, use Node.js http/https or fetch/axios in TypeScript)
+   - File system operations (fs module in Node.js)
+   - JSON parsing
+   - Random string generation for temp filenames (crypto.randomBytes in Node.js)
 
 - Task can be completed independently by a single agent
+- This task focuses on class structure only - full method implementations will be in subsequent tasks
 
 ## Related Tasks
 
