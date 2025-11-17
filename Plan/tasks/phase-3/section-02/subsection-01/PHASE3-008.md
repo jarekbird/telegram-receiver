@@ -6,17 +6,47 @@
 
 ## Description
 
-Review and improve review type definitions throughout codebase in the codebase to ensure best practices.
+Review and improve type definitions throughout the codebase to ensure TypeScript best practices. This includes reviewing interfaces, types, enums, and class definitions across all source files, identifying areas where type safety can be improved, and ensuring consistent type usage patterns.
 
 ## Checklist
 
-- [ ] Review all type definition files
-- [ ] Check for `any` types
-- [ ] Check for missing types
-- [ ] Review type completeness
-- [ ] Check for type duplication
-- [ ] Identify type improvements
-- [ ] Document findings
+- [ ] Review all type definition files (`src/types/**/*.ts`, `*.d.ts` files)
+- [ ] Review type definitions in source files (`src/**/*.ts`)
+- [ ] Check for `any` types and replace with proper types where possible
+- [ ] Check for missing return types on functions and methods
+- [ ] Check for missing parameter types
+- [ ] Review type completeness (ensure all properties are typed)
+- [ ] Check for type duplication (consolidate duplicate type definitions)
+- [ ] Review interface vs type alias usage (prefer interfaces for object shapes, types for unions/intersections)
+- [ ] Check for proper generic type usage
+- [ ] Verify type inference is working correctly (avoid unnecessary type annotations)
+- [ ] Review type exports (ensure types are properly exported where needed)
+- [ ] Check for unused type definitions
+- [ ] Review type definitions in test files for consistency
+- [ ] Identify type improvements and document rationale
+- [ ] Document findings and decisions in task notes
+
+## Areas to Focus On
+
+1. **Source Files** (`src/` directory):
+   - Controllers, services, models, middleware, routes
+   - Ensure all function parameters and return types are explicitly typed
+   - Check for proper interface definitions for API requests/responses
+   - Verify model types match database schemas
+
+2. **Type Definition Files** (`src/types/` directory):
+   - Review all exported types and interfaces
+   - Ensure types are properly organized and documented
+   - Check for type reusability and composition
+
+3. **Test Files** (`tests/` directory):
+   - Review mock type definitions
+   - Ensure test fixtures have proper types
+   - Verify test helper functions have correct types
+
+4. **Configuration Files**:
+   - Review types in config files
+   - Ensure environment variable types are defined
 
 ## Notes
 
@@ -24,7 +54,11 @@ Review and improve review type definitions throughout codebase in the codebase t
 - Section: 2. TypeScript Best Practices
 - Focus on identifying issues and improvements
 - Document findings and decisions
-
+- When replacing `any` types, consider:
+  - Using `unknown` for truly unknown types (requires type guards)
+  - Creating specific interfaces/types for object shapes
+  - Using generics for reusable type patterns
+  - Using union types for multiple possible types
 - Task can be completed independently by a single agent
 
 ## Related Tasks
