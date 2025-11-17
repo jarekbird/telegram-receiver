@@ -10,11 +10,18 @@ Add comprehensive error handling to TelegramMessageJob methods in TypeScript/Nod
 
 The Rails implementation shows error handling patterns in:
 - `perform` method (lines 32-51): Comprehensive error handling with chat info extraction, error messages to Telegram, logging, and re-raising
-- `handle_message` method (lines 90-104): Error handling for audio transcription with user feedback
-- `handle_callback_query` method (lines 142-149): Error handling for answering callback queries
+- `handle_message` method (lines 59-133): 
+  - Has error handling ONLY for audio transcription (lines 90-104) with user feedback
+  - **NO overall try-catch wrapper** around the entire method
+  - Errors in forwarding, local processing, or sending responses are NOT caught
+- `handle_callback_query` method (lines 135-171):
+  - Has error handling ONLY for answering callback queries (lines 142-149)
+  - **NO overall try-catch wrapper** around the entire method
+  - Errors in forwarding or sending responses are NOT caught
+- `process_local_message` method (lines 253-277): **NO error handling at all**
 - `forward_to_cursor_runner` method (lines 234-251): Error handling for CursorRunnerService errors
-- `transcribe_audio` method (lines 325-351): Error handling for status messages and file cleanup
-- `send_text_as_audio` method (lines 368-388): Error handling with fallback to text messages
+- `transcribe_audio` method (lines 315-352): Error handling for status messages and file cleanup
+- `send_text_as_audio` method (lines 355-389): Error handling with fallback to text messages
 
 ## Checklist
 
@@ -30,33 +37,37 @@ The Rails implementation shows error handling patterns in:
   - [ ] Reference Rails implementation: `jarek-va/app/jobs/telegram_message_job.rb` lines 32-51
 
 ### handleMessage Method Error Handling
-- [ ] Add overall error handling to `handleMessage` method (if not already present)
-  - [ ] Wrap method body in try-catch
+- [ ] Add overall error handling to `handleMessage` method (Rails has NO overall try-catch wrapper)
+  - [ ] Wrap entire method body in try-catch (Rails only has try-catch for transcription, lines 90-104)
   - [ ] Log errors with stack traces
   - [ ] Extract chat_id and message_id for error messages
   - [ ] Send error message to Telegram user
-  - [ ] Ensure existing transcription error handling (lines 90-104 in Rails) is preserved
-  - [ ] Handle errors when sending responses back to Telegram
+  - [ ] Ensure existing transcription error handling (lines 90-104 in Rails) is preserved inside the transcription block
+  - [ ] Handle errors when calling `forwardToCursorRunner` (not handled in Rails)
+  - [ ] Handle errors when calling `processLocalMessage` (not handled in Rails)
+  - [ ] Handle errors when sending responses back to Telegram (not handled in Rails)
+  - [ ] Handle errors when calling `sendTextAsAudio` (not handled in Rails)
   - [ ] Reference Rails implementation: `jarek-va/app/jobs/telegram_message_job.rb` lines 59-133
 
 ### handleCallbackQuery Method Error Handling
-- [ ] Add comprehensive error handling to `handleCallbackQuery` method
-  - [ ] Wrap entire method body in try-catch
+- [ ] Add comprehensive error handling to `handleCallbackQuery` method (Rails has NO overall try-catch wrapper)
+  - [ ] Wrap entire method body in try-catch (Rails only has try-catch for answering callback query, lines 142-149)
   - [ ] Log errors with stack traces
   - [ ] Extract chat_id and message_id from callback query message
   - [ ] Send error message to Telegram user on failure
-  - [ ] Ensure existing error handling for `answer_callback_query` is preserved (lines 142-149 in Rails)
-  - [ ] Add error handling for `forward_to_cursor_runner` call
-  - [ ] Add error handling for `TelegramService.send_message` call (line 167 in Rails)
+  - [ ] Ensure existing error handling for `answer_callback_query` is preserved inside its try-catch block (lines 142-149 in Rails)
+  - [ ] Add error handling for `forward_to_cursor_runner` call (not handled in Rails, line 158)
+  - [ ] Add error handling for `TelegramService.send_message` call (not handled in Rails, line 167)
   - [ ] Reference Rails implementation: `jarek-va/app/jobs/telegram_message_job.rb` lines 135-171
 
 ### processLocalMessage Method Error Handling
-- [ ] Add error handling to `processLocalMessage` method
+- [ ] Add error handling to `processLocalMessage` method (Rails has NO error handling for this method)
   - [ ] Wrap method body in try-catch
   - [ ] Log errors with stack traces
   - [ ] Return error response object with `ok: false` and error message
   - [ ] Handle errors gracefully without crashing the job
-  - [ ] Reference Rails implementation: `jarek-va/app/jobs/telegram_message_job.rb` lines 253-277
+  - [ ] Handle errors in command parsing logic
+  - [ ] Reference Rails implementation: `jarek-va/app/jobs/telegram_message_job.rb` lines 253-277 (note: no error handling in Rails)
 
 ### forwardToCursorRunner Method Error Handling
 - [ ] Verify error handling is complete (should already be implemented in PHASE2-083)
