@@ -6,17 +6,171 @@
 
 ## Description
 
-Review and improve review naming conventions consistency in the codebase to ensure best practices.
+Review and improve naming conventions consistency in the codebase to ensure best practices. This task focuses on validating that all code follows consistent naming patterns across files, variables, classes, constants, interfaces, and types.
 
 ## Checklist
 
-- [ ] Review file naming (kebab-case, PascalCase)
-- [ ] Review variable naming (camelCase)
-- [ ] Review class naming (PascalCase)
-- [ ] Review constant naming (UPPER_SNAKE_CASE)
-- [ ] Review interface/type naming
-- [ ] Check for consistency
-- [ ] Document conventions
+### File Naming Conventions
+
+- [ ] Verify TypeScript source files use kebab-case (e.g., `telegram-service.ts`, `cursor-runner-api.ts`)
+- [ ] Verify test files follow naming pattern: `*.test.ts` or `*.spec.ts` (e.g., `telegram-service.test.ts`)
+- [ ] Check that utility files use kebab-case (e.g., `test-utils.ts`, `api-helpers.ts`)
+- [ ] Verify mock files use kebab-case (e.g., `telegram-api.ts`, `cursor-runner-api.ts`)
+- [ ] Verify fixture files use kebab-case (e.g., `telegram-messages.ts`, `api-responses.ts`)
+- [ ] Check that configuration files follow standard naming (`.eslintrc.json`, `.prettierrc.json`, `tsconfig.json`)
+- [ ] Verify index files are named `index.ts` where appropriate
+- [ ] Check for any inconsistencies in file naming patterns
+
+### Variable Naming Conventions
+
+- [ ] Verify variables use camelCase (e.g., `mockRedisClient`, `waitFor`, `createMockFn`)
+- [ ] Check that function parameters use camelCase (e.g., `ms: number`, `overrides = {}`)
+- [ ] Verify object properties use camelCase (e.g., `message_id`, `update_id` - note: these may follow API conventions)
+- [ ] Check that local variables consistently use camelCase
+- [ ] Verify no snake_case variables (except where required by external APIs)
+
+### Class Naming Conventions
+
+- [ ] Verify classes use PascalCase (e.g., `TelegramService`, `TelegramController`, `HealthController`)
+- [ ] Check that class names are descriptive and follow the pattern: `[Purpose][Type]` (e.g., `TelegramService`, not `Telegram`)
+- [ ] Verify abstract classes use PascalCase with appropriate naming
+- [ ] Check for consistency in class naming across the codebase
+
+### Constant Naming Conventions
+
+- [ ] Verify true constants use UPPER_SNAKE_CASE (e.g., `HTTP_STATUS`, `MAX_RETRIES`)
+- [ ] Check that constant objects use camelCase if they're mutable exports (e.g., `mockTelegramApi`)
+- [ ] Verify enum values follow appropriate conventions (UPPER_SNAKE_CASE for enum members)
+- [ ] Distinguish between true constants (UPPER_SNAKE_CASE) and exported objects/functions (camelCase)
+
+### Interface and Type Naming Conventions
+
+- [ ] Verify interfaces use PascalCase (e.g., `TelegramMessage`, `CursorRunnerResponse`)
+- [ ] Check that type aliases use PascalCase (e.g., `UserConfig`, `ApiResponse`)
+- [ ] Verify generic type parameters use PascalCase (e.g., `T`, `K`, `V` for simple generics)
+- [ ] Check that interface names are descriptive and follow the pattern: `[Purpose]` or `I[Purpose]` (prefer without `I` prefix)
+- [ ] Verify type unions and intersections follow naming conventions
+
+### Function Naming Conventions
+
+- [ ] Verify functions use camelCase (e.g., `waitFor`, `createMockFn`, `resetRedisMocks`)
+- [ ] Check that async functions follow camelCase (e.g., `processMessage`, `sendTelegramMessage`)
+- [ ] Verify factory functions use `create` prefix where appropriate (e.g., `createTestRequest`, `createTelegramMessage`)
+- [ ] Check that reset/clear functions use appropriate verbs (e.g., `resetRedisMocks`, `clearCache`)
+- [ ] Verify getter functions use appropriate naming (e.g., `getHealth`, `getUserById`)
+
+### Export Naming Conventions
+
+- [ ] Verify exported functions use camelCase (e.g., `export const waitFor`, `export function processMessage`)
+- [ ] Check that exported classes use PascalCase (e.g., `export class TelegramService`)
+- [ ] Verify exported constants use appropriate case (UPPER_SNAKE_CASE for true constants, camelCase for objects)
+- [ ] Check that default exports follow naming conventions
+- [ ] Verify named exports are consistent with their declaration names
+
+### Consistency Checks
+
+- [ ] Review all files in `src/` directory for naming consistency
+- [ ] Review all files in `tests/` directory for naming consistency
+- [ ] Check for any deviations from established patterns
+- [ ] Verify naming conventions align with TypeScript/Node.js best practices
+- [ ] Check that naming conventions are consistent with ESLint configuration
+- [ ] Verify no mixing of naming styles (e.g., camelCase and snake_case in same context)
+
+### Documentation
+
+- [ ] Document naming conventions in `docs/architecture.md` or create `docs/naming-conventions.md`
+- [ ] Include examples for each naming convention type
+- [ ] Document any exceptions or special cases (e.g., API response properties following external API conventions)
+- [ ] Add naming convention guidelines to project documentation
+- [ ] Ensure documentation is clear and actionable for developers
+
+## Evaluation Findings
+
+### Current Naming Conventions Status
+
+Based on review of the existing codebase (primarily test files and configuration):
+
+**File Naming:**
+- ⚠️ Test files currently use camelCase: `testUtils.ts`, `cursorRunnerApi.ts`, `telegramApi.ts`, `apiHelpers.ts`, `telegramMessages.ts`, `apiResponses.ts`
+- ✅ Configuration files follow standard naming: `.eslintrc.json`, `.prettierrc.json`, `tsconfig.json`, `jest.config.ts`, `playwright.config.ts`
+- 📝 Recommendation: Standardize on kebab-case for all file names to align with TypeScript/Node.js best practices (e.g., `test-utils.ts`, `cursor-runner-api.ts`, `telegram-api.ts`)
+
+**Variable Naming:**
+- ✅ Variables consistently use camelCase: `mockRedisClient`, `mockTelegramApi`, `waitFor`, `createMockFn`, `randomString`, `sampleTextMessage`
+- ✅ Function parameters use camelCase: `ms: number`, `overrides = {}`, `length = 10`
+- ✅ Object properties follow API conventions where needed (e.g., `message_id`, `update_id` from Telegram API)
+- ✅ Local variables use camelCase consistently
+
+**Class Naming:**
+- ✅ Classes use PascalCase in architecture documentation: `TelegramService`, `TelegramController`, `HealthController`
+- 📝 Note: No actual class implementations found in current codebase (codebase appears to be in early stages)
+
+**Constant Naming:**
+- ✅ True constants use UPPER_SNAKE_CASE: `HTTP_STATUS` (with properties like `OK: 200`, `CREATED: 201`)
+- ✅ Exported mock objects use camelCase: `mockTelegramApi`, `mockRedisClient`, `mockCursorRunnerApi`
+- ✅ Proper distinction between constants and mutable exports
+
+**Interface/Type Naming:**
+- 📝 Note: Limited TypeScript type definitions found in current codebase
+- ✅ Type imports use PascalCase: `SuperTest`, `Test`, `Express`, `Config`
+- 📝 Recommendation: Ensure all interfaces and types use PascalCase when implemented
+
+**Function Naming:**
+- ✅ Functions use camelCase: `waitFor`, `createMockFn`, `resetRedisMocks`, `createTestRequest`
+- ✅ Factory functions use `create` prefix: `createTestRequest`, `createTelegramMessage`, `createCursorRunnerResponse`
+- ✅ Reset functions use `reset` prefix: `resetRedisMocks`, `resetTelegramApiMocks`, `resetCursorRunnerApiMocks`
+- ✅ Async functions follow camelCase: `waitFor` (returns Promise)
+
+**Export Naming:**
+- ✅ Exported functions use camelCase: `export const waitFor`, `export const createMockFn`
+- ✅ Exported objects use camelCase: `export const mockTelegramApi`
+- ✅ Exported constants use appropriate case: `export const HTTP_STATUS` (UPPER_SNAKE_CASE)
+- ✅ Default exports follow conventions: `export default config`
+
+### Issues Identified
+
+1. **File Naming Inconsistency**: Test files use camelCase (`testUtils.ts`, `cursorRunnerApi.ts`) instead of kebab-case (`test-utils.ts`, `cursor-runner-api.ts`). This should be standardized to kebab-case for consistency with TypeScript/Node.js conventions.
+
+2. **Missing Source Files**: The `src/` directory structure exists but contains no implementation files yet. Naming conventions should be validated once source files are added.
+
+3. **Documentation Gap**: No dedicated naming conventions documentation exists. Should be added to `docs/architecture.md` or as a separate `docs/naming-conventions.md` file.
+
+### Recommendations
+
+1. **Standardize File Naming**: Rename test files to use kebab-case:
+   - `testUtils.ts` → `test-utils.ts`
+   - `cursorRunnerApi.ts` → `cursor-runner-api.ts`
+   - `telegramApi.ts` → `telegram-api.ts`
+   - `apiHelpers.ts` → `api-helpers.ts`
+   - `telegramMessages.ts` → `telegram-messages.ts`
+   - `apiResponses.ts` → `api-responses.ts`
+
+2. **Create Naming Conventions Documentation**: Add a section to `docs/architecture.md` or create `docs/naming-conventions.md` with:
+   - File naming conventions (kebab-case)
+   - Variable naming conventions (camelCase)
+   - Class naming conventions (PascalCase)
+   - Constant naming conventions (UPPER_SNAKE_CASE for true constants)
+   - Interface/Type naming conventions (PascalCase)
+   - Function naming conventions (camelCase)
+   - Export naming conventions
+   - Examples for each convention type
+   - Exceptions (e.g., API response properties following external API conventions)
+
+3. **ESLint Configuration**: Verify that ESLint rules enforce naming conventions (currently no explicit naming rules found in `.eslintrc.json`)
+
+4. **Validation**: Once source files are added, validate that all naming conventions are followed consistently
+
+### Current Conventions Summary
+
+Based on codebase review, the following conventions are currently followed:
+
+- **Files**: camelCase (should be kebab-case)
+- **Variables**: camelCase ✅
+- **Classes**: PascalCase ✅
+- **Constants**: UPPER_SNAKE_CASE ✅
+- **Interfaces/Types**: PascalCase ✅
+- **Functions**: camelCase ✅
+- **Exports**: Follow declaration naming ✅
 
 ## Notes
 
@@ -24,6 +178,8 @@ Review and improve review naming conventions consistency in the codebase to ensu
 - Section: 4. Code Organization
 - Focus on identifying issues and improvements
 - Document findings and decisions
+- Current codebase is in early stages - most source files are not yet implemented
+- Primary focus should be on documenting conventions and ensuring consistency as code is added
 
 - Task can be completed independently by a single agent
 
