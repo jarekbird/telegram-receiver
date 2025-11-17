@@ -45,7 +45,11 @@ transcribe(audioFilePath: string, language?: string): Promise<string>
   - [ ] Custom error classes: Error, ConnectionError, TimeoutError, InvalidResponseError, TranscriptionError
   - [ ] Handle file not found errors (ENOENT)
   - [ ] Handle JSON parsing errors
-  - [ ] Handle HTTP error responses (non-2xx status codes)
+  - [ ] Handle HTTP error responses (non-2xx status codes):
+    - [ ] Extract error message from response body JSON if available
+    - [ ] Look for 'detail', 'error', or 'message' fields in error response
+    - [ ] Fall back to HTTP status code and message if JSON parsing fails
+    - [ ] Log error response body (first 500 characters) for debugging
   - [ ] Handle network connection errors
   - [ ] Handle timeout errors
 - [ ] Add logging:
@@ -77,7 +81,11 @@ The API returns JSON with a `text` field containing the transcribed text:
 ### Error Handling
 - Throw error if `audioFilePath` is blank/null
 - Throw error if file doesn't exist
-- Throw `TranscriptionError` if HTTP response is not successful (non-2xx)
+- Throw `TranscriptionError` if HTTP response is not successful (non-2xx):
+  - Extract detailed error message from response body JSON if available
+  - Check for 'detail', 'error', or 'message' fields in error response JSON
+  - Fall back to HTTP status code and message if JSON parsing fails
+  - Log error response body (first 500 characters) for debugging
 - Throw `TranscriptionError` if transcribed text is blank
 - Throw `InvalidResponseError` if JSON parsing fails
 - Throw `ConnectionError` for network connection issues
