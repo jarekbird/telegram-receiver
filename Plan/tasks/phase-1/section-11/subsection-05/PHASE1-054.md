@@ -26,15 +26,31 @@ The workflow should run on push and pull requests to main/master branches, and s
 - [ ] Configure caching for node_modules (optional optimization)
 
 ### Code Quality Checks
-- [ ] Add step to run ESLint (`npm run lint`)
+- [ ] Add step to run ESLint with changed file detection (lint only changed source files when files changed, exclude test files)
+- [ ] If changed files detected: run ESLint on changed source files only (filter out tests/**/*.ts)
+- [ ] If no changed files: run ESLint on all files (`npm run lint`)
 - [ ] Add step to check code formatting (`npm run format:check`)
 - [ ] Add step to run TypeScript type checking (`npm run type-check`)
 
+### Changed File Detection (Core Feature)
+- [ ] Add step to detect changed TypeScript/JavaScript files (.ts, .js) for PRs and pushes
+- [ ] For PRs: compare against base branch (`github.event.pull_request.base.sha`)
+- [ ] For pushes: compare against previous commit (`HEAD~1`)
+- [ ] Filter changed files to source files (src/**/*.ts) and test files (tests/**/*.ts)
+- [ ] Output changed files for use in subsequent steps
+
 ### Testing
-- [ ] Add step to run unit tests (`npm run test:unit` or `npm run test` with Jest)
+- [ ] Add step to run tests with changed file detection (run only affected tests when files changed)
+- [ ] Map changed source files to related test files:
+  - `src/services/telegramService.ts` → `tests/unit/services/telegramService.test.ts` or `tests/integration/services/telegramService.test.ts`
+  - `src/controllers/telegramController.ts` → `tests/unit/controllers/telegramController.test.ts` or `tests/integration/controllers/telegramController.test.ts`
+- [ ] If changed files detected: run tests for changed test files + tests related to changed source files
+- [ ] If no changed files: run all tests (`npm run test`)
+- [ ] Add step to run unit tests (`npm run test:unit` or via Jest test patterns)
 - [ ] Add step to run integration tests (`npm run test:integration` or via Jest test patterns)
-- [ ] Configure test environment variables if needed
+- [ ] Configure test environment variables (NODE_ENV=test, REDIS_URL if needed for integration tests)
 - [ ] Add step to generate coverage report (`npm run test:coverage`)
+- [ ] Consider adding Redis service container if integration tests require real Redis connection
 
 ### Coverage Reporting
 - [ ] Configure coverage report generation (already configured in jest.config.ts)
@@ -42,9 +58,8 @@ The workflow should run on push and pull requests to main/master branches, and s
 - [ ] Ensure coverage reports are generated in formats: text, lcov, html (as per jest.config.ts)
 
 ### Optional Enhancements
-- [ ] Add changed file detection to run tests only for affected files (similar to Rails implementation)
 - [ ] Add test result summary/annotation in GitHub Actions
-- [ ] Configure test timeout handling
+- [ ] Configure test timeout handling (Jest default is 5000ms, can be increased if needed)
 - [ ] Add step to fail workflow if coverage drops below threshold (optional)
 
 ## Notes
@@ -56,9 +71,11 @@ The workflow should run on push and pull requests to main/master branches, and s
 ### Implementation Guidance
 
 **Rails Reference**: The jarek-va application has a comprehensive test workflow at `.github/workflows/test.yml` that includes:
-- Changed file detection for optimized test runs
-- RuboCop linting
-- RSpec test execution with smart test selection
+- **Changed file detection** (core feature, not optional) - detects changed `.rb` and `.rake` files
+- **Smart linting** - RuboCop runs only on changed source files (excludes spec files)
+- **Smart test execution** - RSpec runs only tests related to changed files:
+  - Changed spec files are run directly
+  - Changed source files trigger their corresponding spec files (e.g., `app/services/telegram_service.rb` → `spec/services/telegram_service_spec.rb`)
 - Database setup for tests
 
 **Node.js/TypeScript Adaptation**:
@@ -68,22 +85,39 @@ The workflow should run on push and pull requests to main/master branches, and s
 - ESLint, Prettier, and TypeScript are configured in `package.json`
 - Test scripts are available: `test:unit`, `test:integration`, `test:coverage`
 - Coverage is configured to generate text, lcov, and html reports
+- **Changed file detection** must be adapted for TypeScript/JavaScript:
+  - Detect `.ts` and `.js` files instead of `.rb` and `.rake`
+  - Map source files to test files: `src/**/*.ts` → `tests/unit/**/*.test.ts` or `tests/integration/**/*.test.ts`
+  - Test file naming: `telegramService.ts` → `telegramService.test.ts` (not `telegram_service_spec.rb`)
+- **Smart linting**: Run ESLint only on changed source files (exclude `tests/**/*.ts`), similar to Rails RuboCop pattern
 
 **Key Differences from Rails**:
 - No database setup needed (telegram-receiver uses Redis, which can be mocked or use a service container)
 - TypeScript type checking is additional step not present in Rails
 - Prettier formatting check is additional step
 - Jest handles both unit and integration tests (no separate test framework)
+- File extensions: `.ts`, `.js` instead of `.rb`, `.rake`
+- Test file patterns: `tests/unit/**/*.test.ts` and `tests/integration/**/*.test.ts` instead of `spec/**/*_spec.rb`
+- Source file patterns: `src/**/*.ts` instead of `app/**/*.rb`
+- Test file naming: `telegramService.test.ts` instead of `telegram_service_spec.rb`
 
 **Workflow Structure**:
-1. Checkout code
+1. Checkout code (with full history for diff comparison)
 2. Setup Node.js
 3. Install dependencies
-4. Run linting (ESLint)
-5. Check formatting (Prettier)
-6. Type check (TypeScript)
-7. Run tests with coverage
-8. Upload coverage (optional)
+4. **Detect changed files** (TypeScript/JavaScript files)
+5. Run linting (ESLint) - only on changed source files if changes detected
+6. Check formatting (Prettier)
+7. Type check (TypeScript)
+8. Run tests with coverage - only affected tests if changes detected
+9. Upload coverage (optional)
+
+**Changed File Detection Logic** (adapted from Rails):
+- For PRs: `git diff --name-only --diff-filter=ACMR $BASE_SHA..$HEAD_SHA | grep -E '\.(ts|js)$'`
+- For pushes: `git diff --name-only --diff-filter=ACMR HEAD~1..HEAD | grep -E '\.(ts|js)$'`
+- Filter source files: `grep -E '^src/.*\.(ts|js)$'`
+- Filter test files: `grep -E '^tests/.*\.(ts|js)$'`
+- Map source to tests: `src/services/telegramService.ts` → `tests/unit/services/telegramService.test.ts` or `tests/integration/services/telegramService.test.ts`
 
 **Coverage Upload Options**:
 - Use `codecov/codecov-action@v3` for Codecov integration
