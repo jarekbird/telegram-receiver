@@ -1,4 +1,4 @@
-# PHASE3-038: Review SQL injection prevention (if applicable)
+# PHASE3-038: Review SQL and Redis injection prevention
 
 **Section**: 6. Security Review
 **Subsection**: 6.3
@@ -6,16 +6,157 @@
 
 ## Description
 
-Review and improve review sql injection prevention (if applicable) in the codebase to ensure best practices.
+Review and improve SQL injection prevention (if applicable) and Redis injection prevention in the codebase to ensure best practices. This task focuses on identifying and preventing injection vulnerabilities in database queries and Redis operations, ensuring that user-controlled input is properly sanitized and parameterized.
+
+## Rails Implementation Reference
+
+The Rails application uses Redis for state management and does not use SQL databases directly:
+
+1. **CursorRunnerCallbackService** (`app/services/cursor_runner_callback_service.rb`):
+   - Uses Redis for storing callback state
+   - Key construction: `"#{REDIS_KEY_PREFIX}#{request_id}"`
+   - Redis commands: `setex`, `get`, `del`
+   - JSON serialization: `data.to_json`
+   - Potential vulnerability: If `request_id` contains special characters, it could affect key construction
+
+2. **Redis Key Patterns**:
+   - Keys are constructed by concatenating prefix with user-provided `request_id`
+   - No explicit validation or sanitization of `request_id` before key construction
+   - Redis commands are called with constructed keys directly
+
+3. **No SQL Database**:
+   - The application does not use SQL databases
+   - All persistence is handled via Redis
+   - No ActiveRecord models or SQL queries
 
 ## Checklist
 
-- [ ] Review any SQL-like queries
-- [ ] Check for parameterized queries
-- [ ] Review Redis query patterns
-- [ ] Check for injection vulnerabilities
-- [ ] Review query construction
-- [ ] Document query safety
+### SQL Injection Prevention (if applicable)
+
+- [ ] Review any SQL database usage
+  - [ ] Verify no SQL databases are used (application uses Redis only)
+  - [ ] If SQL is added in future, ensure parameterized queries are used
+  - [ ] Document that SQL is not currently used
+
+- [ ] Review any raw SQL queries (if applicable)
+  - [ ] Check for string concatenation in SQL queries
+  - [ ] Verify all SQL queries use parameterized statements
+  - [ ] Check for use of query builders (if SQL is added)
+  - [ ] Verify no `eval()` or dynamic SQL construction from user input
+
+- [ ] Review ORM usage (if SQL is added)
+  - [ ] Verify ORM methods are used instead of raw SQL
+  - [ ] Check that ORM properly escapes parameters
+  - [ ] Review any custom SQL queries in ORM context
+
+### Redis Injection Prevention
+
+- [ ] Review Redis key construction
+  - [ ] Review `CursorRunnerCallbackService` key construction
+  - [ ] Verify `request_id` is validated before use in key construction
+  - [ ] Check for special characters in `request_id` that could affect Redis keys
+  - [ ] Verify key prefix is properly separated from user input
+  - [ ] Check for key collision vulnerabilities (different users with same request_id)
+  - [ ] Review all Redis key construction patterns in the codebase
+
+- [ ] Review Redis command usage
+  - [ ] Verify Redis commands (`setex`, `get`, `del`, etc.) are called with properly constructed keys
+  - [ ] Check that user input is never directly passed to Redis commands
+  - [ ] Verify Redis client library handles special characters safely
+  - [ ] Review BullMQ job queue key construction (if applicable)
+  - [ ] Check for Redis command injection vulnerabilities
+
+- [ ] Review Redis value handling
+  - [ ] Verify JSON serialization is safe (`JSON.stringify()` in TypeScript)
+  - [ ] Check that user-controlled data is properly serialized
+  - [ ] Verify JSON deserialization handles malformed data gracefully
+  - [ ] Check for injection in Redis values (if values are used in commands)
+
+- [ ] Review Redis key validation
+  - [ ] Validate `request_id` format (UUID, alphanumeric, etc.)
+  - [ ] Sanitize or reject `request_id` containing special characters
+  - [ ] Set maximum length limits for Redis keys
+  - [ ] Verify key namespaces are properly separated
+
+- [ ] Review Redis connection and URL handling
+  - [ ] Verify `REDIS_URL` environment variable is validated
+  - [ ] Check for injection in Redis URL construction
+  - [ ] Verify Redis connection parameters are safe
+
+### Query Construction Safety
+
+- [ ] Review all query construction patterns
+  - [ ] Identify all places where user input is used in queries/keys
+  - [ ] Verify input validation before query construction
+  - [ ] Check for string interpolation vulnerabilities
+  - [ ] Verify template literals are used safely (no user input in template strings)
+
+- [ ] Review input sanitization
+  - [ ] Verify user input is sanitized before use in queries/keys
+  - [ ] Check for proper escaping of special characters
+  - [ ] Verify input type validation (strings, numbers, etc.)
+  - [ ] Check for length limits on input used in queries/keys
+
+### BullMQ Query Safety
+
+- [ ] Review BullMQ job queue operations
+  - [ ] Verify job IDs are safely constructed
+  - [ ] Check job data serialization
+  - [ ] Review queue name construction (if dynamic)
+  - [ ] Verify job options are safely constructed
+
+### Injection Vulnerability Testing
+
+- [ ] Test Redis key injection scenarios
+  - [ ] Test with special characters in `request_id` (spaces, newlines, quotes, etc.)
+  - [ ] Test with very long `request_id` values
+  - [ ] Test with Unicode characters in `request_id`
+  - [ ] Verify Redis keys are constructed safely
+
+- [ ] Test Redis command injection scenarios
+  - [ ] Verify malicious input cannot execute arbitrary Redis commands
+  - [ ] Test with Redis command-like strings in input
+  - [ ] Verify Redis client library prevents command injection
+
+- [ ] Test JSON serialization safety
+  - [ ] Test with malformed JSON in stored values
+  - [ ] Test with very large JSON payloads
+  - [ ] Verify JSON parsing handles errors gracefully
+
+### Documentation and Guidelines
+
+- [ ] Document Redis key construction patterns
+  - [ ] Document safe key construction practices
+  - [ ] Document key naming conventions
+  - [ ] Document key validation requirements
+
+- [ ] Document injection prevention guidelines
+  - [ ] Create guidelines for safe Redis key construction
+  - [ ] Document input validation requirements
+  - [ ] Document Redis command usage best practices
+  - [ ] Create or update security guidelines
+
+- [ ] Document findings and decisions
+  - [ ] Document any vulnerabilities found
+  - [ ] Document fixes implemented
+  - [ ] Document remaining risks (if any)
+
+### Implementation Recommendations
+
+- [ ] Create Redis key validation utility
+  - [ ] Create function to validate and sanitize Redis keys
+  - [ ] Create function to safely construct Redis keys with prefixes
+  - [ ] Add TypeScript types for Redis key validation
+
+- [ ] Add input validation for Redis operations
+  - [ ] Validate `request_id` format before use
+  - [ ] Add length limits for Redis keys
+  - [ ] Sanitize special characters if needed
+
+- [ ] Consider Redis key namespace isolation
+  - [ ] Ensure keys from different sources don't collide
+  - [ ] Use proper key prefixes for different data types
+  - [ ] Consider using Redis hash structures for complex data
 
 ## Notes
 
