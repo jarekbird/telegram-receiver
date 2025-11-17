@@ -6,25 +6,82 @@
 
 ## Description
 
-Review and improve review integration test coverage in the codebase to ensure best practices.
+Review and improve integration test coverage in the codebase to ensure best practices. Integration tests verify that multiple components work together correctly, testing API endpoints and service interactions with proper test isolation.
 
 ## Checklist
 
-- [ ] Review integration tests
-- [ ] Check for critical path coverage
-- [ ] Review test scenarios
-- [ ] Check for edge cases
-- [ ] Review test data setup
-- [ ] Identify missing tests
-- [ ] Document integration test strategy
+### Current State Review
+- [ ] Review existing integration tests in `tests/integration/` directory
+- [ ] Check integration test structure and organization
+- [ ] Review test setup and teardown procedures
+- [ ] Verify test isolation and cleanup mechanisms
+
+### API Endpoint Integration Tests (`tests/integration/api/`)
+- [ ] Review Telegram webhook endpoint integration tests (`POST /telegram/webhook`)
+  - Test webhook authentication with `X-Telegram-Bot-Api-Secret-Token` header
+  - Test processing of different update types (message, edited_message, callback_query)
+  - Test async processing and immediate 200 OK response
+  - Test error handling and invalid payloads
+- [ ] Review admin endpoint integration tests (if implemented)
+  - `POST /telegram/set_webhook` (admin only)
+  - `GET /telegram/webhook_info` (admin only)
+  - `DELETE /telegram/webhook` (admin only)
+- [ ] Review Cursor Runner callback endpoint integration tests (`POST /cursor-runner/callback`)
+  - Test callback processing and response forwarding to Telegram
+  - Test Redis state retrieval and cleanup
+  - Test error handling for invalid callbacks
+
+### Service Integration Tests (`tests/integration/services/`)
+- [ ] Review TelegramService + CursorRunnerService integration tests
+  - Test message forwarding flow from Telegram to Cursor Runner
+  - Test request ID generation and Redis storage
+  - Test error handling and retry logic
+- [ ] Review CursorRunnerCallbackService integration tests
+  - Test callback state management in Redis
+  - Test request context retrieval and cleanup
+  - Test TTL handling for pending requests
+- [ ] Review ElevenLabs services integration tests (if implemented)
+  - Test audio transcription flow
+  - Test text-to-speech conversion flow
+
+### Critical Path Coverage
+- [ ] Verify end-to-end flow coverage: Telegram webhook → message processing → Cursor Runner → callback → Telegram response
+- [ ] Test local command processing (`/start`, `/help`, `/status`) without Cursor Runner forwarding
+- [ ] Test audio message transcription flow (if implemented)
+- [ ] Test error scenarios and graceful degradation
+
+### Test Quality and Best Practices
+- [ ] Review test scenarios for completeness
+- [ ] Check for edge cases and error conditions
+- [ ] Review test data setup and fixtures usage
+- [ ] Verify proper mocking of external APIs (Telegram Bot API, Cursor Runner API)
+- [ ] Check test isolation (each test cleans up after itself)
+- [ ] Review test timeout settings for async operations
+- [ ] Verify test coverage metrics
+
+### Missing Tests Identification
+- [ ] Identify missing integration tests for implemented features
+- [ ] Document gaps in integration test coverage
+- [ ] Prioritize missing tests by criticality
+
+### Documentation
+- [ ] Review and update `tests/integration/README.md` with current practices
+- [ ] Document integration test strategy and patterns
+- [ ] Document findings and improvement recommendations
+- [ ] Update test coverage documentation
 
 ## Notes
 
 - This task is part of Phase 3: Holistic Review and Best Practices
 - Section: 7. Testing Review
-- Focus on identifying issues and improvements
-- Document findings and decisions
-
+- Subsection: 7.4 - Integration Test Coverage Review
+- Focus on identifying issues and improvements in integration test coverage
+- Document findings and decisions for future reference
+- Reference `Plan/app-description.md` for application functionality that should be tested
+- Reference `tests/README.md` and `tests/integration/README.md` for test structure and guidelines
+- Integration tests should use Supertest for API endpoint testing
+- External APIs (Telegram Bot API, Cursor Runner API) should be mocked using nock or similar
+- Integration tests may use real Redis connections but should use test databases/instances
 - Task can be completed independently by a single agent
 
 ## Related Tasks
