@@ -6,17 +6,89 @@
 
 ## Description
 
-Review and improve review redis query patterns in the codebase to ensure best practices.
+Review and improve Redis query patterns in the codebase to ensure best practices. This task focuses on analyzing Redis usage patterns, identifying performance bottlenecks, and ensuring efficient Redis operations throughout the application.
+
+Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callback_service.rb` to understand the original Redis usage patterns and ensure the TypeScript implementation follows best practices.
 
 ## Checklist
 
-- [ ] Review Redis query frequency
+### Query Frequency and Patterns
+- [ ] Review Redis query frequency across all services
+  - Identify high-frequency Redis operations (e.g., callback state lookups)
+  - Check for unnecessary Redis calls in hot paths
+  - Review if operations can be batched or cached
+- [ ] Analyze Redis operation patterns
+  - Count total Redis operations per request/operation
+  - Identify operations that could be combined (pipelining)
+  - Check for redundant Redis calls
+
+### Query Efficiency
 - [ ] Check for inefficient queries
+  - Avoid using `KEYS` command (use `SCAN` instead for production)
+  - Review if any operations can use Redis pipelining for multiple commands
+  - Check for N+1 query patterns (multiple sequential Redis calls that could be batched)
+  - Verify atomic operations are used where appropriate (e.g., `setex` instead of `set` + `expire`)
+- [ ] Review Redis command usage
+  - Verify `setex` is used for storing with TTL (matches Rails `setex` pattern)
+  - Check that `get` operations handle null responses correctly
+  - Verify `del` operations are used appropriately for cleanup
+  - Ensure no blocking operations are used inappropriately
+
+### Key Naming Patterns
 - [ ] Review key naming patterns
+  - Verify consistent key prefix usage (e.g., `cursor_runner_callback:` from Rails implementation)
+  - Check that keys follow a clear namespace pattern
+  - Ensure keys are descriptive and follow naming conventions
+  - Verify no key collisions or conflicts
+  - Check that keys are properly scoped (e.g., per-request IDs)
+
+### TTL (Time To Live) Usage
 - [ ] Check for proper TTL usage
+  - Verify all stored data has appropriate TTL values
+  - Review default TTL values (Rails uses 3600 seconds = 1 hour)
+  - Check that TTL values are reasonable for the data lifecycle
+  - Verify TTL is set atomically with storage (using `setex` not `set` + `expire`)
+  - Ensure expired data is handled gracefully (null checks)
+
+### Connection Management
 - [ ] Review connection pooling
+  - Verify Redis client uses connection pooling (not creating new clients per request)
+  - Check if multiple Redis client instances are created unnecessarily
+  - Review singleton pattern or shared Redis client usage
+  - Verify connection reuse across service instances
+  - Check for proper connection cleanup on shutdown
+- [ ] Review Redis client initialization
+  - Verify Redis URL configuration matches Rails pattern (`REDIS_URL` env var, default `redis://localhost:6379/0`)
+  - Check Docker environment support (`redis://redis:6379/0`)
+  - Review if dependency injection pattern is used for Redis client (allows testing)
+
+### Error Handling and Resilience
+- [ ] Review Redis error handling
+  - Check for proper error handling around Redis operations
+  - Verify graceful degradation when Redis is unavailable
+  - Review connection error handling (ECONNREFUSED, timeouts)
+  - Check for retry logic where appropriate
+  - Verify error logging includes context (request IDs, operation types)
+
+### Optimization Opportunities
 - [ ] Identify optimization opportunities
-- [ ] Document patterns
+  - Check if pipelining can reduce round trips for multiple operations
+  - Review if caching can reduce Redis calls
+  - Check if operations can be made atomic
+  - Verify no unnecessary serialization/deserialization overhead
+  - Review JSON parsing patterns (Rails uses `JSON.parse` with `symbolize_names: true`)
+- [ ] Review data structures
+  - Verify appropriate Redis data types are used (strings vs hashes vs sets)
+  - Check if hash operations could replace multiple string operations
+  - Review if sorted sets or other structures could improve performance
+
+### Documentation and Patterns
+- [ ] Document Redis usage patterns
+  - Document key naming conventions
+  - Document TTL policies and defaults
+  - Document connection management approach
+  - Create guidelines for future Redis usage
+  - Document error handling patterns
 
 ## Notes
 
