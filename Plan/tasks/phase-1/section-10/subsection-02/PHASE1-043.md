@@ -6,29 +6,36 @@
 
 ## Description
 
-Create Jest configuration file
+Create Jest configuration file (`jest.config.ts`) for the TypeScript/Node.js application. This configuration sets up Jest as the test runner, replacing RSpec from the Rails application. The configuration should support TypeScript testing, code coverage collection, and proper test file discovery.
 
 ## Checklist
 
-- [ ] Create `jest.config.js` file
-- [ ] Set `preset` to 'ts-jest'
-- [ ] Set `testEnvironment` to 'node'
-- [ ] Set `roots` to ['<rootDir>/src', '<rootDir>/tests']
-- [ ] Set `testMatch` pattern for test files
-- [ ] Configure `transform` for TypeScript files
-- [ ] Set `collectCoverageFrom` patterns
+- [ ] Create `jest.config.ts` file (TypeScript configuration file, not `.js`)
+- [ ] Set `preset` to 'ts-jest' (enables TypeScript support)
+- [ ] Set `testEnvironment` to 'node' (Node.js environment, not browser)
+- [ ] Set `roots` to ['<rootDir>/tests'] (test files are in tests directory, not src)
+- [ ] Set `testMatch` pattern to `['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts']` (matches test files)
+- [ ] Configure `transform` for TypeScript files: `{ '^.+\\.ts$': 'ts-jest' }`
+- [ ] Set `collectCoverageFrom` patterns to include `src/**/*.ts` and exclude test files and type definitions
 - [ ] Set `coverageDirectory` to 'coverage'
-- [ ] Set `coverageReporters` array
-- [ ] Set `moduleFileExtensions` array
-- [ ] Set `setupFilesAfterEnv` to test setup file
-- [ ] Set `testTimeout` to 10000
-- [ ] Set `verbose` to true
+- [ ] Set `coverageReporters` array to `['text', 'lcov', 'html']` (text for console, lcov for CI, html for viewing)
+- [ ] Set `moduleFileExtensions` array to `['ts', 'tsx', 'js', 'jsx', 'json', 'node']`
+- [ ] Set `setupFilesAfterEnv` to `['<rootDir>/tests/setup.ts']` (runs before each test file)
+- [ ] Set `testTimeout` to 10000 (10 seconds, allows for async operations)
+- [ ] Set `verbose` to true (detailed test output)
+- [ ] Configure `moduleNameMapper` for path aliases: `{ '^@/(.*)$': '<rootDir>/src/$1' }` (supports @/ imports)
+- [ ] Set `passWithNoTests` to true (allows tests to pass when no test files found during initial setup)
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 10. Test Suite Setup
 - Task can be completed independently by a single agent
+- The Jest configuration replaces RSpec configuration from Rails (`spec/spec_helper.rb` and `spec/rails_helper.rb`)
+- Unlike RSpec which uses Ruby conventions, Jest uses JavaScript/TypeScript patterns
+- The configuration should use TypeScript (`jest.config.ts`) for type safety
+- Test files should be in the `tests/` directory, separate from source code in `src/`
+- The `moduleNameMapper` enables path aliases (e.g., `@/services/telegram` instead of relative paths)
 
 ## Related Tasks
 
