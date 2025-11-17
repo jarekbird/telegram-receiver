@@ -6,17 +6,113 @@
 
 ## Description
 
-Review and improve review async/await patterns and promise handling in the codebase to ensure best practices.
+Review and improve async/await patterns and Promise handling in the codebase to ensure best practices. This review should evaluate how asynchronous operations are handled across all layers (controllers, services, jobs, middleware), verify consistent async/await usage, check for proper Promise handling, identify opportunities for parallelization, and ensure proper error handling in async contexts.
+
+## Architecture Reference
+
+Reference the planned architecture from:
+- `Plan/app-description.md` - Application overview and component descriptions
+- `Plan/CONVERSION_STEPS.md` - Conversion plan and architecture considerations
+- `src/` directory structure - Current implementation structure
+
+The application follows a layered architecture with:
+- **Controllers** (`src/controllers/`) - HTTP request handling and routing
+- **Services** (`src/services/`) - Business logic and external API integration
+- **Models** (`src/models/`) - Data models and database interactions
+- **Routes** (`src/routes/`) - Route definitions and middleware
+- **Middleware** (`src/middleware/`) - Request processing middleware
+- **Jobs** - Background job processing (BullMQ)
+- **Utils** (`src/utils/`) - Utility functions and helpers
+- **Types** (`src/types/`) - TypeScript type definitions
+
+## Async/Await Best Practices
+
+In Node.js/TypeScript applications, async/await patterns should follow these best practices:
+
+1. **Prefer async/await over Promise chains**: Use async/await for better readability and error handling
+2. **Consistent Error Handling**: Always use try/catch with async/await or .catch() with Promises
+3. **Avoid Promise Anti-patterns**: Don't mix async/await with Promise chains unnecessarily
+4. **Parallel Execution**: Use Promise.all() for independent parallel operations
+5. **Sequential Execution**: Use await in loops only when operations depend on each other
+6. **Error Propagation**: Let errors bubble up appropriately, don't swallow them
+7. **Type Safety**: Properly type async functions and their return values
+8. **Resource Cleanup**: Ensure proper cleanup in async operations (e.g., file handles, connections)
 
 ## Checklist
 
 - [ ] Review async/await usage throughout codebase
-- [ ] Check for Promise chains that could be async/await
+  - [ ] Verify consistent use of async/await vs Promise chains
+  - [ ] Check for unnecessary mixing of async/await and Promise chains
+  - [ ] Identify Promise chains that could be converted to async/await
+  - [ ] Verify async functions are properly marked with `async` keyword
+  - [ ] Check that async functions return Promise types correctly
+  - [ ] Verify consistent async/await patterns across similar operations
 - [ ] Review error handling in async functions
-- [ ] Check for unhandled promise rejections
+  - [ ] Verify all async functions have proper try/catch blocks
+  - [ ] Check for unhandled promise rejections
+  - [ ] Verify Promise chains have proper .catch() handlers
+  - [ ] Check that async errors are properly propagated
+  - [ ] Verify error handling doesn't swallow important errors
+  - [ ] Check for proper error context in async error handling
+  - [ ] Verify async error handling in controllers, services, and jobs
 - [ ] Review parallel vs sequential execution
+  - [ ] Identify operations that could run in parallel using Promise.all()
+  - [ ] Check for unnecessary sequential await operations
+  - [ ] Verify Promise.all() is used for independent parallel operations
+  - [ ] Check for Promise.allSettled() usage where appropriate
+  - [ ] Verify sequential operations are only used when dependencies exist
+  - [ ] Review for opportunities to parallelize independent API calls
+  - [ ] Check for race conditions in parallel operations
+- [ ] Review Promise handling patterns
+  - [ ] Check for Promise constructor anti-patterns
+  - [ ] Verify proper use of Promise.resolve() and Promise.reject()
+  - [ ] Check for unnecessary Promise wrapping
+  - [ ] Verify Promise.race() usage where appropriate
+  - [ ] Review for proper Promise chaining when needed
+  - [ ] Check for memory leaks in long-running Promise chains
+- [ ] Review async patterns in controllers
+  - [ ] Verify route handlers properly handle async operations
+  - [ ] Check for proper error handling in async route handlers
+  - [ ] Verify Express async error handling (error middleware)
+  - [ ] Check that controllers don't block on unnecessary async operations
+  - [ ] Verify proper async/await usage in request/response handling
+- [ ] Review async patterns in services
+  - [ ] Verify services use async/await consistently
+  - [ ] Check for proper error handling in service methods
+  - [ ] Verify external API calls use async/await properly
+  - [ ] Check for proper timeout handling in async service calls
+  - [ ] Verify services don't mix callback and Promise patterns
+  - [ ] Check for proper resource cleanup in async service operations
+- [ ] Review async patterns in jobs
+  - [ ] Verify job processors handle async operations correctly
+  - [ ] Check for proper error handling in async job operations
+  - [ ] Verify jobs don't have unhandled promise rejections
+  - [ ] Check for proper async/await usage in job processing
+  - [ ] Verify jobs handle async operations without blocking
+- [ ] Review async patterns in middleware
+  - [ ] Verify middleware properly handles async operations
+  - [ ] Check for proper error handling in async middleware
+  - [ ] Verify Express async middleware patterns
+  - [ ] Check for proper async/await usage in request processing
+- [ ] Review TypeScript typing for async operations
+  - [ ] Verify async functions have proper return types (Promise<T>)
+  - [ ] Check for proper typing of Promise results
+  - [ ] Verify error types are properly typed in catch blocks
+  - [ ] Check for proper generic usage in async functions
+  - [ ] Verify Promise types are explicit where needed
 - [ ] Identify improvements
+  - [ ] List specific files/functions that need async/await improvements
+  - [ ] Identify Promise chains that should be converted to async/await
+  - [ ] Find opportunities for parallelization
+  - [ ] Identify error handling improvements needed
+  - [ ] Find patterns that should be standardized
 - [ ] Document patterns
+  - [ ] Create async/await usage guidelines
+  - [ ] Document when to use Promise.all() vs sequential await
+  - [ ] Document error handling patterns for async operations
+  - [ ] Create examples of proper async/await usage
+  - [ ] Document anti-patterns to avoid
+  - [ ] Document async patterns for each layer (controllers, services, jobs)
 
 ## Notes
 
@@ -24,7 +120,9 @@ Review and improve review async/await patterns and promise handling in the codeb
 - Section: 1. Architecture Review
 - Focus on identifying issues and improvements
 - Document findings and decisions
-
+- Compare implemented async/await patterns with Node.js/TypeScript best practices
+- Review both existing code and planned structure to ensure consistent async/await usage
+- Reference Rails async patterns from jarek-va but adapt to Node.js/TypeScript conventions
 - Task can be completed independently by a single agent
 
 ## Related Tasks
