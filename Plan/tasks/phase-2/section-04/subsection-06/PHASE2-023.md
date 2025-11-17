@@ -6,22 +6,73 @@
 
 ## Description
 
-Convert implement send_voice method from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/telegram_service.rb`.
+Convert the `send_voice` method from Rails to TypeScript/Node.js. This method sends a voice/audio file to a Telegram chat. Reference `jarek-va/app/services/telegram_service.rb` lines 77-117.
 
 ## Checklist
 
-- [ ] Implement `sendVoice` method
-- [ ] Handle voice file upload
-- [ ] Support multipart form data
-- [ ] Handle reply_to_message_id and caption
-- [ ] Add error handling
+- [ ] Implement `sendVoice` method with signature matching `SendVoiceParams` interface
+  - Required parameters: `chat_id` (number), `voice_path` (string - local file path)
+  - Optional parameters: `reply_to_message_id` (number), `caption` (string)
+- [ ] Add early return if `telegram_bot_token` is blank (consistent with other methods)
+- [ ] Validate that the voice file exists at `voice_path`
+  - Raise/throw error if file does not exist: "Voice file does not exist"
+- [ ] Read file content from disk using binary read
+  - Use Node.js `fs.readFileSync` or `fs.promises.readFile` with binary encoding
+- [ ] Extract filename from `voice_path` using basename
+- [ ] Implement MIME type detection based on file extension:
+  - `.ogg` or `.oga` → `audio/ogg`
+  - `.wav` → `audio/wav`
+  - Default (including `.mp3`) → `audio/mpeg`
+- [ ] Create multipart form data with file upload
+  - Use `FormData` or similar library (e.g., `form-data` package)
+  - Include file content, MIME type, and filename
+  - Field name should be `voice` (as per Telegram Bot API)
+- [ ] Build request parameters:
+  - Required: `chat_id`, `voice` (file)
+  - Optional: `reply_to_message_id` (if provided), `caption` (if provided)
+- [ ] Call Telegram Bot API `sendVoice` endpoint
+  - Use POST request with multipart/form-data content type
+  - Endpoint: `https://api.telegram.org/bot{token}/sendVoice`
+- [ ] Return Telegram API response (should match `TelegramApiResponse` type)
+- [ ] Add comprehensive error handling:
+  - Catch and log errors with descriptive messages
+  - Log error stack trace
+  - Re-throw errors after logging
+  - Error message format: "Error sending Telegram voice: {error message}"
+
+## Implementation Details
+
+Based on Rails implementation analysis (`jarek-va/app/services/telegram_service.rb` lines 77-117):
+
+1. **Method Signature**: The method accepts `chat_id`, `voice_path`, `reply_to_message_id` (optional), and `caption` (optional). This matches the `SendVoiceParams` interface defined in PHASE2-001.
+
+2. **File Handling**: The Rails implementation:
+   - Validates file existence before attempting to read
+   - Reads file content using `File.binread` (binary read)
+   - Extracts filename using `File.basename`
+   - Determines MIME type from file extension
+
+3. **MIME Type Detection**: The Rails code uses a case statement on file extension:
+   - `.ogg` and `.oga` → `audio/ogg`
+   - `.wav` → `audio/wav`
+   - All other extensions (including `.mp3`) → `audio/mpeg`
+
+4. **Multipart Upload**: Rails uses `Faraday::UploadIO` with `StringIO` to create the upload object. In Node.js, use `FormData` with a file stream or buffer.
+
+5. **Error Handling**: The Rails implementation:
+   - Catches `StandardError`
+   - Logs error message and full backtrace
+   - Re-raises the error after logging
+
+6. **Return Value**: The method returns the Telegram API response (Hash/object).
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 4. TelegramService Conversion
-- Reference the Rails implementation for behavior
-
+- Reference the Rails implementation at `jarek-va/app/services/telegram_service.rb` lines 77-117 for exact behavior
+- The `SendVoiceParams` interface is defined in PHASE2-001
+- Use the `form-data` npm package or Node.js built-in `FormData` (Node.js 18+) for multipart uploads
 - Task can be completed independently by a single agent
 
 ## Related Tasks
