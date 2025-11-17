@@ -6,16 +6,82 @@
 
 ## Description
 
-Review and improve review separation of concerns in the codebase to ensure best practices.
+Review and improve separation of concerns in the codebase to ensure best practices. This review should evaluate how well the codebase adheres to the Single Responsibility Principle, verify that each layer (controllers, services, jobs, models) has clearly defined responsibilities, and identify any violations where components are handling multiple concerns that should be separated.
+
+## Architecture Reference
+
+Reference the planned architecture from:
+- `Plan/app-description.md` - Application overview and component descriptions
+- `Plan/CONVERSION_STEPS.md` - Conversion plan and architecture considerations
+- `src/` directory structure - Current implementation structure
+
+The application follows a layered architecture with:
+- **Controllers** (`src/controllers/`) - HTTP request handling and routing
+- **Services** (`src/services/`) - Business logic and external API integration
+- **Models** (`src/models/`) - Data models and database interactions
+- **Routes** (`src/routes/`) - Route definitions and middleware
+- **Middleware** (`src/middleware/`) - Request processing middleware
+- **Jobs** - Background job processing (BullMQ)
+- **Utils** (`src/utils/`) - Utility functions and helpers
+- **Types** (`src/types/`) - TypeScript type definitions
 
 ## Checklist
 
 - [ ] Review service layer responsibilities
+  - [ ] Services should contain business logic only
+  - [ ] Services should not handle HTTP request/response concerns
+  - [ ] Services should not contain database query logic (should use models/repositories)
+  - [ ] Services should be focused on a single domain or feature area
+  - [ ] Verify services are testable without HTTP context
+  - [ ] Check for services that are doing too much (god objects)
+  - [ ] Identify services that should be split into multiple focused services
 - [ ] Review controller responsibilities
+  - [ ] Controllers should only handle HTTP concerns (request parsing, response formatting)
+  - [ ] Controllers should delegate business logic to services
+  - [ ] Controllers should not contain database queries
+  - [ ] Controllers should not contain complex business logic
+  - [ ] Controllers should handle authentication/authorization at the request level
+  - [ ] Verify controllers are thin and focused on routing/coordination
+  - [ ] Check for controllers that contain business logic that should be in services
 - [ ] Review job processor responsibilities
+  - [ ] Jobs should handle async/background processing only
+  - [ ] Jobs should delegate business logic to services
+  - [ ] Jobs should not contain HTTP request/response logic
+  - [ ] Jobs should be focused on a single task or workflow
+  - [ ] Verify jobs are idempotent where possible
+  - [ ] Check for jobs that are doing too much (should be split)
+  - [ ] Identify jobs that contain business logic that should be in services
+- [ ] Review model responsibilities
+  - [ ] Models should handle data access and validation only
+  - [ ] Models should not contain business logic
+  - [ ] Models should not handle HTTP concerns
+  - [ ] Models should be focused on data representation and persistence
+  - [ ] Verify models are not acting as services
 - [ ] Check for mixed concerns
+  - [ ] Identify files that mix HTTP, business logic, and data access
+  - [ ] Find components that handle multiple unrelated responsibilities
+  - [ ] Check for utility functions mixed with business logic
+  - [ ] Identify configuration logic mixed with business logic
+  - [ ] Find error handling mixed with business logic (should be separate)
 - [ ] Identify violations of single responsibility principle
+  - [ ] Find classes/modules with multiple reasons to change
+  - [ ] Identify components that are hard to test due to mixed concerns
+  - [ ] Find components that are difficult to reuse
+  - [ ] Check for tight coupling between unrelated concerns
+- [ ] Review middleware responsibilities
+  - [ ] Middleware should handle cross-cutting concerns (auth, logging, error handling)
+  - [ ] Middleware should not contain business logic
+  - [ ] Verify middleware is focused and reusable
+- [ ] Review utility functions
+  - [ ] Utils should be pure functions or stateless helpers
+  - [ ] Utils should not contain business logic
+  - [ ] Utils should be focused on a single utility purpose
 - [ ] Document findings
+  - [ ] Create a list of identified separation of concerns violations
+  - [ ] Document recommended refactorings
+  - [ ] Prioritize issues by severity and impact
+  - [ ] Document examples of good separation of concerns
+  - [ ] Create guidelines for maintaining separation of concerns
 
 ## Notes
 
@@ -23,7 +89,8 @@ Review and improve review separation of concerns in the codebase to ensure best 
 - Section: 1. Architecture Review
 - Focus on identifying issues and improvements
 - Document findings and decisions
-
+- Compare implemented code with planned architecture from `Plan/app-description.md`
+- Review both existing code and planned structure to ensure proper separation
 - Task can be completed independently by a single agent
 
 ## Related Tasks
