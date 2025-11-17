@@ -14,21 +14,35 @@ Create a production docker-compose.prod.yml file for the telegram-receiver Node.
 - [ ] Define `traefik` service (reverse proxy for SSL termination):
   - [ ] Use `traefik:v2.11` image (matching jarek-va)
   - [ ] Set container name to `telegram-receiver-traefik` (or similar)
-  - [ ] Configure SSL/TLS with Let's Encrypt ACME challenge
-  - [ ] Set up HTTP to HTTPS redirect
-  - [ ] Configure entrypoints (web:80, websecure:443)
-  - [ ] Mount Docker socket for service discovery
-  - [ ] Mount letsencrypt volume for certificate storage
+  - [ ] Configure command flags (matching jarek-va pattern):
+    - [ ] `--api.dashboard=true` (enable dashboard)
+    - [ ] `--api.insecure=true` (set to false and add auth in production for security)
+    - [ ] `--providers.docker=true` (enable Docker provider)
+    - [ ] `--providers.docker.exposedbydefault=false` (only expose services with traefik.enable=true)
+    - [ ] `--entrypoints.web.address=:80` (HTTP entrypoint)
+    - [ ] `--entrypoints.websecure.address=:443` (HTTPS entrypoint)
+    - [ ] `--certificatesresolvers.letsencrypt.acme.tlschallenge=true` (enable TLS challenge)
+    - [ ] `--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@example.com}` (ACME email)
+    - [ ] `--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json` (certificate storage)
+    - [ ] `--entrypoints.web.http.redirections.entrypoint.to=websecure` (HTTP to HTTPS redirect)
+    - [ ] `--entrypoints.web.http.redirections.entrypoint.scheme=https` (redirect scheme)
+  - [ ] Mount Docker socket (`/var/run/docker.sock:/var/run/docker.sock:ro`) for service discovery
+  - [ ] Mount letsencrypt volume (`./letsencrypt:/letsencrypt`) for certificate storage
   - [ ] Set restart policy to `unless-stopped`
   - [ ] Add to `virtual-assistant-network` network
-  - [ ] Expose ports 80, 443, and 8080 (dashboard)
+  - [ ] Expose ports 80, 443, and 8080 (dashboard - secure dashboard access in production)
 - [ ] Define `redis` service:
   - [ ] Use `redis:7-alpine` image (matching jarek-va)
   - [ ] Set container name to `telegram-receiver-redis` (or similar)
-  - [ ] Configure Redis persistence with `--appendonly yes`
+  - [ ] Configure Redis persistence with command `redis-server --appendonly yes` (matching jarek-va)
+  - [ ] **Do NOT expose Redis port 6379** in production (Redis is accessed internally via Docker network)
   - [ ] Add volume for Redis data persistence (`shared_redis_data:/data`)
   - [ ] Set restart policy to `unless-stopped`
-  - [ ] Add healthcheck using `redis-cli ping`
+  - [ ] Add healthcheck using `redis-cli ping` with parameters (matching jarek-va):
+    - [ ] Test: `["CMD", "redis-cli", "ping"]`
+    - [ ] Interval: `10s`
+    - [ ] Timeout: `5s`
+    - [ ] Retries: `5`
   - [ ] Add to `virtual-assistant-network` network
 - [ ] Define `app` service:
   - [ ] Set build context to current directory (`.`)
@@ -37,7 +51,7 @@ Create a production docker-compose.prod.yml file for the telegram-receiver Node.
   - [ ] **Do NOT expose ports directly** - Traefik will route traffic
   - [ ] Set `NODE_ENV` environment variable to `production`
   - [ ] Set `PORT` environment variable to `3000`
-  - [ ] Set `REDIS_URL` to `redis://redis:6379` (using Redis service name)
+  - [ ] Set `REDIS_URL` to `redis://redis:6379/0` (using Redis service name, with database number `/0` to match jarek-va pattern)
   - [ ] Set `CURSOR_RUNNER_URL` to `http://cursor-runner:3001`
   - [ ] Set `CURSOR_RUNNER_TIMEOUT` to `${CURSOR_RUNNER_TIMEOUT:-300}`
   - [ ] Set other production environment variables (TELEGRAM_BOT_TOKEN, LOG_LEVEL=info, etc.)
@@ -53,14 +67,20 @@ Create a production docker-compose.prod.yml file for the telegram-receiver Node.
     - [ ] TLS cert resolver: `letsencrypt`
     - [ ] Service port: `3000`
     - [ ] Security headers middleware (SSL redirect, HSTS, etc.)
-  - [ ] Add healthcheck: `curl -f http://localhost:3000/health`
+  - [ ] Add healthcheck (matching jarek-va pattern):
+    - [ ] Test: `["CMD", "curl", "-f", "http://localhost:3000/health"]`
+    - [ ] Interval: `30s`
+    - [ ] Timeout: `10s`
+    - [ ] Retries: `3`
+    - [ ] Start period: `10s` (allow time for app to start)
 - [ ] Define `worker` service (BullMQ worker for background jobs):
   - [ ] Set build context to current directory (`.`)
   - [ ] Set dockerfile path to `Dockerfile`
   - [ ] Set container name to `telegram-receiver-worker` (or similar)
   - [ ] Set command to run BullMQ worker (e.g., `npm run worker` or `node dist/worker.js`)
+    - [ ] **Note**: The worker script/entry point must be created separately (e.g., add `"worker": "node dist/worker.js"` to package.json scripts, or create `dist/worker.js` entry point)
   - [ ] Set `NODE_ENV` environment variable to `production`
-  - [ ] Set `REDIS_URL` to `redis://redis:6379`
+  - [ ] Set `REDIS_URL` to `redis://redis:6379/0` (with database number `/0` to match jarek-va pattern)
   - [ ] Set `CURSOR_RUNNER_URL` to `http://cursor-runner:3001`
   - [ ] Set other production environment variables matching `app` service
   - [ ] Add volume mount for shared SQLite database (`shared_sqlite_db:/app/shared_db`)
@@ -105,15 +125,21 @@ Create a production docker-compose.prod.yml file for the telegram-receiver Node.
 - Environment variables should match those defined in `.env.example`:
   - `NODE_ENV=production`
   - `PORT=3000`
-  - `REDIS_URL=redis://redis:6379`
+  - `REDIS_URL=redis://redis:6379/0` (with database number `/0` to match jarek-va pattern)
   - `CURSOR_RUNNER_URL=http://cursor-runner:3001`
   - `CURSOR_RUNNER_TIMEOUT=300`
   - `TELEGRAM_BOT_TOKEN` (from environment)
   - `LOG_LEVEL=info` (for production)
+  - `ACME_EMAIL` (for Let's Encrypt certificate registration, defaults to `admin@example.com` if not set)
+  - `DOMAIN_NAME` (domain name for Traefik routing, defaults to `localhost` if not set)
 - The app service should NOT expose ports directly - Traefik handles routing
 - The worker service runs background jobs using BullMQ (equivalent to Sidekiq in Rails)
 - Shared volumes enable cross-service access to Redis data and SQLite database
 - Traefik labels configure HTTPS routing, SSL certificates, and security headers
+- Redis port 6379 should NOT be exposed in production (Redis is accessed internally via Docker network for security)
+- Traefik dashboard (port 8080) should be secured in production by setting `--api.insecure=false` and adding authentication
+- Healthcheck intervals and timeouts match jarek-va patterns for consistency and reliability
+- The worker service command assumes a worker script/entry point exists (may need to be created in a separate task)
 
 ## Related Tasks
 
