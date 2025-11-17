@@ -37,6 +37,7 @@ Create a Redis connection utility that provides a singleton Redis client instanc
 - [ ] Support dependency injection:
   - [ ] Add optional parameter to `getRedisClient()` to allow passing custom Redis client (for testing)
   - [ ] If custom client provided, use it instead of creating new instance
+  - [ ] This matches Rails pattern where `redis_client` parameter takes precedence over `redis_url`
 - [ ] Add basic error handling:
   - [ ] Wrap client initialization in try-catch
   - [ ] Log initialization errors
