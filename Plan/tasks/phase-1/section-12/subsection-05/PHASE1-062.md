@@ -6,22 +6,83 @@
 
 ## Description
 
-Create API README
+Create a comprehensive API README that provides an overview of the telegram-receiver API, lists all available endpoints, and links to detailed endpoint documentation. The README should serve as the main entry point for API documentation and should be based on the jarek-va Rails application API structure.
 
 ## Checklist
 
 - [ ] Create `docs/API.md` file
-- [ ] Add overview of API
-- [ ] List all available endpoints
-- [ ] Link to detailed endpoint documentation
-- [ ] Add authentication information (if applicable)
-- [ ] Add rate limiting information (if applicable)
+- [ ] Add API overview section:
+  - [ ] Describe the purpose of the API (Virtual Assistant orchestration layer)
+  - [ ] Explain the main functionality areas (Telegram integration, cursor-runner integration, agent tools)
+  - [ ] Note that this is a conversion from the jarek-va Rails application
+- [ ] List all available endpoint groups:
+  - [ ] Health endpoints:
+    - [ ] `GET /health` - Health check endpoint
+    - [ ] `GET /` - Root endpoint (also serves health check)
+    - [ ] Link to `docs/api/HEALTH.md` for detailed documentation
+  - [ ] Agent Tools endpoints:
+    - [ ] `POST /agent-tools` - Tool execution webhook endpoint
+    - [ ] Note: Requires authentication via `X-EL-Secret` header or `Authorization: Bearer` token
+  - [ ] Cursor Runner endpoints:
+    - [ ] `POST /cursor-runner/cursor/execute` - Execute cursor command
+    - [ ] `POST /cursor-runner/cursor/iterate` - Execute cursor command iteratively
+    - [ ] `POST /cursor-runner/callback` - Callback endpoint for cursor-runner results
+    - [ ] `POST /cursor-runner/git/clone` - Clone a repository
+    - [ ] `GET /cursor-runner/git/repositories` - List cloned repositories
+    - [ ] `POST /cursor-runner/git/checkout` - Checkout a branch
+    - [ ] `POST /cursor-runner/git/push` - Push branch to origin
+    - [ ] `POST /cursor-runner/git/pull` - Pull branch from origin
+  - [ ] Telegram endpoints:
+    - [ ] `POST /telegram/webhook` - Telegram webhook endpoint (receives updates)
+    - [ ] `POST /telegram/set_webhook` - Set Telegram webhook (admin only)
+    - [ ] `GET /telegram/webhook_info` - Get webhook information (admin only)
+    - [ ] `DELETE /telegram/webhook` - Delete Telegram webhook (admin only)
+- [ ] Add authentication information section:
+  - [ ] Document authentication header patterns:
+    - [ ] Admin endpoints: `X-Admin-Secret` header (matches `WEBHOOK_SECRET` config)
+    - [ ] Telegram webhook: `X-Telegram-Bot-Api-Secret-Token` header (matches `TELEGRAM_WEBHOOK_SECRET` config)
+    - [ ] Cursor runner callback: `X-Webhook-Secret` or `X-Cursor-Runner-Secret` header (matches `WEBHOOK_SECRET` config)
+    - [ ] Agent tools: `X-EL-Secret` header or `Authorization: Bearer <token>` (matches `WEBHOOK_SECRET` config)
+  - [ ] Note that authentication secrets come from environment variables
+  - [ ] Document which endpoints require authentication
+  - [ ] Reference `docs/API_CONVENTIONS.md` for authentication patterns
+- [ ] Add rate limiting information section:
+  - [ ] Note if rate limiting is implemented (check jarek-va implementation)
+  - [ ] Document rate limits if applicable
+  - [ ] Document rate limit headers if applicable
+- [ ] Add links to detailed documentation:
+  - [ ] Link to `docs/API_CONVENTIONS.md` for API conventions and patterns
+  - [ ] Link to `docs/api/HEALTH.md` for health endpoint details
+  - [ ] Note that additional endpoint documentation will be added as tasks are completed
+- [ ] Add base URL and versioning information:
+  - [ ] Document default base URL (if applicable)
+  - [ ] Document API versioning strategy (if applicable)
+- [ ] Reference the Rails implementation:
+  - [ ] Routes: `jarek-va/config/routes.rb`
+  - [ ] Controllers: `jarek-va/app/controllers/*.rb`
+  - [ ] Note that the Node.js/Express implementation should match Rails API structure
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 12. API Structure Documentation
 - Task can be completed independently by a single agent
+- Reference the jarek-va Rails application (`/cursor/repositories/jarek-va`) for actual API structure:
+  - Routes: `config/routes.rb` - Defines all API endpoints and their HTTP methods
+  - Controllers: `app/controllers/*.rb` - Implement endpoint logic and authentication
+  - Application Controller: `app/controllers/application_controller.rb` - Base controller with global error handling
+- The API README should serve as the main entry point for API documentation
+- All endpoints should be listed with their HTTP methods and brief descriptions
+- Authentication requirements should be clearly documented for each endpoint group
+- Rate limiting: The Rails application does not implement rate limiting at the application level. Rate limiting may be handled at the infrastructure level (e.g., Traefik reverse proxy), but this is not part of the Rails application code. Document this in the rate limiting section.
+- The API follows RESTful conventions where applicable, but also includes webhook endpoints and callback endpoints
+- Response formats vary by endpoint:
+  - Health endpoint: `{ status: 'healthy', service: '...', version: '...' }`
+  - Success responses: `{ ok: true, ... }` or `{ success: true, ... }`
+  - Error responses: `{ ok: false, say: '...', result: { error: ... } }`
+  - Some endpoints return empty body with HTTP status codes
+- Link to detailed endpoint documentation as it becomes available (e.g., `docs/api/HEALTH.md` for health endpoint)
+- Reference `docs/API_CONVENTIONS.md` for detailed API conventions and patterns
 
 ## Related Tasks
 
