@@ -6,21 +6,166 @@
 
 ## Description
 
-Convert create routes directory structure from Rails to TypeScript/Node.js. Reference `jarek-va/config/routes.rb`.
+Create the routes directory structure and route files for the Express.js application, converting from Rails routes configuration. This task establishes the routing foundation that maps HTTP endpoints to controller handlers.
+
+Reference `jarek-va/config/routes.rb` for the complete route definitions. The Rails application defines the following route groups:
+
+1. **Health routes**: `GET /health` and `GET /` (root)
+2. **Agent tools route**: `POST /agent-tools`
+3. **Cursor-runner routes**: Multiple endpoints under `/cursor-runner` scope
+4. **Telegram routes**: Multiple endpoints under `/telegram` scope
+
+## Rails Routes Reference
+
+From `jarek-va/config/routes.rb`:
+
+```ruby
+# Health check endpoint
+get 'health', to: 'health#show'
+root 'health#show'
+
+# Agent tools webhook endpoint
+post 'agent-tools', to: 'agent_tools#create'
+
+# cursor-runner API endpoints
+scope path: 'cursor-runner', as: 'cursor_runner' do
+  post 'cursor/execute', to: 'cursor_runner#execute'
+  post 'cursor/iterate', to: 'cursor_runner#iterate'
+  post 'callback', to: 'cursor_runner_callback#create'
+  post 'git/clone', to: 'cursor_runner#clone'
+  get 'git/repositories', to: 'cursor_runner#repositories'
+  post 'git/checkout', to: 'cursor_runner#checkout'
+  post 'git/push', to: 'cursor_runner#push'
+  post 'git/pull', to: 'cursor_runner#pull'
+end
+
+# Telegram webhook endpoints
+scope path: 'telegram', as: 'telegram' do
+  post 'webhook', to: 'telegram#webhook'
+  post 'set_webhook', to: 'telegram#set_webhook'
+  get 'webhook_info', to: 'telegram#webhook_info'
+  delete 'webhook', to: 'telegram#delete_webhook'
+end
+```
 
 ## Checklist
 
-- [ ] Create `src/routes` directory
-- [ ] Create route files for each controller
-- [ ] Organize route definitions
-- [ ] Plan route structure
+### Directory Structure
+- [ ] Verify `src/routes` directory exists (should already exist)
+- [ ] Create `src/routes/index.ts` - Main route aggregator that imports and mounts all route modules
+- [ ] Create `src/routes/health.routes.ts` - Health check routes (`GET /health`, `GET /`)
+- [ ] Create `src/routes/agent-tools.routes.ts` - Agent tools webhook route (`POST /agent-tools`)
+- [ ] Create `src/routes/cursor-runner.routes.ts` - Cursor runner API routes (`/cursor-runner/*`)
+- [ ] Create `src/routes/telegram.routes.ts` - Telegram webhook routes (`/telegram/*`)
+
+### Route File Structure
+- [ ] Each route file should export an Express Router instance
+- [ ] Use Express Router for route grouping and organization
+- [ ] Routes should import their corresponding controller handlers (controllers will be created in later tasks)
+- [ ] Route files should be structured to accept controller instances or factory functions
+
+### Health Routes (`src/routes/health.routes.ts`)
+- [ ] `GET /health` - Health check endpoint
+- [ ] `GET /` - Root endpoint (maps to health check)
+
+### Agent Tools Routes (`src/routes/agent-tools.routes.ts`)
+- [ ] `POST /agent-tools` - Agent tools webhook endpoint
+- [ ] Include authentication middleware (webhook secret validation)
+- [ ] Reference: `jarek-va/app/controllers/agent_tools_controller.rb`
+
+### Cursor Runner Routes (`src/routes/cursor-runner.routes.ts`)
+- [ ] `POST /cursor-runner/cursor/execute` - Execute cursor command
+- [ ] `POST /cursor-runner/cursor/iterate` - Iterate cursor command
+- [ ] `POST /cursor-runner/callback` - Callback from cursor-runner
+- [ ] `POST /cursor-runner/git/clone` - Clone repository
+- [ ] `GET /cursor-runner/git/repositories` - List repositories
+- [ ] `POST /cursor-runner/git/checkout` - Checkout branch
+- [ ] `POST /cursor-runner/git/push` - Push branch
+- [ ] `POST /cursor-runner/git/pull` - Pull branch
+- [ ] Include authentication middleware for callback endpoint (webhook secret)
+- [ ] Reference: `jarek-va/app/controllers/cursor_runner_controller.rb` and `cursor_runner_callback_controller.rb`
+
+### Telegram Routes (`src/routes/telegram.routes.ts`)
+- [ ] `POST /telegram/webhook` - Telegram webhook endpoint (requires webhook secret authentication)
+- [ ] `POST /telegram/set_webhook` - Set webhook (admin only, requires admin secret)
+- [ ] `GET /telegram/webhook_info` - Get webhook info (admin only, requires admin secret)
+- [ ] `DELETE /telegram/webhook` - Delete webhook (admin only, requires admin secret)
+- [ ] Include appropriate authentication middleware for each endpoint
+- [ ] Reference: `jarek-va/app/controllers/telegram_controller.rb`
+
+### Main Routes Index (`src/routes/index.ts`)
+- [ ] Import all route modules
+- [ ] Mount routes with appropriate path prefixes:
+  - Health routes at root level
+  - Agent tools routes at `/agent-tools`
+  - Cursor runner routes at `/cursor-runner`
+  - Telegram routes at `/telegram`
+- [ ] Export a function that accepts Express app instance and mounts all routes
+- [ ] Export individual route routers for testing purposes
+
+### Route Organization
+- [ ] Routes should be organized by feature/domain (health, agent-tools, cursor-runner, telegram)
+- [ ] Each route file should be self-contained with its own router
+- [ ] Route handlers should reference controller methods (to be implemented in later tasks)
+- [ ] Use TypeScript types for route handlers (Express Request/Response types)
+
+### Authentication Middleware Notes
+- [ ] Webhook secret authentication: `X-Telegram-Bot-Api-Secret-Token` header (for Telegram webhook)
+- [ ] Admin secret authentication: `X-Admin-Secret` header (for admin endpoints)
+- [ ] Cursor runner callback authentication: `X-Webhook-Secret` or `X-Cursor-Runner-Secret` header
+- [ ] Agent tools authentication: `X-EL-Secret` or `Authorization: Bearer <token>` header
+- [ ] Middleware will be implemented in later tasks, but routes should be structured to accept middleware
+
+## Implementation Notes
+
+### Express Router Pattern
+Each route file should follow this pattern:
+
+```typescript
+import { Router } from 'express';
+import { HealthController } from '../controllers/health.controller';
+
+const router = Router();
+const healthController = new HealthController();
+
+router.get('/health', healthController.show.bind(healthController));
+router.get('/', healthController.show.bind(healthController));
+
+export default router;
+```
+
+### Route Mounting in Main App
+The main routes index should mount routes like:
+
+```typescript
+import { Express } from 'express';
+import healthRoutes from './health.routes';
+import agentToolsRoutes from './agent-tools.routes';
+import cursorRunnerRoutes from './cursor-runner.routes';
+import telegramRoutes from './telegram.routes';
+
+export function setupRoutes(app: Express): void {
+  app.use('/', healthRoutes);
+  app.use('/agent-tools', agentToolsRoutes);
+  app.use('/cursor-runner', cursorRunnerRoutes);
+  app.use('/telegram', telegramRoutes);
+}
+
+export { healthRoutes, agentToolsRoutes, cursorRunnerRoutes, telegramRoutes };
+```
+
+### Controller References
+- Controllers will be created in later tasks, so route files should import controller classes/types
+- Use placeholder controller imports or comment out controller usage until controllers are implemented
+- Route structure should be complete even if controllers are not yet available
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 11. Routes Configuration
-- Reference the Rails implementation for behavior
-
+- Reference the Rails implementation (`jarek-va/config/routes.rb`) for exact route definitions
+- Controllers will be implemented in later tasks, so routes may reference controllers that don't exist yet
+- Authentication middleware will be implemented separately - routes should be structured to accept middleware
 - Task can be completed independently by a single agent
 
 ## Related Tasks
