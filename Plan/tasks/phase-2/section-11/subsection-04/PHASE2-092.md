@@ -6,20 +6,69 @@
 
 ## Description
 
-Convert create cursor-runner callback routes from Rails to TypeScript/Node.js. Reference `jarek-va/config/routes.rb`.
+Convert cursor-runner callback routes from Rails to TypeScript/Node.js. Reference `jarek-va/config/routes.rb` and `jarek-va/app/controllers/cursor_runner_callback_controller.rb`.
+
+This task creates the Express route definitions for cursor-runner callback webhook endpoints. The routes should be scoped under `/cursor-runner` path and include appropriate webhook authentication middleware.
+
+## Rails Implementation Reference
+
+From `jarek-va/config/routes.rb`:
+```ruby
+scope path: 'cursor-runner', as: 'cursor_runner' do
+  # Webhook callback endpoint (receives callbacks from cursor-runner)
+  post 'callback', to: 'cursor_runner_callback#create'
+end
+```
+
+From `jarek-va/app/controllers/cursor_runner_callback_controller.rb`:
+- The controller uses `before_action :authenticate_webhook` for authentication
+- The `create` method handles POST requests to `/cursor-runner/callback`
+- Receives callback data from cursor-runner when iterate operation completes
+- Processes callbacks synchronously and sends responses to Telegram
 
 ## Checklist
 
 - [ ] Create `src/routes/cursor-runner-routes.ts`
-- [ ] Define POST /cursor-runner/callback route
-- [ ] Apply webhook authentication
-- [ ] Export router
+- [ ] Import Express Router
+- [ ] Import CursorRunnerCallbackController from `../controllers/cursor-runner-callback.controller`
+- [ ] Create Express Router instance
+- [ ] Instantiate CursorRunnerCallbackController
+- [ ] Define POST `/callback` route (will be mounted under `/cursor-runner` prefix)
+  - Apply webhook authentication middleware (checks X-Webhook-Secret or X-Cursor-Runner-Secret headers, or secret query param)
+  - Route should delegate to cursor-runner-callback controller create handler
+- [ ] Export router for use in main application
+- [ ] Use proper TypeScript types (Express Request/Response)
+- [ ] Bind controller methods properly (use `.bind(controller)` or arrow functions)
+
+## Authentication Requirements
+
+Based on `jarek-va/app/controllers/cursor_runner_callback_controller.rb`:
+
+**Webhook Authentication** (for POST /cursor-runner/callback):
+- Checks `X-Webhook-Secret` header OR `X-Cursor-Runner-Secret` header OR `secret` query/body param
+- Compares against `webhook_secret` configuration value (from `Rails.application.config.webhook_secret`)
+- Allows request if secret matches OR if expected secret is blank (development mode)
+- Returns 401 Unauthorized if secret is provided but doesn't match
+- Logs warning for unauthorized attempts with IP address
+
+## Implementation Notes
+
+- Routes are scoped under `/cursor-runner` path prefix (as defined in Rails routes.rb)
+- The route file defines `/callback` which will be mounted as `/cursor-runner/callback` in the main application
+- Reference `jarek-va/app/controllers/cursor_runner_callback_controller.rb` for controller implementation details
+- The callback endpoint should return 200 OK immediately (even on errors) to prevent cursor-runner from retrying
+- Error handling should follow the pattern in ApplicationController (returns JSON with error message)
+- Authentication middleware should allow requests when webhook_secret is not configured (development mode)
+- Controller implementation will be handled in a separate task
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 11. Routes Configuration
+- Subsection: 11.4
 - Reference the Rails implementation for behavior
+- Controller implementation will be handled in a separate task
+- Authentication middleware should be created/referenced as needed
 
 - Task can be completed independently by a single agent
 
