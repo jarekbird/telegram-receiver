@@ -8,18 +8,28 @@
 
 Convert and implement the `webhook_info` method from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/telegram_service.rb` (lines 65-75).
 
-The method should retrieve the current Telegram webhook information by calling the Telegram Bot API's `getWebhookInfo` endpoint. This method follows the same pattern as other TelegramService methods: it checks for a blank bot token before proceeding, handles errors with logging, and re-raises exceptions. The method returns the webhook information object from the Telegram API, which includes details such as the webhook URL, pending update count, last error date, and other webhook-related information.
+The Rails implementation:
+- Takes no parameters
+- Returns `nil` (undefined in TypeScript) early if bot token is blank (similar to other methods in the service)
+- Calls Telegram Bot API `getWebhookInfo` endpoint via `bot.api.get_webhook_info`
+- Logs errors with full stack trace and re-raises exceptions (using `raise` in Rails, `throw` in TypeScript)
+- Returns the full Telegram API response object (implicit return of `bot.api.get_webhook_info` result, which includes `ok` boolean and `result` field containing webhook information)
+
+The method should retrieve the current Telegram webhook information by calling the Telegram Bot API's `getWebhookInfo` endpoint. This method follows the same pattern as other TelegramService methods: it checks for a blank bot token before proceeding (returning `undefined` early), handles errors with logging, and re-raises exceptions. The method returns the full Telegram API response object, which includes an `ok` boolean and a `result` field containing webhook details such as the webhook URL, pending update count, last error date, and other webhook-related information.
 
 ## Checklist
 
-- [ ] Implement `getWebhookInfo` method in TelegramService
+- [ ] Implement `getWebhookInfo` method in TelegramService with proper TypeScript signature:
+  - Parameters: none
+  - Return type: `Promise<TelegramApiResponse<WebhookInfo> | undefined>` (returns `undefined` on early return when bot token is blank, otherwise returns Telegram API response)
 - [ ] Add early return check if telegram bot token is blank (consistent with other methods)
+  - If bot token is blank/invalid, return `undefined` immediately (matching Rails `return` behavior which returns `nil`)
 - [ ] Call Telegram Bot API `getWebhookInfo` endpoint (no parameters required)
 - [ ] Add error handling with try-catch block
 - [ ] Log errors with descriptive error message ("Error getting Telegram webhook info: {error message}")
 - [ ] Log error stack trace for debugging
 - [ ] Re-raise exceptions after logging (to allow callers to handle errors)
-- [ ] Return the webhook information object from the Telegram API response
+- [ ] Return the full Telegram API response object (includes `ok` boolean and `result` field containing webhook info)
 
 ## Notes
 
@@ -32,20 +42,24 @@ The method should retrieve the current Telegram webhook information by calling t
 - The method should be a static/class method (matching the Rails class method pattern)
 - The method takes no parameters
 - The method should check if the telegram bot token is blank before proceeding (early return)
+- Return value: The method should return the full Telegram API response object (with `ok` boolean and `result` field) when successful, or `undefined` when the bot token is blank (early return). The Rails method implicitly returns the result of `bot.api.get_webhook_info` which is the full API response object.
+- Early return behavior: If the telegram bot token is blank, return `undefined` early without making the API call (consistent with other TelegramService methods, matching Rails `return` which returns `nil`)
 - Error handling should:
   - Catch all exceptions (StandardError in Rails, Error in TypeScript)
   - Log the error message with prefix "Error getting Telegram webhook info: "
   - Log the full stack trace for debugging
-  - Re-raise the exception to allow callers to handle errors appropriately
+  - Re-raise the exception to allow callers to handle errors appropriately (using `throw` in TypeScript, matching Rails `raise` behavior)
 - The method should use the Telegram Bot API client's `getWebhookInfo` method (or equivalent HTTP call)
-- The method should return the API response from Telegram, which contains webhook information including:
-  - `url`: The webhook URL (if set)
-  - `has_custom_certificate`: Whether a custom certificate is used
-  - `pending_update_count`: Number of pending updates
-  - `last_error_date`: Timestamp of last error (if any)
-  - `last_error_message`: Last error message (if any)
-  - `max_connections`: Maximum allowed connections
-  - `allowed_updates`: Array of allowed update types
+- The Telegram API response structure includes:
+  - `ok`: Boolean indicating success
+  - `result`: Object containing webhook information with fields:
+    - `url`: The webhook URL (if set)
+    - `has_custom_certificate`: Whether a custom certificate is used
+    - `pending_update_count`: Number of pending updates
+    - `last_error_date`: Timestamp of last error (if any)
+    - `last_error_message`: Last error message (if any)
+    - `max_connections`: Maximum allowed connections
+    - `allowed_updates`: Array of allowed update types
 - Follow the same pattern as `setWebhook` and `deleteWebhook` methods for consistency
 
 - Task can be completed independently by a single agent
