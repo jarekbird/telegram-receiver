@@ -6,22 +6,44 @@
 
 ## Description
 
-Convert implement send_text_as_audio method from Rails to TypeScript/Node.js. Reference `jarek-va/app/controllers/*_controller.rb` files.
+Convert the `send_text_as_audio` private method from Rails to TypeScript/Node.js. This method converts text to speech using ElevenLabs and sends it as a voice message via Telegram.
+
+**Rails Reference**: `jarek-va/app/controllers/cursor_runner_callback_controller.rb` (lines 221-255)
 
 ## Checklist
 
-- [ ] Create `sendTextAsAudio` method
-- [ ] Call ElevenLabsTextToSpeechService
-- [ ] Generate audio file
-- [ ] Send via TelegramService.sendVoice
-- [ ] Clean up audio file
-- [ ] Fallback to text on error
+- [ ] Create private `sendTextAsAudio` method with signature: `(chatId: string, text: string, messageId?: number)`
+- [ ] Initialize `ElevenLabsTextToSpeechService` instance (using `new` constructor)
+- [ ] Call `synthesize(text)` method to generate audio file (returns file path)
+- [ ] Send audio via `TelegramService.sendVoice` with parameters:
+  - `chatId`: chat ID
+  - `voicePath`: path to generated audio file
+  - `replyToMessageId`: message ID (optional)
+- [ ] Implement error handling with try-catch:
+  - Log errors with full error message and stack trace
+  - Fallback to `TelegramService.sendMessage` with Markdown parse_mode on error
+- [ ] Implement cleanup in finally/ensure block:
+  - Delete generated audio file using file system operations
+  - Handle cleanup errors gracefully (log warnings, don't throw)
+  - Check if file exists before attempting deletion
+- [ ] Initialize `audioPath` variable as `null`/`undefined` before try block
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 9. CursorRunnerCallbackController Conversion
-- Reference the Rails implementation for behavior
+- **Rails Implementation Details**:
+  - Method is private and called from `send_response_to_telegram` method
+  - Uses `ElevenLabsTextToSpeechService.new` to create service instance
+  - Calls `synthesize(text)` which returns a file path string
+  - Error handling catches `StandardError` and falls back to text message with Markdown parse_mode
+  - Cleanup uses `File.delete(audio_path)` in ensure block with error handling
+  - Logs errors and warnings appropriately
+- **TypeScript Conversion Notes**:
+  - Use async/await for file operations and API calls
+  - Use `fs.promises` or `fs-extra` for file operations
+  - Ensure proper error handling and logging
+  - Match the exact behavior: generate audio, send voice, cleanup, fallback on error
 
 - Task can be completed independently by a single agent
 
