@@ -6,23 +6,113 @@
 
 ## Description
 
-Review and improve review interface/type usage patterns in the codebase to ensure best practices.
+Review and improve interface/type usage patterns in the codebase to ensure best practices. Establish consistent patterns for when to use `interface` vs `type`, create missing type definitions for API responses and test fixtures, and ensure type safety throughout the codebase.
+
+## Current State Analysis
+
+### Issues Found:
+1. **Missing Type Definitions**: Test fixtures (`telegramMessages.ts`, `apiResponses.ts`) use plain objects without type definitions
+2. **No API Response Types**: Telegram API and Cursor Runner API responses lack type definitions
+3. **Missing Interface Definitions**: Mock objects (`telegramApi.ts`, `cursorRunnerApi.ts`, `redis.ts`) lack proper interface definitions
+4. **Inconsistent Patterns**: Some files use generics (`testUtils.ts`), some use `as const` (`apiHelpers.ts`), but no consistent pattern
+5. **No Type Safety**: Test fixtures can have any shape, making refactoring risky
+
+### Existing Patterns:
+- Generic types used in `testUtils.ts` for mock functions: `<T extends (...args: any[]) => any>`
+- `as const` used in `apiHelpers.ts` for HTTP_STATUS constant
+- No interfaces or type aliases currently defined in the codebase
 
 ## Checklist
 
-- [ ] Review when interfaces vs types are used
-- [ ] Check for consistent usage patterns
-- [ ] Review interface naming conventions
-- [ ] Check for unnecessary type complexity
-- [ ] Review type composition patterns
-- [ ] Identify improvements
+### 1. Establish Interface vs Type Guidelines
+- [ ] Document when to use `interface` vs `type`:
+  - Use `interface` for object shapes that may be extended or implemented
+  - Use `type` for unions, intersections, primitives, and computed types
+  - Use `interface` for public APIs and contracts
+  - Use `type` for internal type aliases and complex compositions
+- [ ] Create a style guide document in `docs/typescript-patterns.md`
+
+### 2. Create Missing Type Definitions
+- [ ] Create Telegram API types in `src/types/telegram.ts`:
+  - `TelegramUpdate`, `TelegramMessage`, `TelegramUser`, `TelegramChat`, `TelegramCallbackQuery`
+  - `TelegramApiResponse<T>`, `TelegramSendMessageResponse`
+- [ ] Create Cursor Runner API types in `src/types/cursorRunner.ts`:
+  - `CursorRunnerResponse<T>`, `CursorRunnerIterateResponse`, `CursorRunnerAsyncResponse`
+- [ ] Create Redis client types in `src/types/redis.ts`:
+  - `RedisClient` interface extending the Redis client methods
+- [ ] Create HTTP/API types in `src/types/api.ts`:
+  - `ApiResponse<T>`, `ApiError`, `HttpStatusCode`
+
+### 3. Update Test Fixtures with Types
+- [ ] Update `tests/fixtures/telegramMessages.ts` to use proper types:
+  - Replace plain objects with typed constants
+  - Use `satisfies` operator for type checking without widening
+- [ ] Update `tests/fixtures/apiResponses.ts` to use proper types
+- [ ] Update `tests/mocks/telegramApi.ts` to implement `TelegramApi` interface
+- [ ] Update `tests/mocks/cursorRunnerApi.ts` to implement `CursorRunnerApi` interface
+- [ ] Update `tests/mocks/redis.ts` to implement `RedisClient` interface
+
+### 4. Review and Improve Existing Patterns
+- [ ] Review generic usage in `testUtils.ts`:
+  - Ensure generic constraints are appropriate
+  - Consider if utility types (`Parameters`, `ReturnType`) could be used
+- [ ] Review `as const` usage in `apiHelpers.ts`:
+  - Verify that `as const` is used appropriately for readonly constants
+  - Consider if `satisfies` operator would be better in some cases
+- [ ] Check for any `any` types and replace with proper types
+- [ ] Review type inference opportunities
+
+### 5. Establish Naming Conventions
+- [ ] Document naming conventions:
+  - Interfaces: PascalCase, descriptive names (e.g., `TelegramMessage`, `ApiResponse`)
+  - Types: PascalCase, descriptive names (e.g., `HttpMethod`, `ApiErrorCode`)
+  - Generic parameters: Single uppercase letters (e.g., `T`, `K`, `V`)
+- [ ] Ensure all type definitions follow conventions
+
+### 6. Review Type Composition Patterns
+- [ ] Check for opportunities to use utility types:
+  - `Partial<T>`, `Required<T>`, `Pick<T, K>`, `Omit<T, K>`
+  - `Record<K, V>`, `Readonly<T>`, `NonNullable<T>`
+- [ ] Review union and intersection types for appropriateness
+- [ ] Check for type guards and discriminated unions where applicable
+
+### 7. Documentation and Examples
+- [ ] Document type patterns in `docs/typescript-patterns.md`
+- [ ] Add JSDoc comments to all public type definitions
+- [ ] Create examples showing proper usage of interfaces vs types
+- [ ] Document any architectural decisions regarding type definitions
+
+## Implementation Guidelines
+
+### When to Use `interface`:
+- Object shapes that represent contracts or APIs
+- Types that may be extended or implemented
+- Public API definitions
+- Example: `interface TelegramMessage { ... }`
+
+### When to Use `type`:
+- Union types: `type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'`
+- Intersection types: `type A & B`
+- Mapped types and utility type compositions
+- Type aliases for complex types
+- Example: `type ApiResponse<T> = { success: boolean; data: T }`
+
+### Best Practices:
+- Prefer `interface` for object shapes that may be extended
+- Use `type` for unions, intersections, and computed types
+- Use `satisfies` operator for type checking without type widening
+- Avoid `any` - use `unknown` and type guards instead
+- Use generic constraints appropriately
+- Document complex types with JSDoc comments
 
 ## Notes
 
 - This task is part of Phase 3: Holistic Review and Best Practices
 - Section: 2. TypeScript Best Practices
-- Focus on identifying issues and improvements
-- Document findings and decisions
+- Focus on establishing patterns early before more code is written
+- All type definitions should be placed in `src/types/` directory
+- Test fixtures should use proper types for better refactoring safety
+- Document all decisions and patterns for future reference
 
 - Task can be completed independently by a single agent
 
