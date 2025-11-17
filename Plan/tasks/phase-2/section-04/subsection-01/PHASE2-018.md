@@ -6,22 +6,52 @@
 
 ## Description
 
-Convert create telegramservice class structure from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/telegram_service.rb`.
+Create the TelegramService class structure in TypeScript/Node.js. This is the foundational task that sets up the class skeleton. Method implementations will be added in subsequent tasks (PHASE2-019 through PHASE2-025).
+
+The Rails implementation (`jarek-va/app/services/telegram_service.rb`) uses class methods (`class << self`) and includes:
+- A `bot` method that creates/returns a Telegram::Bot::Client instance
+- Bot token configuration via `Rails.application.config.telegram_bot_token`
+- All methods check if bot token is blank before proceeding
+- 6 public methods: `send_message`, `set_webhook`, `delete_webhook`, `webhook_info`, `send_voice`, `download_file`
+- 2 private helper methods: `download_file_from_url`, `escape_html_entities`
+
+For TypeScript, convert to an instance-based class that:
+- Accepts bot token via constructor or environment variable (`TELEGRAM_BOT_TOKEN`)
+- Validates bot token presence before operations (similar to Rails blank check)
+- Will have method stubs added in subsequent tasks
 
 ## Checklist
 
 - [ ] Create `src/services/telegram-service.ts` file
-- [ ] Define class structure
-- [ ] Add constructor with bot token configuration
-- [ ] Import required types
-- [ ] Add basic error handling structure
+- [ ] Define `TelegramService` class
+- [ ] Add private `botToken` property to store the Telegram bot token
+- [ ] Add constructor that accepts bot token (or reads from `process.env.TELEGRAM_BOT_TOKEN`)
+- [ ] Add private method to validate bot token is present (similar to Rails blank check)
+- [ ] Add placeholder for Telegram Bot API client initialization (will use axios or similar)
+- [ ] Import required types and dependencies (axios for HTTP requests, types for Telegram API)
+- [ ] Add method stubs with proper TypeScript signatures for:
+  - `sendMessage()` - will be implemented in PHASE2-019
+  - `setWebhook()` - will be implemented in PHASE2-020
+  - `deleteWebhook()` - will be implemented in PHASE2-021
+  - `getWebhookInfo()` - will be implemented in PHASE2-022
+  - `sendVoice()` - will be implemented in PHASE2-023
+  - `downloadFile()` - will be implemented in PHASE2-024
+- [ ] Add private method stubs for helper methods:
+  - `downloadFileFromUrl()` - helper for file downloads
+  - `escapeHtmlEntities()` - helper for HTML escaping (will be implemented in PHASE2-025)
+- [ ] Add basic error handling structure (try-catch pattern, error logging)
+- [ ] Export the class as default export
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 4. TelegramService Conversion
-- Reference the Rails implementation for behavior
-
+- **This task only creates the class structure** - method implementations are in subsequent tasks
+- Reference the Rails implementation (`jarek-va/app/services/telegram_service.rb`) for behavior patterns
+- The Rails service uses class methods, but TypeScript version should use instance methods
+- Bot token should be validated in each method (similar to Rails `return if Rails.application.config.telegram_bot_token.blank?`)
+- Use `axios` (already in dependencies) for HTTP requests to Telegram Bot API
+- Method names should follow TypeScript/JavaScript camelCase convention (e.g., `sendMessage` instead of `send_message`)
 - Task can be completed independently by a single agent
 
 ## Related Tasks
