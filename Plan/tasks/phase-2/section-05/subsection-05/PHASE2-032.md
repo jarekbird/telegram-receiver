@@ -16,14 +16,14 @@ Convert the `clone_repository` method from Rails CursorRunnerService to TypeScri
 cloneRepository(params: {
   repositoryUrl: string;
   repositoryName?: string;
-}): Promise<CloneRepositoryResponse>
+}): Promise<GitCloneResponse>
 ```
 
 **Parameters**:
 - `repositoryUrl` (required): Git repository URL to clone
 - `repositoryName` (optional): Repository name (defaults to URL-based name if not provided)
 
-**Return Type**: Promise resolving to a response object with `success`, `repositoryName`, etc.
+**Return Type**: Promise resolving to `GitCloneResponse` (defined in PHASE2-002) with `success`, `repository`, `message`, etc.
 
 ## Implementation Details
 
@@ -68,6 +68,7 @@ The method should handle and potentially throw the following error types:
 
 ## Checklist
 
+- [ ] Import `GitCloneResponse` type from `src/types/cursor-runner.ts` (defined in PHASE2-002)
 - [ ] Implement `cloneRepository` method with correct TypeScript signature
 - [ ] Accept required parameter: `repositoryUrl`
 - [ ] Accept optional `repositoryName` parameter
@@ -83,8 +84,8 @@ The method should handle and potentially throw the following error types:
 - [ ] Treat 422 Unprocessable Entity as valid response (not an error)
 - [ ] Parse JSON response body
 - [ ] Handle JSON parsing errors (InvalidResponseError)
-- [ ] Return parsed response object
-- [ ] Add appropriate logging (request and response logging)
+- [ ] Return parsed response object (typed as `GitCloneResponse`)
+- [ ] Note: Request and response logging is handled automatically by the `executeRequest` helper method from PHASE2-029 (logs "CursorRunnerService: POST /git/clone" and "CursorRunnerService: Response {code} {message}")
 - [ ] Write unit tests for the method
 - [ ] Test with only `repositoryUrl` provided (should not include `repositoryName` in request body)
 - [ ] Test with both `repositoryUrl` and `repositoryName` provided (should include both in request body)
@@ -95,8 +96,9 @@ The method should handle and potentially throw the following error types:
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 5. CursorRunnerService Conversion
-- The method uses a private `post` helper method in Rails - ensure similar helper is available or implement HTTP request directly
-- The method uses a private `parse_response` helper method in Rails - ensure similar helper is available or implement JSON parsing directly
+- **Helper Methods Available**: The `post` and `parseResponse` helper methods are available from PHASE2-029. Use these helpers rather than implementing HTTP requests directly.
+- **Type Definitions**: Use `GitCloneResponse` type from `src/types/cursor-runner.ts` (defined in PHASE2-002)
+- **Logging**: Request and response logging is handled automatically by the `executeRequest` helper method from PHASE2-029 (logs "CursorRunnerService: POST /git/clone" and "CursorRunnerService: Response {code} {message}")
 - Reference the Rails implementation at `jarek-va/app/services/cursor_runner_service.rb` lines 73-79 for exact behavior
 - The Rails implementation conditionally adds `repositoryName` to the body only if `repository_name` is provided (i.e., if it's not nil)
 - Task can be completed independently by a single agent
