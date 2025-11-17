@@ -6,21 +6,55 @@
 
 ## Description
 
-Create CORS middleware (if needed)
+Create CORS middleware for the Express application. This middleware handles Cross-Origin Resource Sharing (CORS) headers to allow cross-origin AJAX requests from web frontends or other clients.
+
+**Rails Reference**: The jarek-va Rails application has CORS configuration in `config/initializers/cors.rb`, but it is currently commented out (not enabled). The Rails app is configured as `api_only = true`, meaning it's designed as an API backend.
+
+**When CORS is Needed**: CORS middleware should be implemented if:
+- The API will be called from web browsers (frontend applications)
+- The API needs to support cross-origin requests
+- Future frontend integrations are planned
+
+**When CORS May Not Be Needed**: 
+- If the API is only called from server-to-server (like Telegram webhooks, cursor-runner callbacks)
+- If all clients are same-origin
+- If the API is only used internally within Docker networks
+
+Since the Rails version has CORS disabled, this task should evaluate whether CORS is needed for the Node.js conversion based on the intended use case. If CORS is needed, implement it; if not, document why it's not needed and skip implementation.
+
+## Rails Implementation Reference
+
+**File**: `jarek-va/config/initializers/cors.rb`
+- CORS configuration is commented out (not enabled)
+- Example configuration shows allowing specific origins and all HTTP methods
+- Uses `rack-cors` gem (Rails equivalent of Express `cors` middleware)
 
 ## Checklist
 
-- [ ] Install `cors` package as production dependency
-- [ ] Install `@types/cors` as dev dependency
-- [ ] Import `cors` in `src/app.ts`
-- [ ] Configure CORS with appropriate options
-- [ ] Apply CORS middleware using `app.use(cors())`
+- [ ] Evaluate whether CORS is needed based on API usage patterns
+- [ ] If CORS is needed:
+  - [ ] Install `cors` package as production dependency
+  - [ ] Install `@types/cors` as dev dependency
+  - [ ] Create CORS middleware file in `src/middleware/cors.ts` (or configure in main app file)
+  - [ ] Import `cors` in the main application file (`src/index.ts` or `src/app.ts`)
+  - [ ] Configure CORS with appropriate options:
+    - [ ] Set allowed origins (use environment variable for flexibility)
+    - [ ] Configure allowed methods (GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD)
+    - [ ] Configure allowed headers (Content-Type, Authorization, etc.)
+    - [ ] Set credentials handling if needed
+  - [ ] Apply CORS middleware using `app.use(cors(options))` before other middleware
+- [ ] If CORS is not needed:
+  - [ ] Document decision in code comments
+  - [ ] Skip CORS middleware implementation
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 6. Request/Response Middleware
 - Task can be completed independently by a single agent
+- The Rails application has CORS disabled (commented out), so this is an optional enhancement
+- Consider using environment variables for CORS configuration (e.g., `CORS_ORIGIN`, `CORS_ENABLED`)
+- CORS middleware should be applied early in the middleware stack, typically before route handlers
 
 ## Related Tasks
 
