@@ -25,13 +25,13 @@ The Rails implementation (`download_file`) downloads files from Telegram by:
 - [ ] Construct download URL: `https://api.telegram.org/file/bot${botToken}/${file_path}`
 - [ ] Handle optional `destinationPath` parameter:
   - If provided, use it as-is
-  - If not provided (undefined), create temp path using Node.js `os.tmpdir()` with format: `telegram_${fileId}_${filename}` where filename is extracted from `file_path`
+  - If not provided (undefined), create temp path using `path.join(os.tmpdir(), "telegram_${fileId}_${filename}")` where filename is extracted from `file_path` using `path.basename(file_path)` (matches Rails `File.join(Dir.tmpdir, "telegram_#{file_id}_#{filename}")`)
 - [ ] Implement private helper method `downloadFileFromUrl(url: string, destinationPath: string): Promise<void>`
   - Use `axios` or `node:https`/`node:http` to download the file
-  - Ensure directory exists using `fs.mkdir` with `recursive: true` option
-  - Write file using `fs.writeFile` or `fs.writeFileSync` with binary mode
+  - Ensure parent directory exists using `fs.mkdir` with `path.dirname(destinationPath)` and `{ recursive: true }` option (matches Rails `FileUtils.mkdir_p(File.dirname(destination_path))`)
+  - Write file using `fs.writeFile` or `fs.promises.writeFile` with binary mode
   - Log success message with file size (similar to Rails: "Downloaded file to {path} ({size} bytes)")
-  - Raise/throw error if HTTP request fails (check status code, similar to Rails `Net::HTTPSuccess`)
+  - Raise/throw error if HTTP request fails with format: "Failed to download file: HTTP {statusCode} {statusMessage}" (check status code, similar to Rails `Net::HTTPSuccess`)
 - [ ] Call `downloadFileFromUrl` helper method to perform the actual download
 - [ ] Return the `destinationPath` string
 - [ ] Add comprehensive error handling:
@@ -49,9 +49,12 @@ The Rails implementation (`download_file`) downloads files from Telegram by:
 - Reference the Rails implementation (`jarek-va/app/services/telegram_service.rb`) for behavior
 - The Rails implementation uses a private helper method `download_file_from_url` - this should be implemented as `downloadFileFromUrl` in TypeScript
 - Rails uses `Net::HTTP` for downloading - in TypeScript, use `axios` (already in dependencies) or Node.js built-in `https`/`http` modules
-- Rails uses `File.binwrite` for binary file writing - use `fs.writeFile` or `fs.promises.writeFile` in Node.js
+  - If using `axios`, set `responseType: 'arraybuffer'` or `responseType: 'stream'` to handle binary file data correctly
+  - If using Node.js `https`/`http`, handle the response stream appropriately for binary data
+- Rails uses `File.binwrite` for binary file writing - use `fs.writeFile` or `fs.promises.writeFile` in Node.js (no encoding specified, writes binary)
 - Rails uses `Dir.tmpdir` for temp directory - use `os.tmpdir()` in Node.js
 - Rails uses `FileUtils.mkdir_p` for directory creation - use `fs.mkdir` with `{ recursive: true }` in Node.js
+- Rails uses `File.join` and `File.basename` and `File.dirname` - use Node.js `path.join`, `path.basename`, and `path.dirname` respectively
 - The method should return the destination path string (same as Rails)
 - Error handling pattern should match other TelegramService methods (early return if token blank, try-catch with logging, re-throw)
 - Task can be completed independently by a single agent
