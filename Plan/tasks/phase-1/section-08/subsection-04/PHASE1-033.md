@@ -6,21 +6,61 @@
 
 ## Description
 
-Integrate logger in application entry
+Integrate logger utility in the application entry point (`src/index.ts`) to replace console.log statements with proper logging using the logger utility wrapper created in PHASE1-032. This task ensures that server startup, environment information, and error handling use the configured logger instead of console methods, matching Rails logging patterns from jarek-va.
+
+**Rails Logging Patterns to Replicate:**
+- The jarek-va Rails application logs initialization and startup information through initializers (see `jarek-va/config/initializers/telegram.rb` lines 9, 11, 13 for example logging patterns)
+- Rails automatically logs server startup information when the server starts (Puma logs include environment and port)
+- Error logging includes full stack traces (see `jarek-va/app/controllers/application_controller.rb` lines 10-11)
+- The Rails application uses `Rails.logger.info()` for informational messages and `Rails.logger.error()` for errors
+
+**Purpose:**
+- Replace console.log/console.error with proper logger methods for consistent logging
+- Ensure server startup logging uses the configured logger (matching Rails logging patterns)
+- Enable structured logging for server startup events (useful for log aggregation in production)
+- Provide proper error logging with stack traces for startup failures (matching Rails error logging patterns)
 
 ## Checklist
 
-- [ ] Open `src/index.ts`
-- [ ] Import logger utility
-- [ ] Log server startup message with port
-- [ ] Log environment information
-- [ ] Add error logging for startup failures
+- [ ] Open `src/index.ts` (created in PHASE1-028)
+- [ ] Import logger utility from `@/utils/logger` (created in PHASE1-032)
+- [ ] Replace `console.log()` calls with `logger.info()` for server startup messages
+- [ ] Log server startup message with port and environment:
+  - [ ] Use `logger.info()` to log message like "Server running in {env} mode on port {port}"
+  - [ ] Include environment information (NODE_ENV) in the log message
+  - [ ] Include port number in the log message
+- [ ] Replace `console.error()` calls with `logger.error()` for startup error handling
+- [ ] Add error logging for server startup failures:
+  - [ ] Wrap server startup in try-catch or use error callback
+  - [ ] Use `logger.error()` to log startup errors with full error details
+  - [ ] Ensure error logging includes stack traces (logger utility should handle this automatically for Error objects)
+- [ ] Verify all console.log/console.error statements are replaced with logger methods
+- [ ] Ensure error logging matches Rails patterns (includes stack traces for Error objects)
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 8. Logging Infrastructure
 - Task can be completed independently by a single agent
+- **Prerequisite**: PHASE1-032 must be completed first to create the logger utility wrapper
+- **Prerequisite**: PHASE1-028 must be completed first to create the application entry point (`src/index.ts`)
+- **Rails Reference**: The jarek-va Rails application logs initialization information:
+  - `jarek-va/config/initializers/telegram.rb` (lines 9, 11, 13) - Example of Rails.logger.info() usage for initialization logging
+  - `jarek-va/app/controllers/application_controller.rb` (lines 10-11) - Error logging with full backtraces
+  - Rails automatically logs server startup (Puma logs include environment and port information)
+- **Server Startup**: The `src/index.ts` file (created in PHASE1-028) should already have server startup code using `app.listen()`. This task replaces console.log/console.error with logger methods.
+- **Error Handling**: When logging errors, the logger utility (from PHASE1-032) should automatically detect Error objects and include stack traces, matching Rails error logging patterns.
+- **Usage Pattern**: Replace console statements like:
+  ```typescript
+  // Before (from PHASE1-028):
+  console.log(`Server running in ${config.env} mode on port ${config.port}`);
+  console.error('Server startup error:', error);
+  
+  // After (this task):
+  import logger from '@/utils/logger';
+  logger.info(`Server running in ${config.env} mode on port ${config.port}`);
+  logger.error('Server startup error:', error);
+  ```
 
 ## Related Tasks
 
