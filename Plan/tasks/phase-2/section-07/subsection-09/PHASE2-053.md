@@ -29,15 +29,16 @@ The error handling is implemented in:
   - Catch timeout errors during request execution (Net::OpenTimeout, Net::ReadTimeout equivalents)
   - Raise TimeoutError with message: "Request to ElevenLabs timed out: {error.message}"
 - [ ] Implement SynthesisError handling in `executeRequest` method:
-  - Check if HTTP response is not successful (status code >= 400)
+  - Check if HTTP response is not successful (non-2xx status code, equivalent to `!response.is_a?(Net::HTTPSuccess)`)
+  - Set default error message: "HTTP {statusCode}: {statusMessage}"
   - Log error: "ElevenLabs API error: {statusCode} - Response body: {responseBody[0..500]}"
-  - Parse error response body as JSON (handle JSON parsing failures gracefully)
-  - Handle array error responses: Extract messages from array items (error['msg'] || error[:msg] || error.toString())
-  - Handle hash error responses: Extract from 'detail', 'error', or 'message' fields
-  - Handle nested array in 'detail' field: Extract messages from array items if detail is an array
-  - Join multiple error messages with '; ' separator
+  - Parse error response body as JSON (handle JSON parsing failures gracefully with try-catch)
+  - Handle array error responses: Extract messages from array items (error.msg || error['msg'] || String(error))
+  - Handle hash error responses: Extract from 'detail', 'error', or 'message' fields (errorBody.detail || errorBody.error || errorBody.message || defaultErrorMessage)
+  - Handle nested array in 'detail' field: If errorBody.detail is an array, extract messages from array items (error.msg || error['msg'] || String(error))
+  - Join multiple error messages with '; ' separator (only if messages were found)
   - Raise SynthesisError with extracted error message
-  - Log JSON parsing failures: "Failed to parse error response as JSON"
+  - Log JSON parsing failures at error level: "Failed to parse error response as JSON"
 - [ ] Implement InvalidResponseError handling in `synthesize` method:
   - Catch JSON parsing errors (JSON::ParserError equivalents)
   - Raise InvalidResponseError with message: "Failed to parse response: {error.message}"
@@ -73,15 +74,16 @@ The error handling is implemented in:
 3. **executeRequest Error Handling** (lines 128-170):
    - Logs request: `"ElevenLabsTextToSpeechService: POST {uri.path}"`
    - Logs response: `"ElevenLabsTextToSpeechService: Response {code} {message}"`
-   - For non-success responses (not `Net::HTTPSuccess`):
+   - For non-success responses (not `Net::HTTPSuccess`, i.e., non-2xx status codes):
+     - Sets default error message: `"HTTP {code}: {message}"`
      - Logs error: `"ElevenLabs API error: {code} - Response body: {body[0..500]}"`
      - Parses error body as JSON (wrapped in try-catch for JSON parsing failures)
-     - Handles array responses: Maps array items to extract `error['msg']` or `error[:msg]` or `error.to_s`
-     - Handles hash responses: Extracts from `error_body['detail']` or `error_body['error']` or `error_body['message']`
-     - Handles nested array in detail: If `error_body['detail']` is an array, maps items to extract messages
-     - Joins multiple messages with `'; '` separator
+     - Handles array responses: Maps array items to extract `error['msg']` or `error[:msg]` or `error.to_s` (in TypeScript: `error.msg || error['msg'] || String(error)`)
+     - Handles hash responses: Extracts from `error_body['detail']` or `error_body['error']` or `error_body['message']` or falls back to default error message (in TypeScript: `errorBody.detail || errorBody.error || errorBody.message || defaultErrorMessage`)
+     - Handles nested array in detail: If `error_body['detail']` is an array, maps items to extract messages (in TypeScript: `error.msg || error['msg'] || String(error)`)
+     - Joins multiple messages with `'; '` separator (only if messages were found)
      - Raises `SynthesisError` with extracted message
-     - Logs JSON parsing failures: `"Failed to parse error response as JSON"`
+     - Logs JSON parsing failures at error level: `"Failed to parse error response as JSON"`
    - Catches `Net::OpenTimeout`, `Net::ReadTimeout` → raises `TimeoutError`
    - Catches `Errno::ECONNREFUSED`, `Errno::EHOSTUNREACH`, `SocketError` → raises `ConnectionError`
 
@@ -94,17 +96,18 @@ The error handling is implemented in:
    - Note: This is for JSON parsing errors, though the response is binary audio data, so this may be defensive programming
 
 6. **Error Response Parsing Logic** (lines 139-159):
-   - First attempts to parse response body as JSON
+   - Sets default error message: `"HTTP {code}: {message}"` (line 137)
+   - First attempts to parse response body as JSON (wrapped in try-catch)
    - If parsing succeeds:
      - Checks if error_body is an Array:
-       - Maps each item to extract message: `error['msg'] || error[:msg] || error.to_s`
-       - Joins messages with `'; '` if any messages found
+       - Maps each item to extract message: `error['msg'] || error[:msg] || error.to_s` (in TypeScript: `error.msg || error['msg'] || String(error)`)
+       - Joins messages with `'; '` if any messages found (only updates error_message if messages were found)
      - Checks if error_body is a Hash:
-       - Extracts message from: `error_body['detail'] || error_body['error'] || error_body['message']`
+       - Extracts message from: `error_body['detail'] || error_body['error'] || error_body['message'] || error_message` (in TypeScript: `errorBody.detail || errorBody.error || errorBody.message || defaultErrorMessage`)
        - If `error_body['detail']` is an Array:
-         - Maps each item to extract message: `error['msg'] || error[:msg] || error.to_s`
-         - Joins messages with `'; '` if any messages found
-   - If JSON parsing fails, uses default error message: `"HTTP {code}: {message}"`
+         - Maps each item to extract message: `error['msg'] || error[:msg] || error.to_s` (in TypeScript: `error.msg || error['msg'] || String(error)`)
+         - Joins messages with `'; '` if any messages found (only updates error_message if messages were found)
+   - If JSON parsing fails, uses default error message: `"HTTP {code}: {message}"` (already set before parsing attempt)
    - Logs JSON parsing failures at error level
 
 7. **Node.js Error Equivalents**:
