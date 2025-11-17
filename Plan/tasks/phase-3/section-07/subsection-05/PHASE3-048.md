@@ -16,18 +16,26 @@ Review and improve test performance in the codebase to ensure best practices. Th
   - Run `npm run test:unit` and record unit test execution time
   - Run `npm run test:integration` and record integration test execution time
   - Run `npm run test:e2e` and record E2E test execution time
+  - Note: If no tests exist, document that infrastructure is ready but no tests to measure yet
 - [ ] Measure individual test execution times using Jest's `--verbose` flag
+  - Note: Only applicable when test files exist
 - [ ] Identify tests that exceed performance thresholds:
   - Unit tests should complete in < 100ms each
   - Integration tests should complete in < 1s each
   - E2E tests should complete in < 10s each (may vary based on complexity)
+  - Note: Only applicable when test files exist
 - [ ] Document baseline performance metrics for future comparison
+  - If no tests exist: Document current configuration settings and establish performance targets/thresholds for when tests are added
 
 ### Test Configuration Review
 - [ ] Review `jest.config.ts` for performance-related settings
   - Check `testTimeout` setting (currently 10000ms) - verify if appropriate
   - Review `maxWorkers` configuration for parallel execution
-  - Check if `cache` is enabled (default: true)
+    - Note: `maxWorkers` is not explicitly set in config, so Jest uses default (50% of available CPU cores)
+    - Consider explicitly setting `maxWorkers` for CI environments (e.g., `maxWorkers: process.env.CI ? 2 : '50%'`)
+  - Check if `cache` is enabled
+    - Note: `cache` is not explicitly set in config, so Jest uses default (true)
+    - Verify cache directory is properly configured and not causing issues
   - Verify `passWithNoTests` setting (currently true) - consider if this should be false when tests exist
 - [ ] Review `playwright.config.ts` for E2E test performance settings
   - Check `fullyParallel` setting (currently true) - verify worker configuration
@@ -42,13 +50,16 @@ Review and improve test performance in the codebase to ensure best practices. Th
 - [ ] Review test setup procedures in `tests/setup.ts`
   - Check for unnecessary global setup operations
   - Verify environment variable setup is efficient
+  - Current setup: Sets `NODE_ENV=test` and `jest.setTimeout(10000)` - verify if appropriate
 - [ ] Review `beforeAll`/`afterAll` hooks in test files
   - Identify expensive setup operations that could be optimized
   - Check for redundant setup/teardown across test files
+  - Note: Only applicable when test files exist
 - [ ] Review `beforeEach`/`afterEach` hooks
   - Identify operations that could be moved to `beforeAll`/`afterAll`
   - Check for unnecessary cleanup operations
   - Verify test isolation without excessive setup overhead
+  - Note: Only applicable when test files exist
 
 ### Slow Test Identification and Optimization
 - [ ] Identify slow unit tests (`tests/unit/`)
@@ -56,39 +67,51 @@ Review and improve test performance in the codebase to ensure best practices. Th
   - Check for unnecessary async operations or delays
   - Verify proper mocking of external dependencies
   - Review test data setup efficiency
+  - Note: Only applicable when test files exist
 - [ ] Identify slow integration tests (`tests/integration/`)
   - Review tests that exceed 1s threshold
   - Check for unnecessary waits or delays
   - Verify efficient use of test databases/Redis instances
   - Review API mocking efficiency (nock, sinon)
+  - Note: Only applicable when test files exist
 - [ ] Identify slow E2E tests (`tests/e2e/`)
   - Review tests that exceed 10s threshold
   - Check for unnecessary page waits or timeouts
   - Verify efficient use of Playwright fixtures
   - Review test data setup and cleanup efficiency
+  - Note: Only applicable when test files exist
 
 ### Parallel Execution Review
 - [ ] Review Jest parallel execution configuration
   - Verify `maxWorkers` is set appropriately for CI/local environments
+    - Currently not explicitly set - uses Jest default (50% of CPU cores)
+    - Consider adding explicit configuration for better control
   - Check for test dependencies that prevent parallel execution
   - Review shared resource usage (databases, Redis) in parallel tests
+  - Note: Only applicable when test files exist
 - [ ] Review Playwright parallel execution
   - Verify `fullyParallel: true` is appropriate for all tests
+  - Check `workers` setting: Currently `process.env.CI ? 1 : undefined` (uses default on local)
   - Check for tests that require sequential execution
   - Review worker configuration for optimal performance
 - [ ] Test parallel execution stability
   - Run tests multiple times to check for flakiness
   - Verify no race conditions in parallel test execution
+  - Note: Only applicable when test files exist
 
 ### Unnecessary Waits and Delays
 - [ ] Search for hardcoded delays (`setTimeout`, `sleep`, `wait`)
   - Review `tests/helpers/testUtils.ts` for delay utilities
-  - Check if delays are necessary or can be replaced with proper async handling
-  - Verify delays are not masking timing issues
+    - Found: `waitFor(ms: number)` function that creates delays using `setTimeout`
+    - Check if this utility is necessary or can be replaced with proper async handling
+    - Verify delays are not masking timing issues
+  - Search test files for direct use of `setTimeout`, `sleep`, or `wait` functions
+  - Note: Only applicable when test files exist
 - [ ] Review test timeouts
   - Check for overly generous timeout values
   - Verify timeouts are appropriate for actual operation times
   - Consider reducing timeouts where possible
+  - Current global timeout: 10000ms in `tests/setup.ts` - verify if appropriate for all test types
 
 ### Test Infrastructure Optimization
 - [ ] Review test helper utilities (`tests/helpers/`)
@@ -106,14 +129,16 @@ Review and improve test performance in the codebase to ensure best practices. Th
   - Refactor slow unit tests to improve execution time
   - Optimize integration test setup/teardown
   - Improve E2E test efficiency
+  - Note: Only applicable when test files exist
 - [ ] Update test configuration for optimal performance
-  - Adjust Jest worker configuration if needed
+  - Adjust Jest worker configuration if needed (consider adding explicit `maxWorkers`)
   - Update Playwright worker settings if needed
-  - Optimize timeout settings
+  - Optimize timeout settings (consider different timeouts for unit vs integration tests)
 - [ ] Implement performance best practices
   - Use appropriate test isolation strategies
   - Optimize shared test resources
   - Implement efficient test data management
+  - Document performance guidelines for future test development
 
 ### Documentation
 - [ ] Document test performance benchmarks
@@ -143,7 +168,12 @@ Review and improve test performance in the codebase to ensure best practices. Th
   - Playwright for E2E tests (configured in `playwright.config.ts`)
   - Test setup in `tests/setup.ts` with 10s default timeout
   - Test helpers, fixtures, and mocks available in `tests/` directory
-- Note: Currently no test files exist, but infrastructure is in place. This review should focus on configuration optimization and establishing performance guidelines for when tests are added.
+- Note: Currently no test files exist, but infrastructure is in place. This review should focus on:
+  - Configuration optimization (Jest, Playwright, test setup)
+  - Reviewing existing test utilities, mocks, and fixtures for performance considerations
+  - Establishing performance guidelines and thresholds for when tests are added
+  - Documenting performance best practices in `tests/README.md`
+  - Checklist items marked "Only applicable when test files exist" should be skipped or documented as future considerations
 - Task can be completed independently by a single agent
 
 ## Related Tasks
