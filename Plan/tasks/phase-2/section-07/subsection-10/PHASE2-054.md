@@ -53,6 +53,8 @@ Error classes to test:
 - [ ] Test request URL includes voice_id in path
 - [ ] Test response audio data is written to file correctly
 - [ ] Test method returns file path string
+- [ ] Test logs request info before sending (truncates text to 50 chars)
+- [ ] Test logs file generation info after successful synthesis (includes file path and size)
 
 ### synthesize Method Tests - Error Cases
 - [ ] Test throws error when text is blank/empty
@@ -68,7 +70,10 @@ Error classes to test:
 - [ ] Test SynthesisError joins multiple error messages with '; ' separator
 - [ ] Test SynthesisError falls back to default message when JSON parsing fails
 - [ ] Test InvalidResponseError on JSON parsing failures
-- [ ] Test error logging for API errors (logs response code and body)
+- [ ] Test error logging for API errors (logs response code and body, truncates body to 500 chars)
+- [ ] Test logs POST request path before execution
+- [ ] Test logs response code and message after receiving response
+- [ ] Test logs error when JSON parsing fails for error response
 
 ### synthesizeToIo Method Tests - Success Cases
 - [ ] Test successful synthesis with required text parameter
@@ -79,6 +84,8 @@ Error classes to test:
 - [ ] Test request headers include correct values (xi-api-key, Content-Type, Accept)
 - [ ] Test request URL includes voice_id in path
 - [ ] Test response audio data is returned as Buffer
+- [ ] Test logs request info before sending (truncates text to 50 chars)
+- [ ] Test does not save file to disk (only returns Buffer)
 
 ### synthesizeToIo Method Tests - Error Cases
 - [ ] Test throws error when text is blank/empty
@@ -88,6 +95,7 @@ Error classes to test:
 - [ ] Test throws SynthesisError on HTTP error responses
 - [ ] Test SynthesisError extracts error message from various response formats
 - [ ] Test InvalidResponseError on JSON parsing failures
+- [ ] Test logs request info before sending (truncates text to 50 chars)
 
 ### Error Response Format Tests
 - [ ] Test error response parsing with array format: `[{msg: "error1"}, {msg: "error2"}]`
@@ -124,10 +132,11 @@ Error classes to test:
    - Validates text is not blank
    - Validates voice_id is configured
    - Builds URI with voice_id in path
-   - Creates temp file path if output_path not provided
-   - Saves audio file to disk
+   - Creates temp file path if output_path not provided (uses SecureRandom.hex(8) for uniqueness)
+   - Saves audio file to disk using File.binwrite
    - Returns file path string
-   - Logs request and file generation info
+   - Logs request info before sending (line 65: truncates text to 50 chars)
+   - Logs file generation info after success (line 71: includes path and file size in bytes)
 
 3. **synthesizeToIo Method** (lines 82-110):
    - Validates text is not blank
@@ -135,14 +144,21 @@ Error classes to test:
    - Builds URI with voice_id in path
    - Returns Buffer (Node.js equivalent of StringIO)
    - Does not save file to disk
-   - Logs request info
+   - Logs request info before sending (line 103: truncates text to 50 chars)
 
 4. **Error Handling** (see PHASE2-053 for details):
-   - Connection errors: ECONNREFUSED, EHOSTUNREACH, ENOTFOUND
-   - Timeout errors: ETIMEDOUT
-   - HTTP errors: Non-200 status codes → SynthesisError
-   - JSON parsing errors: InvalidResponseError
-   - Error response parsing handles multiple formats
+   - Connection errors: ECONNREFUSED, EHOSTUNREACH, ENOTFOUND (raised in build_http and execute_request)
+   - Timeout errors: ETIMEDOUT, Net::OpenTimeout, Net::ReadTimeout (raised in build_http and execute_request)
+   - HTTP errors: Non-200 status codes → SynthesisError (line 136)
+   - JSON parsing errors: InvalidResponseError (lines 74-75, 108-109)
+   - Error response parsing handles multiple formats (lines 142-156):
+     - Array format: `[{msg: "error1"}, {msg: "error2"}]` → joins with '; '
+     - Hash format: checks 'detail', 'error', 'message' fields
+     - Nested array in detail: `{detail: [{msg: "error1"}]}` → extracts and joins
+     - Falls back to default HTTP error message if JSON parsing fails
+   - Error logging: logs response code, message, and truncated body (500 chars) on API errors (line 138)
+   - Error logging: logs JSON parse failure for error responses (line 158)
+   - Request/response logging: logs POST path (line 129) and response code/message (line 134)
 
 5. **Testing Tools**:
    - Use `nock` for HTTP request mocking (already in devDependencies)
