@@ -6,22 +6,159 @@
 
 ## Description
 
-Convert test middleware functionality from Rails to TypeScript/Node.js.
+Create comprehensive tests for middleware authentication functionality, converting test coverage from Rails RSpec tests to TypeScript/Node.js Jest tests. This task ensures all authentication middleware (webhook auth, admin auth, cursor-runner callback auth, and agent tools auth) are properly tested.
+
+**Rails Test Implementation References**:
+- `jarek-va/spec/controllers/telegram_controller_spec.rb` (lines 30-50, 247-391): Telegram webhook and admin authentication tests
+- `jarek-va/spec/controllers/cursor_runner_callback_controller_spec.rb` (lines 36-379): Cursor-runner callback authentication tests
+- `jarek-va/spec/controllers/agent_tools_controller_spec.rb` (lines 13-63): Agent tools authentication tests
+
+**Rails Implementation Details**:
+
+1. **Telegram Webhook Authentication Tests** (`telegram_controller_spec.rb`):
+   - Without authentication when webhook secret is configured → returns 401 Unauthorized
+   - Without authentication when webhook secret is NOT configured (blank/empty) → accepts request (200 OK)
+   - With valid `X-Telegram-Bot-Api-Secret-Token` header → accepts request (200 OK)
+
+2. **Admin Authentication Tests** (`telegram_controller_spec.rb`):
+   - Without admin authentication → returns 401 Unauthorized (for all admin routes: set_webhook, webhook_info, delete_webhook)
+   - With valid `X-Admin-Secret` header → accepts request (200 OK)
+   - Admin routes tested: `POST /telegram/set_webhook`, `GET /telegram/webhook_info`, `DELETE /telegram/webhook`
+
+3. **Cursor-Runner Callback Authentication Tests** (`cursor_runner_callback_controller_spec.rb`):
+   - Without authentication → returns 401 Unauthorized
+   - With valid `X-Webhook-Secret` header → accepts request (200 OK)
+   - With valid `X-Cursor-Runner-Secret` header → accepts request (200 OK)
+   - With valid `secret` query parameter → accepts request (200 OK)
+   - When webhook secret is not configured (blank/empty) → accepts request without secret (200 OK) - development mode
+
+4. **Agent Tools Authentication Tests** (`agent_tools_controller_spec.rb`):
+   - Without authentication → returns 401 Unauthorized
+   - With valid `X-EL-Secret` header → accepts request (200 OK)
+   - With valid `Authorization: Bearer <secret>` header → accepts request (200 OK)
+
+**Prerequisites**:
+- PHASE2-096: Create webhook authentication middleware (must exist: `src/middleware/telegram-webhook-auth.middleware.ts`)
+- PHASE2-097: Create admin authentication middleware (must exist: `src/middleware/admin-auth.ts`)
+- PHASE2-098: Apply middleware to routes (middleware must be applied to routes)
+- Cursor-runner webhook auth middleware (must exist: `src/middleware/cursor-runner-webhook-auth.middleware.ts`)
+- Agent tools auth middleware (must exist: `src/middleware/agent-tools-auth.middleware.ts` - may need to be created if not already done)
 
 ## Checklist
 
-- [ ] Test webhook authentication
-- [ ] Test admin authentication
-- [ ] Test invalid secrets
-- [ ] Test missing headers
-- [ ] Verify error responses
+### Telegram Webhook Authentication Tests
+
+- [ ] Create test file: `src/middleware/__tests__/telegram-webhook-auth.middleware.test.ts`
+- [ ] Test without authentication when `TELEGRAM_WEBHOOK_SECRET` is configured:
+  - [ ] Request without `X-Telegram-Bot-Api-Secret-Token` header → returns 401 Unauthorized
+  - [ ] Request with missing header → returns 401 Unauthorized
+- [ ] Test without authentication when `TELEGRAM_WEBHOOK_SECRET` is NOT configured (blank/empty):
+  - [ ] Request without header → accepts request (calls `next()`)
+  - [ ] Request proceeds to route handler (200 OK)
+- [ ] Test with valid authentication:
+  - [ ] Request with valid `X-Telegram-Bot-Api-Secret-Token` header → accepts request (calls `next()`)
+  - [ ] Request proceeds to route handler (200 OK)
+- [ ] Test with invalid secret:
+  - [ ] Request with incorrect `X-Telegram-Bot-Api-Secret-Token` header → returns 401 Unauthorized
+- [ ] Verify error response format:
+  - [ ] Returns 401 status code
+  - [ ] Returns appropriate error message/body
+
+### Admin Authentication Tests
+
+- [ ] Create test file: `src/middleware/__tests__/admin-auth.test.ts`
+- [ ] Test without admin authentication for `POST /telegram/set_webhook`:
+  - [ ] Request without `X-Admin-Secret` header → returns 401 Unauthorized
+  - [ ] Request without header and without query/body param → returns 401 Unauthorized
+- [ ] Test without admin authentication for `GET /telegram/webhook_info`:
+  - [ ] Request without `X-Admin-Secret` header → returns 401 Unauthorized
+- [ ] Test without admin authentication for `DELETE /telegram/webhook`:
+  - [ ] Request without `X-Admin-Secret` header → returns 401 Unauthorized
+- [ ] Test with valid admin authentication:
+  - [ ] Request with valid `X-Admin-Secret` header → accepts request (calls `next()`)
+  - [ ] Request with valid `admin_secret` query parameter → accepts request (calls `next()`)
+  - [ ] Request with valid `admin_secret` body parameter → accepts request (calls `next()`)
+- [ ] Test with invalid secret:
+  - [ ] Request with incorrect `X-Admin-Secret` header → returns 401 Unauthorized
+  - [ ] Request with incorrect `admin_secret` query param → returns 401 Unauthorized
+- [ ] Test secret priority (header > query > body):
+  - [ ] When both header and query param are provided, header takes precedence
+- [ ] Verify error response format:
+  - [ ] Returns 401 status code
+  - [ ] Returns appropriate error message/body
+- [ ] Test debug logging in test/development mode:
+  - [ ] When authentication fails, logs secret values, headers, and params (if in test/dev mode)
+
+### Cursor-Runner Callback Authentication Tests
+
+- [ ] Create test file: `src/middleware/__tests__/cursor-runner-webhook-auth.middleware.test.ts`
+- [ ] Test without authentication:
+  - [ ] Request without any secret → returns 401 Unauthorized
+- [ ] Test with valid authentication via header:
+  - [ ] Request with valid `X-Webhook-Secret` header → accepts request (calls `next()`)
+  - [ ] Request with valid `X-Cursor-Runner-Secret` header → accepts request (calls `next()`)
+- [ ] Test with valid authentication via query parameter:
+  - [ ] Request with valid `secret` query parameter → accepts request (calls `next()`)
+- [ ] Test with invalid secret:
+  - [ ] Request with incorrect `X-Webhook-Secret` header → returns 401 Unauthorized
+  - [ ] Request with incorrect `secret` query param → returns 401 Unauthorized
+- [ ] Test when webhook secret is not configured (development mode):
+  - [ ] When `WEBHOOK_SECRET` is blank/empty → accepts request without secret (calls `next()`)
+  - [ ] Request proceeds to route handler (200 OK)
+- [ ] Verify error response format:
+  - [ ] Returns 401 status code
+  - [ ] Returns JSON error: `{ error: 'Unauthorized' }`
+- [ ] Test secret priority (header > query):
+  - [ ] When both header and query param are provided, header takes precedence
+
+### Agent Tools Authentication Tests
+
+- [ ] Create test file: `src/middleware/__tests__/agent-tools-auth.middleware.test.ts`
+- [ ] Test without authentication:
+  - [ ] Request without any secret → returns 401 Unauthorized
+- [ ] Test with valid authentication via header:
+  - [ ] Request with valid `X-EL-Secret` header → accepts request (calls `next()`)
+  - [ ] Request with valid `Authorization: Bearer <secret>` header → accepts request (calls `next()`)
+- [ ] Test with invalid secret:
+  - [ ] Request with incorrect `X-EL-Secret` header → returns 401 Unauthorized
+  - [ ] Request with incorrect `Authorization: Bearer <wrong-secret>` header → returns 401 Unauthorized
+- [ ] Verify error response format:
+  - [ ] Returns 401 status code
+  - [ ] Returns JSON error: `{ error: 'Unauthorized' }`
+
+### Integration Tests (Optional but Recommended)
+
+- [ ] Create integration test file: `src/middleware/__tests__/middleware-integration.test.ts`
+- [ ] Test middleware applied to actual routes:
+  - [ ] Telegram webhook route rejects unauthorized requests
+  - [ ] Telegram webhook route accepts authorized requests
+  - [ ] Admin routes reject unauthorized requests
+  - [ ] Admin routes accept authorized requests
+  - [ ] Cursor-runner callback route rejects unauthorized requests
+  - [ ] Cursor-runner callback route accepts authorized requests
+  - [ ] Agent tools route rejects unauthorized requests
+  - [ ] Agent tools route accepts authorized requests
+
+## Implementation Notes
+
+- Use Jest testing framework (standard for TypeScript/Node.js projects)
+- Mock Express `req`, `res`, and `next` objects for unit tests
+- Use `supertest` for integration tests with actual Express routes
+- Test environment variables should be set in test setup:
+  - `TELEGRAM_WEBHOOK_SECRET` for telegram webhook auth tests
+  - `WEBHOOK_SECRET` for admin auth and cursor-runner callback auth tests
+- Test both success and failure scenarios
+- Test edge cases: missing secrets, blank secrets, invalid secrets, multiple secret sources
+- Verify middleware calls `next()` on success and returns error response on failure
+- Ensure tests match Rails test behavior exactly
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 12. Middleware
-- Reference the Rails implementation for behavior
-
+- Subsection: 12.5
+- Reference the Rails test implementation for exact test cases and behavior
+- Tests should cover all authentication scenarios from Rails RSpec tests
 - Task can be completed independently by a single agent
 
 ## Related Tasks
