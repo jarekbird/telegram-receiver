@@ -6,21 +6,51 @@
 
 ## Description
 
-Convert create controller test fixtures from Rails to TypeScript/Node.js.
+Create comprehensive API response fixtures for controller tests. These fixtures should match the response structures used in the Rails controller specs (`jarek-va/spec/controllers/`). The fixtures will be used to mock external API responses in controller tests.
+
+**Rails References**:
+- `jarek-va/spec/controllers/telegram_controller_spec.rb` - Telegram API responses
+- `jarek-va/spec/controllers/cursor_runner_controller_spec.rb` - Cursor Runner API responses
+- `jarek-va/spec/controllers/cursor_runner_callback_controller_spec.rb` - Callback responses
+- `jarek-va/app/services/eleven_labs_speech_to_text_service.rb` - ElevenLabs STT responses
+- `jarek-va/app/services/eleven_labs_text_to_speech_service.rb` - ElevenLabs TTS responses
 
 ## Checklist
 
-- [ ] Create `tests/fixtures/api-responses.ts`
-- [ ] Create Telegram API response fixtures
-- [ ] Create Cursor Runner response fixtures
-- [ ] Create ElevenLabs response fixtures
-- [ ] Export fixtures
+- [ ] Update `tests/fixtures/apiResponses.ts` (file already exists, needs expansion)
+- [ ] Create Telegram API response fixtures:
+  - [ ] `sendMessage` response: `{ ok: true, result: { message_id: number, ... } }`
+  - [ ] `setWebhook` response: `{ ok: true, result: true, description: string }`
+  - [ ] `deleteWebhook` response: `{ ok: true, result: true, description: string }`
+  - [ ] `webhookInfo` response: `{ ok: true, result: { url: string, pending_update_count: number } }`
+  - [ ] Error responses: `{ ok: false, description: string }`
+- [ ] Create Cursor Runner API response fixtures:
+  - [ ] `execute` response: `{ success: true, requestId: string, repository: string, branchName: string, output: string, exitCode: number }`
+  - [ ] `iterate` response: `{ success: true, requestId: string, repository: string, branchName: string, iterations: number, output: string, exitCode: number }`
+  - [ ] `clone` response: `{ success: true, repository: string, message: string }`
+  - [ ] `checkout` response: `{ success: true, message: string }`
+  - [ ] `push` response: `{ success: true, message: string }`
+  - [ ] `pull` response: `{ success: true, message: string }`
+  - [ ] `repositories` response: `{ success: true, repositories: string[], count: number }`
+  - [ ] Callback success response: `{ success: true, requestId: string, iterations: number, output: string, duration: string }`
+  - [ ] Callback error response: `{ success: false, requestId: string, error: string }`
+  - [ ] Error responses: `{ success: false, error: string }`
+- [ ] Create ElevenLabs API response fixtures:
+  - [ ] Speech-to-text success: `{ text: string }`
+  - [ ] Speech-to-text error: `{ detail: string }` or `{ error: string }` or array format
+  - [ ] Text-to-speech: Note that TTS returns binary audio data (Buffer), not JSON
+- [ ] Add helper functions to create custom responses with overrides
+- [ ] Export all fixtures properly
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 13. Testing
-- Reference the Rails implementation for behavior
+- The file `tests/fixtures/apiResponses.ts` already exists but is minimal - it needs to be expanded with comprehensive fixtures
+- Reference the Rails controller specs to understand exact response structures
+- Fixtures should match the actual API response formats used in the Rails application
+- Include both success and error response variants
+- Helper functions should allow easy customization of fixtures for specific test cases
 
 - Task can be completed independently by a single agent
 
