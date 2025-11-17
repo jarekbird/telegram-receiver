@@ -6,26 +6,158 @@
 
 ## Description
 
-Review and improve create security audit report in the codebase to ensure best practices.
+Create a comprehensive security audit report that consolidates findings from the security audit (PHASE3-041) and documents all security fixes applied (PHASE3-042). This report should serve as a complete security assessment document for the telegram-receiver application, documenting vulnerabilities found, fixes implemented, remaining risks, security measures in place, and recommendations for ongoing security maintenance.
+
+## Context
+
+This task consolidates the work from previous security review tasks:
+- **PHASE3-036**: Authentication/authorization review (webhook secrets, admin authentication)
+- **PHASE3-037**: Input validation review
+- **PHASE3-038**: Redis injection vulnerability review
+- **PHASE3-039**: Secure credential handling review
+- **PHASE3-040**: CORS and security headers review
+- **PHASE3-041**: Security audit (identifies issues)
+- **PHASE3-042**: Fix identified security issues (implements fixes)
+
+This report should document all security work completed across these tasks and provide a comprehensive security assessment.
 
 ## Checklist
 
-- [ ] Create `docs/security-audit.md`
-- [ ] Document security findings
-- [ ] Document fixes applied
-- [ ] Document remaining risks
-- [ ] Document security measures
-- [ ] Include recommendations
-- [ ] Update regularly
+### Report Structure
+
+- [ ] **Create `docs/security-audit.md`**
+  - [ ] Use clear markdown formatting
+  - [ ] Include table of contents for easy navigation
+  - [ ] Add document metadata (date, version, author)
+
+- [ ] **Executive Summary**
+  - [ ] Overview of security audit scope
+  - [ ] Summary of findings (critical, high, medium, low severity counts)
+  - [ ] Summary of fixes applied
+  - [ ] Overall security posture assessment
+
+### Security Findings Documentation
+
+- [ ] **Document Security Findings from PHASE3-041**
+  - [ ] List all vulnerabilities identified during security audit
+  - [ ] Categorize by severity (critical, high, medium, low)
+  - [ ] Document impact and potential exploitation scenarios
+  - [ ] Include references to specific code locations or components
+  - [ ] Document OWASP Top 10 categories for each finding
+  - [ ] Include dependency vulnerabilities from `npm audit` results
+
+- [ ] **Document Security Review Areas**
+  - [ ] Authentication and authorization findings (reference PHASE3-036)
+  - [ ] Input validation findings (reference PHASE3-037)
+  - [ ] Redis injection findings (reference PHASE3-038)
+  - [ ] Credential handling findings (reference PHASE3-039)
+  - [ ] CORS and security headers findings (reference PHASE3-040)
+  - [ ] Other security findings from comprehensive audit
+
+### Security Fixes Documentation
+
+- [ ] **Document Fixes Applied from PHASE3-042**
+  - [ ] List all security vulnerabilities that were fixed
+  - [ ] Document remediation approach for each fix
+  - [ ] Include before/after descriptions where applicable
+  - [ ] Reference specific commits or changes made
+  - [ ] Document any breaking changes or workarounds needed
+  - [ ] Verify fixes were tested and validated
+
+- [ ] **Document Security Improvements**
+  - [ ] Dependency updates and vulnerability fixes
+  - [ ] Authentication and authorization improvements
+  - [ ] Input validation enhancements
+  - [ ] Credential handling improvements
+  - [ ] Security headers and CORS configuration
+  - [ ] Error handling improvements
+  - [ ] Logging and monitoring improvements
+  - [ ] Configuration security improvements
+
+### Remaining Risks Documentation
+
+- [ ] **Document Remaining Risks**
+  - [ ] List any vulnerabilities that could not be fixed immediately
+  - [ ] Document risk acceptance rationale for remaining issues
+  - [ ] Include mitigation strategies for accepted risks
+  - [ ] Document timeline for addressing deferred fixes
+  - [ ] Include any known limitations or constraints
+
+- [ ] **Document Security Gaps**
+  - [ ] Areas where security could be improved further
+  - [ ] Future security enhancements recommended
+  - [ ] Areas requiring ongoing monitoring
+
+### Security Measures Documentation
+
+- [ ] **Document Current Security Measures**
+  - [ ] Authentication mechanisms in place
+  - [ ] Authorization controls implemented
+  - [ ] Input validation strategies
+  - [ ] Security headers configuration
+  - [ ] CORS configuration
+  - [ ] Error handling and information disclosure prevention
+  - [ ] Credential management practices
+  - [ ] Logging and monitoring security measures
+  - [ ] Dependency management practices
+  - [ ] Development vs production security differences
+
+- [ ] **Document Security Configuration**
+  - [ ] Environment variable security requirements
+  - [ ] Required security settings
+  - [ ] Security middleware configuration
+  - [ ] Docker security configuration
+  - [ ] Network security measures
+
+### Recommendations
+
+- [ ] **Include Security Recommendations**
+  - [ ] Ongoing security maintenance recommendations
+  - [ ] Regular security audit schedule recommendations
+  - [ ] Dependency update process recommendations
+  - [ ] Security testing recommendations
+  - [ ] Monitoring and alerting recommendations
+  - [ ] Incident response recommendations (if applicable)
+  - [ ] Developer security training recommendations
+
+- [ ] **Document Security Best Practices**
+  - [ ] Security checklist for future development
+  - [ ] Code review security guidelines
+  - [ ] Security testing procedures
+  - [ ] Dependency update procedures
+  - [ ] Security configuration guidelines
+
+### Verification and Testing
+
+- [ ] **Document Security Verification**
+  - [ ] Results of `npm audit` after fixes
+  - [ ] Security testing results
+  - [ ] Verification that fixes don't break functionality
+  - [ ] Manual security testing results
+
+### Maintenance
+
+- [ ] **Document Maintenance Requirements**
+  - [ ] Regular security audit schedule
+  - [ ] Dependency update frequency
+  - [ ] Security monitoring requirements
+  - [ ] Report update process (when to update this document)
 
 ## Notes
 
 - This task is part of Phase 3: Holistic Review and Best Practices
 - Section: 6. Security Review
-- Focus on identifying issues and improvements
-- Document findings and decisions
+- **Prerequisites**: PHASE3-041 (Security Audit) and PHASE3-042 (Fix Security Issues) should be completed first
+- Focus on creating a comprehensive, well-structured security audit report
+- The report should serve as a reference document for security posture and future security work
 
-- Task can be completed independently by a single agent
+- **Report Format**: Use clear markdown formatting with sections, subsections, and tables where appropriate
+- **Completeness**: Ensure all security findings and fixes from previous tasks are documented
+- **Clarity**: Write for both technical and non-technical audiences where possible
+- **Actionability**: Include specific recommendations and next steps
+- **Maintenance**: Document when and how the report should be updated
+
+- Task can be completed independently by a single agent, but should reference work from PHASE3-041 and PHASE3-042
 
 ## Related Tasks
 
