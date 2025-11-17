@@ -18,8 +18,10 @@ The Rails implementation (`download_file`) downloads files from Telegram by:
 
 ## Checklist
 
-- [ ] Implement `downloadFile(fileId: string, destinationPath?: string): Promise<string>` method
+- [ ] Implement `downloadFile(fileId: string, destinationPath?: string): Promise<string | undefined>` method
+  - Return type should be `Promise<string | undefined>` to account for early return when bot token is blank (matching Rails `return` behavior which returns `nil`)
 - [ ] Add early return if bot token is blank (similar to other methods in TelegramService)
+  - If bot token is blank/invalid, return `undefined` immediately (matching Rails `return` behavior which returns `nil`)
 - [ ] Call Telegram Bot API `getFile` endpoint with the file_id
 - [ ] Extract `file_path` from the API response (`result.file_path`)
 - [ ] Construct download URL: `https://api.telegram.org/file/bot${botToken}/${file_path}`
@@ -55,7 +57,8 @@ The Rails implementation (`download_file`) downloads files from Telegram by:
 - Rails uses `Dir.tmpdir` for temp directory - use `os.tmpdir()` in Node.js
 - Rails uses `FileUtils.mkdir_p` for directory creation - use `fs.mkdir` with `{ recursive: true }` in Node.js
 - Rails uses `File.join` and `File.basename` and `File.dirname` - use Node.js `path.join`, `path.basename`, and `path.dirname` respectively
-- The method should return the destination path string (same as Rails)
+- The method should return the destination path string (same as Rails), or `undefined` if bot token is blank (early return)
+- Return type should be `Promise<string | undefined>` to account for early return when bot token is blank (matching Rails `return` behavior which returns `nil`)
 - Error handling pattern should match other TelegramService methods (early return if token blank, try-catch with logging, re-throw)
 - Task can be completed independently by a single agent
 
