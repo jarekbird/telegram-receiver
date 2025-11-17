@@ -8,7 +8,18 @@
 
 Review and improve API response times in the codebase to ensure best practices. This task focuses on measuring, analyzing, and optimizing API endpoint response times, identifying performance bottlenecks, and ensuring efficient handling of requests throughout the application.
 
-Reference the Rails implementation patterns where applicable to understand expected response time behavior and ensure the TypeScript implementation follows Node.js best practices for API performance.
+The application has the following API endpoints that should be reviewed:
+- Health endpoints: `GET /health`, `GET /`
+- Telegram endpoints: `POST /telegram/webhook`, `POST /telegram/set_webhook`, `GET /telegram/webhook_info`, `DELETE /telegram/webhook`
+- Cursor Runner endpoints: `POST /cursor-runner/cursor/execute`, `POST /cursor-runner/cursor/iterate`, `POST /cursor-runner/callback`
+- Cursor Runner Git endpoints: `POST /cursor-runner/git/clone`, `GET /cursor-runner/git/repositories`, `POST /cursor-runner/git/checkout`, `POST /cursor-runner/git/push`, `POST /cursor-runner/git/pull`
+- Agent Tools endpoint: `POST /agent-tools`
+
+Reference the Rails implementation patterns (see Rails Implementation Reference section below) to understand expected response time behavior and ensure the TypeScript implementation follows Node.js best practices for API performance. The Rails implementation demonstrates key patterns such as:
+- Immediate webhook acknowledgment (return 200 OK before processing)
+- Asynchronous job processing for long-running operations
+- Efficient Redis state management
+- Proper timeout handling for external API calls
 
 ## Checklist
 
@@ -30,26 +41,74 @@ Reference the Rails implementation patterns where applicable to understand expec
   - Track response times per endpoint category
 
 ### Endpoint-Specific Analysis
-- [ ] Review health check endpoint (`GET /health`)
+- [ ] Review health check endpoint (`GET /health` and `GET /`)
   - Measure response time (should be < 10ms)
   - Verify no unnecessary operations
   - Check for blocking operations
   - Ensure minimal dependencies
+  - Verify no database or external service calls
 - [ ] Review Telegram webhook endpoint (`POST /telegram/webhook`)
   - Measure end-to-end response time
-  - Measure time to acknowledge request (should be < 200ms)
+  - Measure time to acknowledge request (should be < 200ms per Rails implementation)
   - Review time spent in authentication/validation
   - Check for synchronous operations that could be async
   - Verify webhook response is sent quickly (before processing)
+  - Ensure job enqueueing is fast (< 50ms)
+  - Verify no blocking operations before returning 200 OK
+- [ ] Review Telegram admin endpoints
+  - Review `POST /telegram/set_webhook` endpoint
+    - Measure response time (should be < 500ms, depends on Telegram API)
+    - Review authentication overhead
+    - Check for unnecessary operations
+  - Review `GET /telegram/webhook_info` endpoint
+    - Measure response time (should be < 500ms, depends on Telegram API)
+    - Review authentication overhead
+    - Verify efficient Telegram API call handling
+  - Review `DELETE /telegram/webhook` endpoint
+    - Measure response time (should be < 500ms, depends on Telegram API)
+    - Review authentication overhead
+    - Check for unnecessary operations
 - [ ] Review cursor-runner callback endpoint (`POST /cursor-runner/callback`)
-  - Measure response time for callback processing
-  - Review time spent updating Redis state
+  - Measure response time for callback processing (should be < 500ms)
+  - Review time spent updating Redis state (should be < 50ms)
   - Check for blocking operations in callback handler
-  - Verify callback response is sent promptly
-- [ ] Review admin endpoints (if any)
-  - Measure response times for admin operations
+  - Verify callback response is sent promptly (before Telegram API calls)
+  - Review time spent sending messages to Telegram (async, shouldn't block response)
+  - Check for synchronous file operations (audio cleanup)
+- [ ] Review agent tools endpoint (`POST /agent-tools`)
+  - Measure response time (should be < 1000ms for tool execution)
   - Review authentication overhead
-  - Check for unnecessary operations
+  - Review tool routing performance
+  - Check for blocking operations
+  - Verify efficient error handling
+- [ ] Review cursor-runner execution endpoints
+  - Review `POST /cursor-runner/cursor/execute` endpoint
+    - Measure response time (should be < 2000ms for synchronous execution)
+    - Review timeout configurations
+    - Check for connection pooling
+    - Verify error handling doesn't add latency
+  - Review `POST /cursor-runner/cursor/iterate` endpoint
+    - Measure response time (should be < 2000ms for request acknowledgment)
+    - Verify async handling (should return quickly, actual execution is async)
+    - Review timeout configurations
+    - Check for connection pooling
+- [ ] Review cursor-runner Git operation endpoints
+  - Review `POST /cursor-runner/git/clone` endpoint
+    - Measure response time (should be < 5000ms, depends on repository size)
+    - Review timeout configurations
+    - Check for async handling opportunities
+  - Review `GET /cursor-runner/git/repositories` endpoint
+    - Measure response time (should be < 500ms)
+    - Review data processing overhead
+  - Review `POST /cursor-runner/git/checkout` endpoint
+    - Measure response time (should be < 2000ms)
+    - Review timeout configurations
+  - Review `POST /cursor-runner/git/push` endpoint
+    - Measure response time (should be < 5000ms, depends on changes)
+    - Review timeout configurations
+  - Review `POST /cursor-runner/git/pull` endpoint
+    - Measure response time (should be < 3000ms)
+    - Review timeout configurations
 
 ### Database Query Performance
 - [ ] Review Redis query patterns
@@ -209,6 +268,30 @@ Reference the Rails implementation patterns where applicable to understand expec
 - Document findings and decisions
 
 - Task can be completed independently by a single agent
+
+## Rails Implementation Reference
+
+For reference, the following Rails files demonstrate expected performance patterns:
+
+- **Routes**: `jarek-va/config/routes.rb` - Defines all API endpoints
+- **Health Controller**: `jarek-va/app/controllers/health_controller.rb` - Simple health check (no external calls)
+- **Telegram Controller**: `jarek-va/app/controllers/telegram_controller.rb` - Webhook returns 200 OK immediately, processing is async via `TelegramMessageJob`
+- **Cursor Runner Callback Controller**: `jarek-va/app/controllers/cursor_runner_callback_controller.rb` - Processes callbacks synchronously but sends Telegram messages (which may be async)
+- **Cursor Runner Controller**: `jarek-va/app/controllers/cursor_runner_controller.rb` - Proxies to cursor-runner service, handles timeouts
+- **Agent Tools Controller**: `jarek-va/app/controllers/agent_tools_controller.rb` - Executes tools synchronously
+- **Telegram Message Job**: `jarek-va/app/jobs/telegram_message_job.rb` - Background job for processing Telegram updates (not part of API response time)
+
+### Key Performance Patterns from Rails Implementation:
+
+1. **Telegram Webhook** (`POST /telegram/webhook`): Returns `head :ok` immediately after enqueueing job. Job processing happens asynchronously via Sidekiq.
+
+2. **Cursor Runner Callback** (`POST /cursor-runner/callback`): Processes callback synchronously but should return 200 OK quickly. Telegram message sending happens after response is sent (fire-and-forget pattern).
+
+3. **Admin Endpoints**: All make synchronous Telegram API calls, so response time depends on Telegram API latency.
+
+4. **Cursor Runner Endpoints**: Proxies to cursor-runner service. Response time depends on cursor-runner service latency.
+
+5. **Git Operations**: Synchronous operations that depend on Git command execution time. May take several seconds for large repositories.
 
 ## Related Tasks
 
