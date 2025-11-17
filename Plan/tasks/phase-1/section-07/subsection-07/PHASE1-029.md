@@ -17,14 +17,15 @@ While the Rails application (`jarek-va/config/application.rb`) uses `ENV.fetch()
 ## Checklist
 
 - [ ] Create `src/config/validateEnv.ts` file (using camelCase naming convention)
-- [ ] Create `validateEnv()` function that validates environment variables
-- [ ] Validate `NODE_ENV` is one of: "development", "test", "production" (or default to "development" if not set)
-- [ ] Validate `PORT` is a valid positive integer if provided (or allow default from environment config)
+- [ ] Create `validateEnv(config)` function that accepts the config object as a parameter and validates it (not raw process.env)
+- [ ] Validate `config.env` (NODE_ENV) is one of: "development", "test", "production" (defaulting is handled by environment.ts, validation only checks if set)
+- [ ] Validate `config.port` (PORT) is a valid positive integer (defaulting is handled by environment.ts, validation only checks if provided)
 - [ ] Throw descriptive error with missing/invalid variable names if validation fails
 - [ ] Export `validateEnv` function as default export
 - [ ] Add JSDoc comments documenting the validation function and its behavior
-- [ ] Import and call `validateEnv()` in `src/index.ts` before importing/starting the server
-- [ ] Ensure validation runs before any other application initialization
+- [ ] Import config from `./config/environment` and `validateEnv` from `./config/validateEnv` in `src/index.ts`
+- [ ] Call `validateEnv(config)` in `src/index.ts` after importing config but before importing/starting the server
+- [ ] Ensure validation runs before any other application initialization (after config import)
 - [ ] Add error handling to log validation errors clearly before process exit
 
 ## Notes
@@ -35,10 +36,12 @@ While the Rails application (`jarek-va/config/application.rb`) uses `ENV.fetch()
 - **Rails Comparison**: The Rails application (`jarek-va/config/application.rb`) doesn't explicitly validate environment variables. It uses `ENV.fetch()` with defaults throughout, allowing the application to start even if variables are missing. This Node.js implementation adds explicit validation as a best practice to fail fast with clear error messages.
 - **Validation Scope**: At this stage, only basic variables are validated (`NODE_ENV` and `PORT`). As more features are implemented in later phases, additional environment variables will be added to the validation function (e.g., `TELEGRAM_BOT_TOKEN`, `CURSOR_RUNNER_URL`, `REDIS_URL`, etc.).
 - **Error Handling**: The validation function should throw an error with a descriptive message listing all missing or invalid variables. The error should be caught in `src/index.ts` and logged before the process exits with a non-zero exit code.
-- **NODE_ENV Validation**: `NODE_ENV` should be validated to ensure it's one of the standard values: "development", "test", or "production". If not set, it can default to "development" (handled by the environment config module from PHASE1-024).
-- **PORT Validation**: If `PORT` is provided, it should be validated as a positive integer. If not provided, the default from the environment config module (3000) should be used.
+- **Validation Approach**: The validation function should validate the config object values from `src/config/environment.ts`, not raw `process.env` values. The environment config module (PHASE1-024) handles loading and defaulting values. The validation function ensures that the processed config values are valid.
+- **NODE_ENV Validation**: The `config.env` value (which comes from `NODE_ENV`) should be validated to ensure it's one of the standard values: "development", "test", or "production". Defaulting to "development" is handled by the environment config module (PHASE1-024), so validation only needs to check that if `NODE_ENV` was set, it has a valid value.
+- **PORT Validation**: The `config.port` value (which comes from `PORT`) should be validated as a positive integer. Defaulting to 3000 is handled by the environment config module (PHASE1-024), so validation only needs to check that if `PORT` was provided, it's a valid positive integer.
 - **File Naming**: Use camelCase naming (`validateEnv.ts`) to match TypeScript/Node.js conventions, rather than kebab-case (`validate-env.ts`).
-- **Dependencies**: This task assumes `src/config/environment.ts` exists (created in PHASE1-024) and `src/index.ts` exists (updated in PHASE1-028).
+- **Dependencies**: This task assumes `src/config/environment.ts` exists (created in PHASE1-024) and `src/index.ts` exists (updated in PHASE1-028). The validation function accepts the config object as a parameter, and `src/index.ts` imports both the config and validateEnv, then calls `validateEnv(config)` to validate the loaded config values.
+- **Validation Order**: In `src/index.ts`, the validation should be called after importing the config from `./config/environment` but before importing the Express app or starting the server. This ensures config is loaded and validated before any application code runs.
 
 ## Related Tasks
 
