@@ -6,24 +6,87 @@
 
 ## Description
 
-Convert implement synthesize_to_io method from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/eleven_labs_*.rb` files.
+Convert the `synthesize_to_io` method from Rails to TypeScript/Node.js. This method converts text to speech using the ElevenLabs API and returns the generated audio as a Buffer (Node.js equivalent of Ruby's StringIO). Reference `jarek-va/app/services/eleven_labs_text_to_speech_service.rb` for the complete implementation.
+
+The `synthesize_to_io` method is located in `jarek-va/app/services/eleven_labs_text_to_speech_service.rb` (lines 82-110).
 
 ## Checklist
 
-- [ ] Implement `synthesizeToIo` method
-- [ ] Validate text input
-- [ ] Build request body
-- [ ] Send POST request to API
-- [ ] Return audio as StringIO/Buffer
-- [ ] Add error handling
+- [ ] Implement `synthesizeToIo` method signature: `synthesizeToIo(text: string, options?: { voiceSettings?: object }): Promise<Buffer>`
+- [ ] Validate text input is not blank (throw error if blank)
+- [ ] Validate voice_id is configured (throw error if not configured)
+- [ ] Build URI with voice_id in path: `https://api.elevenlabs.io/v1/text-to-speech/{voice_id}`
+- [ ] Build HTTP client with SSL and timeout settings (use private `buildHttp` method)
+- [ ] Build request body JSON with:
+  - `text` (required)
+  - `model_id` (use instance `modelId` property)
+  - `output_format` (use `DEFAULT_OUTPUT_FORMAT = 'mp3_44100_128'`)
+  - `voice_settings` (only if provided in options)
+- [ ] Create POST request with headers:
+  - `xi-api-key`: API key
+  - `Content-Type`: `application/json`
+  - `Accept`: `audio/mpeg`
+- [ ] Log request info: "Sending text to ElevenLabs for synthesis: {text[0..50]}..."
+- [ ] Execute HTTP request (use private `executeRequest` method)
+- [ ] Return audio as Buffer (Node.js equivalent of StringIO): `Buffer.from(response.body)`
+- [ ] Add error handling:
+  - Catch JSON parsing errors and raise `InvalidResponseError`
+  - Connection/timeout errors are handled in `executeRequest` method
+  - HTTP error responses are handled in `executeRequest` method (raises `SynthesisError`)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 7. ElevenLabs Services Conversion
-- Reference the Rails implementation for behavior
+- **Rails Reference**: `jarek-va/app/services/eleven_labs_text_to_speech_service.rb` (lines 82-110)
+
+### Implementation Details from Rails:
+
+1. **Method signature**:
+   - Parameters: `text` (required), `voice_settings` (optional)
+   - Returns: StringIO object containing audio data (Buffer in Node.js)
+
+2. **Validation**:
+   - Raises error if `text` is blank
+   - Raises error if `voice_id` is not configured
+
+3. **Request body structure**:
+   ```json
+   {
+     "text": "text to synthesize",
+     "model_id": "eleven_turbo_v2_5",
+     "output_format": "mp3_44100_128",
+     "voice_settings": { ... } // optional
+   }
+   ```
+
+4. **API endpoint**:
+   - URL: `POST https://api.elevenlabs.io/v1/text-to-speech/{voice_id}`
+   - Voice ID is included in the URL path, not the request body
+
+5. **Response handling**:
+   - Response is binary audio data (MP3 format)
+   - Return as Buffer (Node.js equivalent of Ruby's StringIO)
+   - No file is written to disk (unlike `synthesize` method)
+
+6. **Error handling**:
+   - JSON parsing errors are caught and wrapped in `InvalidResponseError`
+   - HTTP errors, connection errors, and timeout errors are handled in `executeRequest` method
+   - See PHASE2-053 for complete error handling implementation details
+
+7. **Dependencies**:
+   - Uses private `buildHttp` method for HTTP client setup
+   - Uses private `executeRequest` method for request execution with error handling
+   - Requires Buffer for returning audio data
+
+8. **Key differences from `synthesize` method**:
+   - Does not save audio to file
+   - Returns Buffer instead of file path string
+   - Does not generate temp file path
+   - Does not log file path or file size
 
 - Task can be completed independently by a single agent
+- This task assumes the class structure from PHASE2-050 and PHASE2-051 is already in place
 
 ## Related Tasks
 
