@@ -7,14 +7,15 @@
 ## Description
 
 Create the directory structure for API documentation. This includes:
-- The main `docs/` directory for general project documentation
 - The `docs/api/` subdirectory for API endpoint-specific documentation
+
+**Note**: The main `docs/` directory already exists (contains `architecture.md` and `manual-code-review.md`), so this task only needs to create the `docs/api/` subdirectory.
 
 These directories will be used by subsequent tasks to organize API documentation files, including project structure documentation, API conventions, endpoint documentation, and API overview files.
 
 ## Checklist
 
-- [ ] Create `docs/` directory
+- [ ] Verify `docs/` directory exists (already present with existing documentation files)
 - [ ] Create `docs/api/` directory
 
 ## Notes
@@ -22,6 +23,8 @@ These directories will be used by subsequent tasks to organize API documentation
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 12. API Structure Documentation
 - Task can be completed independently by a single agent
+- The `docs/` directory already exists in the telegram-receiver project root and contains existing documentation files (`architecture.md`, `manual-code-review.md`)
+- This task only needs to create the `docs/api/` subdirectory, which will be used by PHASE1-061 to create `docs/api/HEALTH.md`
 
 ## Related Tasks
 
