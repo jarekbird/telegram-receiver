@@ -6,23 +6,114 @@
 
 ## Description
 
-Convert write telegramcontroller integration tests from Rails to TypeScript/Node.js. Reference `jarek-va/app/controllers/*_controller.rb` files.
+Write TelegramController integration tests in TypeScript/Node.js. Convert the Rails test suite from `jarek-va/spec/controllers/telegram_controller_spec.rb` to TypeScript integration tests. The tests should verify all TelegramController endpoints and their behavior, including webhook handling, authentication, admin endpoints, and error handling.
+
+## Rails Test Reference
+
+Reference the Rails test file: `jarek-va/spec/controllers/telegram_controller_spec.rb`
+
+The Rails test suite covers:
+- POST `/telegram/webhook` endpoint with various update types
+- Webhook authentication (X-Telegram-Bot-Api-Secret-Token header)
+- Admin authentication (X-Admin-Secret header)
+- Admin endpoints: `set_webhook`, `webhook_info`, `delete_webhook`
+- Error handling and error message sending to users
+- Job enqueueing for asynchronous processing
 
 ## Checklist
 
-- [ ] Create `tests/controllers/telegram-controller.test.ts`
-- [ ] Mock TelegramService
-- [ ] Mock queue system
-- [ ] Test webhook endpoint
-- [ ] Test authentication
-- [ ] Test admin endpoints
-- [ ] Test error handling
+### Test File Setup
+- [ ] Create `tests/integration/api/telegram-controller.test.ts` (integration tests should be in `tests/integration/api/`)
+- [ ] Import necessary testing utilities (supertest, test fixtures, mocks)
+- [ ] Set up test configuration and mocks
+
+### Mocking Setup
+- [ ] Mock TelegramService (all methods: sendMessage, setWebhook, webhookInfo, deleteWebhook)
+- [ ] Mock queue system (job enqueueing - equivalent to TelegramMessageJob.perform_later)
+- [ ] Mock configuration values (telegram_webhook_secret, webhook_secret, telegram_webhook_base_url)
+- [ ] Reset mocks in beforeEach/afterEach hooks
+
+### POST /telegram/webhook Tests
+- [ ] Test webhook endpoint without authentication (when webhook secret is configured) - should return 401
+- [ ] Test webhook endpoint without authentication (when webhook secret is not configured) - should accept request
+- [ ] Test webhook endpoint with valid authentication header (X-Telegram-Bot-Api-Secret-Token)
+- [ ] Test webhook returns 200 OK immediately
+- [ ] Test webhook enqueues job for processing (equivalent to TelegramMessageJob)
+- [ ] Test webhook passes correct update data to job (excluding controller/action/format params)
+- [ ] Test webhook with message update (command message)
+- [ ] Test webhook with message update (non-command message)
+- [ ] Test webhook with edited_message update
+- [ ] Test webhook with callback_query update
+- [ ] Test webhook with unhandled update type
+- [ ] Test webhook error handling - returns 200 even on error (to avoid Telegram retries)
+- [ ] Test webhook error handling - logs errors
+- [ ] Test webhook error handling - sends error message to user if chat_id is available
+- [ ] Test webhook error handling - handles errors when sending error message fails
+
+### POST /telegram/set_webhook Tests (Admin Endpoint)
+- [ ] Test set_webhook without admin authentication - returns 401
+- [ ] Test set_webhook with admin authentication - returns success
+- [ ] Test set_webhook calls TelegramService.set_webhook with correct parameters
+- [ ] Test set_webhook uses default webhook URL when not provided
+- [ ] Test set_webhook uses provided secret_token parameter
+- [ ] Test set_webhook error handling - returns error response when TelegramService raises error
+
+### GET /telegram/webhook_info Tests (Admin Endpoint)
+- [ ] Test webhook_info without admin authentication - returns 401
+- [ ] Test webhook_info with admin authentication - returns success
+- [ ] Test webhook_info returns webhook info from TelegramService
+- [ ] Test webhook_info error handling - returns error response when TelegramService raises error
+
+### DELETE /telegram/webhook Tests (Admin Endpoint)
+- [ ] Test delete_webhook without admin authentication - returns 401
+- [ ] Test delete_webhook with admin authentication - returns success
+- [ ] Test delete_webhook calls TelegramService.delete_webhook
+- [ ] Test delete_webhook error handling - returns error response when TelegramService raises error
+
+### Authentication Tests
+- [ ] Test webhook authentication via X-Telegram-Bot-Api-Secret-Token header
+- [ ] Test admin authentication via X-Admin-Secret header
+- [ ] Test admin authentication via HTTP_X_ADMIN_SECRET env variable
+- [ ] Test admin authentication via query parameters (admin_secret)
+- [ ] Test authentication failure scenarios
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 8. TelegramController Conversion
-- Reference the Rails implementation for behavior
+- Reference the Rails implementation for behavior: `jarek-va/app/controllers/telegram_controller.rb`
+- Reference the Rails test implementation: `jarek-va/spec/controllers/telegram_controller_spec.rb`
+
+### Implementation Guidance
+
+1. **Test Location**: Integration tests should be placed in `tests/integration/api/telegram-controller.test.ts` (not in `tests/unit/controllers/`)
+
+2. **Testing Framework**: Use Jest with Supertest for HTTP endpoint testing. See `tests/integration/README.md` for integration test patterns.
+
+3. **Test Fixtures**: Use existing fixtures from `tests/fixtures/telegramMessages.ts` for Telegram update payloads.
+
+4. **Mocks**: 
+   - Use `tests/mocks/telegramApi.ts` for TelegramService mocking
+   - Mock the queue system (equivalent to Rails' `TelegramMessageJob.perform_later`)
+   - Mock configuration values appropriately
+
+5. **Test Structure**: Follow the Rails test structure:
+   - Group tests by endpoint (POST #webhook, POST #set_webhook, etc.)
+   - Use nested contexts for different scenarios (with/without auth, different update types, error cases)
+   - Test both success and error paths
+
+6. **Key Behaviors to Test**:
+   - Webhook endpoint always returns 200 OK (even on errors) to prevent Telegram retries
+   - Job enqueueing happens asynchronously
+   - Error messages are sent to users when chat_id is available
+   - Admin endpoints require X-Admin-Secret header authentication
+   - Webhook endpoint requires X-Telegram-Bot-Api-Secret-Token header when secret is configured
+
+7. **Update Types**: Test all Telegram update types:
+   - `message` (command and non-command)
+   - `edited_message`
+   - `callback_query`
+   - Unhandled update types
 
 - Task can be completed independently by a single agent
 
