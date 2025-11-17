@@ -40,6 +40,7 @@ The application uses:
 - **Axios** - HTTP client that may create connections
 - **File system operations** - File handles that need cleanup
 - **Stream operations** - Streams that need proper closing
+- **MCP connections** - Model Context Protocol connections (e.g., cursor-runner-shared-sqlite) that may need cleanup
 
 ## Node.js Resource Management
 
@@ -73,12 +74,14 @@ The application uses:
   - [ ] Verify file operations use async/await with proper cleanup
 
 - [ ] Review database connection cleanup
-  - [ ] Check if database connections are used (SQLite, PostgreSQL, etc.)
+  - [ ] Check if database connections are used (SQLite via MCP, PostgreSQL, etc.)
+  - [ ] Verify external database connections (e.g., cursor-runner-shared-sqlite) are properly closed
   - [ ] Verify connection pools are properly closed on shutdown
   - [ ] Check for connection leaks (connections not returned to pool)
   - [ ] Review connection cleanup in error scenarios
   - [ ] Verify graceful shutdown closes database connections
   - [ ] Check for transaction cleanup (rollback on errors)
+  - [ ] Review MCP database connection cleanup patterns
 
 - [ ] Review Redis connection cleanup
   - [ ] Find all Redis client instances (`redis`, `ioredis` clients)
@@ -208,13 +211,14 @@ const redis = new Redis(redisUrl);
 // File handle properly closed
 async function downloadFile(url: string) {
   const writer = fs.createWriteStream('file.txt');
+  let response: AxiosResponse | null = null;
   try {
-    const response = await axios.get(url, { responseType: 'stream' });
+    response = await axios.get(url, { responseType: 'stream' });
     response.data.pipe(writer);
     await new Promise((resolve, reject) => {
       writer.on('finish', resolve);
       writer.on('error', reject);
-      response.data.on('error', reject);
+      response!.data.on('error', reject);
     });
   } finally {
     writer.close();
@@ -237,29 +241,47 @@ process.on('SIGTERM', async () => {
 let server: Server;
 let redis: Redis;
 let queue: Queue;
+let worker: Worker;
+
+let isShuttingDown = false;
 
 async function gracefulShutdown(signal: string) {
+  if (isShuttingDown) {
+    return; // Prevent multiple shutdown attempts
+  }
+  isShuttingDown = true;
+  
   console.log(`Received ${signal}, starting graceful shutdown...`);
   
-  // Stop accepting new requests
-  server.close(() => {
-    console.log('HTTP server closed');
-  });
-  
-  // Close queue and workers
-  await queue.close();
-  await worker.close();
-  
-  // Close Redis connection
-  await redis.quit();
-  
-  // Exit process
-  setTimeout(() => {
-    console.log('Forced shutdown after timeout');
+  const shutdownTimeout = setTimeout(() => {
+    console.error('Forced shutdown after timeout');
     process.exit(1);
   }, 10000);
   
-  process.exit(0);
+  try {
+    // Stop accepting new requests
+    await new Promise<void>((resolve) => {
+      server.close(() => {
+        console.log('HTTP server closed');
+        resolve();
+      });
+    });
+    
+    // Close queue and workers
+    await queue.close();
+    await worker.close();
+    
+    // Close Redis connection
+    await redis.quit();
+    
+    clearTimeout(shutdownTimeout);
+    console.log('Graceful shutdown completed');
+    process.exit(0);
+  } catch (error) {
+    console.error('Error during shutdown:', error);
+    clearTimeout(shutdownTimeout);
+    process.exit(1);
+  }
 }
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
