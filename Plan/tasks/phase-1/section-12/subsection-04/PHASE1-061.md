@@ -6,22 +6,47 @@
 
 ## Description
 
-Document health endpoint
+Document the health check endpoint based on the jarek-va Rails application implementation. The health endpoint provides basic service status information and is used for monitoring and service discovery. The endpoint returns the service status, name, and version information.
 
 ## Checklist
 
 - [ ] Create `docs/api/HEALTH.md` file
 - [ ] Document GET `/health` endpoint
-- [ ] Document request format
-- [ ] Document response format
-- [ ] Document status codes
-- [ ] Add example request/response
+- [ ] Document that root endpoint `GET /` also serves the health check
+- [ ] Document request format:
+  - [ ] No request body required
+  - [ ] No query parameters required
+  - [ ] No authentication required
+- [ ] Document response format:
+  - [ ] HTTP status code: `200 OK`
+  - [ ] Response body fields:
+    - [ ] `status` (string): Always `"healthy"` when service is running
+    - [ ] `service` (string): Service name from `APP_NAME` environment variable (default: `"Virtual Assistant API"`)
+    - [ ] `version` (string): Service version from `APP_VERSION` environment variable (default: `"1.0.0"`)
+- [ ] Document status codes:
+  - [ ] `200 OK`: Service is healthy and responding
+  - [ ] `500 Internal Server Error`: Service error (handled by ApplicationController error handler)
+- [ ] Add example request/response:
+  - [ ] Example request (curl)
+  - [ ] Example successful response (JSON)
+- [ ] Reference the Rails implementation:
+  - [ ] Controller: `jarek-va/app/controllers/health_controller.rb`
+  - [ ] Route: `jarek-va/config/routes.rb` (GET `/health` and root `/`)
+  - [ ] Configuration: `jarek-va/config/application.rb` (app_name and app_version)
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 12. API Structure Documentation
 - Task can be completed independently by a single agent
+- Reference the jarek-va Rails application (`/cursor/repositories/jarek-va`) for actual implementation:
+  - Controller: `app/controllers/health_controller.rb` - Simple controller that returns health status JSON
+  - Route: `config/routes.rb` - Defines both `GET /health` and root `GET /` routes pointing to `health#show`
+  - Configuration: `config/application.rb` - Defines `app_name` and `app_version` config values from environment variables
+- The health endpoint is a simple GET endpoint that requires no authentication and returns basic service information
+- Response format follows the pattern: `{ status: 'healthy', service: '...', version: '...' }`
+- The endpoint is used for service monitoring, health checks, and service discovery
+- Both `/health` and `/` (root) endpoints serve the same health check response
 
 ## Related Tasks
 
