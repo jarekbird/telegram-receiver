@@ -8,6 +8,45 @@
 
 Review and improve security best practices in the telegram-receiver codebase. This task focuses on identifying security vulnerabilities, ensuring proper security measures are in place, and documenting security practices. Review all source code, configuration files, and dependencies for security issues.
 
+## Context
+
+This task is part of the Node.js Best Practices review (Section 3) and provides a general security review. More detailed security reviews are covered in Section 6 (Security Review):
+
+- **PHASE3-037**: Detailed input validation review
+- **PHASE3-040**: Detailed CORS and security headers review
+- **PHASE3-041**: Comprehensive security audit
+- **PHASE3-042**: Fix identified security issues
+- **PHASE3-043**: Security audit report
+
+This task provides a high-level security review focusing on Node.js best practices, while Section 6 tasks provide deeper security analysis. There may be some overlap, but this task focuses on general security best practices from a Node.js/TypeScript perspective.
+
+## Architecture Reference
+
+Reference the planned application architecture from:
+- `Plan/app-description.md` - Application overview and security requirements
+- `Plan/tasks/phase-1/section-06/subsection-03/PHASE1-019.md` - CORS middleware (if needed)
+- `Plan/tasks/phase-1/section-09/subsection-04/PHASE1-039.md` - Docker configuration and security
+
+The application handles:
+- Telegram webhook endpoint: `POST /telegram/webhook` (authenticated via `X-Telegram-Bot-Api-Secret-Token`)
+- Admin endpoints: `POST /telegram/set_webhook`, `GET /telegram/webhook_info`, `DELETE /telegram/webhook` (authenticated via `X-Admin-Secret`)
+- Callback endpoint: `POST /cursor-runner/callback` (authenticated via `X-Webhook-Secret` and `X-Cursor-Runner-Secret`)
+
+## Rails Security Implementation Reference
+
+The jarek-va Rails application implements several security mechanisms that should be reviewed in the converted TypeScript/Node.js application:
+
+1. **Webhook Authentication**: Multiple authentication mechanisms using secret tokens (`X-Telegram-Bot-Api-Secret-Token`, `X-Admin-Secret`, `X-Webhook-Secret`, `X-Cursor-Runner-Secret`)
+2. **Development Mode Bypasses**: Some authentication allows blank secrets in development (should be reviewed for security)
+3. **Input Validation**: Parameter filtering and validation in controllers
+4. **Error Handling**: Careful error messages that don't leak sensitive information
+5. **Secret Management**: Environment-based secret configuration
+
+Reference files:
+- `jarek-va/app/controllers/telegram_controller.rb` - Webhook authentication patterns
+- `jarek-va/app/controllers/cursor_runner_callback_controller.rb` - Callback authentication and input validation
+- `jarek-va/config/initializers/cors.rb` - CORS configuration (commented out)
+
 ## Checklist
 
 ### Environment Variables and Secrets
@@ -41,20 +80,56 @@ Review and improve security best practices in the telegram-receiver codebase. Th
 
 ### Input Validation and Sanitization
 - [ ] Review all API endpoints for input validation
+  - [ ] Telegram webhook endpoint (`POST /telegram/webhook`): Validate Telegram update structure
+  - [ ] Cursor-runner callback endpoint (`POST /cursor-runner/callback`): Validate callback payload structure
+  - [ ] Admin endpoints: Validate URL and secret_token parameters (if applicable)
 - [ ] Check that user input is sanitized before processing
+  - [ ] Sanitize Telegram message text before processing
+  - [ ] Sanitize cursor-runner callback output/error fields (remove ANSI codes, etc.)
+  - [ ] Validate and sanitize URLs in admin endpoints
 - [ ] Verify request body validation (using validation libraries or manual checks)
+  - [ ] Check if validation library is used (e.g., zod, joi, express-validator)
+  - [ ] Verify request body size limits are enforced (prevent DoS via large payloads)
+  - [ ] Check Content-Type validation (should be `application/json` for JSON endpoints)
 - [ ] Check for SQL injection risks (if database queries exist)
+  - [ ] Review if database is used (this API primarily uses Redis, not SQL)
+  - [ ] If SQL queries exist, verify parameterized queries are used
 - [ ] Review file upload handling (if applicable) for security
+  - [ ] Check Telegram file download operations
+  - [ ] Verify file size limits
+  - [ ] Check file type validation
+  - [ ] Review temporary file handling and cleanup
 - [ ] Verify Telegram webhook payload validation
+  - [ ] Validate Telegram update structure (message, edited_message, callback_query)
+  - [ ] Check required fields are present
+  - [ ] Verify field types match expected types
 - [ ] Check for XSS vulnerabilities in responses
+  - [ ] Review if responses contain user-controlled data
+  - [ ] Verify responses are properly escaped/sanitized
+  - [ ] Check for XSS in error messages
 
 ### Authentication and Authorization
 - [ ] Review webhook authentication middleware (`X-Telegram-Bot-Api-Secret-Token`)
+  - [ ] Verify middleware validates secret token header
+  - [ ] Check that missing or invalid tokens return appropriate error (401 Unauthorized)
+  - [ ] Verify token comparison uses constant-time comparison (prevent timing attacks)
 - [ ] Review admin authentication middleware (`X-Admin-Secret`)
+  - [ ] Verify admin endpoints require `X-Admin-Secret` header
+  - [ ] Check admin endpoints: `POST /telegram/set_webhook`, `GET /telegram/webhook_info`, `DELETE /telegram/webhook`
+  - [ ] Verify failed admin authentication returns 401 Unauthorized
 - [ ] Review callback authentication middleware (`X-Webhook-Secret`, `X-Cursor-Runner-Secret`)
+  - [ ] Verify callback endpoint (`POST /cursor-runner/callback`) validates both secrets
+  - [ ] Check that missing secrets return appropriate error
 - [ ] Verify authentication secrets are properly validated
+  - [ ] Check secrets are compared securely (constant-time comparison)
+  - [ ] Verify secrets are not logged or exposed in error messages
+  - [ ] Review development mode behavior (blank secrets allowed in dev - verify this is secure)
 - [ ] Check that failed authentication attempts are logged appropriately
+  - [ ] Verify failed auth attempts are logged (without exposing secrets)
+  - [ ] Check for potential brute force attack patterns
 - [ ] Verify development mode authentication behavior is secure
+  - [ ] Review if development mode bypasses are appropriate
+  - [ ] Ensure production mode always requires authentication
 
 ### Error Handling and Information Disclosure
 - [ ] Review error messages to ensure no sensitive information is exposed
@@ -64,36 +139,207 @@ Review and improve security best practices in the telegram-receiver codebase. Th
 
 ### Network Security
 - [ ] Review external API calls for proper timeout configuration
+  - [ ] Check Telegram Bot API calls have timeout configured
+  - [ ] Check Cursor Runner API calls have timeout configured (from `CURSOR_RUNNER_TIMEOUT` env var)
+  - [ ] Check ElevenLabs API calls have timeout configured
+  - [ ] Verify timeouts prevent hanging requests
 - [ ] Verify HTTPS is used for all external API calls
+  - [ ] Check Telegram Bot API uses HTTPS (`https://api.telegram.org`)
+  - [ ] Check Cursor Runner URL uses HTTPS in production
+  - [ ] Check ElevenLabs API uses HTTPS
+  - [ ] Verify no HTTP endpoints are used in production
 - [ ] Check for proper certificate validation
+  - [ ] Verify TLS certificate validation is enabled (not disabled for development)
+  - [ ] Review certificate validation in production environment
 - [ ] Review rate limiting implementation (if applicable)
+  - [ ] Check if rate limiting is implemented for API endpoints
+  - [ ] Verify rate limiting prevents abuse (if implemented)
+  - [ ] Review rate limiting configuration and limits
 
 ### Code Security Practices
 - [ ] Review for unsafe eval() or Function() usage
+  - [ ] Search codebase for `eval()` calls (should be avoided)
+  - [ ] Search for `Function()` constructor usage (should be reviewed)
+  - [ ] Check for dynamic code execution patterns
 - [ ] Check for unsafe file system operations
+  - [ ] Review file path handling for directory traversal (`../`)
+  - [ ] Verify file operations are restricted to allowed directories
+  - [ ] Check file download operations (Telegram file downloads)
+  - [ ] Review temporary file handling and cleanup
 - [ ] Verify proper handling of user-controlled data
+  - [ ] Check Telegram message content handling
+  - [ ] Review cursor-runner callback data handling
+  - [ ] Verify user input is not used in shell commands or file paths unsafely
 - [ ] Review Redis connection security
+  - [ ] Verify Redis connection uses password authentication (if configured)
+  - [ ] Check Redis URL is from environment variable (not hardcoded)
+  - [ ] Verify Redis is not exposed to public network (Docker network only)
+  - [ ] Review Redis key naming to prevent key collision attacks
+  - [ ] Check Redis connection error handling
 - [ ] Check for proper session management (if applicable)
+  - [ ] Review if sessions are used (this API may be stateless)
+  - [ ] If sessions exist, verify secure session configuration
+
+### Docker and Infrastructure Security
+- [ ] Review Docker configuration security
+  - [ ] Check Dockerfile doesn't expose sensitive information
+  - [ ] Verify Docker image doesn't include secrets or .env files
+  - [ ] Review Docker network configuration (Redis should be internal)
+  - [ ] Check container runs as non-root user (if applicable)
+  - [ ] Review Docker security best practices
+- [ ] Review environment-specific security
+  - [ ] Verify production environment has stricter security than development
+  - [ ] Check development mode security bypasses are documented
+  - [ ] Review environment variable security across environments
 
 ### Documentation
 - [ ] Document security measures implemented
+  - [ ] Document authentication mechanisms
+  - [ ] Document security headers configuration
+  - [ ] Document input validation strategies
 - [ ] Create or update security guidelines
+  - [ ] Document security best practices for developers
+  - [ ] Create security checklist for code reviews
+  - [ ] Document security testing procedures
 - [ ] Document any security-related configuration requirements
+  - [ ] Document required environment variables for security
+  - [ ] Document security configuration options
+  - [ ] Document Docker security configuration
 - [ ] Document known security limitations or trade-offs
+  - [ ] Document any security decisions and rationale
+  - [ ] Document development mode security considerations
+
+## Best Practices
+
+1. **Never hardcode secrets**: All secrets, API keys, and tokens must be in environment variables
+2. **Use constant-time comparison**: When comparing secrets/tokens, use constant-time comparison to prevent timing attacks
+3. **Validate all input**: All user input and external API responses should be validated and sanitized
+4. **Principle of least privilege**: Only expose what's necessary, restrict access where possible
+5. **Defense in depth**: Implement multiple security layers (authentication, validation, headers, etc.)
+6. **Secure by default**: Production should have strict security; development mode bypasses should be documented
+7. **No information leakage**: Error messages and logs should not expose sensitive information
+8. **HTTPS everywhere**: All external API calls and production endpoints should use HTTPS
+9. **Keep dependencies updated**: Regularly update dependencies to patch security vulnerabilities
+10. **Document security decisions**: Document why certain security choices were made
+
+## Examples
+
+### Bad: Hardcoded Secret
+```typescript
+// Hardcoded secret in source code
+const API_KEY = 'sk-1234567890abcdef';
+```
+
+### Good: Environment Variable
+```typescript
+// Secret from environment variable
+const API_KEY = process.env.TELEGRAM_BOT_TOKEN;
+if (!API_KEY) {
+  throw new Error('TELEGRAM_BOT_TOKEN environment variable is required');
+}
+```
+
+### Bad: Timing Attack Vulnerability
+```typescript
+// Vulnerable to timing attacks
+if (providedSecret === expectedSecret) {
+  // authenticated
+}
+```
+
+### Good: Constant-Time Comparison
+```typescript
+// Secure constant-time comparison
+import { timingSafeEqual } from 'crypto';
+
+const providedBuffer = Buffer.from(providedSecret);
+const expectedBuffer = Buffer.from(expectedSecret);
+
+if (providedBuffer.length === expectedBuffer.length && 
+    timingSafeEqual(providedBuffer, expectedBuffer)) {
+  // authenticated
+}
+```
+
+### Bad: Exposing Sensitive Information
+```typescript
+// Error message exposes secret
+catch (error) {
+  throw new Error(`Authentication failed with secret: ${secret}`);
+}
+```
+
+### Good: Secure Error Message
+```typescript
+// Error message doesn't expose secrets
+catch (error) {
+  logger.error('Authentication failed', { error: error.message });
+  throw new Error('Authentication failed');
+}
+```
+
+### Bad: Missing Input Validation
+```typescript
+// No validation of user input
+app.post('/webhook', (req, res) => {
+  const data = req.body;
+  processData(data); // Unsafe!
+});
+```
+
+### Good: Input Validation
+```typescript
+// Validated and sanitized input
+import { z } from 'zod';
+
+const webhookSchema = z.object({
+  message: z.object({
+    text: z.string().max(4096),
+    chat: z.object({ id: z.number() })
+  })
+});
+
+app.post('/webhook', (req, res) => {
+  const validatedData = webhookSchema.parse(req.body);
+  processData(validatedData); // Safe!
+});
+```
+
+### Bad: HTTP in Production
+```typescript
+// Using HTTP instead of HTTPS
+const apiUrl = 'http://api.example.com';
+```
+
+### Good: HTTPS Enforcement
+```typescript
+// HTTPS enforced, especially in production
+const apiUrl = process.env.NODE_ENV === 'production' 
+  ? 'https://api.example.com'
+  : process.env.API_URL || 'http://localhost:3001';
+```
 
 ## Notes
 
 - This task is part of Phase 3: Holistic Review and Best Practices
 - Section: 3. Node.js Best Practices
-- Focus on identifying issues and improvements
-- Document findings and decisions
-
+- Focus on identifying issues and improvements from a Node.js/TypeScript best practices perspective
+- Document findings and decisions with specific file locations and line numbers
+- This is a general security review; detailed security analysis is in Section 6 (PHASE3-037, PHASE3-040, PHASE3-041, etc.)
+- Review actual implementation files in `src/` directory
+- Compare security patterns with Rails security implementation from jarek-va
 - Task can be completed independently by a single agent
 
 ## Related Tasks
 
-- Previous: PHASE3-019
-- Next: PHASE3-021
+- Previous: PHASE3-019 (Review logging practices)
+- Next: PHASE3-021 (Fix identified Node.js best practice issues)
+- Related Security Tasks (Section 6):
+  - PHASE3-037: Review input validation (detailed)
+  - PHASE3-040: Review CORS and security headers (detailed)
+  - PHASE3-041: Perform security audit (comprehensive)
+  - PHASE3-042: Fix identified security issues
+  - PHASE3-043: Create security audit report
 
 ---
 
