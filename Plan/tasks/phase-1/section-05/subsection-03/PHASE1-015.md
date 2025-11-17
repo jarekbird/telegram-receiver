@@ -19,7 +19,7 @@ Register health route in the main Express application. This task registers the h
 - [ ] Register health routes with `app.use('/', healthRoutes)` for `/health` endpoint (route file already defines `/health` path)
 - [ ] Register root route with `app.get('/', getHealth)` for root `/` endpoint (to match Rails `root 'health#show'`)
 - [ ] Export Express app instance
-- [ ] Verify route registration
+- [ ] Verify route registration (check that both `/health` and `/` routes are registered; manual testing will be done in PHASE1-016)
 
 ## Validation Report
 
