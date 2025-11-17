@@ -6,23 +6,110 @@
 
 ## Description
 
-Convert write speechtotextservice unit tests from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/eleven_labs_*.rb` files.
+Write comprehensive unit tests for the ElevenLabsSpeechToTextService class, covering all public methods, error handling, and edge cases. Reference `jarek-va/app/services/eleven_labs_speech_to_text_service.rb` for the complete implementation details and behavior to test.
+
+**Rails Reference**: `jarek-va/app/services/eleven_labs_speech_to_text_service.rb`
 
 ## Checklist
 
-- [ ] Create `tests/services/elevenlabs-speech-to-text-service.test.ts`
-- [ ] Mock HTTP requests
-- [ ] Test transcribe method
-- [ ] Test transcribeIo method
-- [ ] Test error handling
-- [ ] Achieve >80% coverage
+### Test File Setup
+- [ ] Create `tests/unit/services/elevenlabs-speech-to-text-service.test.ts`
+- [ ] Import ElevenLabsSpeechToTextService and all error classes
+- [ ] Set up HTTP request mocking (use appropriate mocking library for Node.js HTTP client)
+- [ ] Set up file system mocking for file operations
+- [ ] Create test fixtures for audio file paths and mock audio data
 
-## Notes
+### Constructor Tests
+- [ ] Test constructor with valid API key (from parameter)
+- [ ] Test constructor with valid API key (from config/environment)
+- [ ] Test constructor throws Error when API key is blank/null/undefined
+- [ ] Test constructor uses default timeout (60 seconds) when not provided
+- [ ] Test constructor uses custom timeout when provided
+- [ ] Test constructor uses default model_id ('scribe_v1') when not provided
+- [ ] Test constructor uses custom model_id when provided
+- [ ] Test constructor uses model_id from config when not provided
+
+### `transcribe` Method Tests (File Path)
+- [ ] Test successful transcription with valid audio file
+- [ ] Test transcribe sends correct multipart form data (file, model_id)
+- [ ] Test transcribe includes language parameter when provided
+- [ ] Test transcribe does not include language parameter when not provided
+- [ ] Test transcribe sets correct HTTP headers (xi-api-key, Content-Type)
+- [ ] Test transcribe sends POST request to correct endpoint (`https://api.elevenlabs.io/v1/speech-to-text`)
+- [ ] Test transcribe extracts filename from file path correctly
+- [ ] Test transcribe reads file as binary data
+- [ ] Test transcribe parses JSON response and extracts text field
+- [ ] Test transcribe returns transcribed text string
+- [ ] Test transcribe logs info when sending audio file (include file path)
+- [ ] Test transcribe logs info on successful transcription (include first 50 chars)
+
+### `transcribe` Method Error Handling Tests
+- [ ] Test transcribe throws Error when audioFilePath is blank/null/undefined
+- [ ] Test transcribe throws Error when audio file does not exist
+- [ ] Test transcribe throws TranscriptionError when HTTP response is not successful (non-2xx)
+- [ ] Test transcribe throws TranscriptionError when response text field is blank/missing
+- [ ] Test transcribe throws InvalidResponseError when JSON parsing fails
+- [ ] Test transcribe throws ConnectionError on network connection failures (ECONNREFUSED, EHOSTUNREACH, SocketError)
+- [ ] Test transcribe throws TimeoutError on request timeout (OpenTimeout, ReadTimeout)
+- [ ] Test transcribe handles file not found errors (ENOENT) and throws Error with message
+- [ ] Test transcribe extracts error message from error response JSON (detail/error/message fields)
+- [ ] Test transcribe logs error details for API errors (response code and body preview)
+
+### `transcribeIo` Method Tests (IO Object)
+- [ ] Test successful transcription with Buffer input
+- [ ] Test successful transcription with ReadableStream input
+- [ ] Test transcribeIo sends correct multipart form data (file, model_id)
+- [ ] Test transcribeIo includes language parameter when provided
+- [ ] Test transcribeIo does not include language parameter when not provided
+- [ ] Test transcribeIo uses default filename ('audio.ogg') when not provided
+- [ ] Test transcribeIo uses custom filename when provided
+- [ ] Test transcribeIo handles stream rewinding if stream supports it
+- [ ] Test transcribeIo reads IO/stream content into memory correctly
+- [ ] Test transcribeIo sets correct HTTP headers (xi-api-key, Content-Type)
+- [ ] Test transcribeIo sends POST request to correct endpoint
+- [ ] Test transcribeIo parses JSON response and extracts text field
+- [ ] Test transcribeIo returns transcribed text string
+- [ ] Test transcribeIo logs info when sending audio IO (include filename)
+- [ ] Test transcribeIo logs info on successful transcription (include first 50 chars)
+
+### `transcribeIo` Method Error Handling Tests
+- [ ] Test transcribeIo throws Error when audioIo is null/undefined
+- [ ] Test transcribeIo throws TranscriptionError when HTTP response is not successful (non-2xx)
+- [ ] Test transcribeIo throws TranscriptionError when response text field is blank/missing
+- [ ] Test transcribeIo throws InvalidResponseError when JSON parsing fails
+- [ ] Test transcribeIo throws ConnectionError on network connection failures
+- [ ] Test transcribeIo throws TimeoutError on request timeout
+- [ ] Test transcribeIo extracts error message from error response JSON
+- [ ] Test transcribeIo logs error details for API errors
+
+### Edge Cases and Integration Tests
+- [ ] Test service handles empty audio file gracefully
+- [ ] Test service handles very large audio files
+- [ ] Test service handles special characters in file paths
+- [ ] Test service handles different audio file formats
+- [ ] Test service handles concurrent transcription requests
+- [ ] Test service uses correct model_id from instance configuration
+- [ ] Test service respects timeout configuration
+
+### Coverage Requirements
+- [ ] Achieve >80% code coverage
+- [ ] Ensure all public methods are tested
+- [ ] Ensure all error paths are tested
+- [ ] Ensure all error classes are tested
+
+## Implementation Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 7. ElevenLabs Services Conversion
-- Reference the Rails implementation for behavior
-
+- **Rails Implementation**: `jarek-va/app/services/eleven_labs_speech_to_text_service.rb`
+- The service should already be implemented from previous tasks (PHASE2-045 through PHASE2-048)
+- Use Jest or similar testing framework
+- Mock HTTP requests using appropriate library (e.g., `nock`, `msw`, or `jest.mock` for fetch/axios)
+- Mock file system operations using `jest.mock('fs')` or similar
+- Test file should be placed in `tests/unit/services/` directory
+- Follow the testing patterns established in the project (see `tests/README.md` and `tests/helpers/testUtils.ts`)
+- Error classes to test: `Error`, `ConnectionError`, `TimeoutError`, `InvalidResponseError`, `TranscriptionError`
+- Method names in TypeScript: `transcribe` (for file path) and `transcribeIo` (for IO object, camelCase)
 - Task can be completed independently by a single agent
 
 ## Related Tasks
