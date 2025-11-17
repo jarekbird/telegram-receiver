@@ -10,44 +10,107 @@ Review and improve SQL injection prevention (if applicable) and Redis injection 
 
 ## Rails Implementation Reference
 
-The Rails application uses Redis for state management and does not use SQL databases directly:
+The Rails application uses both SQLite3 (via ActiveRecord) and Redis for different purposes:
+
+### SQL Database Usage (SQLite3)
+
+The application uses SQLite3 database with ActiveRecord ORM for persistent data storage:
+
+1. **Database Configuration** (`config/database.yml`):
+   - Uses SQLite3 adapter
+   - Development: `db/development.sqlite3` (or `SHARED_DB_PATH` if set)
+   - Production: `/app/shared_db/shared.sqlite3` (or `SHARED_DB_PATH` if set)
+
+2. **ActiveRecord Models**:
+   - **SystemSetting** (`app/models/system_setting.rb`):
+     - Stores system-wide boolean settings
+     - Methods: `get(name)`, `set(name, value)`, `enabled?(name)`, `disabled?(name)`, `enable(name)`, `disable(name)`, `toggle(name)`
+     - Uses `find_by(name: name)` and `find_or_initialize_by(name: name)` - safe from SQL injection (ActiveRecord parameterizes)
+     - Used in: `TelegramMessageJob`, `CursorRunnerCallbackController`
+   
+   - **TelegramBot** (`app/models/telegram_bot.rb`):
+     - Manages multiple Telegram bots with tokens and webhook secrets
+     - Methods: `find_by_webhook_secret(secret)`, `find_by_bot_token(token)`
+     - Uses `active.find_by(webhook_secret: secret)` and `active.find_by(bot_token: token)` - safe from SQL injection
+     - Scopes: `active`, `by_type`, `virtual_assistants`, `product_specs_bots`
+   
+   - **GitCredential** (`app/models/git_credential.rb`):
+     - Stores encrypted git credentials for cursor-cli commands
+     - Method: `find_for_repository(repository_url)`
+     - Uses `active.find_by(repository_url: repository_url)` - safe from SQL injection
+     - Scopes: `active`, `for_repository`
+
+3. **SQL Injection Safety**:
+   - All ActiveRecord queries use parameterized methods (`find_by`, `where`, etc.)
+   - No raw SQL queries found in the codebase
+   - ActiveRecord automatically escapes parameters, preventing SQL injection
+   - However, should verify no dynamic SQL construction or string interpolation in queries
+
+### Redis Usage
+
+The application uses Redis for temporary state management:
 
 1. **CursorRunnerCallbackService** (`app/services/cursor_runner_callback_service.rb`):
    - Uses Redis for storing callback state
-   - Key construction: `"#{REDIS_KEY_PREFIX}#{request_id}"`
+   - Key construction: `"#{REDIS_KEY_PREFIX}#{request_id}"` where `REDIS_KEY_PREFIX = 'cursor_runner_callback:'`
    - Redis commands: `setex`, `get`, `del`
    - JSON serialization: `data.to_json`
    - Potential vulnerability: If `request_id` contains special characters, it could affect key construction
+   - No explicit validation or sanitization of `request_id` before key construction
 
 2. **Redis Key Patterns**:
    - Keys are constructed by concatenating prefix with user-provided `request_id`
-   - No explicit validation or sanitization of `request_id` before key construction
    - Redis commands are called with constructed keys directly
+   - Used for temporary storage of pending cursor-runner requests (TTL: 1 hour default)
 
-3. **No SQL Database**:
-   - The application does not use SQL databases
-   - All persistence is handled via Redis
-   - No ActiveRecord models or SQL queries
+3. **Sidekiq Background Jobs**:
+   - Redis is also used by Sidekiq for background job processing
+   - Configuration in `config/initializers/sidekiq.rb`
+   - Uses `REDIS_URL` environment variable (default: `redis://localhost:6379/0`)
 
 ## Checklist
 
-### SQL Injection Prevention (if applicable)
+### SQL Injection Prevention
 
-- [ ] Review any SQL database usage
-  - [ ] Verify no SQL databases are used (application uses Redis only)
-  - [ ] If SQL is added in future, ensure parameterized queries are used
-  - [ ] Document that SQL is not currently used
+- [ ] Review SQL database usage
+  - [ ] Verify SQLite3 database is properly configured
+  - [ ] Review all ActiveRecord model queries for SQL injection risks
+  - [ ] Verify all database queries use parameterized methods
+  - [ ] Document database usage patterns
 
-- [ ] Review any raw SQL queries (if applicable)
+- [ ] Review ActiveRecord model queries
+  - [ ] Review `SystemSetting` queries (`find_by`, `find_or_initialize_by`)
+    - [ ] Verify `name` parameter is validated before use in queries
+    - [ ] Check for any dynamic query construction
+    - [ ] Verify no string interpolation in query methods
+  - [ ] Review `TelegramBot` queries (`find_by_webhook_secret`, `find_by_bot_token`)
+    - [ ] Verify `secret` and `token` parameters are validated
+    - [ ] Check scope methods (`active`, `by_type`, etc.) for injection risks
+    - [ ] Verify no user input directly used in scopes
+  - [ ] Review `GitCredential` queries (`find_for_repository`)
+    - [ ] Verify `repository_url` parameter is validated
+    - [ ] Check scope `for_repository` for injection risks
+    - [ ] Verify fallback query logic is safe
+
+- [ ] Review any raw SQL queries (if any exist)
+  - [ ] Search codebase for raw SQL queries (`execute`, `connection.execute`, etc.)
   - [ ] Check for string concatenation in SQL queries
   - [ ] Verify all SQL queries use parameterized statements
-  - [ ] Check for use of query builders (if SQL is added)
+  - [ ] Check for use of `sanitize_sql` or similar methods if raw SQL is used
   - [ ] Verify no `eval()` or dynamic SQL construction from user input
 
-- [ ] Review ORM usage (if SQL is added)
-  - [ ] Verify ORM methods are used instead of raw SQL
-  - [ ] Check that ORM properly escapes parameters
-  - [ ] Review any custom SQL queries in ORM context
+- [ ] Review ORM usage
+  - [ ] Verify ActiveRecord methods are used instead of raw SQL
+  - [ ] Check that ActiveRecord properly escapes parameters (it does by default)
+  - [ ] Review any custom SQL queries in ActiveRecord context
+  - [ ] Verify no use of `where("field = '#{value}'")` patterns (string interpolation)
+  - [ ] Check for proper use of `where(field: value)` patterns (parameterized)
+
+- [ ] Review input validation for database operations
+  - [ ] Verify all user input is validated before database queries
+  - [ ] Check for proper type validation (strings, numbers, etc.)
+  - [ ] Verify length limits on input used in queries
+  - [ ] Check for SQL injection test cases in test suite
 
 ### Redis Injection Prevention
 
@@ -107,6 +170,16 @@ The Rails application uses Redis for state management and does not use SQL datab
 
 ### Injection Vulnerability Testing
 
+- [ ] Test SQL injection scenarios
+  - [ ] Test with SQL injection payloads in `SystemSetting.name` (e.g., `"'; DROP TABLE--"`)
+  - [ ] Test with SQL injection payloads in `TelegramBot.webhook_secret` and `bot_token`
+  - [ ] Test with SQL injection payloads in `GitCredential.repository_url`
+  - [ ] Verify ActiveRecord properly escapes all parameters
+  - [ ] Test with special characters, quotes, semicolons in database query parameters
+  - [ ] Verify no raw SQL queries are vulnerable to injection
+  - [ ] Test with very long input strings in database fields
+  - [ ] Verify database queries handle malformed input gracefully
+
 - [ ] Test Redis key injection scenarios
   - [ ] Test with special characters in `request_id` (spaces, newlines, quotes, etc.)
   - [ ] Test with very long `request_id` values
@@ -125,12 +198,19 @@ The Rails application uses Redis for state management and does not use SQL datab
 
 ### Documentation and Guidelines
 
+- [ ] Document database query patterns
+  - [ ] Document safe database query practices
+  - [ ] Document ActiveRecord query best practices
+  - [ ] Document input validation requirements for database queries
+  - [ ] Document SQL injection prevention guidelines
+
 - [ ] Document Redis key construction patterns
   - [ ] Document safe key construction practices
   - [ ] Document key naming conventions
   - [ ] Document key validation requirements
 
 - [ ] Document injection prevention guidelines
+  - [ ] Create guidelines for safe database query construction
   - [ ] Create guidelines for safe Redis key construction
   - [ ] Document input validation requirements
   - [ ] Document Redis command usage best practices
@@ -142,6 +222,19 @@ The Rails application uses Redis for state management and does not use SQL datab
   - [ ] Document remaining risks (if any)
 
 ### Implementation Recommendations
+
+- [ ] Create database query validation utilities
+  - [ ] Create input validation functions for database query parameters
+  - [ ] Add TypeScript types for database query parameters
+  - [ ] Create utility functions to safely construct database queries
+  - [ ] Add validation for all ActiveRecord model query inputs
+
+- [ ] Add input validation for database operations
+  - [ ] Validate `SystemSetting.name` format before database queries
+  - [ ] Validate `TelegramBot.webhook_secret` and `bot_token` before queries
+  - [ ] Validate `GitCredential.repository_url` before queries
+  - [ ] Add length limits for all database input fields
+  - [ ] Add type validation for all database inputs
 
 - [ ] Create Redis key validation utility
   - [ ] Create function to validate and sanitize Redis keys
