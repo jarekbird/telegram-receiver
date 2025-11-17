@@ -6,15 +6,95 @@
 
 ## Description
 
-Convert register job processor with queue from Rails to TypeScript/Node.js. Reference `jarek-va/app/jobs/telegram_message_job.rb`.
+Set up BullMQ queue system and register TelegramMessageJob processor to handle background job processing in TypeScript/Node.js. This task converts the Sidekiq job queue infrastructure from Rails to BullMQ in Node.js.
+
+The Rails implementation uses:
+- **Sidekiq** as the ActiveJob adapter (configured in `jarek-va/config/application.rb` line 31)
+- **Sidekiq initializer** (`jarek-va/config/initializers/sidekiq.rb`) for Redis connection and configuration
+- **Sidekiq YAML config** (`jarek-va/config/sidekiq.yml`) for queue and concurrency settings
+- **Sidekiq worker process** started separately (`bundle exec sidekiq` or Docker service)
+- **TelegramMessageJob** uses `queue_as :default` (line 11 in `jarek-va/app/jobs/telegram_message_job.rb`)
+
+The TypeScript/Node.js implementation should use:
+- **BullMQ** (already in package.json dependencies) as the job queue system
+- **Redis connection** (already configured via `redis`/`ioredis` packages)
+- **Queue worker** to process jobs from the queue
+- **Queue configuration** matching Sidekiq settings (concurrency, retry, etc.)
 
 ## Checklist
 
-- [ ] Create queue worker
-- [ ] Register TelegramMessageJob processor
-- [ ] Configure queue options
-- [ ] Add error handlers
-- [ ] Start worker in application startup
+### BullMQ Queue Configuration
+- [ ] Create `src/config/queue.ts` or similar configuration file
+  - [ ] Configure Redis connection using environment variable `REDIS_URL` (default: `redis://localhost:6379/0`)
+  - [ ] Match Rails Sidekiq configuration: `jarek-va/config/initializers/sidekiq.rb` lines 7-28
+  - [ ] Support Docker environment (Redis URL: `redis://redis:6379/0`) and local development
+  - [ ] Configure default job options (retry: 3, backtrace: true) matching Rails lines 34-37
+  - [ ] Reference Rails implementation: `jarek-va/config/initializers/sidekiq.rb`
+
+### Queue Configuration File
+- [ ] Create `src/config/queue-config.ts` or YAML equivalent
+  - [ ] Define concurrency settings per environment:
+    - Development: 2 (matching Rails `jarek-va/config/sidekiq.yml` line 21)
+    - Production: 10 (matching Rails line 12)
+    - Test: 1 (matching Rails line 27)
+  - [ ] Define queue names: `['default']` for development/test, `['critical', 'default', 'high_priority', 'low_priority']` for production
+  - [ ] Reference Rails implementation: `jarek-va/config/sidekiq.yml`
+
+### Create Queue Worker
+- [ ] Create `src/workers/telegram-message-worker.ts` or similar
+  - [ ] Import BullMQ `Worker` class
+  - [ ] Create worker instance for 'default' queue
+  - [ ] Configure worker with concurrency from config file
+  - [ ] Set up Redis connection from queue configuration
+  - [ ] Reference BullMQ documentation for worker setup
+
+### Register TelegramMessageJob Processor
+- [ ] Register job processor in the worker
+  - [ ] Import TelegramMessageJob class (created in previous tasks)
+  - [ ] Register processor function that calls `TelegramMessageJob.perform()`
+  - [ ] Handle job data parsing (JSON string or object, matching Rails line 17-18)
+  - [ ] Ensure processor matches Rails `perform` method signature: `perform(update)`
+  - [ ] Reference Rails implementation: `jarek-va/app/jobs/telegram_message_job.rb` lines 10-51
+
+### Configure Queue Options
+- [ ] Set up queue options matching Sidekiq behavior
+  - [ ] Configure retry attempts: 3 (matching Rails `Sidekiq.default_job_options` line 35)
+  - [ ] Enable backtrace logging: true (matching Rails line 36)
+  - [ ] Configure job removal after completion (optional, for cleanup)
+  - [ ] Set job timeout if needed
+  - [ ] Reference Rails implementation: `jarek-va/config/initializers/sidekiq.rb` lines 34-37
+
+### Add Error Handlers
+- [ ] Add worker-level error handling
+  - [ ] Handle worker errors (connection failures, etc.)
+  - [ ] Log errors with appropriate log level
+  - [ ] Handle job processing errors (already handled in TelegramMessageJob.perform, but ensure worker doesn't crash)
+  - [ ] Add error event listeners for worker
+  - [ ] Reference Rails Sidekiq error handling patterns
+
+### Start Worker in Application Startup
+- [ ] Integrate worker startup in application initialization
+  - [ ] Create `src/workers/index.ts` or similar entry point
+  - [ ] Start worker when application starts (in `src/index.ts` or main entry point)
+  - [ ] Handle graceful shutdown (close worker on SIGTERM/SIGINT)
+  - [ ] Ensure worker starts only in appropriate environments (not in test unless needed)
+  - [ ] Match Rails behavior: Sidekiq runs as separate process, but for Node.js we can run in same process or separate
+  - [ ] Consider Docker deployment: worker should start automatically with application
+
+### Queue Creation for Job Enqueueing
+- [ ] Ensure queue is created for enqueueing jobs
+  - [ ] Create `src/queues/telegram-message-queue.ts` or similar
+  - [ ] Export queue instance for use in controllers/services
+  - [ ] Configure queue with same Redis connection as worker
+  - [ ] Set queue name: 'default' (matching Rails `queue_as :default`)
+  - [ ] This queue will be used by TelegramController to enqueue jobs (via `TelegramMessageJob.performLater()` equivalent)
+
+### Logging Configuration
+- [ ] Configure queue/worker logging
+  - [ ] Set log level to INFO (matching Rails `Sidekiq.logger.level = Logger::INFO` line 31)
+  - [ ] Ensure worker logs job processing events
+  - [ ] Log queue connection status
+  - [ ] Reference Rails implementation: `jarek-va/config/initializers/sidekiq.rb` line 31
 
 ## Notes
 
@@ -22,7 +102,59 @@ Convert register job processor with queue from Rails to TypeScript/Node.js. Refe
 - Section: 10. TelegramMessageJob Conversion
 - Reference the Rails implementation for behavior
 
+### Rails Implementation Details
+
+1. **Sidekiq Configuration** (`jarek-va/config/initializers/sidekiq.rb`):
+   - Redis URL: `ENV.fetch('REDIS_URL', 'redis://localhost:6379/0')`
+   - Default job options: `{ retry: 3, backtrace: true }`
+   - Log level: `Logger::INFO`
+
+2. **Sidekiq YAML Config** (`jarek-va/config/sidekiq.yml`):
+   - Development: concurrency 2, queues: ['default']
+   - Production: concurrency 10, queues: ['critical', 'default', 'high_priority', 'low_priority']
+   - Test: concurrency 1, queues: ['default']
+
+3. **TelegramMessageJob Queue** (`jarek-va/app/jobs/telegram_message_job.rb` line 11):
+   - Uses `queue_as :default` to specify queue name
+
+4. **Job Enqueueing** (`jarek-va/app/controllers/telegram_controller.rb` line 22):
+   - Jobs are enqueued via `TelegramMessageJob.perform_later(update.to_json)`
+
+### TypeScript/Node.js Implementation Notes
+
+1. **BullMQ Setup**:
+   - Use `bullmq` package (already in dependencies)
+   - Create `Queue` instance for enqueueing jobs
+   - Create `Worker` instance for processing jobs
+   - Both use same Redis connection
+
+2. **Queue vs Worker**:
+   - Queue: Used to add jobs (equivalent to `perform_later` in Rails)
+   - Worker: Processes jobs from queue (equivalent to Sidekiq worker process)
+
+3. **Environment Variables**:
+   - Use `REDIS_URL` environment variable (same as Rails)
+   - Default to `redis://localhost:6379/0` for local development
+   - Use `redis://redis:6379/0` in Docker (matching Rails Docker setup)
+
+4. **Worker Startup**:
+   - Can run in same process as Express app or separate process
+   - For Docker, consider running as separate service (like Rails Sidekiq) or same container
+   - Ensure graceful shutdown on SIGTERM/SIGINT
+
+### Dependencies
+
+This task depends on:
+- PHASE2-078: TelegramMessageJob `perform` method implementation
+- Redis connection setup (should already be configured)
+- BullMQ package (already in package.json)
+
+### Task Scope
+
 - Task can be completed independently by a single agent
+- Focus on setting up queue infrastructure and worker registration
+- Ensure configuration matches Rails Sidekiq settings
+- Worker should process jobs from 'default' queue
 
 ## Related Tasks
 
