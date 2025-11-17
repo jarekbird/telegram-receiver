@@ -6,17 +6,47 @@
 
 ## Description
 
-Review and improve create performance benchmarks in the codebase to ensure best practices.
+Create performance benchmarks for the telegram-receiver application to establish baseline performance metrics and enable performance regression testing. This task involves setting up a benchmark test suite, measuring critical operations and API endpoints, documenting results, and establishing performance targets.
 
 ## Checklist
 
-- [ ] Create benchmark test suite
-- [ ] Benchmark critical operations
-- [ ] Benchmark API endpoints
-- [ ] Document benchmark results
-- [ ] Set performance targets
-- [ ] Create performance regression tests
-- [ ] Save benchmarks to `docs/benchmarks.md`
+- [ ] Set up benchmark test suite infrastructure (using tools like `benchmark.js` or `autocannon`)
+- [ ] Benchmark critical API endpoints:
+  - [ ] POST `/telegram/webhook` - Webhook reception and job enqueueing
+  - [ ] POST `/cursor-runner/callback` - Callback processing and response
+  - [ ] GET `/health` - Health check endpoint
+- [ ] Benchmark critical service operations:
+  - [ ] TelegramService.sendMessage() - Message sending to Telegram API
+  - [ ] TelegramService.downloadFile() - File downloading from Telegram
+  - [ ] CursorRunnerService.execute() - Cursor Runner API calls
+  - [ ] CursorRunnerCallbackService operations - Redis state management
+- [ ] Benchmark background job processing:
+  - [ ] TelegramMessageJob processing time
+  - [ ] Job queue throughput (jobs/second)
+- [ ] Benchmark Redis operations:
+  - [ ] State storage and retrieval
+  - [ ] TTL-based cleanup operations
+- [ ] Benchmark audio transcription operations (if applicable):
+  - [ ] ElevenLabs speech-to-text processing time
+- [ ] Document benchmark results with:
+  - [ ] Baseline metrics (mean, median, p95, p99 response times)
+  - [ ] Throughput measurements (requests/second)
+  - [ ] Memory usage patterns
+  - [ ] CPU usage patterns
+- [ ] Set performance targets based on benchmarks:
+  - [ ] Target response times for each endpoint
+  - [ ] Target throughput for job processing
+  - [ ] Target resource usage limits
+- [ ] Create performance regression tests that:
+  - [ ] Run benchmarks as part of CI/CD pipeline
+  - [ ] Fail if performance degrades beyond thresholds
+  - [ ] Track performance trends over time
+- [ ] Save benchmark results and documentation to `docs/benchmarks.md` with:
+  - [ ] Benchmark methodology
+  - [ ] Test environment specifications
+  - [ ] Baseline results
+  - [ ] Performance targets
+  - [ ] Instructions for running benchmarks
 
 ## Notes
 
