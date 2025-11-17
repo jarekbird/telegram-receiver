@@ -26,7 +26,7 @@ The Rails implementation:
 - [ ] Get expected secret from application configuration (environment variable `WEBHOOK_SECRET`)
 - [ ] Compare provided secret with expected secret
 - [ ] Allow request if secret matches expected secret
-- [ ] Allow request if expected secret is not configured (blank/empty) - development mode
+- [ ] Allow request if expected secret is not configured (undefined/null/empty/whitespace-only) - development mode
 - [ ] Log warning message for unauthorized requests (include secret status and IP address)
 - [ ] Return 401 Unauthorized status with JSON error `{ error: 'Unauthorized' }` if authentication fails
 - [ ] Ensure middleware can be used as Express middleware or route handler
@@ -38,7 +38,7 @@ The Rails implementation:
 - **Rails Implementation**: `jarek-va/app/controllers/cursor_runner_callback_controller.rb` (lines 72-91)
 - **Configuration**: Webhook secret is configured via `Rails.application.config.webhook_secret` which reads from Rails credentials or `WEBHOOK_SECRET` environment variable (see `jarek-va/config/application.rb` lines 24-25)
 - The middleware should be applied as a `before_action` equivalent (Express middleware) to protect the callback route
-- In development mode, if no webhook secret is configured, all requests are allowed (blank check)
+- In development mode, if no webhook secret is configured (undefined/null/empty/whitespace-only), all requests are allowed (blank check)
 - The Rails implementation logs warnings with format: `'Unauthorized cursor-runner callback - invalid secret (provided_secret: [present|missing], ip: <ip>)'`
 - Task can be completed independently by a single agent
 
