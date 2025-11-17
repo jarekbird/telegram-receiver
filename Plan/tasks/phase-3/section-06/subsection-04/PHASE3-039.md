@@ -40,6 +40,8 @@ The Rails application uses multiple credential management approaches:
    - Rails services log errors but should not log credential values
    - Error messages should not expose tokens or secrets
    - Parameters logged should exclude sensitive fields
+   - **Note**: In `telegram_controller.rb`, debug logging in test environment logs admin secrets (lines 122-126) - this pattern should be avoided or masked
+   - **Note**: Bot token is embedded in Telegram file download URLs (Telegram API requirement) - ensure URLs are not logged or are masked in logs
 
 ## Checklist
 
@@ -111,6 +113,9 @@ The Rails application uses multiple credential management approaches:
   - [ ] Error logging (should not include credentials in error messages)
   - [ ] Request logging (should mask sensitive headers like `Authorization`)
   - [ ] Configuration logging (should not log credential values)
+  - [ ] Debug/test logging (should not log secrets even in test/debug mode - mask or exclude)
+  - [ ] URL logging (Telegram file download URLs contain bot token - mask token in URLs if logged)
+  - [ ] Authentication failure logging (should not log actual secret values, only indicate failure)
 
 ### API Key Handling
 
@@ -122,10 +127,11 @@ The Rails application uses multiple credential management approaches:
   - [ ] Review API key error handling (don't expose keys in errors)
 
 - [ ] Review specific API integrations:
-  - [ ] Telegram Bot API (bot token in headers, not URL)
+  - [ ] Telegram Bot API (bot token in headers for API calls, but required in URL for file downloads - ensure URLs are not logged or are masked)
   - [ ] ElevenLabs API (API key in headers)
   - [ ] Cursor runner API (verify no credentials in URLs)
   - [ ] Redis connection (password in URL, verify it's not logged)
+  - [ ] Database connection (password in DATABASE_URL, verify it's not logged)
 
 ### Environment Variable Validation
 
@@ -153,8 +159,11 @@ The Rails application uses multiple credential management approaches:
   - [ ] Check for credential exposure in logs
   - [ ] Check for credential exposure in stack traces
   - [ ] Check for credential exposure in debug output
+  - [ ] Check for credential exposure in test/debug logging (even test logs should mask secrets)
+  - [ ] Check for credential exposure in URLs (especially Telegram file download URLs)
   - [ ] Verify credentials are not passed to untrusted code
   - [ ] Check for credential leakage through side channels (timing attacks, etc.)
+  - [ ] Verify authentication failure messages don't reveal secret values (only indicate success/failure)
 
 ### Documentation
 
