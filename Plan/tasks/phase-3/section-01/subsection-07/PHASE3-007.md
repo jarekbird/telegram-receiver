@@ -13,13 +13,15 @@ Create a visual architecture diagram to complement the existing architecture doc
 - [ ] Review existing architecture documentation (`docs/architecture.md`) to understand all components
 - [ ] Create visual architecture diagram showing:
   - [ ] Application layers (Routes, Controllers, Services, Models, Middleware, Jobs, Utils, Types)
-  - [ ] Component relationships and dependencies
+  - [ ] Component relationships and dependencies (dependency injection patterns, service dependencies)
   - [ ] Data flow (Telegram → Application → Cursor Runner → Application → Telegram)
   - [ ] External services (Telegram Bot API, Cursor Runner API, ElevenLabs API, Redis)
-  - [ ] Background job processing flow (BullMQ)
+  - [ ] Background job processing flow (BullMQ job queue and worker processing)
   - [ ] State management (Redis for callbacks and job queues)
-- [ ] Use appropriate diagram format (PNG, SVG, or Mermaid diagram)
-- [ ] Save diagram to `docs/architecture-diagram.png` (or `.svg`/`.md` for Mermaid)
+  - [ ] Authentication flows (webhook secret validation, admin authentication)
+  - [ ] Error handling flows (error propagation through layers)
+- [ ] Use appropriate diagram format (recommend Mermaid `.md` format for version control, or PNG/SVG)
+- [ ] Save diagram to `docs/architecture-diagram.md` (for Mermaid) or `docs/architecture-diagram.png`/`.svg` (for image formats)
 - [ ] Update `docs/architecture.md` to reference and embed the diagram
 - [ ] Ensure diagram is clear, readable, and follows best practices for architecture diagrams
 
