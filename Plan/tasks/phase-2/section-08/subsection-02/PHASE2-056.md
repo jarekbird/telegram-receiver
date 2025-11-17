@@ -6,23 +6,42 @@
 
 ## Description
 
-Convert implement webhook endpoint handler from Rails to TypeScript/Node.js. Reference `jarek-va/app/controllers/*_controller.rb` files.
+Convert the webhook endpoint handler from Rails to TypeScript/Node.js. This endpoint receives Telegram updates via POST request, parses them, and enqueues them for asynchronous processing. The handler must return 200 OK immediately to Telegram to prevent retries, even if errors occur.
+
+Reference the Rails implementation in `jarek-va/app/controllers/telegram_controller.rb` (lines 12-48) for the complete behavior.
 
 ## Checklist
 
-- [ ] Implement `webhook` handler method
-- [ ] Parse request body as TelegramUpdate
-- [ ] Enqueue job to process update
-- [ ] Return 200 OK immediately
-- [ ] Add error handling
-- [ ] Reference `jarek-va/app/controllers/telegram_controller.rb`
+- [ ] Implement `webhook` handler method with signature `webhook(req: Request, res: Response): Promise<void>`
+- [ ] Parse request body as TelegramUpdate (handle both JSON Content-Type and form-encoded)
+- [ ] Remove framework-specific parameters (if any) from the parsed update object
+- [ ] Log the received Telegram update for debugging (using logger)
+- [ ] Convert update object to JSON string before enqueueing
+- [ ] Enqueue job to process update asynchronously (call `TelegramMessageJob` equivalent with JSON string)
+- [ ] Return 200 OK immediately after enqueueing (before job processing completes)
+- [ ] Implement comprehensive error handling:
+  - [ ] Catch all errors (StandardError equivalent)
+  - [ ] Log error message and stack trace
+  - [ ] Extract chat info from update using `extractChatInfoFromUpdate` helper method (if available)
+  - [ ] Attempt to send error message to user via TelegramService if chat_id is available
+  - [ ] Always return 200 OK even on error (to prevent Telegram from retrying)
+- [ ] Reference `jarek-va/app/controllers/telegram_controller.rb` lines 12-48 for implementation details
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 8. TelegramController Conversion
-- Reference the Rails implementation for behavior
-
+- Reference the Rails implementation (`jarek-va/app/controllers/telegram_controller.rb` lines 12-48) for complete behavior
+- **Important**: The webhook authentication is handled by middleware (implemented in PHASE2-057), so this method assumes authentication has already passed
+- The Rails implementation:
+  - Handles both JSON (`application/json`) and form-encoded requests
+  - Removes Rails-specific params (`controller`, `action`, `format`, `telegram`) before processing
+  - Logs the received update for debugging
+  - Converts update to JSON string using `update.to_json` before passing to job
+  - Always returns 200 OK to Telegram, even on errors, to prevent retries
+  - Attempts to send error messages to users when chat info is available
+- The `extractChatInfoFromUpdate` helper method may be implemented in a later task (PHASE2-063), but should be used here if available
+- Error handling must be robust: log errors, attempt user notification, but always return 200 OK
 - Task can be completed independently by a single agent
 
 ## Related Tasks
