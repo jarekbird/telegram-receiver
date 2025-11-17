@@ -17,14 +17,16 @@ Verify and ensure Redis client dependencies are properly installed for TypeScrip
 
 **Node.js Implementation:**
 - Both `redis` (^4.6.10) and `ioredis` (^5.3.2) are already in `package.json`
-- **ioredis** is the recommended choice for BullMQ integration (used for background jobs)
-- **redis** package can be used for direct Redis operations (matching CursorRunnerCallbackService pattern)
+- **bullmq** (^5.1.0) is also in `package.json` - this is the Sidekiq replacement for background jobs
+- **ioredis** is the recommended choice for BullMQ integration (BullMQ requires ioredis for background jobs)
+- **redis** or **ioredis** package can be used for direct Redis operations (matching CursorRunnerCallbackService pattern)
 - Both packages have TypeScript type definitions (`@types/redis` and `@types/ioredis`)
 
 ## Checklist
 
 - [ ] Verify `redis` package is installed (check `package.json` and `node_modules`)
 - [ ] Verify `ioredis` package is installed (check `package.json` and `node_modules`)
+- [ ] Verify `bullmq` package is installed (check `package.json` and `node_modules`) - required for Sidekiq replacement
 - [ ] Verify `@types/redis` is installed in devDependencies
 - [ ] Verify `@types/ioredis` is installed in devDependencies
 - [ ] Run `npm install` to ensure all dependencies are properly installed
@@ -38,7 +40,7 @@ Verify and ensure Redis client dependencies are properly installed for TypeScrip
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 2. Redis Integration
-- **Current Status**: Redis dependencies (`redis` and `ioredis`) are already present in `package.json`
+- **Current Status**: Redis dependencies (`redis`, `ioredis`, and `bullmq`) are already present in `package.json`
 - This task focuses on verification and ensuring proper setup rather than initial installation
 - Reference the Rails implementation in `jarek-va/app/services/cursor_runner_callback_service.rb` for Redis usage patterns
 - Reference `jarek-va/config/initializers/sidekiq.rb` for Sidekiq/Redis configuration
