@@ -6,16 +6,20 @@
 
 ## Description
 
-Review and improve review and improve type inference in the codebase to ensure best practices.
+Review and improve type inference in the codebase to ensure TypeScript best practices are followed. This includes identifying where explicit types are needed versus where type inference can be leveraged, removing unnecessary type annotations, optimizing return type annotations, and documenting the type inference strategy used throughout the codebase.
 
 ## Checklist
 
-- [ ] Review where explicit types are needed
-- [ ] Review where type inference can be used
-- [ ] Check for unnecessary type annotations
-- [ ] Review return type annotations
-- [ ] Optimize type inference
-- [ ] Document type inference strategy
+- [ ] Review all function parameters and identify where explicit types improve clarity
+- [ ] Review all function return types and determine if explicit annotations are needed
+- [ ] Identify places where type inference can be used instead of explicit types
+- [ ] Check for unnecessary type annotations that don't add value (e.g., `const x: string = "hello"`)
+- [ ] Review return type annotations and ensure they're only added when they improve code clarity or catch errors
+- [ ] Check for complex inferred types that should be explicitly typed for readability
+- [ ] Review type inference in generic functions and ensure proper type constraints
+- [ ] Verify that type inference works correctly with async/await patterns
+- [ ] Check for type inference issues with destructuring and object literals
+- [ ] Document the type inference strategy and guidelines for the codebase
 
 ## Notes
 
