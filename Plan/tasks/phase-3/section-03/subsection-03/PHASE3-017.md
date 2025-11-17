@@ -80,6 +80,7 @@ function callback(error: Error | null, result?: T): void {
   - [ ] Check Redis/ioredis usage for callback methods
   - [ ] Review file system operations for callback usage
   - [ ] Check stream operations for event-based callbacks
+  - [ ] Review utility/helper functions for callback patterns
 
 - [ ] Identify callback hell patterns
   - [ ] Find deeply nested callbacks (3+ levels of nesting)
