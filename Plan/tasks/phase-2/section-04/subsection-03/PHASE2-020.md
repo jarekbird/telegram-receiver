@@ -6,22 +6,42 @@
 
 ## Description
 
-Convert implement set_webhook method from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/telegram_service.rb`.
+Convert and implement the `setWebhook` method from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/telegram_service.rb` (lines 39-51).
+
+The Rails implementation:
+- Takes `url` (required) and optional `secret_token` parameter
+- Returns early if bot token is blank (similar to other methods in the service)
+- Builds a params object with the `url`
+- Conditionally adds `secret_token` to params only if it's present (not nil/blank)
+- Calls Telegram Bot API `setWebhook` endpoint
+- Logs errors and re-raises exceptions
+- Returns the API response from Telegram
 
 ## Checklist
 
-- [ ] Implement `setWebhook` method
-- [ ] Handle webhook URL parameter
-- [ ] Handle secret_token parameter
-- [ ] Add error handling
-- [ ] Return webhook info
+- [ ] Implement `setWebhook` method with proper TypeScript signature:
+  - Parameters: `url: string` (required), `secretToken?: string` (optional)
+  - Return type: `Promise<TelegramApiResponse>` (or appropriate Telegram API response type)
+- [ ] Add early return check if bot token is blank (use the validation method from PHASE2-018)
+- [ ] Build params object with `url` parameter
+- [ ] Conditionally add `secret_token` to params only if `secretToken` is provided and not empty
+- [ ] Make HTTP request to Telegram Bot API `setWebhook` endpoint using axios
+- [ ] Add comprehensive error handling:
+  - Wrap in try-catch block
+  - Log errors with descriptive messages (include error message and stack trace)
+  - Re-raise exceptions after logging (maintain Rails behavior)
+- [ ] Return the API response from Telegram (not webhook info - that's a separate method)
+- [ ] Reference `jarek-va/app/services/telegram_service.rb` lines 39-51 for exact behavior
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 4. TelegramService Conversion
-- Reference the Rails implementation for behavior
-
+- Reference the Rails implementation (`jarek-va/app/services/telegram_service.rb` lines 39-51) for exact behavior
+- The `secret_token` parameter is optional and should only be included in the API request if provided
+- Error handling should match Rails pattern: log error details, then re-raise the exception
+- Method should follow camelCase naming convention (`setWebhook` not `set_webhook`)
+- This method sets the webhook URL, but does not return webhook info (that's handled by `getWebhookInfo` method in a separate task)
 - Task can be completed independently by a single agent
 
 ## Related Tasks
