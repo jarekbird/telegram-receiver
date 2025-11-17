@@ -6,23 +6,33 @@
 
 ## Description
 
-Create test directory structure
+Create test directory structure for organizing unit tests, integration tests, end-to-end tests, fixtures, helpers, and mocks. This establishes the foundational test organization that mirrors common Node.js/TypeScript testing patterns and supports the conversion from Rails RSpec tests.
 
 ## Checklist
 
-- [ ] Create `tests/` directory
-- [ ] Create `tests/unit/` directory
-- [ ] Create `tests/integration/` directory
-- [ ] Create `tests/e2e/` directory
-- [ ] Create `tests/fixtures/` directory
-- [ ] Create `tests/helpers/` directory
-- [ ] Create `tests/setup.ts` file (empty initially)
+- [ ] Create `tests/` directory (root test directory)
+- [ ] Create `tests/unit/` directory (for unit tests of individual components)
+- [ ] Create `tests/integration/` directory (for integration tests that test multiple components together)
+- [ ] Create `tests/e2e/` directory (for end-to-end tests using Playwright)
+- [ ] Create `tests/fixtures/` directory (for test data fixtures and sample API responses)
+- [ ] Create `tests/helpers/` directory (for test utility functions and shared test helpers)
+- [ ] Create `tests/mocks/` directory (for reusable mock implementations of external services)
+- [ ] Create `tests/setup.ts` file (Jest setup file with basic configuration: NODE_ENV=test, timeout settings, and global test utilities)
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 2. Project Structure Setup
 - Task can be completed independently by a single agent
+- The test directory structure follows Node.js/TypeScript best practices:
+  - `unit/` - Tests for individual functions, classes, and modules in isolation
+  - `integration/` - Tests for API endpoints and service interactions
+  - `e2e/` - End-to-end tests using Playwright for full user flows
+  - `fixtures/` - Reusable test data (API responses, sample messages, etc.)
+  - `helpers/` - Shared test utilities and helper functions
+  - `mocks/` - Reusable mock implementations for external services (Telegram API, Cursor Runner API, Redis, etc.)
+- The `setup.ts` file should contain basic Jest configuration (NODE_ENV, timeout, global utilities) and will be referenced in `jest.config.ts` via `setupFilesAfterEnv`
+- This structure supports the conversion from Rails RSpec tests (`spec/` directory) to Jest tests
 
 ## Related Tasks
 
