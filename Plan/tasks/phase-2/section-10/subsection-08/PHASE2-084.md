@@ -6,22 +6,63 @@
 
 ## Description
 
-Convert implement process_local_message method from Rails to TypeScript/Node.js. Reference `jarek-va/app/jobs/telegram_message_job.rb`.
+Convert the `process_local_message` method from Rails to TypeScript/Node.js. This method processes local commands that are not forwarded to cursor-runner, handling /start, /help, /status commands and unknown messages. Reference `jarek-va/app/jobs/telegram_message_job.rb` lines 253-277.
+
+The method:
+- Accepts message text, chat_id, and message_id as parameters
+- Uses regex pattern matching (case-insensitive, trimmed) to identify commands
+- Returns a response object with `ok` and `say` properties
+- Handles /start and /help commands with the same response
+- Handles /status command with a status message
+- Returns a friendly response for unknown commands (not an error)
 
 ## Checklist
 
-- [ ] Create `processLocalMessage` method
-- [ ] Handle /start command
-- [ ] Handle /help command
-- [ ] Handle /status command
-- [ ] Return response object
-- [ ] Handle unknown commands
+### Method Signature
+- [ ] Create `processLocalMessage` method with signature: `processLocalMessage(text: string, chatId: number, messageId: number)`
+- [ ] Method should return `{ ok: boolean, say: string }` object
+
+### Command Handling
+- [ ] Use regex pattern matching (case-insensitive) to match commands
+- [ ] Trim and lowercase text before matching
+- [ ] Handle /start command (matches `/^\/start/i`)
+- [ ] Handle /help command (matches `/^\/help/i`)
+- [ ] **Important**: /start and /help should return the same response message
+- [ ] Handle /status command (matches `/^\/status/i`)
+- [ ] Handle unknown commands (else clause) - should return a friendly response, not an error
+
+### Response Format
+- [ ] Return object with `ok: true` property
+- [ ] Return object with `say` property containing the response text
+- [ ] /start and /help response should include:
+  - Greeting: "Hello! I'm your Virtual Assistant. Send me a message and I'll help you out."
+  - Available commands list: "/help - Show this message" and "/status - Check my status"
+- [ ] /status response should be: "✅ I'm online and ready to help!"
+- [ ] Unknown commands response should include:
+  - Echo of received message: "I received your message: {text}"
+  - Learning message: "I'm still learning how to process messages. More features coming soon!"
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 10. TelegramMessageJob Conversion
-- Reference the Rails implementation for behavior
+- Reference the Rails implementation at `jarek-va/app/jobs/telegram_message_job.rb` lines 253-277
+
+### Implementation Details
+
+- The method uses a case statement (or switch statement in TypeScript) with regex patterns
+- Commands are matched using regex patterns: `/^\/start/i`, `/^\/help/i`, `/^\/status/i`
+- Text is normalized (downcased and stripped) before matching
+- `/start` and `/help` commands are grouped together and return the same response
+- Unknown commands (anything that doesn't match the above patterns) return a friendly response, not an error
+- The return format is always `{ ok: true, say: string }` - the `ok` property is always `true`
+- The `say` property contains the message text to be sent to the user
+- This method is called from `handleMessage` when a message is not forwarded to cursor-runner
+
+### Related Methods
+
+- Called by: `handleMessage` method (when message is not forwarded to cursor-runner)
+- The response object is used by `handleMessage` to send messages via `TelegramService.sendMessage` or `sendTextAsAudio`
 
 - Task can be completed independently by a single agent
 
