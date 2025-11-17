@@ -69,7 +69,7 @@ Write comprehensive unit tests for CursorRunnerService in TypeScript/Node.js. Re
   - Test HTTP 422 Unprocessable Entity is treated as valid response (not an error)
   - Test error messages include original error details
 - [ ] Test response parsing
-  - Test successful JSON parsing with symbol keys (or equivalent in TypeScript)
+  - Test successful JSON parsing (TypeScript/JavaScript uses string keys, unlike Ruby's symbolize_names)
   - Test InvalidResponseError when JSON parsing fails
   - Test error body parsing for HTTP error responses
 - [ ] Test request ID generation
@@ -98,6 +98,8 @@ Write comprehensive unit tests for CursorRunnerService in TypeScript/Node.js. Re
 - Request ID generation should match Rails pattern: "req-{timestamp}-{random_hex}"
 - All error messages should include original error details for debugging
 - Test both success and error scenarios for comprehensive coverage
+- Note: In TypeScript/JavaScript, JSON.parse returns objects with string keys (unlike Ruby's symbolize_names: true option). Test that parsed responses can be accessed with string keys.
+- Note: When callback_url is not provided to iterate(), the callbackUrl field should not be included in the request body (similar to how repositoryName is optional in clone_repository)
 
 - Task can be completed independently by a single agent
 
