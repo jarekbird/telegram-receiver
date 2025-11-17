@@ -8,10 +8,27 @@
 
 Review and improve type definitions throughout the codebase to ensure TypeScript best practices. This includes reviewing interfaces, types, enums, and class definitions across all source files, identifying areas where type safety can be improved, and ensuring consistent type usage patterns.
 
+**Current Codebase State**: As of this review, the codebase is in early stages. Most source directories (`src/controllers`, `src/services`, `src/models`, etc.) contain only `.gitkeep` files and are empty. The main focus should be on reviewing existing test files, configuration files, and establishing type patterns for future development.
+
 ## Checklist
 
-- [ ] Review all type definition files (`src/types/**/*.ts`, `*.d.ts` files)
-- [ ] Review type definitions in source files (`src/**/*.ts`)
+### Current Files (Immediate Focus)
+- [ ] Review test files (`tests/**/*.ts`) for type safety issues
+  - [ ] `tests/helpers/testUtils.ts` - Replace `any` types in `createMockFn` generic constraints
+  - [ ] `tests/mocks/telegramApi.ts` - Add proper TypeScript interfaces for mock return types
+  - [ ] `tests/mocks/redis.ts` - Add proper TypeScript interfaces for Redis mock methods
+  - [ ] `tests/mocks/cursorRunnerApi.ts` - Add proper TypeScript interfaces for API mock responses
+  - [ ] `tests/fixtures/apiResponses.ts` - Add TypeScript interfaces for response fixtures
+  - [ ] `tests/fixtures/telegramMessages.ts` - Add TypeScript interfaces for Telegram message fixtures
+  - [ ] `tests/helpers/apiHelpers.ts` - Review and improve type definitions
+- [ ] Review configuration files for type safety
+  - [ ] `jest.config.ts` - Verify proper typing (already uses `Config` type)
+  - [ ] `playwright.config.ts` - Verify proper typing (already uses `defineConfig`)
+- [ ] Review `src/index.ts` (currently empty, but verify when implemented)
+
+### Future Files (When Source Code is Added)
+- [ ] Review all type definition files (`src/types/**/*.ts`, `*.d.ts` files) when they exist
+- [ ] Review type definitions in source files (`src/**/*.ts`) as they are created
 - [ ] Check for `any` types and replace with proper types where possible
 - [ ] Check for missing return types on functions and methods
 - [ ] Check for missing parameter types
@@ -22,36 +39,53 @@ Review and improve type definitions throughout the codebase to ensure TypeScript
 - [ ] Verify type inference is working correctly (avoid unnecessary type annotations)
 - [ ] Review type exports (ensure types are properly exported where needed)
 - [ ] Check for unused type definitions
-- [ ] Review type definitions in test files for consistency
+
+### Documentation
 - [ ] Identify type improvements and document rationale
 - [ ] Document findings and decisions in task notes
+- [ ] Create type definition templates/patterns for future source files
 
 ## Areas to Focus On
 
-1. **Source Files** (`src/` directory):
-   - Controllers, services, models, middleware, routes
-   - Ensure all function parameters and return types are explicitly typed
-   - Check for proper interface definitions for API requests/responses
-   - Verify model types match database schemas
+### 1. Test Files (`tests/` directory) - **PRIMARY FOCUS**
+   - **Current Issues Found**:
+     - `tests/helpers/testUtils.ts`: Uses `any` in `createMockFn` generic constraint (line 15)
+     - Mock files lack proper TypeScript interfaces for return types
+     - Fixture files use plain objects without type definitions
+   - **Actions Required**:
+     - Create interfaces for Telegram API types (messages, updates, webhooks)
+     - Create interfaces for Cursor Runner API types (requests, responses)
+     - Create interfaces for Redis client mock types
+     - Add proper types to all fixture functions
+     - Replace `any` types with proper generics or `unknown` with type guards
 
-2. **Type Definition Files** (`src/types/` directory):
-   - Review all exported types and interfaces
-   - Ensure types are properly organized and documented
-   - Check for type reusability and composition
+### 2. Configuration Files - **SECONDARY FOCUS**
+   - `jest.config.ts`: Already properly typed with `Config` type from Jest
+   - `playwright.config.ts`: Already properly typed with `defineConfig`
+   - Consider creating environment variable type definitions when needed
 
-3. **Test Files** (`tests/` directory):
-   - Review mock type definitions
-   - Ensure test fixtures have proper types
-   - Verify test helper functions have correct types
+### 3. Source Files (`src/` directory) - **FUTURE FOCUS**
+   - **Note**: Most source directories are currently empty (only `.gitkeep` files)
+   - When source files are created, ensure:
+     - Controllers, services, models, middleware, routes have explicit types
+     - All function parameters and return types are explicitly typed
+     - Proper interface definitions for API requests/responses
+     - Model types match database schemas
 
-4. **Configuration Files**:
-   - Review types in config files
-   - Ensure environment variable types are defined
+### 4. Type Definition Files (`src/types/` directory) - **FUTURE FOCUS**
+   - **Note**: Directory exists but is currently empty
+   - When type files are created, ensure:
+     - All exported types and interfaces are properly organized
+     - Types are documented with JSDoc comments
+     - Type reusability and composition are considered
+     - Shared types are exported from a central location
 
 ## Notes
 
 - This task is part of Phase 3: Holistic Review and Best Practices
 - Section: 2. TypeScript Best Practices
+- **Current State**: Codebase is in early stages - most source files don't exist yet
+- **Immediate Priority**: Focus on improving types in existing test files and establishing patterns
 - Focus on identifying issues and improvements
 - Document findings and decisions
 - When replacing `any` types, consider:
@@ -59,7 +93,12 @@ Review and improve type definitions throughout the codebase to ensure TypeScript
   - Creating specific interfaces/types for object shapes
   - Using generics for reusable type patterns
   - Using union types for multiple possible types
+- **Specific Issues to Address**:
+  - `tests/helpers/testUtils.ts` line 15: `createMockFn` uses `any[]` and `any` - should use proper generics
+  - Mock files need proper TypeScript interfaces for their return types
+  - Fixture files should have explicit type definitions
 - Task can be completed independently by a single agent
+- **Future Considerations**: As source files are added, ensure they follow the type patterns established in this review
 
 ## Related Tasks
 
