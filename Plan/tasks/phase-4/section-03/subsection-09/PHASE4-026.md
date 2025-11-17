@@ -6,26 +6,209 @@
 
 ## Description
 
-create code quality metrics dashboard to improve code quality and maintainability.
+Create a comprehensive code quality metrics dashboard to track and visualize code quality metrics, improve code quality, and maintainability. This dashboard should aggregate metrics from various code quality tools (Jest coverage, ESLint, complexity analysis, duplication detection) and present them in a clear, actionable format.
+
+This task implements the "Code metrics dashboard" deliverable specified in Phase 4: Code Quality Audit (CONVERSION_STEPS.md). The dashboard should provide visibility into code quality trends and help identify areas for improvement.
+
+## Scope
+
+This task covers:
+- Setting up automated metrics collection from existing tools (Jest coverage, ESLint)
+- Integrating complexity analysis tools (e.g., eslint-plugin-complexity, complexity-report)
+- Integrating duplication detection tools (e.g., jscpd)
+- Calculating maintainability index
+- Creating a dashboard (markdown report or web-based) that aggregates all metrics
+- Adding visualizations (charts, graphs, tables) for metrics
+- Documenting the dashboard and how to use it
+- Setting up automated generation (via npm scripts or CI/CD)
 
 ## Checklist
 
-- [ ] Set up metrics collection
-- [ ] Create metrics dashboard
-- [ ] Include code coverage metrics
-- [ ] Include complexity metrics
-- [ ] Include duplication metrics
-- [ ] Include maintainability index
-- [ ] Create visualizations
-- [ ] Document metrics dashboard
-- [ ] Save to `docs/code-quality-metrics.md`
+### Set Up Metrics Collection Infrastructure
+- [ ] Review existing code quality tools:
+  - Jest coverage (already configured in `jest.config.ts`)
+  - ESLint (already configured in `.eslintrc.json`)
+  - Prettier (already configured)
+- [ ] Install complexity analysis tool:
+  - Install `eslint-plugin-complexity` or `complexity-report` package
+  - Configure complexity rules in ESLint (if using eslint-plugin-complexity)
+  - Set up script to run complexity analysis
+- [ ] Install duplication detection tool:
+  - Install `jscpd` (JavaScript Copy/Paste Detector) package
+  - Configure jscpd for TypeScript files
+  - Set up script to run duplication detection
+- [ ] Set up metrics collection script:
+  - Create script to collect all metrics (coverage, complexity, duplication, ESLint)
+  - Aggregate metrics into a single JSON/data structure
+  - Handle errors gracefully if tools are unavailable
+
+### Collect Code Coverage Metrics
+- [ ] Extract code coverage data from Jest:
+  - Use existing `npm run test:coverage` output
+  - Parse coverage data (from `coverage/lcov.info` or `coverage/coverage-summary.json`)
+  - Extract key metrics:
+    - Overall coverage percentage
+    - Line coverage
+    - Statement coverage
+    - Branch coverage
+    - Function coverage
+    - Per-file coverage breakdown
+- [ ] Calculate coverage trends (if historical data available)
+- [ ] Identify files with low coverage (<80% threshold)
+
+### Collect Complexity Metrics
+- [ ] Run complexity analysis on source code:
+  - Analyze cyclomatic complexity per function/method
+  - Identify functions with high complexity (>10 threshold)
+  - Calculate average complexity per file
+  - Calculate overall project complexity
+- [ ] Extract complexity data:
+  - Functions/methods exceeding complexity thresholds
+  - Files with high average complexity
+  - Complexity distribution across the codebase
+- [ ] Categorize complexity levels (low, medium, high, very high)
+
+### Collect Duplication Metrics
+- [ ] Run duplication detection:
+  - Execute jscpd on `src/` directory
+  - Configure jscpd to detect TypeScript code duplication
+  - Set appropriate similarity threshold (e.g., 80%)
+- [ ] Extract duplication data:
+  - Overall duplication percentage
+  - Number of duplicate blocks
+  - Duplicate code locations (file paths and line numbers)
+  - Size of duplicate blocks
+- [ ] Identify largest duplicate blocks for prioritization
+
+### Calculate Maintainability Index
+- [ ] Research maintainability index calculation:
+  - Use standard formula: MI = 171 - 5.2 * ln(Halstead Volume) - 0.23 * (Cyclomatic Complexity) - 16.2 * ln(Lines of Code)
+  - Or use simplified version based on available metrics
+- [ ] Calculate maintainability index:
+  - Per file maintainability index
+  - Overall project maintainability index
+  - Categorize maintainability levels (excellent, good, fair, poor)
+- [ ] Identify files with low maintainability index
+
+### Collect ESLint Metrics
+- [ ] Run ESLint analysis:
+  - Execute `npm run lint` and capture output
+  - Parse ESLint results (errors, warnings)
+  - Extract metrics:
+    - Total number of errors
+    - Total number of warnings
+    - Errors/warnings by rule
+    - Errors/warnings by file
+- [ ] Categorize issues by severity and type
+
+### Create Metrics Dashboard
+- [ ] Design dashboard structure:
+  - Overview section with key metrics summary
+  - Detailed sections for each metric type
+  - Visualizations (charts, graphs, tables)
+  - File-level breakdown
+  - Recommendations/action items
+- [ ] Choose dashboard format:
+  - Option A: Markdown report (static, version-controlled)
+  - Option B: HTML dashboard (interactive, can be served)
+  - Option C: Both (markdown for docs, HTML for interactive viewing)
+- [ ] Implement dashboard:
+  - Create dashboard template/structure
+  - Populate with collected metrics
+  - Add visualizations (use libraries like Chart.js, or generate static charts)
+  - Format metrics clearly with appropriate units and thresholds
+- [ ] Add metrics interpretation:
+  - Define what each metric means
+  - Set quality thresholds (e.g., coverage >80%, complexity <10)
+  - Provide recommendations based on metrics
+
+### Create Visualizations
+- [ ] Coverage visualizations:
+  - Overall coverage gauge/chart
+  - Coverage trend over time (if historical data available)
+  - Per-file coverage heatmap or bar chart
+  - Coverage by file type/category
+- [ ] Complexity visualizations:
+  - Complexity distribution histogram
+  - Top 10 most complex functions
+  - Complexity heatmap per file
+  - Average complexity trend
+- [ ] Duplication visualizations:
+  - Duplication percentage gauge
+  - Duplicate blocks by size
+  - Duplicate code locations map
+- [ ] Maintainability visualizations:
+  - Maintainability index distribution
+  - Files by maintainability category
+  - Maintainability trend
+- [ ] ESLint visualizations:
+  - Issues by severity (pie chart)
+  - Issues by rule (bar chart)
+  - Issues by file (table or heatmap)
+
+### Automate Dashboard Generation
+- [ ] Create npm script to generate dashboard:
+  - Add script to `package.json` (e.g., `npm run metrics:dashboard`)
+  - Script should:
+    - Run all metric collection tools
+    - Aggregate metrics
+    - Generate dashboard output
+- [ ] Set up CI/CD integration (optional):
+  - Add dashboard generation to CI pipeline
+  - Store dashboard artifacts
+  - Compare metrics across builds
+
+### Document Metrics Dashboard
+- [ ] Document dashboard purpose and usage:
+  - Explain what the dashboard shows
+  - How to generate/update the dashboard
+  - How to interpret metrics
+  - Quality thresholds and targets
+- [ ] Document each metric:
+  - Code coverage: what it measures, how to improve
+  - Complexity: what it measures, acceptable thresholds
+  - Duplication: what it measures, how to reduce
+  - Maintainability index: what it measures, interpretation
+  - ESLint metrics: what they measure, how to fix issues
+- [ ] Document tools used:
+  - Jest for coverage
+  - ESLint for linting
+  - Complexity analysis tool
+  - Duplication detection tool
+- [ ] Add examples and best practices
+- [ ] Save documentation to `docs/code-quality-metrics.md`
 
 ## Notes
 
 - This task is part of Phase 4: Code Quality Audit
 - Section: 3. Refactoring
-- Focus on identifying and fixing code quality issues
-- Document all findings and improvements
+- Subsection: 3.9
+- This task implements the "Code metrics dashboard" deliverable specified in Phase 4 (CONVERSION_STEPS.md line 201)
+- Focus on creating a comprehensive dashboard that aggregates metrics from multiple code quality tools
+- The dashboard should provide actionable insights to improve code quality and maintainability
+- Leverage existing infrastructure:
+  - Jest coverage is already configured (`jest.config.ts`)
+  - ESLint is already configured (`.eslintrc.json`)
+  - Coverage reports are generated in `coverage/` directory
+- Consider integration with Phase 4 tasks:
+  - PHASE4-005: Code duplication detection (can reuse duplication metrics)
+  - Other Phase 4 tasks that generate quality metrics
+- Dashboard format considerations:
+  - Markdown: Easy to version control, readable in GitHub/GitLab
+  - HTML: More interactive, better for visualizations
+  - Consider generating both formats
+- Metrics thresholds (suggested):
+  - Code coverage: >80% (aligned with jarek-va target)
+  - Cyclomatic complexity: <10 per function (aligned with jarek-va RuboCop config)
+  - Duplication: <3% (industry standard)
+  - Maintainability index: >70 (good), >85 (excellent)
+- Tools to consider:
+  - `jscpd` for duplication detection (supports TypeScript)
+  - `eslint-plugin-complexity` for complexity analysis
+  - `complexity-report` as alternative complexity tool
+  - `plato` or `jsinspect` as alternative duplication tools
+- Automation is important: Dashboard should be easy to regenerate with `npm run metrics:dashboard`
+- Historical tracking: Consider storing metrics over time to show trends (optional enhancement)
 
 - Task can be completed independently by a single agent
 
