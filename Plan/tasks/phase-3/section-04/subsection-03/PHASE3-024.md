@@ -6,17 +6,140 @@
 
 ## Description
 
-Review and improve review module boundaries in the codebase to ensure best practices.
+Review and improve module boundaries in the codebase to ensure best practices. This task focuses on validating that the layered architecture boundaries are properly maintained, dependencies flow in the correct direction, and modules are properly encapsulated according to the architecture defined in `docs/architecture.md`.
+
+## Architecture Context
+
+The application follows a layered architecture with the following layers (from top to bottom):
+1. **Routes Layer** (`src/routes/`) - HTTP endpoints and middleware
+2. **Controllers Layer** (`src/controllers/`) - Request/response handling
+3. **Services Layer** (`src/services/`) - Business logic and integrations
+4. **Models Layer** (`src/models/`) - Data structures and persistence
+5. **Middleware Layer** (`src/middleware/`) - Cross-cutting concerns
+6. **Utils Layer** (`src/utils/`) - Pure utility functions
+7. **Types Layer** (`src/types/`) - TypeScript type definitions
 
 ## Checklist
 
-- [ ] Review module dependencies
-- [ ] Check for circular dependencies
-- [ ] Review module exports
-- [ ] Check for proper encapsulation
-- [ ] Review module coupling
-- [ ] Identify boundary violations
-- [ ] Document boundaries
+### Layer Boundary Validation
+
+- [ ] Verify Routes layer only depends on Controllers and Middleware (no direct service access)
+- [ ] Verify Controllers layer only depends on Services and Models (no direct database/external API access)
+- [ ] Verify Services layer is framework-agnostic (no Express dependencies)
+- [ ] Verify Services layer doesn't depend on Controllers or Routes
+- [ ] Verify Models layer doesn't contain business logic (only data structures)
+- [ ] Verify Middleware layer is reusable and doesn't depend on business logic
+- [ ] Verify Utils layer is stateless and has no dependencies on other layers
+- [ ] Verify Types layer has no runtime dependencies (type-only imports)
+
+### Dependency Direction Validation
+
+- [ ] Verify dependencies flow downward only (Routes → Controllers → Services → Models)
+- [ ] Check for upward dependencies (Services depending on Controllers, etc.)
+- [ ] Verify no circular dependencies between modules
+- [ ] Check that external dependencies (axios, redis, etc.) are only used in Services layer
+- [ ] Verify Express types are only used in Routes, Controllers, and Middleware layers
+
+### Module Encapsulation
+
+- [ ] Review module exports - verify only public APIs are exported
+- [ ] Check for proper encapsulation - internal implementation details are not exported
+- [ ] Verify each module has a clear, single responsibility
+- [ ] Check that modules don't expose implementation details unnecessarily
+- [ ] Review barrel exports (`index.ts` files) - ensure they only export public APIs
+
+### Cross-Layer Boundary Violations
+
+- [ ] Check for Routes directly calling Services (should go through Controllers)
+- [ ] Check for Controllers directly accessing Redis/database (should use Services)
+- [ ] Check for Services accessing Express request/response objects (should be passed as data)
+- [ ] Check for Models containing business logic (should be in Services)
+- [ ] Check for Utils depending on Services or Controllers (should be pure functions)
+- [ ] Check for Types importing runtime code (should be type-only)
+
+### Dependency Injection Boundaries
+
+- [ ] Verify Services use constructor injection for dependencies
+- [ ] Verify Controllers use constructor injection for Services
+- [ ] Check that dependencies are explicit (not hidden via module-level imports)
+- [ ] Verify testability through dependency injection (can mock dependencies)
+
+### Module Coupling Analysis
+
+- [ ] Identify tightly coupled modules (high number of imports between modules)
+- [ ] Review coupling between Services (should be minimal)
+- [ ] Check for shared state between modules (should use dependency injection)
+- [ ] Verify modules can be tested independently
+
+### External Dependencies Boundaries
+
+- [ ] Verify external API clients (Telegram, Cursor Runner) are encapsulated in Services
+- [ ] Check that Redis access is only in Services layer (not Controllers or Routes)
+- [ ] Verify BullMQ job definitions are in appropriate layer (Jobs/Workers)
+- [ ] Check that HTTP clients (axios) are only used in Services layer
+
+### Documentation and Boundaries
+
+- [ ] Document layer boundaries in `docs/architecture.md` if not already documented
+- [ ] Document allowed dependencies between layers
+- [ ] Document boundary violations found and how they were resolved
+- [ ] Create a dependency graph or diagram showing module boundaries
+- [ ] Document any exceptions to layer boundaries and their rationale
+
+### Tools and Analysis
+
+- [ ] Use TypeScript compiler to detect circular dependencies
+- [ ] Use dependency analysis tools (e.g., `madge`, `dependency-cruiser`) if available
+- [ ] Review import statements across all modules
+- [ ] Check for unused exports (modules exporting more than necessary)
+
+## Expected Layer Dependencies
+
+Based on the architecture, the following dependencies are allowed:
+
+**Routes Layer** can depend on:
+- Controllers
+- Middleware
+- Types
+- Utils (for request parsing, etc.)
+
+**Controllers Layer** can depend on:
+- Services
+- Models
+- Types
+- Utils (for response formatting, etc.)
+- Middleware (for error handling)
+
+**Services Layer** can depend on:
+- Models
+- Types
+- Utils
+- External libraries (axios, redis, bullmq, etc.)
+
+**Models Layer** can depend on:
+- Types
+- Utils (for validation, etc.)
+
+**Middleware Layer** can depend on:
+- Types
+- Utils
+
+**Utils Layer** can depend on:
+- Types (only)
+- Standard library only
+
+**Types Layer** can depend on:
+- Nothing (type-only definitions)
+
+## Common Boundary Violations to Watch For
+
+1. **Routes calling Services directly** - Should use Controllers
+2. **Controllers accessing Redis/database** - Should use Services
+3. **Services importing Express types** - Should be framework-agnostic
+4. **Models containing business logic** - Should be in Services
+5. **Circular dependencies** - Services depending on Controllers that depend on Services
+6. **Utils depending on Services** - Utils should be pure functions
+7. **Types importing runtime code** - Types should be type-only
 
 ## Notes
 
@@ -24,6 +147,10 @@ Review and improve review module boundaries in the codebase to ensure best pract
 - Section: 4. Code Organization
 - Focus on identifying issues and improvements
 - Document findings and decisions
+- Reference `docs/architecture.md` for the defined architecture
+- Current codebase is in early stages - validate boundaries as code is added
+- Fix boundary violations immediately when found
+- Document any exceptions to layer boundaries with clear rationale
 
 - Task can be completed independently by a single agent
 
