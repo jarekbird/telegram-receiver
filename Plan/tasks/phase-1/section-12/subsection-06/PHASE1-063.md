@@ -30,7 +30,7 @@ Create or update the main `README.md` file in the telegram-receiver project root
   - `npm install` command
   - Note about Node.js and npm version requirements
 - [ ] Add environment variables section
-  - List all required environment variables (from `Plan/app-description.md`):
+  - List all required environment variables (from `Plan/app-description.md` and `.env.example`):
     - `TELEGRAM_BOT_TOKEN` - Telegram bot token from BotFather
     - `TELEGRAM_WEBHOOK_SECRET` - Secret token for webhook authentication
     - `TELEGRAM_WEBHOOK_BASE_URL` - Base URL for webhook registration
@@ -39,6 +39,8 @@ Create or update the main `README.md` file in the telegram-receiver project root
     - `REDIS_URL` - Redis connection URL
     - `ELEVENLABS_API_KEY` - API key for ElevenLabs services (optional)
     - `WEBHOOK_SECRET` - Admin secret for management endpoints
+    - `PORT` - Server port (default: 3000)
+    - `NODE_ENV` - Environment mode (development, production, test)
   - Mention `.env` file setup (create from `.env.example` if it exists)
 - [ ] Add development setup instructions
   - Redis setup (local installation or Docker)
