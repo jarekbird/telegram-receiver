@@ -53,6 +53,8 @@ This report should document all security work completed across these tasks and p
   - [ ] Credential handling findings (reference PHASE3-039)
   - [ ] CORS and security headers findings (reference PHASE3-040)
   - [ ] Other security findings from comprehensive audit
+  - [ ] Document Rails security concerns identified and addressed (timing attacks, default secrets, etc.)
+  - [ ] Document security improvements made over Rails implementation
 
 ### Security Fixes Documentation
 
@@ -67,12 +69,16 @@ This report should document all security work completed across these tasks and p
 - [ ] **Document Security Improvements**
   - [ ] Dependency updates and vulnerability fixes
   - [ ] Authentication and authorization improvements
+    - [ ] Document timing attack fixes (use of `crypto.timingSafeEqual()` vs Rails `==` comparison)
+    - [ ] Document default secret handling improvements (no default 'changeme' secrets in production)
   - [ ] Input validation enhancements
   - [ ] Credential handling improvements
+    - [ ] Document secret logging improvements (no actual secret values logged, even in debug mode)
   - [ ] Security headers and CORS configuration
   - [ ] Error handling improvements
   - [ ] Logging and monitoring improvements
   - [ ] Configuration security improvements
+  - [ ] Document security improvements made over Rails implementation (where Node.js version improves upon Rails security)
 
 ### Remaining Risks Documentation
 
@@ -153,6 +159,7 @@ This report should document all security work completed across these tasks and p
 
 - **Report Format**: Use clear markdown formatting with sections, subsections, and tables where appropriate
 - **Completeness**: Ensure all security findings and fixes from previous tasks are documented
+- **Rails Comparison**: Document security concerns identified in Rails implementation and how they were addressed in Node.js version
 - **Clarity**: Write for both technical and non-technical audiences where possible
 - **Actionability**: Include specific recommendations and next steps
 - **Maintenance**: Document when and how the report should be updated
