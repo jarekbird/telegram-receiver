@@ -6,17 +6,20 @@
 
 ## Description
 
-Review and improve verify type safety in all modules in the codebase to ensure best practices.
+Review and verify type safety in all modules in the codebase to ensure TypeScript best practices are followed. This includes checking for proper type annotations, avoiding unsafe type operations, ensuring strict mode compliance, and documenting the type safety status of the codebase.
 
 ## Checklist
 
-- [ ] Run TypeScript compiler with strict mode
-- [ ] Fix all type errors
-- [ ] Review type assertions (as, !)
-- [ ] Check for unsafe type operations
-- [ ] Review type guards usage
-- [ ] Ensure no implicit any
-- [ ] Document type safety status
+- [ ] Verify TypeScript compiler strict mode is enabled in tsconfig.json
+- [ ] Run `npm run type-check` to identify all type errors
+- [ ] Fix all type errors found by the compiler
+- [ ] Review and audit all type assertions (`as`, `!`, `as unknown as`)
+- [ ] Check for unsafe type operations (any, unknown without proper guards)
+- [ ] Review type guards usage and ensure proper narrowing
+- [ ] Ensure no implicit `any` types (check for untyped parameters, variables)
+- [ ] Review test files for proper type safety
+- [ ] Check for `@ts-ignore` or `@ts-expect-error` comments and verify they're necessary
+- [ ] Document type safety status and any remaining issues or decisions
 
 ## Notes
 
