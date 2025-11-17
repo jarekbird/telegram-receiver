@@ -6,22 +6,46 @@
 
 ## Description
 
-Convert implement normalize_result utility from Rails to TypeScript/Node.js. Reference `jarek-va/app/controllers/*_controller.rb` files.
+Convert and implement the `normalize_result` utility function from Rails to TypeScript/Node.js. This utility normalizes cursor-runner callback result objects by handling both camelCase and snake_case keys, converting success values to booleans, and extracting all result fields with appropriate defaults.
+
+**Rails Reference**: `jarek-va/app/controllers/cursor_runner_callback_controller.rb` (lines 142-167)
 
 ## Checklist
 
-- [ ] Create `normalizeResult` utility function
-- [ ] Handle camelCase and snake_case keys
-- [ ] Convert success to boolean
-- [ ] Extract all result fields
-- [ ] Return normalized object
+- [ ] Create `normalizeResult` utility function in `src/utils/normalize-result.ts`
+- [ ] Handle both camelCase and snake_case keys (e.g., `requestId`/`request_id`, `branchName`/`branch_name`, `maxIterations`/`max_iterations`, `exitCode`/`exit_code`)
+- [ ] Handle both symbol keys (`:success`) and string keys (`'success'`) from input
+- [ ] Convert `success` field to boolean:
+  - Handle `true`, `'true'`, `1`, `'1'` as `true`
+  - Handle `false`, `'false'`, `0`, `'0'`, `null`/`undefined` as `false`
+- [ ] Extract and normalize all result fields:
+  - `success` (boolean, required)
+  - `request_id` (from `requestId` or `request_id`, required)
+  - `repository` (optional)
+  - `branch_name` (from `branchName` or `branch_name`, optional)
+  - `iterations` (defaults to `0` if not provided)
+  - `max_iterations` (from `maxIterations` or `max_iterations`, defaults to `25` if not provided)
+  - `output` (defaults to empty string `''` if not provided)
+  - `error` (optional)
+  - `exit_code` (from `exitCode` or `exit_code`, defaults to `0` if not provided)
+  - `duration` (optional)
+  - `timestamp` (optional)
+- [ ] Return normalized object with snake_case keys (TypeScript naming convention)
+- [ ] Export function for use in CursorRunnerCallbackController
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 9. CursorRunnerCallbackController Conversion
-- Reference the Rails implementation for behavior
-
+- **Rails Implementation**: `jarek-va/app/controllers/cursor_runner_callback_controller.rb` (lines 142-167)
+- The utility is used in the `process_callback` method (line 99) to normalize callback results before processing
+- The Rails implementation handles both symbol keys (`:success`) and string keys (`'success'`) because Rails params can come in either format
+- Default values match the Rails implementation:
+  - `iterations`: `0`
+  - `max_iterations`: `25`
+  - `output`: `''` (empty string)
+  - `exit_code`: `0`
+- The boolean conversion for `success` is critical because params may send string `"false"` which is truthy in JavaScript, so explicit conversion is needed
 - Task can be completed independently by a single agent
 
 ## Related Tasks
