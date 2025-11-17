@@ -6,23 +6,243 @@
 
 ## Description
 
-Review and improve review generic type usage in the codebase to ensure best practices.
+Review and improve generic type usage in the codebase to ensure best practices. Establish consistent patterns for generic type parameters, constraints, and utility types. Identify opportunities to use generics for better type safety and code reusability.
+
+## Current State Analysis
+
+### Existing Generic Usage:
+
+1. **Test Utilities** (`tests/helpers/testUtils.ts`):
+   - `createMockFn<T extends (...args: any[]) => any>` - Generic function for creating typed mock functions
+   - Uses generic constraint to ensure T is a function type
+   - Returns `jest.MockedFunction<T>` for proper typing
+
+### Issues Found:
+
+1. **Limited Generic Usage**: Only one generic function found in the codebase
+2. **Missing Generic Opportunities**: 
+   - API response types could use generics (e.g., `ApiResponse<T>`)
+   - Service methods could benefit from generics for type safety
+   - Utility functions could be more reusable with generics
+   - Repository/data access patterns could use generics
+3. **Generic Constraint Issues**:
+   - `createMockFn` uses `any[]` in constraint, could be more specific
+   - No use of utility types with generics (e.g., `Partial<T>`, `Pick<T, K>`)
+4. **Type Parameter Naming**: 
+   - Current usage follows convention (`T`), but no documented standards
+   - No multi-parameter generics found (e.g., `Map<K, V>`)
+5. **Missing Generic Patterns**:
+   - No generic interfaces or classes
+   - No generic type aliases
+   - No conditional types or mapped types with generics
+   - No use of `keyof` operator with generics
+
+### Opportunities for Improvement:
+
+1. **API Response Types**: Create generic `ApiResponse<T>` type for consistent API responses
+2. **Service Methods**: Use generics for service methods that work with different data types
+3. **Utility Functions**: Create generic utility functions for common operations
+4. **Type Guards**: Use generics in type guard functions for better type narrowing
+5. **Repository Pattern**: If implementing repositories, use generics for type-safe data access
 
 ## Checklist
 
-- [ ] Review generic type usage
-- [ ] Check for opportunities to use generics
-- [ ] Review generic constraints
-- [ ] Check for type parameter naming
-- [ ] Review generic utility types
-- [ ] Identify improvements
+### 1. Review Existing Generic Usage
+- [ ] Review `createMockFn` in `tests/helpers/testUtils.ts`:
+  - Evaluate if the generic constraint `(...args: any[]) => any` can be improved
+  - Consider if `Parameters<T>` and `ReturnType<T>` utility types could be used
+  - Verify that the generic is providing value and type safety
+- [ ] Document current generic usage patterns
+- [ ] Identify any issues with existing generic implementations
+
+### 2. Establish Generic Type Guidelines
+- [ ] Document when to use generics:
+  - Use generics for functions/classes that work with multiple types
+  - Use generics to avoid code duplication while maintaining type safety
+  - Use generics for API responses, data access layers, and utility functions
+- [ ] Document type parameter naming conventions:
+  - Single letter: `T`, `K`, `V`, `R` for common cases
+  - Descriptive names: `TData`, `TResponse`, `TKey` for clarity when needed
+  - Follow conventions: `T` for type, `K` for key, `V` for value, `R` for return type
+- [ ] Create a style guide document in `docs/typescript-patterns.md` (or update existing)
+
+### 3. Review Generic Constraints
+- [ ] Review constraint usage in `createMockFn`:
+  - Consider if `(...args: any[]) => any` can be more specific
+  - Evaluate if `unknown[]` would be better than `any[]`
+  - Check if the constraint is too permissive or too restrictive
+- [ ] Document best practices for generic constraints:
+  - Use constraints to ensure type safety
+  - Avoid overly permissive constraints (e.g., `extends any`)
+  - Use `extends` to limit generic types to specific shapes
+- [ ] Check for missing constraints where they would improve type safety
+
+### 4. Identify Opportunities for Generic Usage
+- [ ] Review API response types:
+  - Create generic `ApiResponse<T>` type for consistent API responses
+  - Create `TelegramApiResponse<T>` for Telegram-specific responses
+  - Create `CursorRunnerApiResponse<T>` for Cursor Runner responses
+- [ ] Review service methods:
+  - Identify methods that could benefit from generics
+  - Consider generic methods for data transformation
+  - Evaluate if service interfaces should use generics
+- [ ] Review utility functions:
+  - Identify utility functions that work with multiple types
+  - Consider creating generic utility functions for common operations
+  - Evaluate if helper functions could be more reusable with generics
+- [ ] Review test utilities:
+  - Expand `createMockFn` if needed
+  - Create additional generic test utilities if beneficial
+  - Consider generic fixtures and factories
+
+### 5. Review Generic Utility Types
+- [ ] Review usage of built-in utility types:
+  - `Partial<T>`, `Required<T>`, `Readonly<T>`
+  - `Pick<T, K>`, `Omit<T, K>`, `Record<K, V>`
+  - `Parameters<T>`, `ReturnType<T>`, `ConstructorParameters<T>`
+  - `NonNullable<T>`, `Extract<T, U>`, `Exclude<T, U>`
+- [ ] Identify opportunities to use utility types:
+  - API request/response transformations
+  - Type composition and manipulation
+  - Function type extraction
+- [ ] Create custom utility types if needed:
+  - Domain-specific type transformations
+  - Common type patterns in the codebase
+
+### 6. Review Type Parameter Naming
+- [ ] Verify all generic type parameters follow naming conventions
+- [ ] Ensure single-letter parameters are used appropriately
+- [ ] Check if descriptive names would improve clarity
+- [ ] Document naming conventions for future reference
+
+### 7. Review Advanced Generic Patterns
+- [ ] Check for opportunities to use:
+  - Conditional types (`T extends U ? X : Y`)
+  - Mapped types (`{ [K in keyof T]: ... }`)
+  - Template literal types with generics
+  - `keyof` operator with generics
+- [ ] Evaluate if advanced patterns would improve type safety
+- [ ] Document any advanced patterns used and their rationale
+
+### 8. Create Generic Type Definitions
+- [ ] Create generic API response types in `src/types/api.ts`:
+  - `ApiResponse<T>` - Generic API response wrapper
+  - `ApiErrorResponse` - Error response type
+  - `PaginatedResponse<T>` - Paginated data response (if needed)
+- [ ] Create generic service interfaces if applicable
+- [ ] Create generic utility types for common patterns
+- [ ] Update existing types to use generics where beneficial
+
+### 9. Update Existing Code
+- [ ] Update `createMockFn` if improvements are identified
+- [ ] Refactor API response handling to use generic types
+- [ ] Update service methods to use generics where appropriate
+- [ ] Ensure all generic usage follows established patterns
+
+### 10. Documentation
+- [ ] Document generic type patterns in `docs/typescript-patterns.md`
+- [ ] Add JSDoc comments to all generic functions/types
+- [ ] Create examples showing proper generic usage
+- [ ] Document any architectural decisions regarding generics
+- [ ] Add examples of when NOT to use generics (avoid over-engineering)
+
+## Implementation Guidelines
+
+### When to Use Generics:
+
+1. **Functions/Classes Working with Multiple Types**:
+   ```typescript
+   // Good: Generic function for multiple types
+   function identity<T>(value: T): T {
+     return value;
+   }
+   
+   // Avoid: Overly specific function
+   function identityString(value: string): string {
+     return value;
+   }
+   ```
+
+2. **API Response Types**:
+   ```typescript
+   // Good: Generic API response
+   interface ApiResponse<T> {
+     success: boolean;
+     data: T;
+     message?: string;
+   }
+   ```
+
+3. **Utility Functions**:
+   ```typescript
+   // Good: Generic utility function
+   function mapArray<T, R>(array: T[], mapper: (item: T) => R): R[] {
+     return array.map(mapper);
+   }
+   ```
+
+4. **Type-Safe Data Access**:
+   ```typescript
+   // Good: Generic repository pattern
+   interface Repository<T> {
+     findById(id: string): Promise<T | null>;
+     save(entity: T): Promise<T>;
+   }
+   ```
+
+### When NOT to Use Generics:
+
+1. **Single Type Usage**: Don't use generics if the function/class only works with one specific type
+2. **Over-Engineering**: Avoid generics if they don't provide clear value
+3. **Complexity**: Don't use generics if they make the code harder to understand
+
+### Best Practices:
+
+1. **Use Descriptive Constraints**: 
+   ```typescript
+   // Good: Specific constraint
+   function processData<T extends { id: string }>(data: T): T {
+     // ...
+   }
+   
+   // Avoid: Overly permissive constraint
+   function processData<T extends any>(data: T): T {
+     // ...
+   }
+   ```
+
+2. **Use Utility Types**: Leverage TypeScript's built-in utility types
+   ```typescript
+   // Good: Using utility types
+   type PartialUser = Partial<User>;
+   type UserKeys = keyof User;
+   ```
+
+3. **Document Complex Generics**: Add JSDoc comments for complex generic types
+   ```typescript
+   /**
+    * Generic API response wrapper
+    * @template T The type of the response data
+    */
+   interface ApiResponse<T> {
+     success: boolean;
+     data: T;
+   }
+   ```
+
+4. **Follow Naming Conventions**: Use standard type parameter names (`T`, `K`, `V`, `R`)
+
+5. **Avoid `any` in Constraints**: Use `unknown` or specific types instead of `any`
 
 ## Notes
 
 - This task is part of Phase 3: Holistic Review and Best Practices
 - Section: 2. TypeScript Best Practices
-- Focus on identifying issues and improvements
-- Document findings and decisions
+- Focus on establishing patterns early before more code is written
+- All generic type definitions should follow established conventions
+- Document all decisions and patterns for future reference
+- Balance between type safety and code complexity
+- Don't over-engineer - use generics where they provide clear value
 
 - Task can be completed independently by a single agent
 
