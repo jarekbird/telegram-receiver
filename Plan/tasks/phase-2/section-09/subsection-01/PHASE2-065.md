@@ -34,8 +34,16 @@ Reference the Rails implementation in `jarek-va/app/controllers/cursor_runner_ca
   - [ ] CursorRunnerCallbackService
   - [ ] TelegramService
   - [ ] ElevenLabsTextToSpeechService
-- [ ] Add `create` method (POST handler) with basic structure
-- [ ] Add `authenticateWebhook` middleware method (checks X-Webhook-Secret header)
+- [ ] Import SystemSetting model (for checking debug mode and audio output settings)
+- [ ] Add `create` method (POST handler) with basic structure:
+  - [ ] Extract and normalize request_id from parameters (handles both camelCase and snake_case)
+  - [ ] Validate request_id is present (return 400 if missing)
+  - [ ] Retrieve pending request data from Redis via CursorRunnerCallbackService
+  - [ ] Handle case where pending_data is nil (return 200 OK with message)
+  - [ ] Call processCallback with request_id, result, and pending_data
+  - [ ] Always return 200 OK (even on errors) to prevent cursor-runner retries
+  - [ ] Wrap in try-catch to handle exceptions gracefully
+- [ ] Add `authenticateWebhook` middleware method (checks X-Webhook-Secret header, X-Cursor-Runner-Secret header, or secret query parameter)
 - [ ] Add placeholder private methods (will be implemented in later tasks):
   - [ ] `processCallback` - processes callback result and pending data
   - [ ] `sendErrorNotification` - sends error messages to Telegram
