@@ -70,9 +70,9 @@ This task covers:
   - [ ] Check that shared utilities were created
   - [ ] Verify duplication metrics improved
 - [ ] Review deliverables from PHASE4-026 (metrics dashboard):
-  - [ ] Verify code quality metrics dashboard exists
-  - [ ] Check that dashboard can be generated (`npm run metrics:dashboard`)
-  - [ ] Verify dashboard documentation exists (`docs/code-quality-metrics.md`)
+  - [ ] Verify code quality metrics dashboard exists (or document that PHASE4-026 is incomplete)
+  - [ ] Check that dashboard can be generated (`npm run metrics:dashboard`) - **Note**: If script doesn't exist in `package.json`, PHASE4-026 may not be complete
+  - [ ] Verify dashboard documentation exists (`docs/code-quality-metrics.md`) - **Note**: If file doesn't exist, document that PHASE4-026 needs to be completed first
 
 ### Run Comprehensive Test Suite
 - [ ] Run TypeScript type checking: `npm run type-check`
@@ -130,34 +130,39 @@ This task covers:
   - [ ] Compare with baseline metrics (if available)
   - [ ] Document duplication improvements
 - [ ] Run code smell detection:
-  - [ ] Run ESLint code smell rules: `npm run smells` (if available)
-  - [ ] Extract code smell metrics:
-    - Number of long methods
-    - Number of large classes
-    - Average nesting depth
-    - Number of magic numbers
+  - [ ] Run ESLint with complexity rules: `npm run lint` (code smells are detected via ESLint complexity rules, not a separate script)
+  - [ ] Extract code smell metrics from ESLint output:
+    - Number of long methods (from `max-lines-per-function` rule violations)
+    - Number of large classes (from file size analysis)
+    - Average nesting depth (from `max-depth` rule violations)
+    - Number of magic numbers (from manual review or custom ESLint rules)
   - [ ] Compare with baseline metrics (if available)
   - [ ] Document code smell improvements
-- [ ] Generate code quality metrics dashboard: `npm run metrics:dashboard` (if PHASE4-026 completed)
-  - [ ] Verify dashboard generates successfully
+- [ ] Generate code quality metrics dashboard: `npm run metrics:dashboard` (if PHASE4-026 completed and script exists)
+  - [ ] **Note**: If `npm run metrics:dashboard` script doesn't exist, PHASE4-026 may not be complete. Document this in the final summary.
+  - [ ] If script exists, verify dashboard generates successfully
   - [ ] Review all metrics in dashboard
   - [ ] Document current state of metrics
 
 ### Update Code Quality Reports
 - [ ] Update code quality report (`docs/code-quality-report.md`):
+  - [ ] **Note**: If file doesn't exist, create it or document that it needs to be created by previous tasks
   - [ ] Add final metrics (coverage, complexity, duplication, code smells)
   - [ ] Document all refactoring improvements
   - [ ] Add before/after comparisons
   - [ ] Include summary of improvements
 - [ ] Update code quality metrics dashboard (if PHASE4-026 completed):
+  - [ ] **Note**: Only proceed if `npm run metrics:dashboard` script exists and dashboard was created
   - [ ] Regenerate dashboard with latest metrics
   - [ ] Verify dashboard reflects all improvements
   - [ ] Update dashboard documentation if needed
 - [ ] Update code quality metrics documentation (`docs/code-quality-metrics.md`):
+  - [ ] **Note**: If file doesn't exist, create it or document that it needs to be created by PHASE4-026
   - [ ] Document final state of metrics
   - [ ] Add interpretation of current metrics
   - [ ] Document improvements achieved
 - [ ] Update manual code review document (`docs/manual-code-review.md`):
+  - [ ] **Note**: Verify file exists (should exist from PHASE4-017)
   - [ ] Mark addressed items as resolved
   - [ ] Add notes on how items were resolved
   - [ ] Document any remaining items (if applicable)
@@ -195,9 +200,9 @@ This task covers:
   - [ ] Shared utilities created and documented
   - [ ] Duplication metrics improved
 - [ ] Verify PHASE4-026 deliverables:
-  - [ ] Code quality metrics dashboard exists
-  - [ ] Dashboard can be generated (`npm run metrics:dashboard`)
-  - [ ] Dashboard documentation exists (`docs/code-quality-metrics.md`)
+  - [ ] Code quality metrics dashboard exists (or document that PHASE4-026 is incomplete)
+  - [ ] Dashboard can be generated (`npm run metrics:dashboard`) - **Note**: Verify script exists in `package.json` before checking
+  - [ ] Dashboard documentation exists (`docs/code-quality-metrics.md`) - **Note**: If file doesn't exist, document that PHASE4-026 needs to be completed first
 
 ### Create Final Summary of Improvements
 - [ ] Compile comprehensive summary of all improvements:
@@ -254,11 +259,14 @@ This task covers:
 - **Important**: This task should only be started after all previous Section 3 tasks (PHASE4-018 through PHASE4-026) are completed
 - **Important**: All tests must pass before marking this task as complete
 - **Important**: All metrics should be compared with baseline metrics (if available) to demonstrate improvements
+- **Important**: If previous tasks are incomplete, document what remains to be done rather than skipping validation steps
 - Focus on comprehensive validation and documentation of all refactoring improvements
 - The final summary should provide a clear picture of code quality improvements achieved
 - If any previous tasks are incomplete, document what remains to be done
 - Metrics comparison is critical to demonstrate the value of refactoring work
 - All deliverables from previous tasks should be verified and documented
+- **Script availability**: Some scripts referenced in this task (`npm run metrics:dashboard`, `npm run smells`) may not exist if previous tasks are incomplete. Always verify script existence in `package.json` before referencing.
+- **Documentation files**: Some documentation files referenced may not exist if previous tasks are incomplete. Check for file existence before referencing, and document missing files in the final summary.
 - Task can be completed independently by a single agent, but may require coordination if previous tasks are incomplete
 
 ## Related Tasks
