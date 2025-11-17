@@ -6,21 +6,97 @@
 
 ## Description
 
-Convert add error handling and ttl management from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/cursor_runner_callback_service.rb`.
+Add comprehensive error handling and TTL validation to all methods in the CursorRunnerCallbackService class. This task enhances the service with robust error handling for Redis operations and validates TTL values to ensure data integrity.
+
+Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callback_service.rb` for complete behavior details.
 
 ## Checklist
 
-- [ ] Add error handling to all methods
-- [ ] Handle Redis connection errors
-- [ ] Handle JSON parsing errors
-- [ ] Add logging
-- [ ] Validate TTL values
+- [ ] Add error handling to `storePendingRequest` method
+  - Wrap Redis `setex()` operation in try/catch block
+  - Handle Redis connection errors (e.g., ECONNREFUSED, timeout errors)
+  - Handle Redis operation errors (e.g., write failures, memory errors)
+  - Log errors with appropriate level (error level) including request ID and error details
+  - Consider whether to throw errors or handle gracefully (recommend throwing for critical operations)
+  - Ensure error messages are descriptive and include context (request ID, TTL value)
+- [ ] Add error handling to `getPendingRequest` method
+  - The Rails implementation already handles JSON parsing errors (lines 43-48), ensure this is preserved
+  - Add Redis connection error handling (wrap `get()` operation in try/catch)
+  - Add Redis operation error handling
+  - Log Redis errors with error level, including request ID
+  - JSON parsing errors should return null (as per Rails implementation)
+  - Redis errors should also return null (to match graceful degradation pattern)
+- [ ] Add error handling to `removePendingRequest` method
+  - Wrap Redis `del()` operation in try/catch block
+  - Handle Redis connection errors
+  - Handle Redis operation errors
+  - Log errors with appropriate level (error level) including request ID
+  - Consider whether to throw errors or handle gracefully (recommend logging and continuing, as removal is cleanup operation)
+- [ ] Add TTL validation to `storePendingRequest` method
+  - Validate that TTL is a positive integer (greater than 0)
+  - Validate that TTL is within reasonable bounds (e.g., between 1 and 86400 seconds = 24 hours)
+  - Throw error or use default TTL if validation fails (recommend throwing error for invalid values)
+  - Log warning if invalid TTL is provided and default is used (if choosing graceful handling)
+  - Ensure TTL parameter is properly typed in TypeScript (number, optional)
+- [ ] Ensure consistent error logging across all methods
+  - Use consistent error log format across all methods
+  - Include relevant context in error logs (request ID, operation type, error message)
+  - Use appropriate log levels (error for errors, warn for warnings, info for successful operations)
+  - Check project's logging setup and use the same logger consistently
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 6. CursorRunnerCallbackService Conversion
-- Reference the Rails implementation for behavior
+- Subsection: 6.5
+- Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callback_service.rb` for complete behavior details
+
+**Rails Implementation Analysis:**
+
+**Error Handling:**
+- `get_pending_request` (lines 37-49): Has JSON parsing error handling - catches `JSON::ParserError`, logs error with request_id and error message, returns nil
+- `store_pending_request` (lines 28-32): No explicit error handling - relies on Redis client exceptions
+- `remove_pending_request` (lines 53-57): No explicit error handling - relies on Redis client exceptions
+- No Redis connection error handling in any method
+
+**TTL Management:**
+- `DEFAULT_TTL` constant defined as `3600` (1 hour) - line 10
+- `store_pending_request` accepts optional `ttl` parameter with default value `DEFAULT_TTL` - line 28
+- No TTL validation - accepts any integer value (could be negative, zero, or extremely large)
+
+**Logging:**
+- `store_pending_request`: Logs info message with request_id and TTL - line 31
+- `get_pending_request`: Logs error message for JSON parsing failures - lines 44-47
+- `remove_pending_request`: Logs info message with request_id - line 56
+- No logging for successful `get_pending_request` operations
+
+**TypeScript Implementation Requirements:**
+
+**Error Handling Strategy:**
+- Add comprehensive try/catch blocks around all Redis operations
+- Handle Redis connection errors (network failures, connection refused, timeouts)
+- Handle Redis operation errors (write failures, memory errors, command errors)
+- For `getPendingRequest`: Return null on any error (matching Rails graceful degradation)
+- For `storePendingRequest`: Consider throwing errors (critical operation) or logging and returning false
+- For `removePendingRequest`: Log errors but don't throw (cleanup operation, non-critical)
+
+**TTL Validation:**
+- Validate TTL is a positive integer (> 0)
+- Validate TTL is within reasonable bounds (recommend 1-86400 seconds = 1 second to 24 hours)
+- Throw TypeError or RangeError for invalid TTL values
+- Ensure TypeScript type checking (number type, optional parameter)
+
+**Logging:**
+- Use consistent error logging format: `{ operation: 'storePendingRequest', requestId: '...', error: '...' }`
+- Include request ID in all error logs for traceability
+- Use appropriate log levels (error for errors, warn for warnings, info for info)
+- Check project's logging setup (may use console.log, winston, pino, or another logger)
+
+**Dependencies:**
+- Assumes `CursorRunnerCallbackService` class structure exists (from PHASE2-039)
+- Assumes all methods exist (from PHASE2-039, PHASE2-040, PHASE2-041, PHASE2-042)
+- Assumes Redis client instance is available as private property
+- Assumes logging system is available
 
 - Task can be completed independently by a single agent
 
