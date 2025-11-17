@@ -7,7 +7,7 @@ This file provides an index of all tasks for Phase 4: Code Quality Audit.
 ### 1. Automated Code Smell Detection
 
 - [PHASE4-001](section-01/subsection-01/PHASE4-001.md): Set up ESLint with TypeScript rules
-- [PHASE4-002](section-01/subsection-02/PHASE4-002.md): Configure Prettier for code formatting
+- [PHASE4-002](section-01/subsection-02/PHASE4-002.md): Review and validate Prettier configuration for code formatting
 - [PHASE4-003](section-01/subsection-03/PHASE4-003.md): Set up SonarQube or similar code quality tool
 - [PHASE4-004](section-01/subsection-04/PHASE4-004.md): Run complexity analysis
 - [PHASE4-005](section-01/subsection-05/PHASE4-005.md): Detect code duplication
