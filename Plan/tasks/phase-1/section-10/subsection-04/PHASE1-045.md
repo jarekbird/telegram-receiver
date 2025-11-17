@@ -6,21 +6,30 @@
 
 ## Description
 
-Install testing utilities
+Install and verify testing utilities for the Node.js/TypeScript test suite. These utilities provide equivalent functionality to the Rails testing stack:
+- `supertest` - HTTP endpoint testing (equivalent to RSpec Rails controller tests)
+- `nock` - HTTP request mocking (equivalent to RSpec HTTP mocking patterns)
+- `sinon` - Spies, stubs, and mocks (equivalent to RSpec's `allow`/`expect` mocking)
 
 ## Checklist
 
-- [ ] Install `supertest` as dev dependency
-- [ ] Install `@types/supertest` as dev dependency
-- [ ] Install `nock` as dev dependency (for HTTP mocking)
-- [ ] Install `sinon` as dev dependency (for spies/stubs)
-- [ ] Install `@types/sinon` as dev dependency
+- [ ] Verify `supertest` is installed as dev dependency (for HTTP endpoint testing)
+- [ ] Verify `@types/supertest` is installed as dev dependency
+- [ ] Verify `nock` is installed as dev dependency (for HTTP mocking)
+- [ ] Verify `sinon` is installed as dev dependency (for spies/stubs)
+- [ ] Verify `@types/sinon` is installed as dev dependency
+- [ ] If any utilities are missing, install them using `npm install --save-dev <package>`
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 10. Test Suite Setup
 - Task can be completed independently by a single agent
+- **Status**: All utilities are already installed in `package.json` (verified: supertest@6.3.3, nock@13.4.0, sinon@17.0.1, @types/supertest@2.0.16, @types/sinon@17.0.2)
+- These utilities match the testing patterns used in the Rails jarek-va application:
+  - Rails RSpec controller tests → Node.js Supertest
+  - Rails HTTP mocking (Net::HTTP doubles) → Node.js Nock
+  - Rails RSpec spies/stubs (`allow`, `expect`) → Node.js Sinon
 
 ## Related Tasks
 
