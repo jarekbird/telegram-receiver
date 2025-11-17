@@ -6,23 +6,84 @@
 
 ## Description
 
-Convert add error handling to callbackcontroller from Rails to TypeScript/Node.js. Reference `jarek-va/app/controllers/*_controller.rb` files.
+Add comprehensive error handling to CallbackController methods to match the Rails implementation. This task ensures all methods have proper try-catch blocks, error logging, user notifications, and graceful error recovery.
+
+**Rails Reference**: `jarek-va/app/controllers/cursor_runner_callback_controller.rb`
 
 ## Checklist
 
-- [ ] Add try-catch to all methods
-- [ ] Send error notifications to users
-- [ ] Always return 200 to cursor-runner
-- [ ] Log errors appropriately
-- [ ] Handle missing pending data
+### Main `create` method error handling:
+- [ ] Wrap entire method body in try-catch block
+- [ ] Catch all errors (catch (error) or catch (e))
+- [ ] Log errors with message and stack trace (first 5 lines of stack trace)
+- [ ] Call `sendErrorNotification` helper if `pendingData` exists
+- [ ] Always return 200 OK status with JSON response `{ received: true, error: 'Internal error' }` to prevent cursor-runner retries
+- [ ] Ensure error handling doesn't prevent successful responses
+
+### `processCallback` method error handling:
+- [ ] Wrap entire method body in try-catch block
+- [ ] Catch all errors
+- [ ] Log errors with message and full stack trace (first 10 lines)
+- [ ] Extract `chatId` and `messageId` from `pendingData` in error handler
+- [ ] Send error message to user via `TelegramService.sendMessage` if `chatId` is present
+- [ ] Wrap TelegramService call in nested try-catch to handle send errors
+- [ ] Log errors from nested TelegramService calls
+
+### `sendResponseToTelegram` method error handling:
+- [ ] Wrap entire method body in try-catch block
+- [ ] Catch all errors
+- [ ] Log errors with message and full stack trace (all lines)
+- [ ] Call `sendErrorFallbackMessage` helper method as fallback
+- [ ] Ensure fallback message sending doesn't throw (should be safe)
+
+### `sendTextAsAudio` method error handling:
+- [ ] Wrap audio generation and sending in try-catch block
+- [ ] Catch all errors
+- [ ] Log errors with message and full stack trace
+- [ ] Fallback to `TelegramService.sendMessage` with Markdown parse_mode on error
+- [ ] Ensure cleanup (file deletion) happens in finally block
+- [ ] Handle cleanup errors gracefully (log warnings, don't throw)
+
+### `sendErrorNotification` helper method:
+- [ ] Wrap TelegramService call in try-catch block
+- [ ] Catch all errors
+- [ ] Log errors (don't throw, this is an error handler itself)
+
+### `sendErrorFallbackMessage` helper method:
+- [ ] Wrap TelegramService call in try-catch block
+- [ ] Catch all errors
+- [ ] Log errors (don't throw, this is a fallback error handler)
+
+### Error handling patterns:
+- [ ] All error logs should include error message
+- [ ] Stack traces should be logged (truncated appropriately: 5 lines for main handler, 10 for processCallback, full for others)
+- [ ] User-facing error messages should be user-friendly (e.g., "❌ Error processing cursor command result: {error message}")
+- [ ] All TelegramService calls in error handlers should have nested error handling
+- [ ] Never throw errors from error handlers (they should be safe fallbacks)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 9. CursorRunnerCallbackController Conversion
-- Reference the Rails implementation for behavior
+- **Rails Implementation Details**:
+  - Main `create` method (lines 10-53): Has rescue block catching `StandardError`, logs first 5 lines of backtrace, calls `send_error_notification` if pending_data exists, always returns 200 OK
+  - `process_callback` method (lines 93-139): Has rescue block catching `StandardError`, logs first 10 lines of backtrace, sends error message to user if chat_id present, has nested error handling for TelegramService calls
+  - `send_response_to_telegram` method (lines 170-218): Has rescue block catching `StandardError`, logs full backtrace, calls `send_error_fallback_message` helper
+  - `send_text_as_audio` method (lines 221-255): Has rescue block catching `StandardError`, logs full backtrace, falls back to text message, has ensure block for cleanup
+  - `send_error_notification` method (lines 57-70): Has rescue block catching `StandardError`, logs errors
+  - `send_error_fallback_message` method (lines 309-317): Has rescue block catching `StandardError`, logs errors
+  - All error handlers use `Rails.logger.error` for logging
+  - Error messages to users use format: "❌ Error processing cursor command result: {error.message}"
+  - All TelegramService calls in error handlers have nested rescue blocks
+- **TypeScript Conversion Notes**:
+  - Use try-catch blocks instead of rescue blocks
+  - Use appropriate logging library (e.g., winston, pino) instead of Rails.logger
+  - Stack traces can be accessed via `error.stack` property
+  - Ensure all async methods properly handle errors in promise chains or async/await
+  - Error handlers should never throw errors themselves (they are fallbacks)
+  - Always return 200 OK to cursor-runner to prevent retries (even on errors)
 
-- Task can be completed independently by a single agent
+- Task can be completed independently by a single agent (after CallbackController methods are implemented in previous tasks)
 
 ## Related Tasks
 
