@@ -6,16 +6,22 @@
 
 ## Description
 
-Review and improve create architecture diagram in the codebase to ensure best practices.
+Create a visual architecture diagram to complement the existing architecture documentation (`docs/architecture.md`). The diagram should visually represent the application's architecture, component relationships, data flow, and integration with external services. This will make the architecture more accessible and easier to understand at a glance.
 
 ## Checklist
 
-- [ ] Create visual architecture diagram
-- [ ] Show component relationships
-- [ ] Show data flow
-- [ ] Include external services
-- [ ] Save to `docs/architecture-diagram.png` or similar
-- [ ] Update documentation with diagram
+- [ ] Review existing architecture documentation (`docs/architecture.md`) to understand all components
+- [ ] Create visual architecture diagram showing:
+  - [ ] Application layers (Routes, Controllers, Services, Models, Middleware, Jobs, Utils, Types)
+  - [ ] Component relationships and dependencies
+  - [ ] Data flow (Telegram → Application → Cursor Runner → Application → Telegram)
+  - [ ] External services (Telegram Bot API, Cursor Runner API, ElevenLabs API, Redis)
+  - [ ] Background job processing flow (BullMQ)
+  - [ ] State management (Redis for callbacks and job queues)
+- [ ] Use appropriate diagram format (PNG, SVG, or Mermaid diagram)
+- [ ] Save diagram to `docs/architecture-diagram.png` (or `.svg`/`.md` for Mermaid)
+- [ ] Update `docs/architecture.md` to reference and embed the diagram
+- [ ] Ensure diagram is clear, readable, and follows best practices for architecture diagrams
 
 ## Notes
 
