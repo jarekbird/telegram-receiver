@@ -6,20 +6,69 @@
 
 ## Description
 
-Convert create authentication middleware directory from Rails to TypeScript/Node.js.
+Set up the authentication middleware directory structure and plan the middleware files that will be created to convert Rails `before_action` authentication filters to Express middleware. This task establishes the foundation for converting authentication logic from Rails controllers to reusable Express middleware functions.
+
+## Rails Implementation Reference
+
+The Rails application uses `before_action` filters in controllers for authentication:
+
+1. **TelegramController** (`app/controllers/telegram_controller.rb`):
+   - `authenticate_webhook` (private method) - Authenticates Telegram webhook requests
+     - Checks `X-Telegram-Bot-Api-Secret-Token` header
+     - Validates against `Rails.application.config.telegram_webhook_secret`
+     - Allows requests if secret is blank (development mode)
+     - Returns 401 Unauthorized if secret doesn't match
+     - Logs warning: "Unauthorized Telegram webhook request - invalid secret token"
+   - `authenticate_admin` (protected method) - Authenticates admin endpoints
+     - Checks `X-Admin-Secret` header, `HTTP_X_ADMIN_SECRET` env var, or `admin_secret` query param
+     - Validates against `Rails.application.config.webhook_secret`
+     - Has debug logging in test environment when authentication fails
+     - Returns boolean (true if authenticated)
+
+2. **CursorRunnerCallbackController** (`app/controllers/cursor_runner_callback_controller.rb`):
+   - `authenticate_webhook` (private method) - Authenticates cursor-runner callback requests
+     - Checks `X-Webhook-Secret` or `X-Cursor-Runner-Secret` headers, or `secret` query param
+     - Validates against `Rails.application.config.webhook_secret`
+     - Allows requests if secret is blank (development mode)
+     - Returns 401 Unauthorized with JSON error if secret doesn't match
+     - Logs warning with secret status and IP address
+
+3. **AgentToolsController** (`app/controllers/agent_tools_controller.rb`):
+   - `authenticate_webhook` (private method) - Authenticates agent tool requests
+     - Checks `X-EL-Secret` header or `Authorization: Bearer <token>` header
+     - Validates against `Rails.application.config.webhook_secret`
+     - Returns 401 Unauthorized with JSON error if secret doesn't match
+     - Logs warning: "Unauthorized tool request - invalid secret"
 
 ## Checklist
 
-- [ ] Create `src/middleware` directory
-- [ ] Organize middleware files
-- [ ] Plan middleware structure
+- [ ] Verify `src/middleware` directory exists (should already exist from Phase 1)
+- [ ] Create `src/middleware/README.md` documenting middleware structure and purpose
+- [ ] Plan the following middleware files to be created in subsequent tasks:
+  - [ ] `src/middleware/telegram-webhook-auth.middleware.ts` - Telegram webhook authentication (PHASE2-096)
+  - [ ] `src/middleware/admin-auth.middleware.ts` - Admin endpoint authentication (PHASE2-097)
+  - [ ] `src/middleware/cursor-runner-webhook-auth.middleware.ts` - Cursor-runner callback authentication (to be created)
+  - [ ] `src/middleware/agent-tools-auth.middleware.ts` - Agent tools authentication (to be created)
+- [ ] Document authentication patterns:
+  - [ ] Header-based authentication (X-*-Secret headers)
+  - [ ] Query parameter fallbacks (where applicable)
+  - [ ] Authorization Bearer token support (for agent tools)
+  - [ ] Development mode behavior (allow when secret not configured)
+  - [ ] Error response formats (401 Unauthorized with JSON)
+- [ ] Document configuration requirements:
+  - [ ] `TELEGRAM_WEBHOOK_SECRET` - For Telegram webhook authentication
+  - [ ] `WEBHOOK_SECRET` - For admin, cursor-runner, and agent tools authentication
+- [ ] Create `src/middleware/index.ts` barrel export file (empty for now, will export middleware in subsequent tasks)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 12. Middleware
-- Reference the Rails implementation for behavior
-
+- The `src/middleware` directory should already exist from Phase 1 infrastructure setup
+- This task focuses on planning and documentation - actual middleware implementation happens in subsequent tasks
+- Rails uses `before_action` filters which are controller-specific; Express middleware is more reusable and can be applied to routes
+- Each authentication method in Rails will become a separate Express middleware function
+- Middleware should follow Express middleware pattern: `(req, res, next) => { ... }`
 - Task can be completed independently by a single agent
 
 ## Related Tasks
