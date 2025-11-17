@@ -6,18 +6,159 @@
 
 ## Description
 
-Convert implement callback endpoint handler from Rails to TypeScript/Node.js. Reference `jarek-va/app/controllers/*_controller.rb` files.
+Convert the callback endpoint handler (`create` method) from Rails to TypeScript/Node.js. This endpoint receives webhook callbacks from cursor-runner when iterate operations complete. It authenticates the webhook, retrieves pending request data from Redis, processes the callback result, and sends formatted responses to Telegram.
+
+**Route**: `POST /cursor-runner/callback`
+
+**Reference**: `jarek-va/app/controllers/cursor_runner_callback_controller.rb`
 
 ## Checklist
 
-- [ ] Implement `create` handler method
-- [ ] Parse request body
-- [ ] Extract request_id
-- [ ] Retrieve pending request from Redis
-- [ ] Process callback
-- [ ] Return 200 OK
-- [ ] Add error handling
-- [ ] Reference `jarek-va/app/controllers/cursor_runner_callback_controller.rb`
+### Main Handler (`create` method)
+- [ ] Implement webhook authentication middleware/handler (`authenticate_webhook`)
+  - [ ] Check for `X-Webhook-Secret` or `X-Cursor-Runner-Secret` headers
+  - [ ] Check for `secret` query parameter
+  - [ ] Compare against configured webhook secret (from environment/config)
+  - [ ] Allow if secret matches or if secret is not configured (development mode)
+  - [ ] Return 401 Unauthorized if secret is invalid
+  - [ ] Log unauthorized attempts with IP address
+- [ ] Parse request body parameters
+  - [ ] Accept: `success`, `requestId`/`request_id`, `repository`, `branchName`/`branch_name`, `iterations`, `maxIterations`/`max_iterations`, `output`, `error`, `exitCode`/`exit_code`, `duration`, `timestamp`
+- [ ] Extract and normalize `request_id`
+  - [ ] Handle both camelCase (`requestId`) and snake_case (`request_id`) formats
+  - [ ] Validate that `request_id` is present and not blank
+  - [ ] Return 400 Bad Request if `request_id` is missing
+  - [ ] Log callback receipt with request_id and success status
+- [ ] Retrieve pending request from Redis using `CursorRunnerCallbackService`
+  - [ ] Use `get_pending_request(request_id)` method
+  - [ ] Handle case where pending_data is `null` (unknown request_id)
+  - [ ] If pending_data is null, log warning and return 200 OK (to prevent cursor-runner retries)
+- [ ] Process callback synchronously
+  - [ ] Call `process_callback(request_id, result, pending_data)` method
+- [ ] Return 200 OK response
+  - [ ] Response format: `{ received: true, request_id: request_id }`
+- [ ] Implement comprehensive error handling
+  - [ ] Wrap entire handler in try-catch
+  - [ ] Log errors with full stack trace (first 5 lines)
+  - [ ] Attempt to send error notification to user if pending_data exists
+  - [ ] Always return 200 OK even on errors (to prevent cursor-runner retries)
+  - [ ] Error response format: `{ received: true, error: 'Internal error' }`
+
+### Callback Processing (`process_callback` method)
+- [ ] Normalize result data
+  - [ ] Call `normalize_result(result)` to handle camelCase/snake_case conversion
+  - [ ] Convert success to boolean (handle string "true"/"false", 1/0, etc.)
+- [ ] Extract data from pending_data
+  - [ ] Extract `chat_id` (handle both symbol and string keys)
+  - [ ] Extract `message_id` (handle both symbol and string keys)
+  - [ ] Extract `original_was_audio` (default to false if not present)
+- [ ] Validate chat_id
+  - [ ] Log warning and return early if chat_id is blank
+- [ ] Send response to Telegram
+  - [ ] Call `send_response_to_telegram(chat_id, message_id, normalized_result, original_was_audio)`
+- [ ] Clean up pending request
+  - [ ] Call `callback_service.remove_pending_request(request_id)` after successful processing
+- [ ] Error handling
+  - [ ] Catch and log errors with request_id and stack trace
+  - [ ] Attempt to send error message to user via Telegram if chat_id is available
+  - [ ] Handle errors when sending error notifications
+
+### Result Normalization (`normalize_result` method)
+- [ ] Convert result to normalized format with symbol keys
+- [ ] Handle both camelCase and snake_case input formats
+- [ ] Normalize `success` field to boolean
+  - [ ] Convert: `true`, `'true'`, `1`, `'1'` → `true`
+  - [ ] Convert: `false`, `'false'`, `0`, `'0'`, `null` → `false`
+- [ ] Normalize `request_id` (handle `requestId`/`request_id`)
+- [ ] Normalize `branch_name` (handle `branchName`/`branch_name`)
+- [ ] Normalize `max_iterations` (handle `maxIterations`/`max_iterations`, default to 25)
+- [ ] Normalize `exit_code` (handle `exitCode`/`exit_code`, default to 0)
+- [ ] Normalize other fields: `repository`, `iterations` (default 0), `output` (default ''), `error`, `duration`, `timestamp`
+
+### Telegram Response Sending (`send_response_to_telegram` method)
+- [ ] Check if cursor debug is enabled
+  - [ ] Use `cursor_debug_enabled?()` which checks `SystemSetting.enabled?('debug')`
+- [ ] Format response message
+  - [ ] If success: call `format_success_message(result, cursor_debug)`
+  - [ ] If error: call `format_error_message(result, cursor_debug)`
+- [ ] Handle audio output
+  - [ ] If `original_was_audio` is true AND audio output is not disabled
+    - [ ] Check `!SystemSetting.disabled?('allow_audio_output')`
+    - [ ] Call `send_text_as_audio(chat_id, response_text, message_id)`
+  - [ ] Otherwise, send as text message
+- [ ] Implement parse mode fallback chain
+  - [ ] Try Markdown parse mode first
+  - [ ] If Markdown parsing fails, fallback to HTML parse mode
+  - [ ] If HTML parsing fails, send as plain text (no parse_mode)
+  - [ ] Log warnings for each fallback
+- [ ] Error handling
+  - [ ] Catch errors when sending to Telegram
+  - [ ] Log errors with stack trace
+  - [ ] Call `send_error_fallback_message(chat_id, message_id)` on failure
+
+### Audio Response (`send_text_as_audio` method)
+- [ ] Generate audio from text using ElevenLabs
+  - [ ] Use `ElevenLabsTextToSpeechService.synthesize(text)` to generate audio file
+- [ ] Send as voice message to Telegram
+  - [ ] Use `TelegramService.send_voice(chat_id, voice_path, reply_to_message_id)`
+- [ ] Clean up generated audio file
+  - [ ] Delete audio file after sending (in `finally` block)
+  - [ ] Log cleanup success/failure
+- [ ] Fallback to text message
+  - [ ] If audio generation or sending fails, fallback to sending text message with Markdown parse mode
+  - [ ] Log errors for audio operations
+
+### Message Formatting Methods
+- [ ] `format_success_message(result, cursor_debug)`
+  - [ ] Include metadata if cursor_debug is enabled (call `format_metadata`)
+  - [ ] Include output if present (call `format_output`)
+  - [ ] Include warnings if cursor_debug and error is present (call `format_warnings`)
+  - [ ] Join all parts with newlines
+- [ ] `format_error_message(result, cursor_debug)`
+  - [ ] Clean ANSI escape sequences from error text
+  - [ ] If cursor_debug: format as "❌ Cursor command failed\n\nError: {error}"
+  - [ ] Otherwise: format as "❌ {error}"
+- [ ] `format_metadata(result)`
+  - [ ] Return array with: "✅ Cursor command completed successfully", "📊 Iterations: {iterations}", "⏱ Duration: {duration}"
+- [ ] `format_output(output, cursor_debug)`
+  - [ ] Clean ANSI escape sequences from output
+  - [ ] Set max_length: 3500 if cursor_debug, 4000 otherwise
+  - [ ] Truncate if exceeds max_length, append "..."
+  - [ ] If cursor_debug: wrap in HTML code blocks `<pre><code>{output}</code></pre>`
+  - [ ] Otherwise: return plain text
+- [ ] `format_warnings(error, cursor_debug)`
+  - [ ] Clean ANSI escape sequences from error text
+  - [ ] Truncate to 500 characters if longer, append "..."
+  - [ ] Format as "⚠️ Warnings:\n<pre><code>{error_text}</code></pre>"
+- [ ] `clean_ansi_escape_sequences(text)`
+  - [ ] Return empty string if text is blank
+  - [ ] Remove ANSI escape codes (pattern: `\u001b\[[?0-9;]*[a-zA-Z]`)
+  - [ ] Normalize line endings (`\r\n` → `\n`)
+  - [ ] Strip whitespace
+
+### Helper Methods
+- [ ] `cursor_debug_enabled?()`
+  - [ ] Check `SystemSetting.enabled?('debug')` using cursor-runner-shared-sqlite MCP connection
+- [ ] `send_error_fallback_message(chat_id, message_id)`
+  - [ ] Send generic error message: "⚠️ Command completed but failed to format response. Check logs for details."
+  - [ ] Handle errors when sending fallback message
+
+### Error Notification
+- [ ] `send_error_notification(pending_data, error)`
+  - [ ] Extract chat_id and message_id from pending_data
+  - [ ] Return early if chat_id is blank
+  - [ ] Send error message: "❌ Error processing cursor command result: {error.message}"
+  - [ ] Use HTML parse mode
+  - [ ] Reply to original message_id
+  - [ ] Handle errors when sending error notification
+
+## Dependencies
+
+- `CursorRunnerCallbackService` - For Redis operations (get_pending_request, remove_pending_request)
+- `TelegramService` - For sending messages and voice messages to Telegram
+- `ElevenLabsTextToSpeechService` - For converting text to speech
+- `SystemSetting` - For checking debug mode and audio output settings (use cursor-runner-shared-sqlite MCP)
+- Webhook secret configuration from environment/config
 
 ## Notes
 
