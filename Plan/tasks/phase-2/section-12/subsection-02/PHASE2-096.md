@@ -13,18 +13,21 @@ Convert create webhook authentication middleware from Rails to TypeScript/Node.j
 **Rails Implementation Details**:
 - The `authenticate_webhook` method is a private method in `TelegramController`
 - It's used as a `before_action` filter (line 9) that only applies to the `webhook` action
-- Gets the secret token from the `X-Telegram-Bot-Api-Secret-Token` request header
+- Gets the secret token from the `X-Telegram-Bot-Api-Secret-Token` request header (may be `nil` if header is missing)
 - Gets the expected secret from `Rails.application.config.telegram_webhook_secret`
 - Allows the request if:
   - The expected secret is blank/not configured (development mode), OR
-  - The provided secret token matches the expected secret
-- Returns 401 Unauthorized if the secret is configured but doesn't match
+  - The provided secret token matches the expected secret (exact string match)
+- Returns 401 Unauthorized if the secret is configured but doesn't match (including when header is missing)
 - Logs a warning message when authentication fails: "Unauthorized Telegram webhook request - invalid secret token"
 
 **Configuration**:
 - The webhook secret is configured via environment variable `TELEGRAM_WEBHOOK_SECRET`
-- If the secret is not configured (blank/empty), requests are allowed (backward compatibility)
-- Defaults to empty string if not set (allows requests when not configured)
+- In Rails, the config value comes from `Rails.application.config.telegram_webhook_secret` which reads from Rails credentials or `ENV.fetch('TELEGRAM_WEBHOOK_SECRET', 'changeme')`
+- **Important**: The Rails implementation uses `.blank?` check, which returns `true` for empty string, `nil`, or whitespace-only strings
+- If the expected secret is blank (empty string, nil, or whitespace), requests are allowed (development mode / backward compatibility)
+- If the expected secret is configured (non-blank), the header token must match exactly
+- In TypeScript/Node.js, check if the environment variable is undefined, null, or empty string to determine if secret is "blank"
 
 ## Checklist
 
