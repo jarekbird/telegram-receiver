@@ -29,11 +29,11 @@ The project currently has:
 Consider the following options for complexity analysis:
 
 1. **ESLint with complexity rules** (Recommended for quick setup)
-   - `complexity` rule - measures cyclomatic complexity
-   - `max-complexity` rule - sets complexity thresholds
+   - `complexity` rule - measures cyclomatic complexity and sets thresholds
    - Already integrated with existing ESLint setup
    - Can be configured in `.eslintrc.json`
    - Free and lightweight
+   - Note: ESLint's `complexity` rule syntax is `complexity: ["warn", 10]` where 10 is the maximum allowed complexity
 
 2. **SonarQube/SonarCloud** (If PHASE4-003 is completed)
    - Comprehensive complexity analysis
@@ -47,6 +47,7 @@ Consider the following options for complexity analysis:
    - Command-line tool
    - Generates complexity reports
    - Can be integrated into npm scripts
+   - **Note**: This package is quite old (last updated 2017) and may not be actively maintained. Consider alternatives if compatibility issues arise.
 
 4. **plato** (JavaScript complexity visualizer)
    - Generates visual complexity reports
@@ -84,14 +85,17 @@ Recommended complexity thresholds:
 - [ ] Add complexity analysis script to package.json
 
 ### ESLint Complexity Configuration (Recommended)
-- [ ] Add `complexity` rule to `.eslintrc.json`
-- [ ] Configure `max-complexity` threshold (recommended: 10)
-- [ ] Add `@typescript-eslint/explicit-function-return-type` consideration for complexity
-- [ ] Test ESLint complexity rules on codebase
+- [ ] Add `complexity` rule to `.eslintrc.json` with threshold (recommended: 10)
+- [ ] Configure additional complexity-related rules:
+  - `max-depth` - maximum nesting depth (recommended: 4)
+  - `max-lines-per-function` - maximum lines per function (recommended: 50)
+  - `max-params` - maximum function parameters (recommended: 5)
+- [ ] Test ESLint complexity rules on `src/` directory
 - [ ] Adjust thresholds based on initial results
 
 ### Running Complexity Analysis
-- [ ] Run initial complexity analysis on entire codebase
+- [ ] Run initial complexity analysis on `src/` directory (main source code)
+- [ ] Optionally run analysis on `tests/` directory (test code complexity)
 - [ ] Generate complexity report (JSON, HTML, or console output)
 - [ ] Identify all functions with complexity > 10
 - [ ] Identify all functions with complexity > 20 (critical)
@@ -139,11 +143,16 @@ Add to `.eslintrc.json`:
 ```json
 {
   "rules": {
-    "complexity": ["warn", { "max": 10 }],
+    "complexity": ["warn", 10],
+    "max-depth": ["warn", 4],
+    "max-lines-per-function": ["warn", { "max": 50, "skipBlankLines": true, "skipComments": true }],
+    "max-params": ["warn", 5],
     "@typescript-eslint/explicit-function-return-type": "off"
   }
 }
 ```
+
+**Note**: The `complexity` rule syntax is `complexity: ["warn", 10]` where `10` is the maximum allowed cyclomatic complexity. This is different from some other ESLint rules that use an object format.
 
 ## Configuration Example (package.json script)
 
@@ -153,10 +162,13 @@ Add complexity analysis script:
 {
   "scripts": {
     "complexity": "ts-complexity src --threshold 10",
-    "complexity:report": "ts-complexity src --threshold 10 --format html --output complexity-report.html"
+    "complexity:report": "ts-complexity src --threshold 10 --format html --output complexity-report.html",
+    "complexity:eslint": "eslint src --ext .ts --format json --output-file complexity-report.json"
   }
 }
 ```
+
+**Note**: If using ESLint for complexity analysis, the `complexity:eslint` script will generate a JSON report. For HTML reports with ESLint, consider using `eslint-html-reporter` or similar tools.
 
 ## Notes
 
@@ -171,6 +183,8 @@ Add complexity analysis script:
 - Use complexity metrics as a guide, not an absolute rule
 - Integration with SonarQube (if set up in PHASE4-003) provides the most comprehensive analysis
 - Task can be completed independently by a single agent
+- **Important**: When configuring ESLint complexity rules, use the correct syntax: `complexity: ["warn", 10]` (not `{ "max": 10 }`). The number directly represents the maximum allowed complexity.
+- Analysis should primarily focus on the `src/` directory, which contains the main application code
 
 ## Related Tasks
 
