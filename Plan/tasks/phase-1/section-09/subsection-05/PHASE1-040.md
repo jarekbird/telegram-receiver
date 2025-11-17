@@ -24,9 +24,16 @@ Test the Docker build process for the telegram-receiver Node.js/TypeScript appli
 - [ ] Run container: `docker run -d -p 3000:3000 --name telegram-receiver-test telegram-receiver`
 - [ ] Wait a few seconds for container to start
 - [ ] Check container logs: `docker logs telegram-receiver-test` (verify no errors)
+- [ ] Verify environment variables are set correctly: `docker exec telegram-receiver-test env | grep -E "(NODE_ENV|PORT)"` (should show NODE_ENV=production and PORT=3000)
+- [ ] Verify shared_db directory exists: `docker exec telegram-receiver-test ls -la /app/shared_db` (directory should exist with proper permissions)
 - [ ] Test health endpoint: `curl http://localhost:3000/health` (should return 200 OK)
-- [ ] Verify health endpoint response contains expected JSON structure
+- [ ] Verify health endpoint response contains expected JSON structure:
+  - [ ] `status: "healthy"` (must match Rails implementation)
+  - [ ] `service: "..."` (service name)
+  - [ ] `version: "..."` (version number)
+- [ ] Verify container HEALTHCHECK is configured: `docker inspect telegram-receiver-test | grep -A 5 Healthcheck` (should show HEALTHCHECK directive from Dockerfile)
 - [ ] Check container status: `docker ps` (container should be running)
+- [ ] Verify container health status: `docker inspect telegram-receiver-test --format='{{.State.Health.Status}}'` (should show "healthy" after healthcheck runs)
 - [ ] Stop container: `docker stop telegram-receiver-test`
 - [ ] Remove container: `docker rm telegram-receiver-test`
 - [ ] (Optional) Remove test image: `docker rmi telegram-receiver` (if not needed for next task)
@@ -39,15 +46,31 @@ Test the Docker build process for the telegram-receiver Node.js/TypeScript appli
 - **Prerequisites**: This task requires PHASE1-036 (Create Dockerfile) to be completed first
 - The Docker image tag should be `telegram-receiver` (not `jarek-va`) to match the project name
 - The health endpoint should be accessible at `http://localhost:3000/health` when the container is running
+- The health endpoint response should match the Rails implementation structure:
+  ```json
+  {
+    "status": "healthy",
+    "service": "telegram-receiver",
+    "version": "1.0.0"
+  }
+  ```
 - Use `docker run -d` (detached mode) to run the container in the background
 - Use `--name` flag to give the container a specific name for easier management
 - Container should expose port 3000 (matching the PORT environment variable)
+- Environment variables should be set: `NODE_ENV=production` and `PORT=3000` (default)
+- The shared database directory `/app/shared_db` should be created (required for shared SQLite database access)
+- The Dockerfile should include a HEALTHCHECK directive (as specified in PHASE1-036) that checks `/health` endpoint
 - After testing, clean up containers and optionally images to avoid cluttering Docker
 - If the build fails, check:
   - Dockerfile syntax is correct
   - All required files are present (package.json, tsconfig.json, src/, etc.)
   - `.dockerignore` is not excluding necessary files
-  - Node.js version matches the engines requirement in package.json
+  - Node.js version matches the engines requirement in package.json (node >=18.0.0)
+- If the container fails to start, check:
+  - Application code compiles successfully (`npm run build` works)
+  - Entrypoint script (if exists) executes correctly
+  - Required directories are created with proper permissions
+  - Port 3000 is not already in use on the host
 
 ## Related Tasks
 
