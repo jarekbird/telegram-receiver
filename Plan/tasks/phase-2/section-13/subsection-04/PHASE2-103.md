@@ -6,23 +6,88 @@
 
 ## Description
 
-Convert write integration tests for webhook flow from Rails to TypeScript/Node.js.
+Write integration tests for the Telegram webhook flow. These tests should verify the complete end-to-end flow from webhook reception through job processing. While Rails has controller specs (`telegram_controller_spec.rb`) and job specs (`telegram_message_job_spec.rb`) as unit tests, this task creates integration tests that test multiple components working together.
+
+**Rails Reference Files:**
+- `jarek-va/app/controllers/telegram_controller.rb` - Webhook endpoint implementation
+- `jarek-va/app/jobs/telegram_message_job.rb` - Message processing job
+- `jarek-va/spec/controllers/telegram_controller_spec.rb` - Controller unit tests (reference for behavior)
+- `jarek-va/spec/jobs/telegram_message_job_spec.rb` - Job unit tests (reference for behavior)
 
 ## Checklist
 
-- [ ] Create `tests/integration/telegram-webhook.test.ts`
-- [ ] Test webhook reception
-- [ ] Test job enqueueing
-- [ ] Test message processing
-- [ ] Mock external services
-- [ ] Verify end-to-end flow
+- [ ] Create `tests/integration/api/telegram-webhook.test.ts` using Supertest
+- [ ] Test webhook reception with authentication (X-Telegram-Bot-Api-Secret-Token header)
+- [ ] Test webhook reception without authentication (should return 401 when secret is configured)
+- [ ] Test webhook reception when secret is not configured (should accept request)
+- [ ] Test job enqueueing for message updates
+- [ ] Test job enqueueing for edited_message updates
+- [ ] Test job enqueueing for callback_query updates
+- [ ] Test job enqueueing for unhandled update types
+- [ ] Test end-to-end flow: webhook → job enqueue → job processing → external service calls
+- [ ] Test message processing with command messages (/start, /help, /status)
+- [ ] Test message processing with non-command messages (forwarded to cursor-runner)
+- [ ] Test error handling when job enqueue fails (should return 200 to avoid Telegram retries)
+- [ ] Test error handling when job processing fails (should send error message to user)
+- [ ] Mock TelegramService (send_message, download_file, etc.)
+- [ ] Mock CursorRunnerService (iterate method)
+- [ ] Mock CursorRunnerCallbackService (store_pending_request, remove_pending_request)
+- [ ] Mock Redis for callback state management
+- [ ] Mock BullMQ job queue for job enqueueing verification
+- [ ] Verify job receives correct update data (JSON format)
+- [ ] Test that webhook returns 200 OK immediately (before job processing)
+- [ ] Use fixtures from `tests/fixtures/telegramMessages.ts` for test data
+- [ ] Test with different message types (text, audio/voice, callback queries)
+- [ ] Verify proper cleanup and isolation between tests
+
+## Test Scenarios
+
+### Authentication Tests
+1. **Without authentication when secret is configured**: Should return 401 Unauthorized
+2. **Without authentication when secret is not configured**: Should accept request (return 200)
+3. **With valid authentication**: Should accept request and process
+
+### Update Type Tests
+1. **Message update**: Should enqueue job and process message
+2. **Edited message update**: Should enqueue job and process edited message
+3. **Callback query update**: Should enqueue job and process callback
+4. **Unhandled update type**: Should enqueue job but handle gracefully
+
+### Message Processing Tests
+1. **Command messages** (/start, /help, /status): Should process locally and send response
+2. **Non-command messages**: Should forward to cursor-runner via CursorRunnerService
+3. **Audio/voice messages**: Should transcribe and process (if implemented)
+
+### Error Handling Tests
+1. **Job enqueue error**: Should return 200 OK, log error, send error message to user if chat_id available
+2. **Job processing error**: Should log error, send error message to user, re-raise error to mark job as failed
+3. **Missing chat_id in error**: Should not attempt to send error message
+
+### Integration Flow Tests
+1. **Complete flow**: HTTP POST → Controller → Job Queue → Job Processing → External Services
+2. **Verify job data**: Ensure update data is correctly passed to job as JSON string
+3. **Verify immediate response**: Webhook should return 200 OK before job completes
+
+## Implementation Notes
+
+- Use Supertest for HTTP endpoint testing
+- Use Jest for test framework
+- Mock external services (TelegramService, CursorRunnerService) using Jest mocks
+- Mock BullMQ queue to verify job enqueueing without actually processing jobs
+- Mock Redis for callback state management
+- Use test fixtures from `tests/fixtures/telegramMessages.ts`
+- Ensure proper test isolation (cleanup between tests)
+- Reference Rails specs for expected behavior and edge cases
+- Test should verify the complete flow but mock external dependencies
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 13. Testing
-- Reference the Rails implementation for behavior
-
+- Subsection: 13.4 Integration Tests
+- Rails has unit tests (controller specs, job specs) but no integration tests - this task creates new integration tests based on the Rails unit test behavior
+- Integration tests should test multiple components together (controller + job queue + job processing)
+- External services should be mocked to ensure test isolation and speed
 - Task can be completed independently by a single agent
 
 ## Related Tasks
