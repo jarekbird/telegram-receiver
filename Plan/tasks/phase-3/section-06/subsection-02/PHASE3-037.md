@@ -6,17 +6,150 @@
 
 ## Description
 
-Review and improve review input validation in the codebase to ensure best practices.
+Review and improve input validation in the codebase to ensure best practices. This task focuses on validating that all API endpoints properly validate, sanitize, and type-check incoming request data to prevent security vulnerabilities and ensure data integrity.
+
+## Rails Implementation Reference
+
+The Rails application uses `params.permit()` for strong parameters and manual validation:
+
+1. **TelegramController** (`app/controllers/telegram_controller.rb`):
+   - `webhook`: Receives JSON Telegram updates (no explicit permit, relies on JSON parsing)
+   - `set_webhook`: Receives `url` and `secret_token` params (no explicit permit)
+   - `webhook_info`: No params
+   - `delete_webhook`: No params
+
+2. **CursorRunnerCallbackController** (`app/controllers/cursor_runner_callback_controller.rb`):
+   - `create`: Uses `params.permit()` with specific allowed fields:
+     - `success`, `requestId`, `request_id`, `repository`, `branchName`, `branch_name`
+     - `iterations`, `maxIterations`, `max_iterations`, `output`, `error`
+     - `exitCode`, `exit_code`, `duration`, `timestamp`
+   - Validates `request_id` is present (returns 400 if blank)
+   - Normalizes camelCase/snake_case field names
+   - Handles boolean conversion for `success` field
+
+3. **AgentToolsController** (`app/controllers/agent_tools_controller.rb`):
+   - Receives tool requests (validation patterns to be reviewed)
 
 ## Checklist
 
-- [ ] Review request validation
-- [ ] Check for input sanitization
-- [ ] Review type validation
-- [ ] Check for injection vulnerabilities
-- [ ] Review file upload validation
-- [ ] Identify validation gaps
-- [ ] Document validation strategy
+### Request Body Validation
+
+- [ ] Review Telegram webhook endpoint (`POST /telegram/webhook`)
+  - [ ] Validate request body is valid JSON
+  - [ ] Validate Content-Type header is `application/json` (or handle gracefully)
+  - [ ] Validate Telegram update structure (message, edited_message, callback_query)
+  - [ ] Check for required fields in update structure
+  - [ ] Validate request body size limits (prevent DoS via large payloads)
+  - [ ] Verify update data is sanitized before processing
+
+- [ ] Review cursor-runner callback endpoint (`POST /cursor-runner/callback`)
+  - [ ] Validate request body is valid JSON
+  - [ ] Validate `request_id` is present and not blank (return 400 if missing)
+  - [ ] Validate allowed fields only (equivalent to Rails `params.permit()`)
+  - [ ] Validate field types (success: boolean, iterations: integer, etc.)
+  - [ ] Validate string length limits for `output` and `error` fields
+  - [ ] Handle both camelCase and snake_case field names (normalize)
+  - [ ] Validate boolean conversion for `success` field (handle string "true"/"false")
+  - [ ] Validate numeric fields (iterations, max_iterations, exit_code) are valid numbers
+  - [ ] Check for request body size limits
+
+- [ ] Review admin endpoints (`POST /telegram/set_webhook`, `GET /telegram/webhook_info`, `DELETE /telegram/webhook`)
+  - [ ] Validate `url` parameter format (if provided in set_webhook)
+  - [ ] Validate `secret_token` parameter (if provided in set_webhook)
+  - [ ] Validate URL is valid format (not malicious)
+  - [ ] Check for parameter injection vulnerabilities
+
+- [ ] Review agent tools endpoint (`POST /agent-tools`)
+  - [ ] Validate request body structure
+  - [ ] Validate required fields
+  - [ ] Check for allowed fields only
+
+### Input Sanitization
+
+- [ ] Review all string inputs for sanitization
+  - [ ] Sanitize `output` and `error` fields from cursor-runner callbacks
+  - [ ] Remove ANSI escape sequences from output (as done in Rails)
+  - [ ] Sanitize Telegram message text before processing
+  - [ ] Validate and sanitize URLs in admin endpoints
+  - [ ] Check for XSS vulnerabilities in user-controlled data
+
+- [ ] Review file path handling
+  - [ ] Validate file paths don't contain directory traversal (`../`)
+  - [ ] Validate file paths are within allowed directories
+  - [ ] Check for path injection vulnerabilities
+
+### Type Validation
+
+- [ ] Review type checking for all endpoints
+  - [ ] Validate numeric fields are numbers (not strings)
+  - [ ] Validate boolean fields are booleans (handle string conversions)
+  - [ ] Validate string fields are strings
+  - [ ] Validate array/object structures match expected types
+  - [ ] Use TypeScript types for compile-time validation
+  - [ ] Add runtime type validation where needed (using validation library like Zod or Joi)
+
+### Injection Vulnerabilities
+
+- [ ] Check for SQL injection risks
+  - [ ] Review any database queries (if applicable)
+  - [ ] Verify parameterized queries are used
+  - [ ] Check Redis key construction for injection risks
+
+- [ ] Check for command injection risks
+  - [ ] Review any shell command execution
+  - [ ] Validate inputs before passing to shell commands
+  - [ ] Use safe command execution methods
+
+- [ ] Check for NoSQL injection risks
+  - [ ] Review Redis operations for injection risks
+  - [ ] Validate Redis key names
+
+- [ ] Check for template injection risks
+  - [ ] Review any template rendering (if applicable)
+  - [ ] Validate template variables
+
+### File Upload Validation (if applicable)
+
+- [ ] Review file download/upload handling
+  - [ ] Validate file types (if file uploads are added)
+  - [ ] Validate file sizes
+  - [ ] Validate file names
+  - [ ] Check for malicious file content
+  - [ ] Note: Current implementation downloads files from Telegram, doesn't accept uploads
+
+### Request Size Limits
+
+- [ ] Review Express body parser limits
+  - [ ] Verify `express.json()` has appropriate `limit` option
+  - [ ] Verify `express.urlencoded()` has appropriate `limit` option
+  - [ ] Set reasonable limits to prevent DoS attacks
+  - [ ] Document size limits in configuration
+
+### Validation Gaps
+
+- [ ] Identify endpoints missing validation
+- [ ] Identify fields missing type checking
+- [ ] Identify missing sanitization steps
+- [ ] Check for validation inconsistencies across endpoints
+- [ ] Review error handling for validation failures
+
+### Validation Strategy Documentation
+
+- [ ] Document validation approach (validation library choice, if any)
+- [ ] Document validation patterns used across endpoints
+- [ ] Document field normalization strategies (camelCase/snake_case handling)
+- [ ] Document error response format for validation failures
+- [ ] Document request size limits
+- [ ] Create or update validation guidelines
+- [ ] Document any validation middleware patterns
+
+### Implementation Recommendations
+
+- [ ] Consider using validation library (Zod, Joi, or express-validator)
+- [ ] Create reusable validation schemas/functions in `src/validators/` directory
+- [ ] Implement validation middleware for common patterns
+- [ ] Add TypeScript types for all request/response structures
+- [ ] Ensure validation errors return appropriate HTTP status codes (400 Bad Request)
 
 ## Notes
 
