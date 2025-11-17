@@ -6,21 +6,27 @@
 
 ## Description
 
-Add test scripts to package.json
+Ensure test scripts are present in package.json. These scripts provide convenient commands for running tests in different modes (standard, watch mode, coverage, unit tests, and integration tests).
 
 ## Checklist
 
-- [ ] Add `"test": "jest"` to scripts
-- [ ] Add `"test:watch": "jest --watch"` to scripts
-- [ ] Add `"test:coverage": "jest --coverage"` to scripts
-- [ ] Add `"test:unit": "jest --testPathPattern=tests/unit"` to scripts
-- [ ] Add `"test:integration": "jest --testPathPattern=tests/integration"` to scripts
+- [ ] Verify `package.json` exists in the project root
+- [ ] Check if `"test": "jest"` exists in scripts section; add if missing
+- [ ] Check if `"test:watch": "jest --watch"` exists in scripts section; add if missing
+- [ ] Check if `"test:coverage": "jest --coverage"` exists in scripts section; add if missing
+- [ ] Check if `"test:unit": "jest --testPathPattern=tests/unit"` exists in scripts section; add if missing
+- [ ] Check if `"test:integration": "jest --testPathPattern=tests/integration"` exists in scripts section; add if missing
+- [ ] Verify all scripts are correctly formatted JSON (no trailing commas, proper quotes)
+- [ ] Test that `npm run test` executes without errors
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 10. Test Suite Setup
 - Task can be completed independently by a single agent
+- **Verification Note**: As of task validation, all required test scripts already exist in `package.json`. The task should verify their presence and ensure they match the expected values. If scripts already exist and are correct, the task can be marked as complete after verification.
+- These scripts require Jest to be installed as a dev dependency (should be verified in a previous task)
+- The `test:unit` and `test:integration` scripts use `--testPathPattern` to filter tests by directory structure
 
 ## Related Tasks
 
