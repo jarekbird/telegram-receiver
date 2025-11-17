@@ -6,23 +6,77 @@
 
 ## Description
 
-Convert implement transcribe_audio method from Rails to TypeScript/Node.js. Reference `jarek-va/app/jobs/telegram_message_job.rb`.
+Convert the `transcribe_audio` method from Rails to TypeScript/Node.js. This method transcribes audio files from Telegram messages using the ElevenLabs Speech-to-Text API. Reference `jarek-va/app/jobs/telegram_message_job.rb` lines 315-352.
 
 ## Checklist
 
-- [ ] Create `transcribeAudio` method
-- [ ] Download file from Telegram
-- [ ] Call ElevenLabsSpeechToTextService
-- [ ] Handle transcription errors
-- [ ] Return transcribed text
-- [ ] Send error message to user on failure
+- [ ] Create `transcribeAudio` method with signature: `transcribeAudio(fileId: string, chatId: number, messageId: number): Promise<string>`
+- [ ] Send optional status message "🎤 Transcribing audio..." if cursor debug is enabled (check SystemSetting for 'debug')
+- [ ] Download audio file from Telegram using `TelegramService.downloadFile(fileId)` - returns file path
+- [ ] Transcribe audio using `ElevenLabsSpeechToTextService.transcribe(audioPath)` - returns transcribed text
+- [ ] Return transcribed text string
+- [ ] Implement file cleanup in finally/ensure block to delete downloaded audio file (always runs, even on error)
+- [ ] Handle errors appropriately - method should propagate errors to caller (caller handles error messages to user)
+- [ ] Log operations: file download, transcription success, file cleanup
+
+## Implementation Details
+
+### Method Signature
+```typescript
+private async transcribeAudio(
+  fileId: string,
+  chatId: number,
+  messageId: number
+): Promise<string>
+```
+
+### Key Implementation Points
+
+1. **Status Message (Optional)**: If cursor debug is enabled (check `SystemSetting.enabled('debug')`), send a status message "🎤 Transcribing audio..." to the user before starting transcription.
+
+2. **File Download**: Use `TelegramService.downloadFile(fileId)` which:
+   - Gets file info from Telegram API
+   - Downloads file to temp directory
+   - Returns the local file path
+
+3. **Transcription**: Use `ElevenLabsSpeechToTextService.transcribe(audioPath)` which:
+   - Takes the local file path
+   - Uploads to ElevenLabs API
+   - Returns transcribed text string
+
+4. **File Cleanup**: Always clean up the downloaded file in a finally block:
+   - Check if file exists before deleting
+   - Log cleanup operations
+   - Handle cleanup errors gracefully (log warning, don't throw)
+
+5. **Error Handling**: 
+   - The method should propagate errors to the caller
+   - The caller (`handleMessage` method) handles sending error messages to users
+   - Errors from download, transcription, or cleanup should be logged
+
+### Dependencies
+
+- `TelegramService.downloadFile(fileId: string): Promise<string>` - Downloads file and returns local path
+- `ElevenLabsSpeechToTextService.transcribe(audioPath: string): Promise<string>` - Transcribes audio file
+- `SystemSetting.enabled(key: string): boolean` - Check if debug mode is enabled
+- `TelegramService.sendMessage()` - Send status/error messages
+
+### Rails Implementation Reference
+
+Located at `jarek-va/app/jobs/telegram_message_job.rb` lines 315-352. The method:
+- Sends status message if debug enabled (lines 317-328)
+- Downloads file using `TelegramService.download_file(file_id)` (line 333)
+- Transcribes using `ElevenLabsSpeechToTextService.new.transcribe(audio_path)` (line 338)
+- Returns transcribed text (line 340)
+- Cleans up file in ensure block (lines 341-350)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 10. TelegramMessageJob Conversion
-- Reference the Rails implementation for behavior
-
+- The method is called from `handleMessage` when an audio/voice message is detected
+- Errors are handled by the caller, not within this method
+- File cleanup must always occur, even if transcription fails
 - Task can be completed independently by a single agent
 
 ## Related Tasks
