@@ -28,28 +28,28 @@ These utilities provide the low-level HTTP communication layer for the CursorRun
   - Returns HTTP response
 
 - [ ] Create `buildHttp` utility method
-  - Creates HTTP client instance (using Node.js http/https modules)
+  - Creates HTTP client instance (using Node.js http/https modules or axios)
   - Configures SSL/TLS based on URI scheme (http vs https)
-  - Sets read_timeout and open_timeout from service configuration
-  - Handles connection errors (ECONNREFUSED, EHOSTUNREACH, SocketError) and raises ConnectionError
-  - Handles timeout errors (OpenTimeout, ReadTimeout) and raises TimeoutError
+  - Sets read_timeout and open_timeout from service configuration (both use the same timeout value)
+  - Handles connection errors (ECONNREFUSED, EHOSTUNREACH, SocketError) and raises ConnectionError with message: "Failed to connect to cursor-runner: {error.message}"
+  - Handles timeout errors (OpenTimeout, ReadTimeout) and raises TimeoutError with message: "Request to cursor-runner timed out: {error.message}"
   - Returns configured HTTP client
 
 - [ ] Create `executeRequest` utility method
   - Logs request method and path (e.g., "CursorRunnerService: GET /cursor/execute")
   - Executes the HTTP request
-  - Logs response status code and message
+  - Logs response status code and message (e.g., "CursorRunnerService: Response 200 OK")
   - Handles 422 Unprocessable Entity as a valid response (allows caller to receive error details)
-  - Raises Error for non-success HTTP status codes (except 422)
-  - Extracts error message from response body JSON if available
-  - Handles timeout errors (OpenTimeout, ReadTimeout) and raises TimeoutError
-  - Handles connection errors (ECONNREFUSED, EHOSTUNREACH, SocketError) and raises ConnectionError
+  - Raises Error (CursorRunnerServiceError) for non-success HTTP status codes (except 422)
+  - Error message format: "HTTP {statusCode}: {statusMessage}" or extract from response body JSON if available (check for 'error' field)
+  - Handles timeout errors (OpenTimeout, ReadTimeout) and raises TimeoutError with message: "Request to cursor-runner timed out: {error.message}"
+  - Handles connection errors (ECONNREFUSED, EHOSTUNREACH, SocketError) and raises ConnectionError with message: "Failed to connect to cursor-runner: {error.message}"
   - Returns HTTP response
 
 - [ ] Create `parseResponse` utility method
-  - Parses JSON response body
-  - Handles JSON parsing errors and raises InvalidResponseError
-  - Returns parsed object
+  - Parses JSON response body (response.body)
+  - Handles JSON parsing errors and raises InvalidResponseError with message: "Failed to parse response: {error.message}"
+  - Returns parsed object (plain JavaScript/TypeScript object, equivalent to Rails symbolize_names: true)
 
 - [ ] Implement custom error classes
   - `CursorRunnerServiceError` (base error class)
@@ -58,20 +58,22 @@ These utilities provide the low-level HTTP communication layer for the CursorRun
   - `InvalidResponseError` (extends base error)
 
 - [ ] Add timeout handling
-  - Configure read_timeout and open_timeout on HTTP client
-  - Catch and handle timeout exceptions
-  - Raise TimeoutError with descriptive message
+  - Configure read_timeout and open_timeout on HTTP client (both use the same timeout value from service configuration)
+  - Catch and handle timeout exceptions in both `buildHttp` and `executeRequest` methods
+  - Raise TimeoutError with message: "Request to cursor-runner timed out: {error.message}"
 
 - [ ] Add connection error handling
-  - Catch connection refused errors
-  - Catch host unreachable errors
-  - Catch socket errors
-  - Raise ConnectionError with descriptive message
+  - Catch connection refused errors (ECONNREFUSED)
+  - Catch host unreachable errors (EHOSTUNREACH)
+  - Catch socket errors (SocketError)
+  - Handle in both `buildHttp` and `executeRequest` methods
+  - Raise ConnectionError with message: "Failed to connect to cursor-runner: {error.message}"
 
 - [ ] Add HTTP status code handling
-  - Treat 422 Unprocessable Entity as valid response
-  - Raise Error for other non-success status codes
-  - Extract error message from response body if available
+  - Treat 422 Unprocessable Entity as valid response (return response, don't raise error)
+  - Raise Error (CursorRunnerServiceError) for other non-success status codes (non-2xx, except 422)
+  - Error message format: "HTTP {statusCode}: {statusMessage}"
+  - Attempt to extract error message from response body JSON if available (check for 'error' field, fallback to default message)
 
 - [ ] Add request logging
   - Log request method and path before execution
@@ -84,7 +86,12 @@ These utilities provide the low-level HTTP communication layer for the CursorRun
 - Reference the Rails implementation in `jarek-va/app/services/cursor_runner_service.rb` for exact behavior
 - These are private utility methods used by the public API methods (execute, iterate, etc.)
 - Use Node.js built-in `http` and `https` modules or a library like `axios` or `node-fetch`
-- Ensure error messages match the Rails implementation for consistency
+  - Note: PHASE2-028 specified using `axios` (already in package.json), so prefer `axios` for consistency
+- Ensure error messages match the Rails implementation exactly for consistency:
+  - ConnectionError: "Failed to connect to cursor-runner: {error.message}"
+  - TimeoutError: "Request to cursor-runner timed out: {error.message}"
+  - InvalidResponseError: "Failed to parse response: {error.message}"
+  - HTTP Error: "HTTP {statusCode}: {statusMessage}" or response body 'error' field if available
 - The 422 status code handling is important - it allows the caller to receive error details in the response body
 
 - Task can be completed independently by a single agent
