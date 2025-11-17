@@ -6,17 +6,40 @@
 
 ## Description
 
-Review and improve review import/export patterns in the codebase to ensure best practices.
+Review and improve import/export patterns in the codebase to ensure best practices and consistency across all TypeScript files.
 
 ## Checklist
 
-- [ ] Review import statements
+- [ ] Review import statements across all TypeScript files (src/, tests/, config files)
+  - [ ] Check for consistent use of `import type` vs regular `import` for type-only imports
+  - [ ] Verify proper use of default vs named imports
+  - [ ] Check for correct use of path aliases (`@/` as configured in jest.config.ts)
+  - [ ] Verify relative import paths are correct and consistent
 - [ ] Check for unused imports
+  - [ ] Run ESLint to identify unused imports
+  - [ ] Remove any unused imports found
 - [ ] Review export patterns
-- [ ] Check for barrel exports
-- [ ] Review import order
-- [ ] Check for consistent patterns
-- [ ] Identify improvements
+  - [ ] Check consistency between `export default` and named exports
+  - [ ] Verify exports match their usage patterns
+  - [ ] Review if default exports are appropriate or should be named exports
+- [ ] Check for barrel exports (index.ts files that re-export from multiple modules)
+  - [ ] Identify if barrel exports exist or should be created
+  - [ ] Evaluate if barrel exports improve or complicate the import structure
+- [ ] Review import order and grouping
+  - [ ] Check if imports follow a consistent order (external packages, internal modules, types)
+  - [ ] Verify grouping of imports (external, internal, relative, type-only)
+  - [ ] Consider adding ESLint rules for import ordering if needed
+- [ ] Check for consistent patterns across different file types
+  - [ ] Test files (tests/**/*.ts)
+  - [ ] Configuration files (jest.config.ts, playwright.config.ts)
+  - [ ] Source files (src/**/*.ts) - when they exist
+- [ ] Review path alias usage
+  - [ ] Verify `@/` alias is used consistently where configured
+  - [ ] Check if path aliases should be extended to tsconfig.json for runtime use
+- [ ] Identify improvements and document recommendations
+  - [ ] Document any inconsistencies found
+  - [ ] Propose standard patterns for the codebase
+  - [ ] Consider adding ESLint plugins for import organization (e.g., eslint-plugin-import)
 
 ## Notes
 
@@ -24,6 +47,9 @@ Review and improve review import/export patterns in the codebase to ensure best 
 - Section: 4. Code Organization
 - Focus on identifying issues and improvements
 - Document findings and decisions
+- Current codebase state: Most TypeScript files are in `tests/` directory; `src/` directory is mostly empty but structure exists
+- Path aliases: Jest config uses `@/` mapping to `src/` - verify if this should be extended to tsconfig.json
+- ESLint configuration: Currently doesn't include import-specific rules - consider adding eslint-plugin-import
 
 - Task can be completed independently by a single agent
 
