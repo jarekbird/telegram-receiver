@@ -6,7 +6,7 @@
 
 ## Description
 
-Run comprehensive code duplication detection to identify duplicate code blocks, patterns, and structures that impact code quality and maintainability. This task focuses on detecting copy-paste code, similar code blocks, and opportunities for code consolidation through refactoring.
+Set up and run comprehensive code duplication detection to identify duplicate code blocks, patterns, and structures that impact code quality and maintainability. This task focuses on configuring duplication detection tools, detecting copy-paste code, identifying similar code blocks, and documenting opportunities for code consolidation through refactoring.
 
 ## Current State
 
@@ -82,19 +82,22 @@ Recommended duplication detection thresholds:
 - [ ] Install chosen tool(s) as dev dependencies (if npm packages)
 - [ ] Configure tool with appropriate thresholds and ignore patterns
 - [ ] Add duplication detection script to package.json
-- [ ] Configure ignore patterns (node_modules, dist, coverage, tests if desired)
+- [ ] Configure ignore patterns (node_modules, dist, coverage, tests directory if desired)
 
 ### jscpd Configuration (Recommended)
 - [ ] Install jscpd: `npm install --save-dev jscpd`
-- [ ] Create `.jscpdrc.json` configuration file
+- [ ] Create `.jscpdrc.json` configuration file in project root
 - [ ] Configure minimum tokens threshold (recommended: 50)
 - [ ] Configure similarity threshold (recommended: 80%)
 - [ ] Set ignore patterns:
-  - `node_modules/**`
-  - `dist/**`
-  - `coverage/**`
-  - `*.test.ts` (optional, depending on whether test duplication matters)
+  - `**/node_modules/**` (exclude dependencies)
+  - `**/dist/**` (exclude compiled output)
+  - `**/coverage/**` (exclude test coverage reports)
+  - `**/tests/**` (exclude test directory - tests are in separate `tests/` directory)
+  - `**/*.test.ts` (optional, if test files are co-located with source)
+  - `**/*.spec.ts` (optional, if spec files are co-located with source)
 - [ ] Configure report formats (console, JSON, HTML)
+- [ ] Configure report output directory (create `reports/` directory if needed, or use existing directory)
 - [ ] Test jscpd configuration on codebase
 
 ### Running Duplication Detection
@@ -160,6 +163,7 @@ Create `.jscpdrc.json`:
     "**/node_modules/**",
     "**/dist/**",
     "**/coverage/**",
+    "**/tests/**",
     "**/*.test.ts",
     "**/*.spec.ts"
   ],
@@ -174,6 +178,8 @@ Create `.jscpdrc.json`:
   }
 }
 ```
+
+**Note**: The `reports/` directory will be created automatically by jscpd if it doesn't exist. Alternatively, you can use an existing directory like `coverage/` or create the directory manually before running the tool.
 
 ## Configuration Example (package.json script)
 
