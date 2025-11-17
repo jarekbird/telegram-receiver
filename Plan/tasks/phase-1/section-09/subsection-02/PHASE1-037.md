@@ -30,11 +30,16 @@ Create `.dockerignore` file to exclude unnecessary files and directories from Do
 - [ ] Add test files to ignore list:
   - [ ] `tests/`
   - [ ] `coverage/`
-  - [ ] `.jest/` (if exists)
+  - [ ] `test-results/` (Playwright test results)
+  - [ ] `playwright-report/` (Playwright HTML reports)
+  - [ ] `playwright/.cache/` (Playwright cache)
+  - [ ] `.nyc_output/` (test coverage tool output)
 - [ ] Add log and temporary files to ignore list:
   - [ ] `log/*`
   - [ ] `tmp/*`
   - [ ] `*.log`
+- [ ] Add TypeScript build artifacts to ignore list:
+  - [ ] `*.tsbuildinfo` (TypeScript incremental build info)
 - [ ] Add IDE files to ignore list:
   - [ ] `.vscode/`
   - [ ] `.idea/`
@@ -44,6 +49,8 @@ Create `.dockerignore` file to exclude unnecessary files and directories from Do
 - [ ] Add OS files to ignore list:
   - [ ] `.DS_Store`
   - [ ] `Thumbs.db`
+- [ ] Add Git hooks to ignore list:
+  - [ ] `.husky/` (Git hooks directory)
 - [ ] Add Docker files to ignore list:
   - [ ] `Dockerfile`
   - [ ] `docker-compose.yml`
