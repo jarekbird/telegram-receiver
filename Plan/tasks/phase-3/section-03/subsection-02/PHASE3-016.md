@@ -29,6 +29,28 @@ Reference PHASE3-004 for comprehensive error handling strategy review.
 5. **Error Propagation**: Let errors bubble up appropriately, don't swallow errors silently
 6. **Try-Catch Patterns**: Use try-catch appropriately, avoid over-catching or under-catching
 7. **Async Error Handling**: Properly handle errors in async/await and Promise chains
+8. **Resource Cleanup**: Use finally blocks for cleanup operations (equivalent to Rails ensure blocks)
+9. **Error Message Limits**: Truncate error messages for external API limits (e.g., Telegram's 4096 character limit)
+10. **Nested Error Handling**: Handle errors that occur while handling errors (e.g., error sending error message)
+
+## Rails Error Handling Patterns (Reference)
+
+The jarek-va Rails application uses specific error handling patterns that should be adapted for TypeScript:
+
+- **Custom Error Classes**: Rails services define custom error hierarchies (e.g., `CursorRunnerService::Error`, `ConnectionError`, `TimeoutError`, `InvalidResponseError`)
+  - Reference: `jarek-va/app/services/cursor_runner_service.rb` (lines 11-14)
+  - Reference: `jarek-va/app/services/eleven_labs_speech_to_text_service.rb` (lines 9-13)
+- **Ensure Blocks**: Rails uses `ensure` blocks for resource cleanup (file deletion, connection closing)
+  - Reference: `jarek-va/app/jobs/telegram_message_job.rb` (lines 341-351, 378-388)
+  - TypeScript equivalent: `finally` blocks
+- **Error Message Truncation**: Error messages are truncated for external API limits
+  - Reference: `jarek-va/app/jobs/telegram_message_job.rb` (lines 93-96)
+  - Telegram has a 4096 character limit for messages
+- **Nested Error Handling**: Errors that occur while handling errors are caught and logged separately
+  - Reference: `jarek-va/app/jobs/telegram_message_job.rb` (lines 46-48, 325-327)
+  - Example: Error sending error message to Telegram user
+- **Error Re-raising**: Errors are logged and then re-raised to mark jobs as failed (for retry logic)
+  - Reference: `jarek-va/app/jobs/telegram_message_job.rb` (line 50)
 
 ## Checklist
 
@@ -52,6 +74,9 @@ Reference PHASE3-004 for comprehensive error handling strategy review.
   - [ ] Check for empty catch blocks or catch blocks that silently ignore errors
   - [ ] Verify catch blocks use proper error types (not just `catch (error: any)`)
   - [ ] Review nested try-catch patterns for appropriateness
+  - [ ] Verify finally blocks are used for resource cleanup (file deletion, connection closing)
+  - [ ] Check that cleanup errors in finally blocks are handled gracefully (log warning, don't fail on cleanup errors)
+  - [ ] Review nested error handling patterns (errors that occur while handling errors)
 - [ ] Check for error context preservation
   - [ ] Verify errors preserve original error context when wrapped
   - [ ] Check that error messages include relevant context (request IDs, parameters, etc.)
@@ -65,6 +90,8 @@ Reference PHASE3-004 for comprehensive error handling strategy review.
   - [ ] Check that error messages include relevant context (what failed, why it failed)
   - [ ] Identify generic or unhelpful error messages
   - [ ] Review error messages for user-facing vs. developer-facing clarity
+  - [ ] Verify error messages are truncated appropriately for external API limits (e.g., Telegram's 4096 character limit)
+  - [ ] Check that error messages sent to external APIs (like Telegram) are properly formatted and truncated
 - [ ] Check for proper error propagation
   - [ ] Verify errors propagate correctly through service layers
   - [ ] Check for unnecessary error catching and re-throwing
@@ -101,6 +128,11 @@ Reference PHASE3-004 for comprehensive error handling strategy review.
 - Compare error handling patterns with Node.js/TypeScript best practices
 - Document findings with specific file locations and line numbers
 - Reference error classes from PHASE2-005 and error handling strategies from PHASE3-004
+- Reference Rails error handling patterns from jarek-va for context:
+  - `jarek-va/app/services/cursor_runner_service.rb` - Custom error classes and error handling
+  - `jarek-va/app/services/eleven_labs_speech_to_text_service.rb` - Service-specific error handling
+  - `jarek-va/app/jobs/telegram_message_job.rb` - Job error handling, resource cleanup, nested error handling
+  - `jarek-va/app/controllers/application_controller.rb` - Application-level error handling
 - Task can be completed independently by a single agent
 
 ## Related Tasks
