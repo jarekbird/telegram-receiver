@@ -6,21 +6,81 @@
 
 ## Description
 
-Convert implement list_repositories method from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/cursor_runner_service.rb`.
+Convert the `list_repositories` method from Rails CursorRunnerService to TypeScript/Node.js. This method lists all locally cloned Git repositories by calling the cursor-runner API's `/git/repositories` endpoint.
+
+**Rails Reference**: `jarek-va/app/services/cursor_runner_service.rb` (lines 81-86)
+
+## Method Signature
+
+```typescript
+listRepositories(): Promise<ListRepositoriesResponse>
+```
+
+**Parameters**: None
+
+**Return Type**: Promise resolving to a response object with `success`, `repositories` array, `count`, etc.
+
+## Implementation Details
+
+### Request Details
+
+The method should make a GET request to `/git/repositories` endpoint with no request body.
+
+### Response Parsing
+
+- Parse the JSON response body
+- Return the parsed object with symbol keys (or equivalent TypeScript object)
+- Handle JSON parsing errors appropriately
+- The response should include:
+  - `success`: boolean indicating if the request was successful
+  - `repositories`: array of repository objects
+  - `count`: number of repositories (may be included)
+
+### Error Handling
+
+The method should handle and potentially throw the following error types:
+- **ConnectionError**: Failed to connect to cursor-runner (ECONNREFUSED, EHOSTUNREACH, SocketError)
+- **TimeoutError**: Request timed out (OpenTimeout, ReadTimeout)
+- **InvalidResponseError**: Failed to parse JSON response
+- **Error**: HTTP error responses (non-2xx, non-422 status codes)
+  - Note: 422 Unprocessable Entity should be treated as a valid response (operation failed but request was valid)
+
+### HTTP Request Details
+
+- Method: GET
+- Content-Type: `application/json`
+- Accept: `application/json`
+- Use the base URL from configuration (cursor-runner URL)
+- Use timeout from configuration (cursor-runner timeout)
+- No request body required
 
 ## Checklist
 
-- [ ] Implement `listRepositories` method
-- [ ] Call `/git/repositories` endpoint
-- [ ] Parse and return repositories array
-- [ ] Add error handling
+- [ ] Implement `listRepositories` method with correct TypeScript signature
+- [ ] Method takes no parameters
+- [ ] GET to `/git/repositories` endpoint
+- [ ] Set proper HTTP headers (`Content-Type: application/json`, `Accept: application/json`)
+- [ ] Handle connection errors (ConnectionError)
+- [ ] Handle timeout errors (TimeoutError)
+- [ ] Handle HTTP error responses (non-2xx, except 422)
+- [ ] Treat 422 Unprocessable Entity as valid response (not an error)
+- [ ] Parse JSON response body
+- [ ] Handle JSON parsing errors (InvalidResponseError)
+- [ ] Return parsed response object with success, repositories array, and count
+- [ ] Add appropriate logging (request and response logging)
+- [ ] Write unit tests for the method
+- [ ] Test successful response parsing
+- [ ] Test error handling scenarios (connection errors, timeouts, HTTP errors, JSON parse errors)
+- [ ] Test 422 response handling (should not throw error)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 5. CursorRunnerService Conversion
-- Reference the Rails implementation for behavior
-
+- The method uses a private `get` helper method in Rails - ensure similar helper is available or implement HTTP request directly
+- The method uses a private `parse_response` helper method in Rails - ensure similar helper is available or implement JSON parsing directly
+- Reference the Rails implementation at `jarek-va/app/services/cursor_runner_service.rb` lines 81-86 for exact behavior
+- This is a GET request (no request body), unlike other methods that use POST
 - Task can be completed independently by a single agent
 
 ## Related Tasks
