@@ -6,19 +6,76 @@
 
 ## Description
 
-Configure CI job - Build
+Configure the build step for the CI test job in the GitHub Actions workflow. This task focuses on adding a build step that compiles TypeScript code to JavaScript, ensuring the project can be built successfully and validating that compilation produces the expected output artifacts. The build step should run after dependencies are installed and before running tests, as it validates that the TypeScript code compiles without errors.
+
+**Reference Implementation**: While the Rails application (`jarek-va`) doesn't have a separate build workflow (build happens during deployment in `.github/workflows/deploy.yml`), this task adds a build validation step to the CI workflow to catch compilation errors early.
 
 ## Checklist
 
-- [ ] Add step to build the project (`npm run build`)
-- [ ] Verify build artifacts are created
-- [ ] Add step to verify dist/ directory exists
+### Build Step
+- [ ] Add step to build the project using `npm run build` (which runs `tsc` to compile TypeScript)
+- [ ] Place the build step after dependency installation and before test execution
+- [ ] Use descriptive step name like "Build TypeScript project" or "Compile TypeScript"
+
+### Build Artifact Verification
+- [ ] Add step to verify that the `dist/` directory exists after build
+- [ ] Add step to verify that build artifacts are created (check for compiled `.js` files in `dist/`)
+- [ ] Optionally verify that source maps are generated (if configured in tsconfig.json)
+- [ ] Optionally verify that declaration files (`.d.ts`) are generated (if configured in tsconfig.json)
+
+### Error Handling
+- [ ] Ensure build step fails the workflow if compilation errors occur
+- [ ] Build step should catch TypeScript type errors that weren't caught by `type-check` step
+
+## Implementation Details
+
+### Build Configuration
+- **Build Command**: `npm run build` (defined in `package.json` as `"build": "tsc"`)
+- **TypeScript Compiler**: Uses `tsc` (TypeScript compiler) configured via `tsconfig.json`
+- **Output Directory**: `dist/` (configured in `tsconfig.json` as `"outDir": "./dist"`)
+- **Source Directory**: `src/` (configured in `tsconfig.json` as `"rootDir": "./src"`)
+
+### Build Output
+According to `tsconfig.json`, the build process generates:
+- Compiled JavaScript files (`.js`) in `dist/` directory
+- Source maps (`.map` files) - enabled via `"sourceMap": true`
+- Declaration files (`.d.ts`) - enabled via `"declaration": true`
+- Declaration maps (`.d.ts.map`) - enabled via `"declarationMap": true`
+
+### NPM Scripts Available
+- `npm run build` - Build TypeScript project (runs `tsc`)
+- `npm run build:watch` - Build in watch mode (not used in CI)
+
+### Expected Workflow Structure
+The build step should appear in this order (after setup and before tests):
+1. Checkout code
+2. Set up Node.js
+3. Install dependencies (`npm ci`)
+4. Run linting (ESLint, Prettier, TypeScript type check)
+5. **Build project (`npm run build`)** ← This task
+6. Verify build artifacts (`dist/` directory exists)
+7. Run tests
+
+### Verification Commands
+- Check if `dist/` directory exists: `test -d dist`
+- Check if build artifacts exist: `test -f dist/index.js` (or check for main entry point)
+- List build artifacts: `ls -la dist/` (for debugging)
+
+### Step Naming
+- Use descriptive step names like:
+  - "Build TypeScript project"
+  - "Verify build artifacts"
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 11. CI/CD Pipeline Configuration
 - Task can be completed independently by a single agent
+- This task adds build steps to the workflow file created in PHASE1-051 and configured in previous tasks
+- The build step validates that TypeScript code compiles successfully, catching compilation errors early
+- Building before tests ensures that test failures aren't due to compilation issues
+- The build step complements the `type-check` step (from PHASE1-053) by actually compiling the code
+- Type checking (`tsc --noEmit`) validates types without emitting files, while build (`tsc`) validates types AND generates output files
 
 ## Related Tasks
 
