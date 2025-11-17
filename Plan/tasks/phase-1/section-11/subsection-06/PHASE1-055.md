@@ -6,7 +6,7 @@
 
 ## Description
 
-Configure the build step for the CI test job in the GitHub Actions workflow. This task focuses on adding a build step that compiles TypeScript code to JavaScript, ensuring the project can be built successfully and validating that compilation produces the expected output artifacts. The build step should run after dependencies are installed and before running tests, as it validates that the TypeScript code compiles without errors.
+Configure the build step for the CI test job in the GitHub Actions workflow. This task focuses on adding a build step that compiles TypeScript code to JavaScript, ensuring the project can be built successfully and validating that compilation produces the expected output artifacts. The build step should run after code quality checks (linting, formatting, type checking) and before running tests, as it validates that the TypeScript code compiles without errors and generates the expected build artifacts.
 
 **Reference Implementation**: While the Rails application (`jarek-va`) doesn't have a separate build workflow (build happens during deployment in `.github/workflows/deploy.yml`), this task adds a build validation step to the CI workflow to catch compilation errors early.
 
@@ -14,14 +14,15 @@ Configure the build step for the CI test job in the GitHub Actions workflow. Thi
 
 ### Build Step
 - [ ] Add step to build the project using `npm run build` (which runs `tsc` to compile TypeScript)
-- [ ] Place the build step after dependency installation and before test execution
+- [ ] Place the build step after code quality checks (linting, formatting, type checking) and before test execution
 - [ ] Use descriptive step name like "Build TypeScript project" or "Compile TypeScript"
 
 ### Build Artifact Verification
 - [ ] Add step to verify that the `dist/` directory exists after build
-- [ ] Add step to verify that build artifacts are created (check for compiled `.js` files in `dist/`)
-- [ ] Optionally verify that source maps are generated (if configured in tsconfig.json)
-- [ ] Optionally verify that declaration files (`.d.ts`) are generated (if configured in tsconfig.json)
+- [ ] Add step to verify that the main entry point exists (`dist/index.js` as defined in package.json)
+- [ ] Optionally verify that source maps are generated (`dist/index.js.map` and other `.map` files)
+- [ ] Optionally verify that declaration files are generated (`dist/index.d.ts` and other `.d.ts` files)
+- [ ] Optionally verify that declaration maps are generated (`dist/index.d.ts.map` and other `.d.ts.map` files)
 
 ### Error Handling
 - [ ] Ensure build step fails the workflow if compilation errors occur
@@ -58,7 +59,8 @@ The build step should appear in this order (after setup and before tests):
 
 ### Verification Commands
 - Check if `dist/` directory exists: `test -d dist`
-- Check if build artifacts exist: `test -f dist/index.js` (or check for main entry point)
+- Check if main entry point exists: `test -f dist/index.js` (main entry point as defined in package.json)
+- Optionally check for other build artifacts: `test -f dist/index.js.map` (source map), `test -f dist/index.d.ts` (declaration file)
 - List build artifacts: `ls -la dist/` (for debugging)
 
 ### Step Naming
