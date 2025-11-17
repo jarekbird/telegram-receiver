@@ -59,21 +59,21 @@ Convert the callback endpoint handler (`create` method) from Rails to TypeScript
 - [ ] Clean up pending request
   - [ ] Call `callback_service.remove_pending_request(request_id)` after successful processing
 - [ ] Error handling
-  - [ ] Catch and log errors with request_id and stack trace
+  - [ ] Catch and log errors with request_id and stack trace (first 10 lines)
   - [ ] Attempt to send error message to user via Telegram if chat_id is available
   - [ ] Handle errors when sending error notifications
 
 ### Result Normalization (`normalize_result` method)
 - [ ] Convert result to normalized format with symbol keys
-- [ ] Handle both camelCase and snake_case input formats
+- [ ] Handle both camelCase and snake_case input formats (both symbol keys `:requestId` and string keys `'requestId'`)
 - [ ] Normalize `success` field to boolean
   - [ ] Convert: `true`, `'true'`, `1`, `'1'` → `true`
   - [ ] Convert: `false`, `'false'`, `0`, `'0'`, `null` → `false`
-- [ ] Normalize `request_id` (handle `requestId`/`request_id`)
-- [ ] Normalize `branch_name` (handle `branchName`/`branch_name`)
-- [ ] Normalize `max_iterations` (handle `maxIterations`/`max_iterations`, default to 25)
-- [ ] Normalize `exit_code` (handle `exitCode`/`exit_code`, default to 0)
-- [ ] Normalize other fields: `repository`, `iterations` (default 0), `output` (default ''), `error`, `duration`, `timestamp`
+- [ ] Normalize `request_id` (handle `requestId`/`request_id` in both symbol and string formats)
+- [ ] Normalize `branch_name` (handle `branchName`/`branch_name` in both symbol and string formats)
+- [ ] Normalize `max_iterations` (handle `maxIterations`/`max_iterations` in both symbol and string formats, default to 25)
+- [ ] Normalize `exit_code` (handle `exitCode`/`exit_code` in both symbol and string formats, default to 0)
+- [ ] Normalize other fields: `repository`, `iterations` (default 0), `output` (default ''), `error`, `duration`, `timestamp` (handle both symbol and string keys)
 
 ### Telegram Response Sending (`send_response_to_telegram` method)
 - [ ] Check if cursor debug is enabled
@@ -93,7 +93,7 @@ Convert the callback endpoint handler (`create` method) from Rails to TypeScript
   - [ ] Log warnings for each fallback
 - [ ] Error handling
   - [ ] Catch errors when sending to Telegram
-  - [ ] Log errors with stack trace
+  - [ ] Log errors with full stack trace (all lines)
   - [ ] Call `send_error_fallback_message(chat_id, message_id)` on failure
 
 ### Audio Response (`send_text_as_audio` method)
@@ -106,7 +106,7 @@ Convert the callback endpoint handler (`create` method) from Rails to TypeScript
   - [ ] Log cleanup success/failure
 - [ ] Fallback to text message
   - [ ] If audio generation or sending fails, fallback to sending text message with Markdown parse mode
-  - [ ] Log errors for audio operations
+  - [ ] Log errors for audio operations with full stack trace (all lines)
 
 ### Message Formatting Methods
 - [ ] `format_success_message(result, cursor_debug)`
@@ -124,8 +124,10 @@ Convert the callback endpoint handler (`create` method) from Rails to TypeScript
   - [ ] Clean ANSI escape sequences from output
   - [ ] Set max_length: 3500 if cursor_debug, 4000 otherwise
   - [ ] Truncate if exceeds max_length, append "..."
-  - [ ] If cursor_debug: wrap in HTML code blocks `<pre><code>{output}</code></pre>`
-  - [ ] Otherwise: return plain text
+  - [ ] If cursor_debug:
+    - [ ] If truncated: format as "\n📝 Output (truncated):\n<pre><code>{truncated_output}\n...</code></pre>"
+    - [ ] If not truncated: format as "\n📝 Output:\n<pre><code>{output}</code></pre>"
+  - [ ] Otherwise: return plain text (truncated with "..." if needed)
 - [ ] `format_warnings(error, cursor_debug)`
   - [ ] Clean ANSI escape sequences from error text
   - [ ] Truncate to 500 characters if longer, append "..."
