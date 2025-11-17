@@ -6,11 +6,11 @@
 
 ## Description
 
-Integrate the environment configuration module into the main application entry point (`src/index.ts`) to use environment variables for server port and environment logging. This task imports the Express app from `src/app.ts`, starts the Express server using the port from the environment configuration, and logs the environment when the server starts.
+Integrate the environment configuration module into the main application entry point (`src/index.ts`) to use environment variables for server port and environment logging. This task imports the Express app from `src/app.ts`, starts the Express server using the port from the environment configuration, and logs both the environment and port when the server starts.
 
-In Rails, the server port is configured in `config/puma.rb` using `ENV.fetch("PORT") { 3000 }`, and the environment is accessed via `ENV.fetch("RAILS_ENV") { "development" }`. The Rails application logs the environment when starting. This task replicates that behavior in the Node.js application by using the centralized environment configuration module created in PHASE1-024.
+In Rails, the server port is configured in `config/puma.rb` using `ENV.fetch("PORT") { 3000 }`, and the environment is accessed via `ENV.fetch("RAILS_ENV") { "development" }`. When Puma (the Rails web server) starts, it logs the environment and port information. This task replicates that behavior in the Node.js application by using the centralized environment configuration module created in PHASE1-024.
 
-**Rails Equivalent**: `jarek-va/config/puma.rb` (lines 18, 22) - Rails uses `ENV.fetch("PORT") { 3000 }` for port configuration and `ENV.fetch("RAILS_ENV") { "development" }` for environment. The Rails application logs the environment when starting.
+**Rails Equivalent**: `jarek-va/config/puma.rb` (lines 18, 22) - Rails uses `ENV.fetch("PORT") { 3000 }` for port configuration and `ENV.fetch("RAILS_ENV") { "development" }` for environment. When Puma starts, it logs the environment and port information.
 
 **Note**: This task assumes that `src/app.ts` exists (created in PHASE1-015) and exports the Express app instance. The task also assumes that `src/config/environment.ts` exists (created in PHASE1-024) and exports a `config` object with `port` and `env` properties.
 
@@ -20,8 +20,12 @@ In Rails, the server port is configured in `config/puma.rb` using `ENV.fetch("PO
 - [ ] Import the Express app from `./app` (default export from `src/app.ts` created in PHASE1-015)
 - [ ] Import config from `./config/environment` (default export from `src/config/environment.ts` created in PHASE1-024)
 - [ ] Start the Express server using `app.listen(config.port, ...)` with the port from config
-- [ ] Log the environment when server starts (e.g., `console.log(`Server running in ${config.env} mode on port ${config.port}`)`)
-- [ ] Add error handling for server startup (handle port binding errors, etc.)
+- [ ] Log the environment and port when server starts (e.g., `console.log(`Server running in ${config.env} mode on port ${config.port}`)`)
+- [ ] Add error handling for server startup:
+  - Handle port binding errors (EADDRINUSE - port already in use)
+  - Handle permission errors (EACCES - permission denied)
+  - Handle other server startup errors
+  - Log appropriate error messages and exit gracefully on fatal errors
 
 ## Notes
 
@@ -33,9 +37,13 @@ In Rails, the server port is configured in `config/puma.rb` using `ENV.fetch("PO
   - Requires `src/app.ts` to exist (created in PHASE1-015) and export the Express app instance
   - Requires `src/config/environment.ts` to exist (created in PHASE1-024) and export a `config` object with `port` and `env` properties
 - **Server Startup**: The `src/index.ts` file is the main entry point that starts the Express server. It should import the app from `src/app.ts` and start listening on the configured port
-- **Environment Logging**: Logging the environment when the server starts helps with debugging and confirms which environment the application is running in, similar to how Rails logs the environment on startup
+- **Environment Logging**: Logging both the environment and port when the server starts helps with debugging and confirms which environment and port the application is running on, similar to how Puma logs this information on startup
 - **Port Configuration**: The port comes from the environment configuration module, which reads from `process.env.PORT` or defaults to 3000 (matching Rails default port)
-- **Error Handling**: The server startup should handle errors such as port already in use, permission denied, etc., and log appropriate error messages
+- **Error Handling**: The server startup should handle errors such as:
+  - `EADDRINUSE`: Port already in use - log error and exit with appropriate code
+  - `EACCES`: Permission denied - log error and exit with appropriate code
+  - Other server startup errors - log error details and exit gracefully
+  - Use `process.exit(1)` for fatal errors to indicate failure
 
 ## Related Tasks
 
