@@ -10,10 +10,14 @@ Choose a logging library for the Node.js application that can replicate the Rail
 
 **Rails Logging Patterns to Replicate:**
 - The jarek-va Rails application uses `Rails.logger` extensively throughout controllers, services, jobs, and tools
-- Production logging: Log level `:info`, stdout logging with request_id tagging (see `jarek-va/config/environments/production.rb` lines 40, 43, 67-69)
-- Error logging includes full backtraces (see `jarek-va/app/controllers/application_controller.rb` lines 10-11)
+- Application-level log level: Configurable via `ENV['LOG_LEVEL']` (defaults to `'info'`), see `jarek-va/config/application.rb` line 28
+- Production logging: Log level `:info`, stdout logging with request_id tagging via `ActiveSupport::TaggedLogging` wrapper (see `jarek-va/config/environments/production.rb` lines 40, 43, 67-69)
+  - Uses `Logger::Formatter.new` which includes PID and timestamp in log output (line 60)
+  - When `RAILS_LOG_TO_STDOUT` is set, wraps stdout logger with `ActiveSupport::TaggedLogging` to prepend request_id tags
+- Development logging: Rails defaults to `:debug` log level (no explicit configuration in `development.rb`)
+- Error logging includes full backtraces: logs exception class/message and full backtrace as separate log entries (see `jarek-va/app/controllers/application_controller.rb` lines 10-11)
 - Sidekiq uses Logger::INFO level (see `jarek-va/config/initializers/sidekiq.rb` line 31)
-- Logging methods used: `Rails.logger.info()`, `Rails.logger.error()`, `Rails.logger.warn()`, `Rails.logger.debug()`
+- Logging methods used: `Rails.logger.info()`, `Rails.logger.error()`, `Rails.logger.warn()`, `Rails.logger.debug()` (debug can use blocks for lazy evaluation, see `jarek-va/app/jobs/telegram_message_job.rb` line 180)
 
 **Requirements from Related Tasks:**
 - PHASE1-020 (request logging middleware): Requires structured JSON logging format with request_id support
@@ -39,11 +43,12 @@ Choose a logging library for the Node.js application that can replicate the Rail
 - [ ] Verify library supports:
   - [ ] Multiple log levels (info, error, warn, debug)
   - [ ] Structured JSON logging
-  - [ ] Environment-based log level configuration
+  - [ ] Environment-based log level configuration (via `NODE_ENV` and `LOG_LEVEL` env var)
   - [ ] Pretty printing for development
-  - [ ] Request ID/tagging support
-  - [ ] Error logging with stack traces
-  - [ ] stdout/stderr transport for production
+  - [ ] Request ID/tagging support (via child loggers or context, similar to Rails TaggedLogging)
+  - [ ] Error logging with stack traces (full exception backtraces)
+  - [ ] stdout/stderr transport for production (Docker-friendly)
+  - [ ] Log formatter that includes timestamp (and optionally PID) in output
 
 ## Notes
 
@@ -51,14 +56,20 @@ Choose a logging library for the Node.js application that can replicate the Rail
 - Section: 8. Logging Infrastructure
 - Task can be completed independently by a single agent
 - **Rails Reference**: The jarek-va Rails application uses `Rails.logger` throughout the codebase. See:
-  - `jarek-va/config/environments/production.rb` (lines 40, 43, 67-69) - Production logging configuration
-  - `jarek-va/app/controllers/application_controller.rb` (lines 10-11) - Error logging with backtraces
-  - `jarek-va/config/initializers/sidekiq.rb` (line 31) - Sidekiq logging level
-  - Various service files use `Rails.logger.info()`, `Rails.logger.error()`, `Rails.logger.warn()`, `Rails.logger.debug()`
+  - `jarek-va/config/application.rb` (line 28) - Application-level log level configuration via `ENV['LOG_LEVEL']` (defaults to 'info')
+  - `jarek-va/config/environments/production.rb` (lines 40, 43, 60, 67-69) - Production logging configuration:
+    - Line 40: Log level set to `:info`
+    - Line 43: Log tags set to `[:request_id]` for request ID tagging
+    - Line 60: Log formatter configured to include PID and timestamp
+    - Lines 67-69: Stdout logging with TaggedLogging wrapper when `RAILS_LOG_TO_STDOUT` is set
+  - `jarek-va/config/environments/development.rb` - Development environment (Rails defaults to `:debug` log level)
+  - `jarek-va/app/controllers/application_controller.rb` (lines 10-11) - Error logging with full backtraces (exception class/message and backtrace as separate log entries)
+  - `jarek-va/config/initializers/sidekiq.rb` (line 31) - Sidekiq logging level set to `Logger::INFO`
+  - Various service files use `Rails.logger.info()`, `Rails.logger.error()`, `Rails.logger.warn()`, `Rails.logger.debug()` (debug can use blocks for lazy evaluation)
 - **Performance Consideration**: Pino is significantly faster than Winston (often 5-10x faster) due to asynchronous logging and JSON serialization optimizations. This is important for high-throughput API applications.
 - **Structured Logging**: The chosen library must support structured JSON logging for production (as required by PHASE1-020 and PHASE1-031) to enable log aggregation and analysis.
-- **Request ID Support**: The library should support adding request IDs to log entries (via child loggers or context) to match Rails' `config.log_tags = [:request_id]` behavior.
-- **Environment Configuration**: The library must support different log levels and formats based on `NODE_ENV` (production: info level + JSON, development: debug level + pretty format).
+- **Request ID Support**: The library should support adding request IDs to log entries (via child loggers or context) to match Rails' `config.log_tags = [:request_id]` behavior. Rails uses `ActiveSupport::TaggedLogging` wrapper which prepends tags to each log line, so the Node.js implementation should support similar tagging/context functionality.
+- **Environment Configuration**: The library must support different log levels and formats based on `NODE_ENV` (production: info level + JSON, development: debug level + pretty format). The log level should also be configurable via `LOG_LEVEL` environment variable (defaulting to 'info') to match Rails' `ENV['LOG_LEVEL']` configuration.
 - **Production/Docker**: The library must support stdout logging for containerized environments (as Rails does with `RAILS_LOG_TO_STDOUT`).
 
 ## Related Tasks
