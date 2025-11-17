@@ -6,19 +6,38 @@
 
 ## Description
 
-Create .env.development file
+Create a `.env.development` file that contains development-specific environment variable values. This file is used during local development and should contain safe, non-production values suitable for development work.
+
+This task creates the `.env.development` file by copying the template from `.env.example` (created in PHASE1-025) and setting appropriate development values. The file should use local development URLs (localhost), debug logging levels, and placeholder values for secrets that developers will replace with their own development credentials.
+
+**Rails Equivalent**: Rails uses `RAILS_ENV=development` environment variable and development-specific configuration in `config/environments/development.rb`. The `.env.development` file serves a similar purpose by providing development-specific environment variable values.
+
+**Note**: This task creates the `.env.development` file with development-appropriate values. Developers should customize the values (especially secrets and tokens) for their local development environment.
 
 ## Checklist
 
-- [ ] Create `.env.development` file
-- [ ] Copy contents from `.env.example`
-- [ ] Set appropriate development values
+- [ ] Create `.env.development` file in project root directory
+- [ ] Copy all contents from `.env.example` file
+- [ ] Set `NODE_ENV=development` (matches Rails `RAILS_ENV=development` behavior)
+- [ ] Set `PORT=3000` (standard development port, matches Rails default)
+- [ ] Set `LOG_LEVEL=debug` (more verbose logging for development, matches Rails development logging)
+- [ ] Set `TELEGRAM_WEBHOOK_BASE_URL=http://localhost:3000` (local development URL)
+- [ ] Set `CURSOR_RUNNER_URL=http://localhost:3001` (local development URL for cursor-runner service)
+- [ ] Set `REDIS_URL=redis://localhost:6379` (local Redis instance)
+- [ ] Use placeholder values for secrets (TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET, WEBHOOK_SECRET, ELEVENLABS_API_KEY)
+- [ ] Add header comment indicating this is a development environment configuration file
+- [ ] Ensure all values are safe for local development (no production secrets)
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 7. Environment Variables Management
 - Task can be completed independently by a single agent
+- Rails equivalent: Rails uses `RAILS_ENV=development` and development-specific configuration in `config/environments/development.rb` (see jarek-va/config/environments/development.rb)
+- The `.env.development` file should never be committed to version control (should be in `.gitignore`)
+- Developers should copy `.env.example` to `.env.development` and customize values for their local development environment
+- Development values should use localhost URLs and debug logging levels for easier debugging
+- Placeholder values for secrets allow developers to add their own development credentials without exposing real tokens
 
 ## Related Tasks
 
