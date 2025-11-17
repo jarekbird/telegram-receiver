@@ -6,25 +6,97 @@
 
 ## Description
 
-Convert implement transcribe method (file path) from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/eleven_labs_*.rb` files.
+Convert the `transcribe` method (file path) from Rails to TypeScript/Node.js. This method transcribes an audio file to text using the ElevenLabs Speech-to-Text API.
+
+**Rails Reference**: `jarek-va/app/services/eleven_labs_speech_to_text_service.rb` (lines 32-66)
+
+## Method Signature
+
+```typescript
+transcribe(audioFilePath: string, language?: string): Promise<string>
+```
+
+**Parameters**:
+- `audioFilePath` (string, required): Path to the audio file to transcribe
+- `language` (string, optional): Language code (e.g., 'en', 'es', 'fr')
+
+**Returns**: Promise<string> - The transcribed text
 
 ## Checklist
 
-- [ ] Implement `transcribe` method
-- [ ] Validate file path exists
-- [ ] Read file content
-- [ ] Create multipart form data
-- [ ] Send POST request to API
-- [ ] Parse response
-- [ ] Return transcribed text
-- [ ] Add error handling
+- [ ] Implement `transcribe` method with correct signature
+- [ ] Validate `audioFilePath` parameter is not blank/null
+- [ ] Validate file exists at the given path (throw error if not found)
+- [ ] Read file content as binary data
+- [ ] Extract filename from file path using basename
+- [ ] Create multipart form data with:
+  - [ ] File content with filename
+  - [ ] `model_id` field (use configured model_id or default 'scribe_v1')
+  - [ ] `language` field (only if language parameter is provided)
+- [ ] Build HTTP POST request to `https://api.elevenlabs.io/v1/speech-to-text`
+- [ ] Set `xi-api-key` header with API key
+- [ ] Set `Content-Type` header to `multipart/form-data`
+- [ ] Execute HTTP request with timeout handling
+- [ ] Parse JSON response
+- [ ] Extract `text` field from response (handle both string and symbol keys)
+- [ ] Validate transcribed text is not blank (throw error if blank)
+- [ ] Return transcribed text string
+- [ ] Add comprehensive error handling:
+  - [ ] Custom error classes: Error, ConnectionError, TimeoutError, InvalidResponseError, TranscriptionError
+  - [ ] Handle file not found errors (ENOENT)
+  - [ ] Handle JSON parsing errors
+  - [ ] Handle HTTP error responses (non-2xx status codes)
+  - [ ] Handle network connection errors
+  - [ ] Handle timeout errors
+- [ ] Add logging:
+  - [ ] Log when sending audio file for transcription (include file path)
+  - [ ] Log successful transcription (include first 50 characters of transcribed text)
+
+## Implementation Details
+
+### API Endpoint
+- **URL**: `https://api.elevenlabs.io/v1/speech-to-text`
+- **Method**: POST
+- **Headers**:
+  - `xi-api-key`: API key from configuration
+  - `Content-Type`: `multipart/form-data`
+
+### Form Data Fields
+- `file`: Binary file content with filename
+- `model_id`: Model ID (from config or default 'scribe_v1')
+- `language`: Optional language code (only if provided)
+
+### Response Format
+The API returns JSON with a `text` field containing the transcribed text:
+```json
+{
+  "text": "Transcribed text here"
+}
+```
+
+### Error Handling
+- Throw error if `audioFilePath` is blank/null
+- Throw error if file doesn't exist
+- Throw `TranscriptionError` if HTTP response is not successful (non-2xx)
+- Throw `TranscriptionError` if transcribed text is blank
+- Throw `InvalidResponseError` if JSON parsing fails
+- Throw `ConnectionError` for network connection issues
+- Throw `TimeoutError` for request timeouts
+- Handle `ENOENT` errors when reading file
+
+### File Reading
+- Use binary file reading (equivalent to Ruby's `File.binread`)
+- Extract filename from path using basename utility
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 7. ElevenLabs Services Conversion
-- Reference the Rails implementation for behavior
-
+- **Rails Implementation**: `jarek-va/app/services/eleven_labs_speech_to_text_service.rb`
+- The method should be part of the `ElevenLabsSpeechToTextService` class
+- The service should be initialized with API key, timeout, and model_id (handled in service initialization, not this method)
+- Default model_id is 'scribe_v1' if not configured
+- Default timeout is 60 seconds
 - Task can be completed independently by a single agent
 
 ## Related Tasks
