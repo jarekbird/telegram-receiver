@@ -27,6 +27,7 @@ Convert and implement the `process_callback` private method from Rails to TypeSc
 - [ ] Add logging at method start
   - [ ] Log callback processing with request_id and success status
   - [ ] Format: "Processing cursor-runner callback (request_id: {requestId}, success: {result.success})"
+  - [ ] Handle both camelCase (`result.success`) and snake_case (`result['success']`) keys for success status (similar to Rails: `result[:success] || result['success']`)
 - [ ] Normalize result data
   - [ ] Call `normalizeResult(result)` method to handle camelCase/snake_case conversion
   - [ ] Store normalized result for use in subsequent steps
