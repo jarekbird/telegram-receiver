@@ -6,17 +6,80 @@
 
 ## Description
 
-Review and improve review security best practices in the codebase to ensure best practices.
+Review and improve security best practices in the telegram-receiver codebase. This task focuses on identifying security vulnerabilities, ensuring proper security measures are in place, and documenting security practices. Review all source code, configuration files, and dependencies for security issues.
 
 ## Checklist
 
-- [ ] Review environment variable usage
-- [ ] Check for hardcoded secrets
-- [ ] Review dependency security
-- [ ] Check for security headers
-- [ ] Review input sanitization
-- [ ] Check for security best practices
-- [ ] Document security measures
+### Environment Variables and Secrets
+- [ ] Verify all secrets are stored in environment variables (no hardcoded values)
+- [ ] Check that `.env` files are in `.gitignore` and not committed
+- [ ] Review `.env.example` file to ensure no actual secrets are present
+- [ ] Verify environment variables are loaded securely (using `dotenv` properly)
+- [ ] Check that sensitive environment variables are not logged or exposed in error messages
+- [ ] Verify environment variable validation and defaults are secure
+
+### Hardcoded Secrets
+- [ ] Search codebase for hardcoded API keys, tokens, passwords, or secrets
+- [ ] Check for hardcoded credentials in source files, config files, and test files
+- [ ] Verify no secrets in comments or documentation
+- [ ] Check that test fixtures use mock/placeholder values, not real secrets
+
+### Dependency Security
+- [ ] Run `npm audit` to identify known vulnerabilities in dependencies
+- [ ] Review `package.json` for outdated or unmaintained packages
+- [ ] Check for dependencies with known security issues
+- [ ] Verify all dependencies are from trusted sources
+- [ ] Review dependency versions for security patches
+- [ ] Document any security-related dependency choices
+
+### Security Headers
+- [ ] Review Express middleware for security headers (helmet.js or custom headers)
+- [ ] Verify HTTP security headers are set (X-Content-Type-Options, X-Frame-Options, etc.)
+- [ ] Check CORS configuration is properly restricted
+- [ ] Verify HTTPS enforcement in production
+- [ ] Review response headers for information leakage
+
+### Input Validation and Sanitization
+- [ ] Review all API endpoints for input validation
+- [ ] Check that user input is sanitized before processing
+- [ ] Verify request body validation (using validation libraries or manual checks)
+- [ ] Check for SQL injection risks (if database queries exist)
+- [ ] Review file upload handling (if applicable) for security
+- [ ] Verify Telegram webhook payload validation
+- [ ] Check for XSS vulnerabilities in responses
+
+### Authentication and Authorization
+- [ ] Review webhook authentication middleware (`X-Telegram-Bot-Api-Secret-Token`)
+- [ ] Review admin authentication middleware (`X-Admin-Secret`)
+- [ ] Review callback authentication middleware (`X-Webhook-Secret`, `X-Cursor-Runner-Secret`)
+- [ ] Verify authentication secrets are properly validated
+- [ ] Check that failed authentication attempts are logged appropriately
+- [ ] Verify development mode authentication behavior is secure
+
+### Error Handling and Information Disclosure
+- [ ] Review error messages to ensure no sensitive information is exposed
+- [ ] Check that stack traces are not exposed in production
+- [ ] Verify error logging doesn't include secrets or sensitive data
+- [ ] Review error response format for information leakage
+
+### Network Security
+- [ ] Review external API calls for proper timeout configuration
+- [ ] Verify HTTPS is used for all external API calls
+- [ ] Check for proper certificate validation
+- [ ] Review rate limiting implementation (if applicable)
+
+### Code Security Practices
+- [ ] Review for unsafe eval() or Function() usage
+- [ ] Check for unsafe file system operations
+- [ ] Verify proper handling of user-controlled data
+- [ ] Review Redis connection security
+- [ ] Check for proper session management (if applicable)
+
+### Documentation
+- [ ] Document security measures implemented
+- [ ] Create or update security guidelines
+- [ ] Document any security-related configuration requirements
+- [ ] Document known security limitations or trade-offs
 
 ## Notes
 
