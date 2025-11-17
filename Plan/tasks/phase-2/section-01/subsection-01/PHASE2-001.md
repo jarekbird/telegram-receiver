@@ -26,7 +26,8 @@ Create TypeScript type definitions for Telegram Bot API. These types will be use
   - Required fields: `id` (string), `data` (string)
   - Optional fields: `message` (TelegramMessage), `from` (TelegramUser)
 - [ ] Define `TelegramFile` interface for file information (from get_file API)
-  - Should match structure: `{ result: { file_path: string, file_id: string } }`
+  - Should match structure: `{ result: { file_path: string } }`
+  - Note: `file_id` is the input parameter, not part of the response structure
 - [ ] Define `TelegramVoice` interface for voice/audio messages
   - Required fields: `file_id` (string)
   - Optional fields: `duration`, `mime_type`, `file_size` (refer to Telegram Bot API docs)
@@ -38,7 +39,8 @@ Create TypeScript type definitions for Telegram Bot API. These types will be use
   - Optional fields: `mime_type` (string), `file_name`, `file_size` (refer to Telegram Bot API docs)
 - [ ] Define `SendMessageParams` interface for sending messages
   - Required fields: `chat_id` (number), `text` (string)
-  - Optional fields: `parse_mode` ('HTML' | 'Markdown' | 'MarkdownV2'), `reply_to_message_id` (number)
+  - Optional fields: `parse_mode` ('HTML' | 'Markdown' | 'MarkdownV2' | null), `reply_to_message_id` (number)
+  - Note: `parse_mode` can be `null` for plain text (no formatting)
 - [ ] Define `SendVoiceParams` interface for sending voice messages
   - Required fields: `chat_id` (number), `voice_path` (string - local file path)
   - Optional fields: `reply_to_message_id` (number), `caption` (string)
@@ -52,9 +54,14 @@ Create TypeScript type definitions for Telegram Bot API. These types will be use
 - [ ] Define `GetFileParams` interface for getting file information
   - Required fields: `file_id` (string)
 - [ ] Define `WebhookInfo` interface for webhook information
-  - Should match structure returned by Telegram Bot API get_webhook_info endpoint
+  - Required fields: `url` (string), `pending_update_count` (number)
+  - Optional fields: Refer to Telegram Bot API docs for additional fields (last_error_date, last_error_message, etc.)
+  - Note: This is the structure inside the `result` field of `TelegramApiResponse<WebhookInfo>`
 - [ ] Define `TelegramApiResponse<T>` generic type for API responses
-  - Should wrap API responses with `ok` (boolean) and `result` (T) fields
+  - Required fields: `ok` (boolean)
+  - When `ok` is `true`: `result` (T) field is present
+  - When `ok` is `false`: `description` (string) and `error_code` (number) fields are present
+  - Note: This matches Telegram Bot API response structure
 - [ ] Export all types and interfaces
 
 ## Notes
@@ -85,9 +92,15 @@ Based on the Rails implementation analysis:
 
 5. **SendVoiceParams** uses `voice_path` which is a local file path (not a Telegram file_id). This is different from Telegram's native `sendVoice` API which uses file_id or file upload.
 
-6. **TelegramFile** structure matches the response from `get_file` API: `{ result: { file_path: string } }`
+6. **TelegramFile** structure matches the response from `get_file` API: `{ result: { file_path: string } }`. The `file_id` is the input parameter, not part of the response structure.
 
 7. All optional fields should be marked with `?` in TypeScript. Required fields should not have `?`.
+
+8. **parse_mode** in `SendMessageParams` can be `null` for plain text messages (no formatting). The Rails code shows fallback patterns that use `nil` parse_mode when HTML/Markdown parsing fails.
+
+9. **WebhookInfo** structure includes at least `url` (string) and `pending_update_count` (number) based on usage in `telegram_service_spec.rb`. Additional fields may be present per Telegram Bot API documentation.
+
+10. **TelegramApiResponse<T>** should handle both success (`ok: true, result: T`) and error (`ok: false, description: string, error_code: number`) cases.
 
 ## Related Tasks
 
