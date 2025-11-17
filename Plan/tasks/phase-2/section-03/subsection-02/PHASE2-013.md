@@ -28,8 +28,9 @@ Convert Sidekiq queue configuration from Rails to BullMQ queue configuration in 
   - [ ] Create Redis connection instance using `ioredis`
   - [ ] Support both server and client configurations (similar to Sidekiq's `configure_server` and `configure_client`)
 - [ ] Set default job options:
-  - [ ] Configure default retry attempts (3 retries, matching Sidekiq's `retry: 3`)
-  - [ ] Configure backtrace/error handling (equivalent to Sidekiq's `backtrace: true`)
+  - [ ] Configure default retry attempts (`attempts: 4` to match Sidekiq's `retry: 3` - 3 retries + 1 initial attempt = 4 total attempts)
+  - [ ] Configure job retention options (`removeOnComplete: true`, `removeOnFail: false` for debugging)
+  - [ ] Note: Sidekiq's `backtrace: true` is a logging feature (full stack traces in error logs), not a job option; ensure error logging includes stack traces
   - [ ] Export default job options for use when creating queues
 - [ ] Configure environment-specific settings:
   - [ ] Development: concurrency 2, queues: `['default']`
@@ -58,6 +59,7 @@ Convert Sidekiq queue configuration from Rails to BullMQ queue configuration in 
     - Environment variable: `REDIS_URL` (defaults to `redis://localhost:6379/0`)
     - Loads `sidekiq.yml` for concurrency settings
   - `jarek-va/config/sidekiq.yml` - Environment-specific configuration:
+    - Default (top-level): concurrency 5, queues: `['default', 'high_priority', 'low_priority']` (used as fallback)
     - Development: concurrency 2, queues: `['default']`
     - Test: concurrency 1, queues: `['default']`
     - Production: concurrency 10, queues: `['critical', 'default', 'high_priority', 'low_priority']`
@@ -73,7 +75,10 @@ Convert Sidekiq queue configuration from Rails to BullMQ queue configuration in 
   - Queue names are defined when creating `Queue` instances (not in a separate config file)
   - Environment-specific settings should be loaded based on `NODE_ENV`
   - The configuration should export a Redis connection instance that can be reused
-  - Default job options should match Sidekiq's: `{ attempts: 3, removeOnComplete: true, removeOnFail: false }`
+  - Default job options should match Sidekiq's retry behavior: `{ attempts: 4 }` (3 retries + 1 initial attempt = 4 total attempts)
+  - Sidekiq's `backtrace: true` is a logging feature (includes full stack traces in error logs), not a job retention option
+  - BullMQ job retention options (`removeOnComplete`, `removeOnFail`) are separate from retry configuration
+  - Consider reasonable defaults: `removeOnComplete: true` (clean up completed jobs), `removeOnFail: false` (keep failed jobs for debugging)
   - Consider creating helper functions like `createQueue(name: string, options?: JobOptions)` that apply default options
 - **Key Differences from Rails:**
   - Rails: Sidekiq uses `Sidekiq.configure_server` and `Sidekiq.configure_client` blocks
