@@ -13,13 +13,20 @@ Review and improve test coverage in the codebase to ensure best practices. This 
 - [ ] Run test coverage report using `npm run test:coverage`
 - [ ] Review coverage percentages for statements, branches, functions, and lines
 - [ ] Review coverage configuration in `jest.config.ts` (collectCoverageFrom, coverageReporters, etc.)
+- [ ] Review coverage exclusions (check if `collectCoverageFrom` patterns correctly exclude test files, type definitions, etc.)
 - [ ] Identify uncovered code areas and files with low coverage
 - [ ] Review critical path coverage (core business logic, API endpoints, services)
+  - Controllers: Webhook handling, callback processing
+  - Services: TelegramService, CursorRunnerService, CursorRunnerCallbackService, ElevenLabs services
+  - Jobs: TelegramMessageJob
+  - Middleware: Authentication, error handling
 - [ ] Check for coverage gaps across different test types (unit, integration, e2e)
-- [ ] Review coverage for each source directory (controllers, services, models, middleware, utils)
-- [ ] Set coverage targets/thresholds in jest.config.ts if needed
+- [ ] Review coverage for each source directory (controllers, services, models, middleware, utils, validators, errors)
+- [ ] Set coverage thresholds in `jest.config.ts` (see Notes section for recommended values)
+- [ ] Document coverage targets by area (controllers, services, etc.) with rationale
 - [ ] Document coverage status and findings in this task file or a coverage report
 - [ ] Identify priority areas that need additional test coverage
+- [ ] Document any coverage exclusions and their rationale
 
 ## Notes
 
@@ -35,12 +42,48 @@ Review and improve test coverage in the codebase to ensure best practices. This 
 - **Coverage Metrics**: Focus on statements, branches, functions, and lines coverage
 - **Priority Areas**: Controllers, services, and core business logic should have higher coverage targets
 
+- **Coverage Thresholds** (Recommended - as per PHASE3-045 recommendation):
+  - Consider setting minimum coverage thresholds in `jest.config.ts` using `coverageThreshold`:
+    - Global thresholds: Start with 60-70% for early development, increase to 80%+ as codebase matures
+    - Per-directory thresholds: Higher targets for critical paths (controllers: 80%+, services: 80%+, utils: 70%+)
+    - Example configuration:
+      ```typescript
+      coverageThreshold: {
+        global: {
+          branches: 60,
+          functions: 60,
+          lines: 60,
+          statements: 60
+        },
+        './src/controllers/': {
+          branches: 80,
+          functions: 80,
+          lines: 80,
+          statements: 80
+        },
+        './src/services/': {
+          branches: 80,
+          functions: 80,
+          lines: 80,
+          statements: 80
+        }
+      }
+      ```
+  - Thresholds should be set based on current coverage state and gradually increased
+  - Consider starting with warnings instead of failures during early development
+
+- **Coverage Exclusions**: Review `collectCoverageFrom` patterns to ensure:
+  - Test files are excluded (`!src/**/*.test.ts`, `!src/**/*.spec.ts`)
+  - Type definition files are excluded (`!src/**/*.d.ts`)
+  - Configuration files may be excluded if appropriate
+  - Index/barrel files may have lower coverage requirements
+
 - Task can be completed independently by a single agent
 
 ## Related Tasks
 
 - Previous: PHASE3-043
-- Next: PHASE3-045
+- Next: PHASE3-045 (Review test organization - recommends adding coverage thresholds)
 
 ---
 
