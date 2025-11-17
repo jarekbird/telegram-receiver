@@ -6,23 +6,68 @@
 
 ## Description
 
-Convert create redis connection utility from Rails to TypeScript/Node.js.
+Create a Redis connection utility that provides a singleton Redis client instance for use throughout the application. This utility centralizes Redis client creation and provides a consistent interface for Redis connectivity.
+
+**Rails Implementation Reference:**
+- `app/services/cursor_runner_callback_service.rb` - Shows Redis client initialization pattern:
+  - Uses `Redis.new(url: redis_url)` to create client
+  - Supports dependency injection (can pass `redis_client` or `redis_url`)
+  - Falls back to `ENV.fetch('REDIS_URL', 'redis://localhost:6379/0')`
+  - In Docker: `REDIS_URL=redis://redis:6379/0` (shared Redis instance)
+  - Local development: Falls back to `redis://localhost:6379/0`
+
+**Node.js Implementation:**
+- Use `ioredis` package (already in dependencies, also used by BullMQ)
+- Implement singleton pattern to ensure single Redis connection instance
+- Use Redis configuration from `src/config/redis.ts` (created in PHASE2-008)
+- Support dependency injection for testing (allow passing mock Redis client)
+- Basic error handling (connection errors, initialization errors)
+- Advanced error handling (reconnection logic, event listeners) will be added in PHASE2-010
 
 ## Checklist
 
 - [ ] Create `src/utils/redis.ts` file
-- [ ] Implement Redis client singleton
-- [ ] Add connection initialization
-- [ ] Add connection error handling
-- [ ] Export Redis client instance
+- [ ] Import `Redis` from `ioredis` package
+- [ ] Import `redisConfig` from `src/config/redis.ts` (PHASE2-008)
+- [ ] Implement singleton pattern:
+  - [ ] Create private `redisClient` variable (null initially)
+  - [ ] Create `getRedisClient()` function that returns singleton instance
+  - [ ] Initialize client on first access using `redisConfig.url`
+  - [ ] Return existing client on subsequent calls
+- [ ] Support dependency injection:
+  - [ ] Add optional parameter to `getRedisClient()` to allow passing custom Redis client (for testing)
+  - [ ] If custom client provided, use it instead of creating new instance
+- [ ] Add basic error handling:
+  - [ ] Wrap client initialization in try-catch
+  - [ ] Log initialization errors
+  - [ ] Throw meaningful errors if initialization fails
+- [ ] Export `getRedisClient()` function as default export
+- [ ] Add TypeScript type definitions:
+  - [ ] Import `Redis` type from `ioredis`
+  - [ ] Type the return value of `getRedisClient()`
+- [ ] Add JSDoc comments documenting:
+  - [ ] Singleton behavior
+  - [ ] Dependency injection support
+  - [ ] Usage examples
+- [ ] Ensure implementation matches Rails pattern (environment variable with default, dependency injection support)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 2. Redis Integration
-- Reference the Rails implementation for behavior
-
-- Task can be completed independently by a single agent
+- **Rails Files to Reference:**
+  - `jarek-va/app/services/cursor_runner_callback_service.rb` - Redis client initialization pattern (lines 15-21)
+- **Dependencies:**
+  - Requires PHASE2-008 (Redis configuration) to be completed first
+  - Uses `ioredis` package (already in package.json dependencies)
+- **Implementation Details:**
+  - Singleton pattern ensures single Redis connection instance across the application
+  - Dependency injection support allows passing mock clients in tests
+  - Basic error handling covers initialization failures
+  - Advanced error handling (reconnection, event listeners) is handled in PHASE2-010
+- **Default Redis URL:** `redis://localhost:6379/0` (matches Rails default)
+- **Docker Redis URL:** `redis://redis:6379/0` (set via REDIS_URL environment variable)
+- Task can be completed independently by a single agent (after PHASE2-008 is complete)
 
 ## Related Tasks
 
