@@ -6,21 +6,73 @@
 
 ## Description
 
-Convert add error handling and custom error classes from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/cursor_runner_service.rb`.
+Add comprehensive error handling and custom error classes to the CursorRunnerService implementation. This task ensures all error scenarios from the Rails implementation are properly handled with appropriate error types and logging.
+
+**Rails Reference**: `jarek-va/app/services/cursor_runner_service.rb` (lines 11-14, 151-161, 163-194, 196-200)
 
 ## Checklist
 
-- [ ] Add ConnectionError class
-- [ ] Add TimeoutError class
-- [ ] Add InvalidResponseError class
-- [ ] Add error handling to all methods
-- [ ] Log errors appropriately
+- [ ] Ensure base `Error` class exists (extends standard Error)
+  - Base class for all CursorRunnerService errors
+  - Should be named `CursorRunnerService.Error` or `CursorRunnerServiceError`
+
+- [ ] Ensure `ConnectionError` class exists (extends base Error)
+  - Raised when connection fails: ECONNREFUSED, EHOSTUNREACH, SocketError
+  - Error message format: "Failed to connect to cursor-runner: {error message}"
+  - Used in `buildHttp` and `executeRequest` methods
+
+- [ ] Ensure `TimeoutError` class exists (extends base Error)
+  - Raised when request times out: OpenTimeout, ReadTimeout
+  - Error message format: "Request to cursor-runner timed out: {error message}"
+  - Used in `buildHttp` and `executeRequest` methods
+
+- [ ] Ensure `InvalidResponseError` class exists (extends base Error)
+  - Raised when JSON parsing fails: JSON::ParserError
+  - Error message format: "Failed to parse response: {error message}"
+  - Used in `parseResponse` method
+
+- [ ] Add error handling to `buildHttp` method
+  - Catch connection errors (ECONNREFUSED, EHOSTUNREACH, SocketError) → raise ConnectionError
+  - Catch timeout errors (OpenTimeout, ReadTimeout) → raise TimeoutError
+  - Include original error message in the raised error
+
+- [ ] Add error handling to `executeRequest` method
+  - Log request: "CursorRunnerService: {METHOD} {path}" (e.g., "CursorRunnerService: GET /cursor/execute")
+  - Log response: "CursorRunnerService: Response {code} {message}"
+  - Handle 422 Unprocessable Entity as valid response (return it, don't raise error)
+  - For non-success HTTP status codes (except 422):
+    - Try to parse error body JSON and extract 'error' field
+    - Fall back to default error message if JSON parsing fails
+    - Raise generic Error with the error message
+  - Catch timeout errors (OpenTimeout, ReadTimeout) → raise TimeoutError
+  - Catch connection errors (ECONNREFUSED, EHOSTUNREACH, SocketError) → raise ConnectionError
+  - Include original error message in the raised error
+
+- [ ] Add error handling to `parseResponse` method
+  - Catch JSON parsing errors → raise InvalidResponseError
+  - Error message should include the parsing error details
+  - Ensure error message format matches Rails: "Failed to parse response: {error message}"
+
+- [ ] Ensure error handling covers all public methods
+  - All public methods (execute, iterate, clone_repository, list_repositories, checkout_branch, push_branch, pull_branch) should propagate errors appropriately
+  - Errors should bubble up with proper error types
+
+- [ ] Add appropriate logging
+  - Log all requests before execution (method and path)
+  - Log all responses after execution (status code and message)
+  - Use appropriate log level (info for normal operations)
+  - Log format should match Rails: "CursorRunnerService: {message}"
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 5. CursorRunnerService Conversion
-- Reference the Rails implementation for behavior
+- Reference the Rails implementation at `jarek-va/app/services/cursor_runner_service.rb` for exact error handling behavior
+- Error classes may have been created in PHASE2-028, but this task ensures comprehensive error handling is implemented throughout all methods
+- Error handling should match Rails implementation exactly, including error message formats
+- The 422 status code is treated as a valid response (not an error) to allow callers to receive error details in the response body
+- All error messages should include the original error message for debugging purposes
+- Logging should occur for both successful and failed requests to aid in debugging
 
 - Task can be completed independently by a single agent
 
