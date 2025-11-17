@@ -10,29 +10,40 @@ Simplify complex logic to improve code quality and maintainability. This task fo
 
 ## Current State
 
+**Important**: This task should be executed **after Phase 2 conversion** when actual business logic has been implemented. If the application is still in early development with minimal source code, this task should focus on preparation and setup rather than simplification.
+
 Complex logic may have been identified through:
 
-- **PHASE4-004**: Complexity analysis (cyclomatic complexity, cognitive complexity metrics)
-- **PHASE4-010**: Complex business logic review (`docs/manual-code-review.md`)
-- **PHASE4-009**: Automated code quality report (consolidated findings from all automated tools)
-- **PHASE4-017**: Manual code review report (`docs/manual-code-review.md`)
+- **PHASE4-004**: Complexity analysis (cyclomatic complexity, cognitive complexity metrics) - **May not be completed yet**
+- **PHASE4-010**: Complex business logic review (`docs/manual-code-review.md`) - **Completed**
+- **PHASE4-009**: Automated code quality report (`docs/code-quality-report.md`) - **May not exist yet**
+- **PHASE4-017**: Manual code review report (`docs/manual-code-review.md`) - **Completed**
 
 **Manual Code Review Findings** (from PHASE4-017):
-- PHASE4-010 found no complex business logic at the time of review (early development stage)
+- PHASE4-010 found **no complex business logic** at the time of review (early development stage)
 - Application is in early development - complex logic may emerge after Phase 2 conversion
 - Test utilities reviewed: Low complexity, well-structured
+- **Current state**: `src/index.ts` is empty, no business logic implemented yet
 
 **Complexity Analysis Findings** (if PHASE4-004 is completed):
 - Check complexity analysis reports for functions with:
   - Cyclomatic complexity > 10 (high complexity)
   - Cyclomatic complexity > 20 (critical complexity)
   - Cognitive complexity > 15 (high cognitive load)
-- Check ESLint complexity rule violations: `npm run lint`
+- **Note**: ESLint complexity rules are currently **NOT enabled** in `.eslintrc.json`. If complexity analysis hasn't been run, enable ESLint complexity rules first (see PHASE4-004)
+- Check ESLint complexity rule violations: `npm run lint` (will only work if complexity rules are enabled)
 - Review files with highest average complexity scores
 
 **Automated Findings** (if PHASE4-009 is completed):
-- Check `docs/code-quality-report.md` for consolidated complexity findings
+- Check `docs/code-quality-report.md` for consolidated complexity findings - **File may not exist yet**
 - Review SonarQube reports (if configured) for complexity metrics
+
+**If No Complex Logic Exists** (Current State):
+- If no complex logic has been identified (e.g., early development stage, no business logic implemented):
+  - Complete preparation steps (enable complexity analysis, set up tooling)
+  - Document that no complex logic exists at this time
+  - Mark task as ready for execution after Phase 2 conversion
+  - Set up complexity monitoring for future code
 
 **Complex Logic Indicators**:
 1. **High Cyclomatic Complexity**: Functions with many decision points (>10)
@@ -46,26 +57,36 @@ Complex logic may have been identified through:
 ## Checklist
 
 ### Preparation and Prioritization
+- [ ] **If no complex logic exists yet** (early development stage):
+  - [ ] Document current state: no complex logic identified
+  - [ ] Enable ESLint complexity rules if PHASE4-004 hasn't been completed (add `complexity` rule to `.eslintrc.json`)
+  - [ ] Set up complexity monitoring for future code
+  - [ ] Mark task as ready for execution after Phase 2 conversion
+  - [ ] Skip to Documentation section to document current state
 - [ ] Review complexity analysis results from PHASE4-004 (if available)
 - [ ] Review complex business logic findings from PHASE4-010 (`docs/manual-code-review.md`)
-- [ ] Review automated code quality report (`docs/code-quality-report.md`) if PHASE4-009 is completed
+- [ ] Review automated code quality report (`docs/code-quality-report.md`) if PHASE4-009 is completed (file may not exist yet)
 - [ ] Review manual code review findings (`docs/manual-code-review.md`)
-- [ ] Run ESLint complexity checks: `npm run lint` (check for complexity rule violations)
+- [ ] **If ESLint complexity rules are not enabled**:
+  - [ ] Enable complexity rules in `.eslintrc.json` (see PHASE4-004 for configuration)
+  - [ ] Add `complexity: ["warn", 10]` and related rules (`max-depth`, `max-lines-per-function`, `max-params`)
+- [ ] Run ESLint complexity checks: `npm run lint` (check for complexity rule violations - only works if rules are enabled)
 - [ ] Review SonarQube reports (if available) for complexity metrics
-- [ ] Compile comprehensive list of all identified complex logic with:
+- [ ] **If complex logic exists**, compile comprehensive list of all identified complex logic with:
   - File locations and line numbers
   - Complexity metrics (cyclomatic, cognitive)
   - Function/method names
   - Description of complexity (nested conditionals, long functions, complex algorithms)
   - Impact on maintainability and readability
   - Estimated simplification effort
-- [ ] Prioritize complex logic simplification by:
+- [ ] **If complex logic exists**, prioritize complex logic simplification by:
   - Critical: Cyclomatic complexity > 20, cognitive complexity > 25
   - High: Cyclomatic complexity 11-20, cognitive complexity 16-25, deeply nested logic (>5 levels)
   - Medium: Cyclomatic complexity 6-10, cognitive complexity 10-15, moderate nesting (3-4 levels)
   - Low: Minor complexity improvements, readability enhancements
-- [ ] Create simplification plan with dependencies and order of execution
-- [ ] Ensure test coverage exists before simplification (add tests if needed)
+- [ ] **If complex logic exists**, create simplification plan with dependencies and order of execution
+- [ ] **If complex logic exists**, ensure test coverage exists before simplification (add tests if needed)
+- [ ] **If no complex logic exists**, document this finding and note that task should be revisited after Phase 2 conversion
 
 ### Identifying Complex Logic
 - [ ] Review all functions with cyclomatic complexity > 10
@@ -217,11 +238,14 @@ Complex logic may have been identified through:
 
 - This task is part of Phase 4: Code Quality Audit
 - Section: 3. Refactoring
+- **Execution Timing**: This task should be executed **after Phase 2 conversion** when actual business logic has been implemented. If the application is still in early development, focus on preparation and setup.
 - Focus on systematically addressing complex logic identified in previous tasks
 - Document all findings and improvements
 - **Important**: Always run tests after each simplification to ensure no functionality is broken
 - **Important**: Simplification should improve code quality without changing behavior
-- **Important**: If complexity analysis (PHASE4-004) is not available, work with manual review findings (PHASE4-017) and run ESLint complexity detection
+- **Important**: If complexity analysis (PHASE4-004) is not available, work with manual review findings (PHASE4-017) and enable ESLint complexity rules
+- **Important**: If no complex logic exists (current state), document this and set up complexity monitoring for future code
+- **Important**: ESLint complexity rules are currently NOT enabled - enable them if complexity analysis hasn't been run (see PHASE4-004)
 - Start with high-impact, low-risk simplifications
 - Consider dependencies between complex logic sections (some may need to be simplified together)
 - Not all complexity is bad - some algorithms are inherently complex. Focus on reducing unnecessary complexity and improving clarity
@@ -230,6 +254,7 @@ Complex logic may have been identified through:
 - Early returns and guard clauses are powerful tools for reducing nesting
 - Complex conditionals can often be simplified using lookup tables, maps, or strategy patterns
 - Task can be completed independently by a single agent, but may require multiple iterations if many complex logic sections are identified
+- **Current State**: Application is in early development - `src/index.ts` is empty, no business logic implemented. Manual code review found no complex business logic. Task should be revisited after Phase 2 conversion.
 
 ## Related Tasks
 
