@@ -6,23 +6,43 @@
 
 ## Description
 
-Convert implement send_message method from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/telegram_service.rb`.
+Convert and implement the `sendMessage` method from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/telegram_service.rb` (lines 14-37).
+
+The Rails implementation:
+- Takes `chat_id`, `text`, `parse_mode` (defaults to 'HTML'), and optional `reply_to_message_id`
+- Returns early if bot token is blank (similar to other methods in the service)
+- Escapes HTML entities when `parse_mode === 'HTML'` to prevent parsing errors with text that looks like HTML tags
+- Calls Telegram Bot API `sendMessage` endpoint
+- Logs errors and re-raises exceptions
 
 ## Checklist
 
-- [ ] Implement `sendMessage` method
-- [ ] Add HTML entity escaping
-- [ ] Handle parse_mode parameter
-- [ ] Add reply_to_message_id support
-- [ ] Add error handling
-- [ ] Reference `jarek-va/app/services/telegram_service.rb`
+- [ ] Implement `sendMessage` method with proper TypeScript signature:
+  - Parameters: `chatId: number | string`, `text: string`, `parseMode?: string` (default: 'HTML'), `replyToMessageId?: number`
+  - Return type: `Promise<TelegramApiResponse>` (or appropriate Telegram API response type)
+- [ ] Add early return check if bot token is blank (use the validation method from PHASE2-018)
+- [ ] Add HTML entity escaping logic:
+  - Only escape HTML entities when `parseMode === 'HTML'`
+  - Use `escapeHtmlEntities()` helper method (will be implemented in PHASE2-025, but can create a stub or inline implementation for now)
+  - Escape order: `&` first (to avoid double-escaping), then `<`, then `>`
+- [ ] Handle `parse_mode` parameter with default value 'HTML'
+- [ ] Add `replyToMessageId` optional parameter support
+- [ ] Make HTTP request to Telegram Bot API `sendMessage` endpoint using axios
+- [ ] Add comprehensive error handling:
+  - Wrap in try-catch block
+  - Log errors with descriptive messages (include error message and stack trace)
+  - Re-raise exceptions after logging (maintain Rails behavior)
+- [ ] Reference `jarek-va/app/services/telegram_service.rb` lines 14-37 for exact behavior
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 4. TelegramService Conversion
-- Reference the Rails implementation for behavior
-
+- Reference the Rails implementation (`jarek-va/app/services/telegram_service.rb` lines 14-37) for exact behavior
+- The Rails method uses `escape_html_entities` helper (lines 176-183) - this will be implemented in PHASE2-025, but you may need to create a temporary implementation or stub for this task
+- HTML escaping is critical to prevent Telegram from trying to parse text like "tcpsocket:(closed)" as HTML tags
+- Error handling should match Rails pattern: log error details, then re-raise the exception
+- Method should follow camelCase naming convention (`sendMessage` not `send_message`)
 - Task can be completed independently by a single agent
 
 ## Related Tasks
