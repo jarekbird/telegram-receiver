@@ -12,15 +12,23 @@ Create TypeScript type definitions for Redis callback data structures. These typ
 
 - [ ] Create `src/types/redis-callback.ts` file
 - [ ] Define `PendingRequestData` interface for stored callback data
-- [ ] Define properties: `chat_id`, `message_id`, `prompt`, `original_was_audio`, `created_at`
+- [ ] Define properties with correct TypeScript types:
+  - `chat_id`: number (Telegram chat ID)
+  - `message_id`: number (Telegram message ID)
+  - `prompt`: string (the user's message text/prompt)
+  - `original_was_audio`: boolean (whether the original message was an audio/voice message)
+  - `created_at`: string (ISO8601 formatted timestamp)
 - [ ] Export the interface
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 1. TypeScript Type Definitions
-- Reference `jarek-va/app/services/cursor_runner_callback_service.rb` for data structure
-- The data is stored as JSON in Redis with a TTL
+- Reference `jarek-va/app/services/cursor_runner_callback_service.rb` for service implementation
+- Reference `jarek-va/app/jobs/telegram_message_job.rb` (lines 191-199) for the actual data structure stored
+- The data is stored as JSON in Redis with a TTL (default: 3600 seconds / 1 hour)
+- The data structure matches what's stored in `telegram_message_job.rb` when calling `store_pending_request`
+- When retrieved, `original_was_audio` may be undefined/null and should default to `false` (see `cursor_runner_callback_controller.rb` line 104)
 - Task can be completed independently by a single agent
 
 ## Related Tasks
