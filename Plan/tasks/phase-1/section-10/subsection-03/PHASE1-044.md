@@ -15,7 +15,15 @@ The setup file should:
 - Provide global cleanup hooks (`afterAll`) for cleaning up after all tests complete
 - Set up any global mocks or test utilities needed across all tests
 
-**Rails Equivalent**: This task converts the functionality from `spec/spec_helper.rb` and `spec/rails_helper.rb` in the jarek-va Rails application. The Rails helpers set `ENV['RAILS_ENV'] = 'test'`, load the Rails environment, include FactoryBot, load support files, and configure Sidekiq test helpers to clear queues before each test.
+**Rails Equivalent**: This task converts the functionality from `spec/spec_helper.rb` and `spec/rails_helper.rb` in the jarek-va Rails application. The Rails helpers:
+- Set `ENV['RAILS_ENV'] = 'test'` (in `rails_helper.rb`)
+- Load the Rails environment and RSpec Rails
+- Include FactoryBot methods for test data creation
+- Load support files (including `spec/support/sidekiq.rb` which clears ActiveJob queues before each test)
+- Configure transactional fixtures for database tests
+- Check for pending migrations before running tests
+
+Note: `spec_helper.rb` contains basic RSpec configuration (expectations, mocks) but does not set the test environment variable. The environment variable is set in `rails_helper.rb`, which also requires `spec_helper.rb`.
 
 ## Checklist
 
@@ -34,6 +42,7 @@ The setup file should:
   - [ ] Clear mocks before each test to ensure test isolation
   - [ ] Reset Redis mocks using `resetRedisMocks()` from `tests/mocks/redis.ts`
   - [ ] Reset Telegram API mocks using `resetTelegramApiMocks()` from `tests/mocks/telegramApi.ts`
+  - [ ] Reset Cursor Runner API mocks using `resetCursorRunnerApiMocks()` from `tests/mocks/cursorRunnerApi.ts`
 - [ ] Add `afterEach` hook for per-test cleanup (optional, but recommended)
   - [ ] Clear any test-specific state
   - [ ] Ensure no async operations are left hanging
@@ -49,7 +58,7 @@ The setup file should:
 - This file is automatically loaded by Jest via `setupFilesAfterEnv` configuration in `jest.config.ts` (configured in PHASE1-043)
 - The setup file runs before each test file, similar to how `rails_helper.rb` runs before each RSpec test file
 - Unlike Rails which uses `before` blocks in `spec/support/sidekiq.rb` to clear queues, Jest uses `beforeEach` hooks for per-test setup
-- Mock reset functions are available in `tests/mocks/redis.ts` and `tests/mocks/telegramApi.ts` and should be used in `beforeEach` hooks
+- Mock reset functions are available in `tests/mocks/redis.ts`, `tests/mocks/telegramApi.ts`, and `tests/mocks/cursorRunnerApi.ts` and should be used in `beforeEach` hooks
 - Test utilities are available in `tests/helpers/testUtils.ts` and don't need to be re-exported from setup.ts
 
 ## Related Tasks
