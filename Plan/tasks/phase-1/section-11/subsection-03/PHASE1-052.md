@@ -30,7 +30,15 @@ The Rails application (`jarek-va`) has a CI workflow setup that includes:
 ### Node.js Setup
 - Use `actions/setup-node@v4` (or latest version)
 - Specify Node.js version: `18` or `18.x` (matches package.json engines requirement: >=18.0.0)
-- Enable caching by setting `cache: 'npm'` in the setup-node action (caches node_modules based on package-lock.json)
+- Enable caching by setting `cache: 'npm'` in the setup-node action's `with` block (caches node_modules based on package-lock.json)
+- Example YAML structure:
+  ```yaml
+  - name: Set up Node.js
+    uses: actions/setup-node@v4
+    with:
+      node-version: '18'
+      cache: 'npm'
+  ```
 
 ### Checkout Configuration
 - Use `actions/checkout@v4` (or latest version)
