@@ -44,7 +44,7 @@ Convert the admin authentication middleware from Rails to TypeScript/Node.js. Th
 - [ ] Compare provided secret with expected secret
 - [ ] Return 401 Unauthorized if secret doesn't match or is missing
 - [ ] Call `next()` if valid
-- [ ] Add debug logging in test/development mode when authentication fails (log secret values, headers, env vars, and query params)
+- [ ] Add debug logging in test/development mode when authentication fails (log: found secret value, expected secret value, header value, query param value, and body param value if available)
 - [ ] Export middleware function for use in route handlers
 
 ## Notes
