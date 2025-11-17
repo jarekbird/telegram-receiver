@@ -25,14 +25,22 @@ The complete flow includes:
 ## Checklist
 
 - [ ] Create `tests/e2e/telegram-message-flow.test.ts` using Supertest
+- [ ] Test webhook authentication:
+  - [ ] Webhook endpoint requires `X-Telegram-Bot-Api-Secret-Token` header when secret is configured
+  - [ ] Returns 401 Unauthorized when secret token is missing or invalid
+  - [ ] Accepts requests without secret when webhook secret is not configured (development mode)
 - [ ] Test complete text message flow:
-  - [ ] Webhook receives message update
-  - [ ] Message is enqueued for processing
+  - [ ] Webhook receives message update with valid authentication
+  - [ ] Returns 200 OK immediately (before processing)
+  - [ ] Message is enqueued for processing (job queue)
   - [ ] Non-command message is forwarded to cursor-runner
-  - [ ] Pending request is stored in Redis
-  - [ ] Callback is received from cursor-runner
+  - [ ] Request ID is generated in format `telegram-{timestamp}-{random_hex}`
+  - [ ] Pending request is stored in Redis with key prefix `cursor_runner_callback:`
+  - [ ] Pending request includes: chat_id, message_id, prompt, original_was_audio, created_at
+  - [ ] Pending request has TTL of 3600 seconds (1 hour)
+  - [ ] Callback is received from cursor-runner with matching request_id
   - [ ] Response is sent back to Telegram
-  - [ ] Pending request is cleaned up from Redis
+  - [ ] Pending request is cleaned up from Redis after callback processing
 - [ ] Test audio transcription flow:
   - [ ] Webhook receives voice/audio message
   - [ ] Audio file is downloaded from Telegram
@@ -40,14 +48,25 @@ The complete flow includes:
   - [ ] Transcribed text is processed as regular message
   - [ ] Response is sent as audio (if original was audio and audio output enabled)
   - [ ] Audio files are cleaned up after processing
+- [ ] Test callback authentication:
+  - [ ] Callback endpoint requires `X-Webhook-Secret` header or `secret` query parameter
+  - [ ] Returns 401 Unauthorized when secret is missing or invalid
+  - [ ] Accepts requests without secret when webhook secret is not configured (development mode)
 - [ ] Test callback response flow:
-  - [ ] Callback is received with success result
-  - [ ] Pending request is retrieved from Redis
+  - [ ] Callback is received with success result and valid authentication
+  - [ ] Returns 200 OK to cursor-runner (even on errors, to prevent retries)
+  - [ ] Pending request is retrieved from Redis using request_id
   - [ ] Response is formatted (with/without debug metadata based on CURSOR_DEBUG setting)
-  - [ ] Response is sent to Telegram (Markdown with HTML fallback)
-  - [ ] Pending request is removed from Redis
-  - [ ] Test callback with failed result
-  - [ ] Test callback with unknown request_id
+  - [ ] Response is sent to Telegram with parse mode fallback sequence:
+    - [ ] First attempt: Markdown parse mode
+    - [ ] Falls back to HTML parse mode if Markdown parsing fails
+    - [ ] Falls back to plain text (no parse_mode) if HTML parsing fails
+  - [ ] ANSI escape sequences are cleaned from output
+  - [ ] Long output (>4000 chars) is truncated with "..." suffix
+  - [ ] Pending request is removed from Redis after successful processing
+  - [ ] Test callback with failed result (success: false)
+  - [ ] Test callback with unknown request_id (logs warning, returns 200 OK)
+  - [ ] Test callback with missing request_id (returns 400 Bad Request)
 - [ ] Test local command handling:
   - [ ] `/start` command returns welcome message
   - [ ] `/help` command returns help message
@@ -56,36 +75,81 @@ The complete flow includes:
 - [ ] Test edited message flow:
   - [ ] Edited message is processed same as regular message
 - [ ] Test callback query flow:
-  - [ ] Callback query is answered
-  - [ ] Callback data is forwarded to cursor-runner
+  - [ ] Callback query is answered with "Processing..." text
+  - [ ] Callback data is extracted and forwarded to cursor-runner as prompt
+  - [ ] Chat info is extracted from callback query message
 - [ ] Test error handling:
-  - [ ] Error during message processing sends error message to user
-  - [ ] Error during callback processing sends error message to user
-  - [ ] Missing chat_id prevents error message sending
-  - [ ] Error sending message is logged but doesn't crash
+  - [ ] Error during webhook processing (e.g., job enqueue failure):
+    - [ ] Returns 200 OK to Telegram (to avoid retries)
+    - [ ] Logs the error
+    - [ ] Sends error message to user if chat_id is available
+    - [ ] Error message includes error details and is sent with HTML parse mode
+  - [ ] Error during message processing (in job):
+    - [ ] Sends error message to user with chat_id and message_id
+    - [ ] Error message format: "Sorry, I encountered an error processing your message: {error}"
+    - [ ] Re-raises error to mark job as failed
+  - [ ] Error during callback processing:
+    - [ ] Returns 200 OK to cursor-runner (to prevent retries)
+    - [ ] Logs the error
+    - [ ] Sends error message to user if chat_id is available
+    - [ ] Error message format: "❌ Error processing cursor command result: {error}"
+  - [ ] Missing chat_id prevents error message sending (no crash)
+  - [ ] Error sending error message is logged but doesn't crash the process
 - [ ] Test CURSOR_DEBUG behavior:
-  - [ ] When disabled: no acknowledgment message, simple output format
-  - [ ] When enabled: acknowledgment message sent, formatted output with metadata
+  - [ ] When disabled (default):
+    - [ ] No acknowledgment message sent when forwarding to cursor-runner
+    - [ ] Callback response contains only raw output (no metadata)
+    - [ ] Output is not wrapped in code blocks
+    - [ ] Output truncation limit is 4000 characters
+  - [ ] When enabled:
+    - [ ] Acknowledgment message sent: "⏳ Processing your request... I'll send the results when complete."
+    - [ ] Callback response contains formatted output with metadata:
+      - [ ] Success indicator: "✅ Cursor command completed successfully"
+      - [ ] Iterations count: "📊 Iterations: {count}"
+      - [ ] Duration: "⏱ Duration: {duration}"
+      - [ ] Output wrapped in HTML code blocks: `<pre><code>{output}</code></pre>`
+      - [ ] Warnings section if error field present (even on success)
+    - [ ] Output truncation limit is 3500 characters (leaves room for metadata)
+    - [ ] Failed results show detailed error message with "❌ Cursor command failed" prefix
 - [ ] Test audio output behavior:
-  - [ ] When original message was audio and audio output enabled: response sent as voice
-  - [ ] When audio output disabled: response sent as text
-  - [ ] Audio generation failure falls back to text
-- [ ] Use test fixtures from `tests/fixtures/telegramMessages.ts`
-- [ ] Mock external services (Telegram API, Cursor Runner API, ElevenLabs)
-- [ ] Use Redis test instance for callback state management
+  - [ ] When original message was audio and `allow_audio_output` setting is enabled:
+    - [ ] Response is sent as voice message using `send_voice`
+    - [ ] Generated audio file is cleaned up after sending
+  - [ ] When `allow_audio_output` setting is disabled: response sent as text message
+  - [ ] Audio generation failure falls back to text message
+  - [ ] Audio file cleanup errors are logged but don't crash the process
+- [ ] Use test fixtures from `tests/fixtures/telegramMessages.ts` (expand fixtures as needed for E2E tests)
+- [ ] Mock external services (Telegram Bot API, Cursor Runner API, ElevenLabs API)
+- [ ] Use real Redis test instance for callback state management (not mocked)
+- [ ] Use real job queue for message processing (not mocked)
 - [ ] Verify all components work together (webhook → job → cursor-runner → callback → Telegram)
+- [ ] Verify Redis key structure: `cursor_runner_callback:{request_id}`
+- [ ] Verify request_id format: `telegram-{timestamp}-{random_hex}`
+- [ ] Verify pending request data structure matches expected format
 
 ## Test Structure
 
 The E2E test should:
 - Use Supertest to make HTTP requests to the Express app
-- Mock external APIs (Telegram Bot API, Cursor Runner API, ElevenLabs API)
-- Use a test Redis instance for callback state
-- Use fixtures for Telegram message structures
-- Test the complete flow without mocking internal services
-- Verify Redis state changes (pending request storage/retrieval/cleanup)
-- Verify HTTP responses and status codes
-- Verify external API calls (mocked) are made with correct parameters
+- Mock external APIs (Telegram Bot API, Cursor Runner API, ElevenLabs API) using nock or similar
+- Use a real test Redis instance for callback state (not mocked)
+- Use a real job queue for message processing (not mocked)
+- Use fixtures for Telegram message structures (expand fixtures as needed)
+- Test the complete flow without mocking internal services (Redis, job queue)
+- Verify Redis state changes:
+  - [ ] Pending request storage with correct key format and TTL
+  - [ ] Pending request retrieval by request_id
+  - [ ] Pending request cleanup after processing
+- Verify HTTP responses and status codes:
+  - [ ] Webhook endpoint returns 200 OK immediately
+  - [ ] Webhook endpoint returns 401 Unauthorized for invalid auth
+  - [ ] Callback endpoint returns 200 OK (even on errors)
+  - [ ] Callback endpoint returns 400 Bad Request for missing request_id
+  - [ ] Callback endpoint returns 401 Unauthorized for invalid auth
+- Verify external API calls (mocked) are made with correct parameters:
+  - [ ] Telegram API calls: sendMessage, sendVoice, downloadFile, answerCallbackQuery
+  - [ ] Cursor Runner API calls: iterate with correct parameters (repository, branch_name, prompt, request_id)
+  - [ ] ElevenLabs API calls: transcribe, synthesize
 
 ## Notes
 
