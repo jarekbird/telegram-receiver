@@ -23,6 +23,7 @@ This task creates the `.env.development` file by copying the template from `.env
 - [ ] Set `LOG_LEVEL=debug` (more verbose logging for development, matches Rails development logging)
 - [ ] Set `TELEGRAM_WEBHOOK_BASE_URL=http://localhost:3000` (local development URL)
 - [ ] Set `CURSOR_RUNNER_URL=http://localhost:3001` (local development URL for cursor-runner service)
+- [ ] Set `CURSOR_RUNNER_TIMEOUT=300` (copy from `.env.example`, matches Rails default timeout)
 - [ ] Set `REDIS_URL=redis://localhost:6379` (local Redis instance)
 - [ ] Use placeholder values for secrets (TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET, WEBHOOK_SECRET, ELEVENLABS_API_KEY)
 - [ ] Add header comment indicating this is a development environment configuration file
