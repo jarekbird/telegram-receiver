@@ -6,23 +6,95 @@
 
 ## Description
 
-Convert write e2e tests for complete message flow from Rails to TypeScript/Node.js.
+Write comprehensive E2E tests for the complete Telegram message flow. These tests should verify the end-to-end flow from webhook receipt through message processing, cursor-runner integration, and callback handling. The tests should use Supertest to test the full HTTP stack and verify all components work together correctly.
+
+## Rails Reference
+
+The Rails implementation does not have explicit E2E tests, but the complete flow is tested through:
+- `spec/controllers/telegram_controller_spec.rb` - Webhook endpoint tests
+- `spec/jobs/telegram_message_job_spec.rb` - Message processing tests
+- `spec/controllers/cursor_runner_callback_controller_spec.rb` - Callback handling tests
+
+The complete flow includes:
+1. **Webhook Receipt** (`TelegramController#webhook`) - Receives Telegram updates
+2. **Message Processing** (`TelegramMessageJob#perform`) - Processes messages, handles audio transcription
+3. **Cursor Runner Integration** - Forwards non-command messages to cursor-runner
+4. **Callback Handling** (`CursorRunnerCallbackController#create`) - Receives and processes cursor-runner callbacks
+5. **Response Delivery** - Sends formatted responses back to Telegram
 
 ## Checklist
 
-- [ ] Create `tests/e2e/telegram-message-flow.test.ts`
-- [ ] Test complete message flow
-- [ ] Test audio transcription flow
-- [ ] Test callback response flow
-- [ ] Use test fixtures
-- [ ] Verify all components work together
+- [ ] Create `tests/e2e/telegram-message-flow.test.ts` using Supertest
+- [ ] Test complete text message flow:
+  - [ ] Webhook receives message update
+  - [ ] Message is enqueued for processing
+  - [ ] Non-command message is forwarded to cursor-runner
+  - [ ] Pending request is stored in Redis
+  - [ ] Callback is received from cursor-runner
+  - [ ] Response is sent back to Telegram
+  - [ ] Pending request is cleaned up from Redis
+- [ ] Test audio transcription flow:
+  - [ ] Webhook receives voice/audio message
+  - [ ] Audio file is downloaded from Telegram
+  - [ ] Audio is transcribed using ElevenLabs service
+  - [ ] Transcribed text is processed as regular message
+  - [ ] Response is sent as audio (if original was audio and audio output enabled)
+  - [ ] Audio files are cleaned up after processing
+- [ ] Test callback response flow:
+  - [ ] Callback is received with success result
+  - [ ] Pending request is retrieved from Redis
+  - [ ] Response is formatted (with/without debug metadata based on CURSOR_DEBUG setting)
+  - [ ] Response is sent to Telegram (Markdown with HTML fallback)
+  - [ ] Pending request is removed from Redis
+  - [ ] Test callback with failed result
+  - [ ] Test callback with unknown request_id
+- [ ] Test local command handling:
+  - [ ] `/start` command returns welcome message
+  - [ ] `/help` command returns help message
+  - [ ] `/status` command returns status message
+  - [ ] Commands are not forwarded to cursor-runner
+- [ ] Test edited message flow:
+  - [ ] Edited message is processed same as regular message
+- [ ] Test callback query flow:
+  - [ ] Callback query is answered
+  - [ ] Callback data is forwarded to cursor-runner
+- [ ] Test error handling:
+  - [ ] Error during message processing sends error message to user
+  - [ ] Error during callback processing sends error message to user
+  - [ ] Missing chat_id prevents error message sending
+  - [ ] Error sending message is logged but doesn't crash
+- [ ] Test CURSOR_DEBUG behavior:
+  - [ ] When disabled: no acknowledgment message, simple output format
+  - [ ] When enabled: acknowledgment message sent, formatted output with metadata
+- [ ] Test audio output behavior:
+  - [ ] When original message was audio and audio output enabled: response sent as voice
+  - [ ] When audio output disabled: response sent as text
+  - [ ] Audio generation failure falls back to text
+- [ ] Use test fixtures from `tests/fixtures/telegramMessages.ts`
+- [ ] Mock external services (Telegram API, Cursor Runner API, ElevenLabs)
+- [ ] Use Redis test instance for callback state management
+- [ ] Verify all components work together (webhook → job → cursor-runner → callback → Telegram)
+
+## Test Structure
+
+The E2E test should:
+- Use Supertest to make HTTP requests to the Express app
+- Mock external APIs (Telegram Bot API, Cursor Runner API, ElevenLabs API)
+- Use a test Redis instance for callback state
+- Use fixtures for Telegram message structures
+- Test the complete flow without mocking internal services
+- Verify Redis state changes (pending request storage/retrieval/cleanup)
+- Verify HTTP responses and status codes
+- Verify external API calls (mocked) are made with correct parameters
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 13. Testing
-- Reference the Rails implementation for behavior
-
+- Reference the Rails implementation in `jarek-va/spec/` for behavior expectations
+- E2E tests should use Supertest (not Playwright) since this is a backend API
+- Tests should verify the complete flow from webhook receipt to Telegram response
+- Mock external services but use real internal services (Redis, job queue)
 - Task can be completed independently by a single agent
 
 ## Related Tasks
