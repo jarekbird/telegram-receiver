@@ -6,21 +6,48 @@
 
 ## Description
 
-Test Docker build
+Test the Docker build process for the telegram-receiver Node.js/TypeScript application. This task verifies that the Dockerfile created in PHASE1-036 builds successfully, produces a working container image, and that the containerized application starts correctly and responds to health checks. This ensures the Docker configuration is correct before proceeding with docker-compose testing in PHASE1-041.
+
+## Prerequisites
+
+- PHASE1-036 (Create Dockerfile) must be completed
+- Dockerfile must exist in the project root
+- `.dockerignore` file should exist (from PHASE1-037)
 
 ## Checklist
 
-- [ ] Run `docker build -t jarek-va .`
-- [ ] Verify build completes without errors
-- [ ] Run container: `docker run -p 3000:3000 jarek-va`
-- [ ] Test health endpoint
-- [ ] Stop container
+- [ ] Verify Dockerfile exists in project root
+- [ ] Verify `.dockerignore` file exists (from PHASE1-037)
+- [ ] Run `docker build -t telegram-receiver .` (or `telegram-receiver:latest`)
+- [ ] Verify build completes without errors or warnings
+- [ ] Verify image was created: `docker images telegram-receiver`
+- [ ] Run container: `docker run -d -p 3000:3000 --name telegram-receiver-test telegram-receiver`
+- [ ] Wait a few seconds for container to start
+- [ ] Check container logs: `docker logs telegram-receiver-test` (verify no errors)
+- [ ] Test health endpoint: `curl http://localhost:3000/health` (should return 200 OK)
+- [ ] Verify health endpoint response contains expected JSON structure
+- [ ] Check container status: `docker ps` (container should be running)
+- [ ] Stop container: `docker stop telegram-receiver-test`
+- [ ] Remove container: `docker rm telegram-receiver-test`
+- [ ] (Optional) Remove test image: `docker rmi telegram-receiver` (if not needed for next task)
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 9. Docker Configuration
 - Task can be completed independently by a single agent
+- **Prerequisites**: This task requires PHASE1-036 (Create Dockerfile) to be completed first
+- The Docker image tag should be `telegram-receiver` (not `jarek-va`) to match the project name
+- The health endpoint should be accessible at `http://localhost:3000/health` when the container is running
+- Use `docker run -d` (detached mode) to run the container in the background
+- Use `--name` flag to give the container a specific name for easier management
+- Container should expose port 3000 (matching the PORT environment variable)
+- After testing, clean up containers and optionally images to avoid cluttering Docker
+- If the build fails, check:
+  - Dockerfile syntax is correct
+  - All required files are present (package.json, tsconfig.json, src/, etc.)
+  - `.dockerignore` is not excluding necessary files
+  - Node.js version matches the engines requirement in package.json
 
 ## Related Tasks
 
