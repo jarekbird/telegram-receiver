@@ -23,11 +23,25 @@ Create TypeScript type definitions for BullMQ job payloads. These types define t
 - Section: 1. TypeScript Type Definitions
 - Reference `jarek-va/app/jobs/telegram_message_job.rb` for job payload structure
   - The `perform` method accepts `update` parameter (Hash or JSON string)
-  - In TypeScript/BullMQ, the payload will be an object containing the Telegram update
+  - In Rails: `TelegramMessageJob.perform_later(update.to_json)` passes update as JSON string
+  - In TypeScript/BullMQ, the payload will be an object containing the Telegram update (no JSON string conversion needed)
 - The payload will contain the Telegram update object (as defined in PHASE2-001)
 - This type will be used when enqueueing jobs with BullMQ: `queue.add('telegram-message', { update: telegramUpdate })`
+- The `TelegramMessageJobPayload` interface should have a required `update` property of type `TelegramUpdate`
 - Task can be completed independently by a single agent
 - **Dependency**: PHASE2-001 must be completed first (creates TelegramUpdate type)
+
+### Implementation Details
+
+Based on the Rails implementation analysis:
+
+1. **Payload Structure**: The Rails job's `perform` method accepts a single `update` parameter. In BullMQ, this becomes a payload object with an `update` property.
+
+2. **Type Safety**: The payload type ensures type safety when enqueueing jobs and when processing them in the job processor.
+
+3. **Usage Pattern**: 
+   - When enqueueing: `queue.add('telegram-message', { update: telegramUpdate } as TelegramMessageJobPayload)`
+   - In job processor: `async (job: Job<TelegramMessageJobPayload>) => { const { update } = job.data; ... }`
 
 ## Related Tasks
 
