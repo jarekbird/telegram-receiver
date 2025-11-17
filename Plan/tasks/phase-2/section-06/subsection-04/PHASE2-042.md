@@ -17,21 +17,20 @@ Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callb
   - Return type: `void` (method doesn't return a value)
 - [ ] Use private `redisKey(requestId: string)` helper method to generate Redis key with prefix
   - The helper method prepends `REDIS_KEY_PREFIX` constant (`'cursor_runner_callback:'`) to the request ID
-- [ ] Delete key from Redis using the appropriate method based on Redis client package:
-  - If using `redis` package: use `redis.del(key)` (matches Rails API)
-  - If using `ioredis` package: use `redis.del(key)` (ioredis also supports del)
-  - Use the generated Redis key
-  - Note: `del()` returns the number of keys deleted (0 if key didn't exist, 1 if deleted)
+- [ ] Delete key from Redis using `ioredis` package (project standard from PHASE2-039)
+  - Use `redis.del(key)` method with the generated Redis key
+  - Note: `del()` returns a number (count of keys deleted: 0 if key didn't exist, 1 if deleted)
   - The Rails implementation doesn't check the return value, so TypeScript implementation can also ignore it
 - [ ] Add error handling for Redis operations
   - Handle Redis connection errors
   - Handle Redis operation errors
-  - Log errors appropriately
+  - Log errors using `console.error()` (matching PHASE2-039 convention)
   - Consider whether to throw errors or handle gracefully (Rails version doesn't have explicit error handling, but TypeScript should add it for robustness)
+  - Note: Error handling details will be refined in PHASE2-043
 - [ ] Log successful operation with info level
   - Log message should include: request ID
   - Format: `"Removed pending cursor-runner request: {requestId}"`
-  - Use the project's logging system (check existing logger usage in the codebase)
+  - Use `console.log()` for logging (matching PHASE2-039 convention, as no logger utility exists yet in the project)
 
 ## Notes
 
@@ -53,10 +52,10 @@ Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callb
 - Parameters: `requestId: string`
 - Return type: `void` (method doesn't return a value)
 - Use the private `redisKey()` helper method that should already exist from PHASE2-039
-- Use Redis client's `del()` method (both `redis` and `ioredis` packages support `del(key)` which matches the Rails API)
+- Use `ioredis` package (project standard from PHASE2-039) - Redis client's `del()` method
   - Note: `del()` returns a number (count of keys deleted), but the return value can be ignored
-- Add proper error handling (try/catch) for Redis operations and log errors
-- Use appropriate logger (check project's logging setup - may be console.log, winston, pino, etc.)
+- Add proper error handling (try/catch) for Redis operations and log errors using `console.error()`
+- Use `console.log()` for info logging (matching PHASE2-039 convention, as no logger utility exists yet in the project)
 - Ensure method is added to the `CursorRunnerCallbackService` class created in PHASE2-039
 
 **Dependencies:**
