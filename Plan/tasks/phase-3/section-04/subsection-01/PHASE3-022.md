@@ -6,17 +6,73 @@
 
 ## Description
 
-Review and improve review file/folder structure in the codebase to ensure best practices.
+Review and improve the file/folder structure in the codebase to ensure best practices and alignment with the architecture documentation. This task focuses on validating the directory organization, identifying missing directories, checking naming conventions, and ensuring the structure supports the application's requirements.
 
 ## Checklist
 
-- [ ] Review directory structure
-- [ ] Check for logical organization
-- [ ] Review file naming conventions
-- [ ] Check for misplaced files
-- [ ] Review module organization
-- [ ] Identify structural improvements
-- [ ] Document structure
+### Directory Structure Review
+
+- [ ] Verify all directories mentioned in `docs/architecture.md` exist in `src/`
+  - [ ] `src/config/` - Configuration files
+  - [ ] `src/controllers/` - Request/response handlers
+  - [ ] `src/middleware/` - Express middleware
+  - [ ] `src/models/` - Data models
+  - [ ] `src/routes/` - Route definitions
+  - [ ] `src/services/` - Business logic services
+  - [ ] `src/types/` - TypeScript type definitions
+  - [ ] `src/utils/` - Utility functions
+  - [ ] `src/jobs/` - Background job processors (BullMQ jobs) - **MISSING, needs to be added**
+  - [ ] `src/errors/` - Custom error classes - **MISSING, needs to be added**
+  - [ ] `src/validators/` - Request validation schemas/functions - **MISSING, needs to be added**
+
+### File Naming Conventions
+
+- [ ] Verify TypeScript files use `.ts` extension
+- [ ] Verify test files follow naming pattern: `*.test.ts` or `*.spec.ts`
+- [ ] Check that file names use kebab-case or camelCase consistently
+- [ ] Verify index files are named `index.ts` where appropriate
+- [ ] Check that configuration files follow standard naming (`.eslintrc.json`, `.prettierrc.json`, etc.)
+
+### Directory Organization
+
+- [ ] Verify empty directories use `.gitkeep` files appropriately
+- [ ] Check for misplaced files (e.g., source files in root, config files in wrong locations)
+- [ ] Verify test directory structure mirrors `src/` structure
+- [ ] Check that `tests/` has proper organization:
+  - [ ] `tests/unit/` mirrors `src/` structure
+  - [ ] `tests/integration/` has appropriate subdirectories
+  - [ ] `tests/e2e/` exists for end-to-end tests
+  - [ ] `tests/fixtures/` contains test data
+  - [ ] `tests/mocks/` contains mock implementations
+  - [ ] `tests/helpers/` contains test utilities
+
+### Missing Components
+
+- [ ] Create `src/jobs/` directory for BullMQ job processors (as mentioned in architecture.md)
+- [ ] Create `src/errors/` directory for custom error classes (TelegramApiError, CursorRunnerApiError, etc.)
+- [ ] Create `src/validators/` directory for request validation schemas/functions
+- [ ] Verify each directory has appropriate `.gitkeep` file if empty
+
+### Module Organization
+
+- [ ] Verify separation of concerns between layers (routes → controllers → services → models)
+- [ ] Check that middleware is properly organized in `src/middleware/`
+- [ ] Verify services are organized logically (consider subdirectories for related services)
+- [ ] Check that types are properly organized and exported from `src/types/`
+
+### Structural Improvements
+
+- [ ] Document any structural improvements needed
+- [ ] Identify any directories that should be created
+- [ ] Identify any directories that should be removed or consolidated
+- [ ] Check for consistency with Node.js/TypeScript best practices
+- [ ] Verify alignment with Express.js conventions
+
+### Documentation
+
+- [ ] Update `docs/architecture.md` if structure changes are made
+- [ ] Document any deviations from standard patterns and rationale
+- [ ] Ensure directory structure is documented clearly
 
 ## Notes
 
@@ -26,6 +82,40 @@ Review and improve review file/folder structure in the codebase to ensure best p
 - Document findings and decisions
 
 - Task can be completed independently by a single agent
+
+## Evaluation Findings
+
+### Current Structure Status
+
+**Existing Directories:**
+- ✅ `src/config/` - Exists (empty, has .gitkeep)
+- ✅ `src/controllers/` - Exists (empty, has .gitkeep)
+- ✅ `src/middleware/` - Exists (empty, has .gitkeep)
+- ✅ `src/models/` - Exists (empty, has .gitkeep)
+- ✅ `src/routes/` - Exists (empty, has .gitkeep)
+- ✅ `src/services/` - Exists (empty, has .gitkeep)
+- ✅ `src/types/` - Exists (empty, has .gitkeep)
+- ✅ `src/utils/` - Exists (empty, has .gitkeep)
+
+**Missing Directories (mentioned in architecture.md):**
+- ❌ `src/jobs/` - Missing (needed for BullMQ job processors)
+- ❌ `src/errors/` - Missing (needed for custom error classes like TelegramApiError)
+- ❌ `src/validators/` - Missing (needed for request validation)
+
+**Test Structure:**
+- ✅ Well-organized with `unit/`, `integration/`, `e2e/`, `fixtures/`, `mocks/`, `helpers/`
+- ✅ Test directory structure mirrors `src/` structure appropriately
+
+**Configuration Files:**
+- ✅ Properly organized in root directory
+- ✅ Standard naming conventions followed (.eslintrc.json, .prettierrc.json, tsconfig.json)
+
+### Recommendations
+
+1. **Create Missing Directories**: Add `src/jobs/`, `src/errors/`, and `src/validators/` directories with .gitkeep files
+2. **Verify Architecture Alignment**: Ensure all directories mentioned in `docs/architecture.md` are created
+3. **Naming Consistency**: Verify file naming follows kebab-case or camelCase consistently (to be checked when files are added)
+4. **Documentation**: Update architecture.md if any structural changes are made during review
 
 ## Related Tasks
 
