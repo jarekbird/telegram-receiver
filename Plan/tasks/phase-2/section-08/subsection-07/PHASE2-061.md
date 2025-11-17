@@ -6,15 +6,37 @@
 
 ## Description
 
-Convert implement admin authentication middleware from Rails to TypeScript/Node.js. Reference `jarek-va/app/controllers/*_controller.rb` files.
+Convert the admin authentication middleware from Rails to TypeScript/Node.js. This middleware protects admin endpoints (set_webhook, webhook_info, delete_webhook) by validating the admin secret.
+
+**Rails Implementation Reference:**
+- Controller: `jarek-va/app/controllers/telegram_controller.rb` (lines 110-130)
+- Configuration: `jarek-va/config/application.rb` (lines 22-25)
+- Used in endpoints: `set_webhook` (line 52), `webhook_info` (line 74), `delete_webhook` (line 92)
+
+**Rails Implementation Details:**
+- The `authenticate_admin` method is a protected method in TelegramController
+- Checks for admin secret from multiple sources (in order):
+  1. `request.headers['X-Admin-Secret']` (header)
+  2. `request.env['HTTP_X_ADMIN_SECRET']` (Rails converts headers to env vars)
+  3. `params[:admin_secret]` (query parameter)
+  4. `params['admin_secret']` (query parameter as string)
+- Compares against `Rails.application.config.webhook_secret`
+- Returns boolean (true/false) - the calling code returns `401 Unauthorized` if false
+- Has debug logging in test environment when authentication fails (logs secret values, headers, env vars, and params)
+- The secret is configured in `application.rb` from Rails credentials or ENV variable `WEBHOOK_SECRET` (defaults to 'changeme')
 
 ## Checklist
 
-- [ ] Create `authenticateAdmin` middleware function
-- [ ] Check X-Admin-Secret header
-- [ ] Compare with configured secret
-- [ ] Return 401 if invalid
-- [ ] Add debug logging in test mode
+- [ ] Create `authenticateAdmin` middleware function in `src/middleware/` directory
+- [ ] Check for admin secret from multiple sources (in order):
+  - [ ] `X-Admin-Secret` header
+  - [ ] `HTTP_X_ADMIN_SECRET` environment variable (Express converts headers to env vars)
+  - [ ] `admin_secret` query parameter
+- [ ] Get expected secret from application configuration (similar to Rails `webhook_secret`)
+- [ ] Compare provided secret with expected secret
+- [ ] Return 401 Unauthorized if secret doesn't match or is missing
+- [ ] Add debug logging in test/development mode when authentication fails (log secret values, headers, env vars, and query params)
+- [ ] Export middleware function for use in route handlers
 
 ## Notes
 
