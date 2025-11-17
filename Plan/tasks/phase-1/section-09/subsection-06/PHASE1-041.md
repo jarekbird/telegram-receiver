@@ -24,12 +24,15 @@ Test the docker-compose.prod.yml configuration for the telegram-receiver Node.js
 - [ ] Verify `.dockerignore` file exists (from PHASE1-037)
 - [ ] Verify `virtual-assistant-network` exists: `docker network ls | grep virtual-assistant-network`
   - [ ] If missing, create it: `docker network create virtual-assistant-network`
+- [ ] Verify worker script/entry point exists (required for worker service):
+  - [ ] Check if `package.json` has `"worker"` script defined, OR
+  - [ ] Verify worker entry point exists (e.g., `dist/worker.js` or `src/worker.ts`)
+  - [ ] Note: If worker script doesn't exist, it must be created before testing (see PHASE1-039 notes)
 - [ ] Set up required environment variables (create `.env` file or export):
   - [ ] `DOMAIN_NAME` (e.g., `localhost` for testing)
   - [ ] `ACME_EMAIL` (for Let's Encrypt, e.g., `admin@example.com`)
   - [ ] `TELEGRAM_BOT_TOKEN` (if needed for app startup)
   - [ ] `CURSOR_RUNNER_TIMEOUT` (optional, defaults to 300)
-  - [ ] `RAILS_MASTER_KEY` (not needed for Node.js, but verify no conflicts)
 - [ ] Run `docker-compose -f docker-compose.prod.yml up --build -d` (detached mode)
 - [ ] Wait for all services to start (check logs: `docker-compose -f docker-compose.prod.yml logs`)
 - [ ] Verify all containers are running: `docker-compose -f docker-compose.prod.yml ps`
@@ -49,16 +52,22 @@ Test the docker-compose.prod.yml configuration for the telegram-receiver Node.js
   - [ ] Verify app container logs show application started successfully
   - [ ] Test health endpoint via Traefik: `curl -k https://localhost/health` (or `curl http://localhost/health` if HTTP redirect works)
   - [ ] Test health endpoint directly (if port exposed for testing): `curl http://localhost:3000/health` (should return 200 OK)
-  - [ ] Verify health endpoint response contains expected JSON structure
+  - [ ] Verify health endpoint response contains expected JSON structure (matching Rails implementation):
+    - [ ] `status: "healthy"` (must be exactly "healthy")
+    - [ ] `service: "telegram-receiver"` (service name)
+    - [ ] `version: "..."` (version number, e.g., "1.0.0")
   - [ ] Verify app healthcheck passed: `docker inspect telegram-receiver-app | grep -A 5 Health`
 - [ ] Check worker service:
   - [ ] Verify worker container logs show no errors: `docker logs telegram-receiver-worker`
   - [ ] Verify worker container logs show worker started successfully
   - [ ] Verify worker can connect to Redis (check logs for connection success)
+  - [ ] Verify worker process is running: `docker exec telegram-receiver-worker ps aux | grep -E "(node|worker)"`
 - [ ] Verify network connectivity:
   - [ ] Verify all containers are on `virtual-assistant-network`: `docker network inspect virtual-assistant-network`
   - [ ] Test app can reach Redis: `docker exec telegram-receiver-app ping -c 1 redis` (or test Redis connection from app)
-  - [ ] Test app can reach cursor-runner (if available): Verify `CURSOR_RUNNER_URL` is set correctly
+  - [ ] Test app can reach cursor-runner (if available):
+    - [ ] Verify `CURSOR_RUNNER_URL` environment variable is set correctly: `docker exec telegram-receiver-app env | grep CURSOR_RUNNER_URL` (should show `CURSOR_RUNNER_URL=http://cursor-runner:3001`)
+    - [ ] (Optional) Test connectivity: `docker exec telegram-receiver-app ping -c 1 cursor-runner` (if cursor-runner service is running)
 - [ ] Verify volumes:
   - [ ] Verify `shared_redis_data` volume exists: `docker volume ls | grep shared_redis_data`
   - [ ] Verify `shared_sqlite_db` volume exists: `docker volume ls | grep shared_sqlite_db`
@@ -99,6 +108,10 @@ Test the docker-compose.prod.yml configuration for the telegram-receiver Node.js
 - After testing, clean up containers, networks, and optionally volumes to avoid cluttering Docker
 - The worker service should start successfully even if no jobs are queued
 - All services should have proper restart policies (`unless-stopped`) for production reliability
+- **Worker Script Requirement**: The worker service requires a worker script/entry point to exist. This may be created in a separate task (as noted in PHASE1-039). Before testing, verify that either:
+  - `package.json` has a `"worker"` script (e.g., `"worker": "node dist/worker.js"`), OR
+  - A worker entry point file exists (e.g., `dist/worker.js` or `src/worker.ts`)
+- Health endpoint JSON structure must match the Rails implementation format: `{"status": "healthy", "service": "telegram-receiver", "version": "1.0.0"}` (see PHASE1-040 for reference)
 
 ## Related Tasks
 
