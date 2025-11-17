@@ -23,7 +23,7 @@ Create Redis client configuration module that exports Redis connection settings.
 ## Checklist
 
 - [ ] Create `src/config/redis.ts` file
-- [ ] Import `process.env` for environment variable access
+- [ ] Access `process.env` (global in Node.js) for environment variable access
 - [ ] Define `REDIS_URL` constant using `process.env.REDIS_URL` with default fallback to `'redis://localhost:6379/0'`
 - [ ] Export Redis connection configuration object with:
   - [ ] `url` property (the Redis connection URL)
