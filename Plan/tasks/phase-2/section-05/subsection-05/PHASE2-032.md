@@ -6,22 +6,99 @@
 
 ## Description
 
-Convert implement clone_repository method from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/cursor_runner_service.rb`.
+Convert the `clone_repository` method from Rails CursorRunnerService to TypeScript/Node.js. This method clones a Git repository by calling the cursor-runner API's `/git/clone` endpoint.
+
+**Rails Reference**: `jarek-va/app/services/cursor_runner_service.rb` (lines 73-79)
+
+## Method Signature
+
+```typescript
+cloneRepository(params: {
+  repositoryUrl: string;
+  repositoryName?: string;
+}): Promise<CloneRepositoryResponse>
+```
+
+**Parameters**:
+- `repositoryUrl` (required): Git repository URL to clone
+- `repositoryName` (optional): Repository name (defaults to URL-based name if not provided)
+
+**Return Type**: Promise resolving to a response object with `success`, `repositoryName`, etc.
+
+## Implementation Details
+
+### Request Body Structure
+
+The method should POST to `/git/clone` with the following JSON body:
+```json
+{
+  "repositoryUrl": "<repository_url>",
+  "repositoryName": "<repository_name>"
+}
+```
+
+**Important Notes**:
+- The request body uses `repositoryUrl` (camelCase), not `repository_url` (snake_case)
+- The request body uses `repositoryName` (camelCase), not `repository_name` (snake_case)
+- The `repositoryName` field should only be included in the request body if it is provided (conditionally added)
+- If `repositoryName` is not provided, only `repositoryUrl` should be sent in the request body
+
+### Response Parsing
+
+- Parse the JSON response body
+- Return the parsed object with symbol keys (or equivalent TypeScript object)
+- Handle JSON parsing errors appropriately
+
+### Error Handling
+
+The method should handle and potentially throw the following error types:
+- **ConnectionError**: Failed to connect to cursor-runner (ECONNREFUSED, EHOSTUNREACH, SocketError)
+- **TimeoutError**: Request timed out (OpenTimeout, ReadTimeout)
+- **InvalidResponseError**: Failed to parse JSON response
+- **Error**: HTTP error responses (non-2xx, non-422 status codes)
+  - Note: 422 Unprocessable Entity should be treated as a valid response (operation failed but request was valid)
+
+### HTTP Request Details
+
+- Method: POST
+- Content-Type: `application/json`
+- Accept: `application/json`
+- Use the base URL from configuration (cursor-runner URL)
+- Use timeout from configuration (cursor-runner timeout)
 
 ## Checklist
 
-- [ ] Implement `cloneRepository` method
-- [ ] Call `/git/clone` endpoint
-- [ ] Handle repository_url and repository_name
-- [ ] Parse and return response
-- [ ] Add error handling
+- [ ] Implement `cloneRepository` method with correct TypeScript signature
+- [ ] Accept required parameter: `repositoryUrl`
+- [ ] Accept optional `repositoryName` parameter
+- [ ] Build request body with `repositoryUrl` (camelCase)
+- [ ] Conditionally add `repositoryName` to request body only if provided
+- [ ] Ensure `repositoryUrl` is sent as camelCase in request body
+- [ ] Ensure `repositoryName` is sent as camelCase in request body (if provided)
+- [ ] POST to `/git/clone` endpoint
+- [ ] Set proper HTTP headers (`Content-Type: application/json`, `Accept: application/json`)
+- [ ] Handle connection errors (ConnectionError)
+- [ ] Handle timeout errors (TimeoutError)
+- [ ] Handle HTTP error responses (non-2xx, except 422)
+- [ ] Treat 422 Unprocessable Entity as valid response (not an error)
+- [ ] Parse JSON response body
+- [ ] Handle JSON parsing errors (InvalidResponseError)
+- [ ] Return parsed response object
+- [ ] Add appropriate logging (request and response logging)
+- [ ] Write unit tests for the method
+- [ ] Test with only `repositoryUrl` provided (should not include `repositoryName` in request body)
+- [ ] Test with both `repositoryUrl` and `repositoryName` provided (should include both in request body)
+- [ ] Test error handling scenarios (connection errors, timeouts, HTTP errors, JSON parse errors)
+- [ ] Test 422 response handling (should not throw error)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 5. CursorRunnerService Conversion
-- Reference the Rails implementation for behavior
-
+- The method uses a private `post` helper method in Rails - ensure similar helper is available or implement HTTP request directly
+- The method uses a private `parse_response` helper method in Rails - ensure similar helper is available or implement JSON parsing directly
+- Reference the Rails implementation at `jarek-va/app/services/cursor_runner_service.rb` lines 73-79 for exact behavior
+- The Rails implementation conditionally adds `repositoryName` to the body only if `repository_name` is provided (i.e., if it's not nil)
 - Task can be completed independently by a single agent
 
 ## Related Tasks
