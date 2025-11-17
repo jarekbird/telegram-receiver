@@ -6,15 +6,24 @@
 
 ## Description
 
-Convert implement extract_audio_file_id utility from Rails to TypeScript/Node.js. Reference `jarek-va/app/jobs/telegram_message_job.rb`.
+Convert the `extract_audio_file_id` utility method from Rails to TypeScript/Node.js. This function extracts audio file IDs from Telegram messages, supporting voice messages, audio files, and audio documents. Reference `jarek-va/app/jobs/telegram_message_job.rb` lines 298-312.
+
+The function checks for audio content in three ways:
+1. Voice messages (most common for speech) - checks `message.voice.file_id`
+2. Audio files - checks `message.audio.file_id`
+3. Documents with audio mime types - checks `message.document.file_id` if `document.mime_type` starts with `'audio/'`
+
+Returns the file_id if found, or null/undefined if no audio content is detected.
 
 ## Checklist
 
 - [ ] Create `extractAudioFileId` utility function
-- [ ] Check for voice.voice.file_id
-- [ ] Check for audio.audio.file_id
-- [ ] Return file_id or null
-- [ ] Handle edge cases
+- [ ] Check for `message.voice.file_id` (voice messages)
+- [ ] Check for `message.audio.file_id` (audio files)
+- [ ] Check for `message.document.file_id` when `document.mime_type` starts with `'audio/'` (audio documents)
+- [ ] Return file_id string if found, or null/undefined if not found
+- [ ] Handle null/undefined message gracefully
+- [ ] Handle missing nested properties safely (use optional chaining or equivalent)
 
 ## Notes
 
