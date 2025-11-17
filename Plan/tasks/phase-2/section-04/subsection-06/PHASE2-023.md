@@ -19,7 +19,8 @@ Convert the `send_voice` method from Rails to TypeScript/Node.js. This method se
 - [ ] Read file content from disk using binary read
   - Use Node.js `fs.readFileSync` or `fs.promises.readFile` with binary encoding
 - [ ] Extract filename from `voice_path` using basename
-- [ ] Implement MIME type detection based on file extension:
+- [ ] Implement MIME type detection based on file extension (case-insensitive):
+  - Extract file extension using `path.extname()` and convert to lowercase
   - `.ogg` or `.oga` → `audio/ogg`
   - `.wav` → `audio/wav`
   - Default (including `.mp3`) → `audio/mpeg`
@@ -52,7 +53,8 @@ Based on Rails implementation analysis (`jarek-va/app/services/telegram_service.
    - Extracts filename using `File.basename`
    - Determines MIME type from file extension
 
-3. **MIME Type Detection**: The Rails code uses a case statement on file extension:
+3. **MIME Type Detection**: The Rails code uses a case statement on file extension with case-insensitive matching:
+   - Extracts extension using `File.extname(voice_path).downcase` (converts to lowercase)
    - `.ogg` and `.oga` → `audio/ogg`
    - `.wav` → `audio/wav`
    - All other extensions (including `.mp3`) → `audio/mpeg`
