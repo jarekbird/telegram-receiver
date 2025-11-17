@@ -6,15 +6,25 @@
 
 ## Description
 
-Convert implement webhook_info endpoint from Rails to TypeScript/Node.js. Reference `jarek-va/app/controllers/*_controller.rb` files.
+Convert the `webhook_info` endpoint from Rails to TypeScript/Node.js. This endpoint retrieves webhook information from Telegram Bot API. Reference `jarek-va/app/controllers/telegram_controller.rb` and `jarek-va/app/services/telegram_service.rb`.
+
+**Rails Implementation:**
+- Route: `GET /telegram/webhook_info` (defined in `jarek-va/config/routes.rb`)
+- Controller method: `webhook_info` (lines 72-88 in `telegram_controller.rb`)
+- Requires admin authentication via `authenticate_admin` method
+- Calls `TelegramService.webhook_info` which calls `bot.api.get_webhook_info`
+- Returns JSON response with webhook information
 
 ## Checklist
 
-- [ ] Implement `getWebhookInfo` handler method
-- [ ] Require admin authentication
-- [ ] Call TelegramService.getWebhookInfo
-- [ ] Return webhook information
-- [ ] Add error handling
+- [ ] Implement `getWebhookInfo` handler method in TelegramController
+- [ ] Add route: `GET /telegram/webhook_info` that routes to the handler
+- [ ] Require admin authentication (check `X-Admin-Secret` header matches configured secret)
+- [ ] Call `TelegramService.getWebhookInfo()` method
+- [ ] Return JSON response: `{ ok: true, webhook_info: info }` on success
+- [ ] Handle errors: return `{ ok: false, error: error.message }` with HTTP 500 status on error
+- [ ] Add error logging for debugging
+- [ ] Ensure TelegramService.getWebhookInfo handles blank bot token (returns early if token is blank)
 
 ## Notes
 
