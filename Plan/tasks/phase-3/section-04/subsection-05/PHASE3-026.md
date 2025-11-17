@@ -14,6 +14,8 @@ Review and improve code reusability in the codebase to ensure best practices and
 
 - [ ] Scan all TypeScript files in `src/` directory (when files exist) for duplicate code patterns
 - [ ] Review test files in `tests/` directory for duplicate test utilities or patterns
+  - [ ] **SPECIFIC ISSUE**: Review mock reset functions in `tests/mocks/` - `resetTelegramApiMocks()`, `resetCursorRunnerApiMocks()`, and `resetRedisMocks()` all follow identical patterns and should be abstracted into a reusable utility
+  - [ ] Check for duplicate fixture creation patterns (e.g., `createTelegramMessage`, `createCursorRunnerResponse` follow similar override patterns)
 - [ ] Check for repeated logic across services, controllers, and middleware
 - [ ] Identify similar error handling patterns that could be unified
 - [ ] Look for duplicate validation logic that could be extracted
@@ -21,11 +23,14 @@ Review and improve code reusability in the codebase to ensure best practices and
 
 ### Utility Functions Review
 
-- [ ] Review existing utility functions in `src/utils/` directory
+- [ ] Review existing utility functions in `src/utils/` directory (currently empty)
 - [ ] Review test utilities in `tests/helpers/` (testUtils.ts, apiHelpers.ts)
   - [ ] Check if test utilities could be shared or improved
   - [ ] Verify test utilities follow DRY principles
+  - [ ] **SPECIFIC OPPORTUNITY**: Create a generic `resetMockObject()` utility function to replace duplicate mock reset functions in `tests/mocks/`
+  - [ ] **SPECIFIC OPPORTUNITY**: Consider creating a generic `createFixture()` utility to replace duplicate fixture creation patterns
   - [ ] Identify if any test utilities should be moved to `src/utils/` for production use
+    - [ ] Review if `HTTP_STATUS` constants from `apiHelpers.ts` should be moved to `src/utils/` for production use
 - [ ] Verify utility functions are properly exported and documented
 - [ ] Check if utility functions are being reused appropriately
 - [ ] Identify missing utility functions that should be created
@@ -90,10 +95,14 @@ Review and improve code reusability in the codebase to ensure best practices and
 - Section: 4. Code Organization
 - Focus on identifying issues and improvements
 - Document findings and decisions
-- Current codebase state: `src/` directory is mostly empty but structure exists; test utilities exist in `tests/helpers/` (testUtils.ts, apiHelpers.ts)
+- Current codebase state: `src/` directory is mostly empty but structure exists; test utilities exist in `tests/helpers/` (testUtils.ts, apiHelpers.ts); test mocks exist in `tests/mocks/` (telegramApi.ts, cursorRunnerApi.ts, redis.ts); test fixtures exist in `tests/fixtures/` (telegramMessages.ts, apiResponses.ts)
+- **Known DRY Violations Identified**:
+  - Mock reset functions: `resetTelegramApiMocks()`, `resetCursorRunnerApiMocks()`, and `resetRedisMocks()` in `tests/mocks/` all follow identical patterns - should be abstracted into a reusable utility
+  - Fixture creation patterns: `createTelegramMessage()` and `createCursorRunnerResponse()` follow similar override patterns that could be abstracted
 - When reviewing, consider both existing code and patterns that should be established for future code
 - Pay special attention to test utilities - ensure they follow DRY principles and are reusable
 - Consider creating shared utilities early to establish patterns for future development
+- Focus on test code reusability first since that's where most code currently exists
 
 - Task can be completed independently by a single agent
 
