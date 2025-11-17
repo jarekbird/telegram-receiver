@@ -20,11 +20,11 @@ Write comprehensive unit tests for the CursorRunnerCallbackService class in Type
   - Add `beforeEach` to reset Redis mocks before each test
   - Add `afterEach` to clean up after each test
 - [ ] Test constructor initialization
-  - Test constructor with provided `redisClient` parameter (should use provided client)
-  - Test constructor with provided `redisUrl` parameter (should create new Redis client from URL)
-  - Test constructor with neither parameter (should use `REDIS_URL` environment variable if set, otherwise default to `'redis://localhost:6379/0'`)
+  - Test constructor with provided `redisClient` parameter (should use provided client directly)
+  - Test constructor with provided `redisUrl` parameter (should create new Redis client from URL using `new Redis(url)` from ioredis - mock the Redis constructor)
+  - Test constructor with neither parameter (should use `REDIS_URL` environment variable if set, otherwise default to `'redis://localhost:6379/0'` - mock the Redis constructor)
   - Test that Redis client is stored as private property
-  - Test that constructor prioritizes `redisClient` over `redisUrl` if both are provided (verify implementation behavior)
+  - Test that constructor prioritizes `redisClient` over `redisUrl` if both are provided (if `redisClient` is provided, `redisUrl` is ignored - matches Rails behavior)
 - [ ] Test `storePendingRequest` method
   - Test storing request with default TTL (should use `DEFAULT_TTL` constant = 3600)
   - Test storing request with custom TTL (should use provided TTL value)
@@ -89,7 +89,7 @@ The Rails service (`cursor_runner_callback_service.rb`) has:
 
 **Test Requirements:**
 
-1. **Mock Redis Client**: Use the existing `mockRedisClient` from `tests/mocks/redis.ts` which provides mocked methods: `get`, `set`, `del`, etc. Note: The mock may need `setex` method added if it's not already present (add `setex: jest.fn().mockResolvedValue('OK')` to the mock object).
+1. **Mock Redis Client**: Use the existing `mockRedisClient` from `tests/mocks/redis.ts` which provides mocked methods: `get`, `set`, `del`, etc. Note: The mock may need `setex` method added if it's not already present (add `setex: jest.fn().mockResolvedValue('OK')` to the mock object). When testing constructor with `redisUrl` parameter, you'll need to mock the `Redis` constructor from `ioredis` using `jest.mock('ioredis')` to return a mock instance.
 
 2. **Test Structure**: Follow the project's test conventions:
    - Use `describe` blocks to group related tests
