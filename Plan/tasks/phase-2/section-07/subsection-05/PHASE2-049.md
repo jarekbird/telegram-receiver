@@ -37,10 +37,12 @@ Write comprehensive unit tests for the ElevenLabsSpeechToTextService class, cove
 - [ ] Test transcribe sets correct HTTP headers (xi-api-key, Content-Type)
 - [ ] Test transcribe sends POST request to correct endpoint (`https://api.elevenlabs.io/v1/speech-to-text`)
 - [ ] Test transcribe extracts filename from file path correctly
-- [ ] Test transcribe reads file as binary data
+- [ ] Test transcribe reads file as binary data (using binary read operation, not text)
 - [ ] Test transcribe parses JSON response and extracts text field
 - [ ] Test transcribe returns transcribed text string
 - [ ] Test transcribe logs info when sending audio file (include file path)
+- [ ] Test transcribe logs POST request path to endpoint
+- [ ] Test transcribe logs response code and message on successful request
 - [ ] Test transcribe logs info on successful transcription (include first 50 chars)
 
 ### `transcribe` Method Error Handling Tests
@@ -51,9 +53,10 @@ Write comprehensive unit tests for the ElevenLabsSpeechToTextService class, cove
 - [ ] Test transcribe throws InvalidResponseError when JSON parsing fails
 - [ ] Test transcribe throws ConnectionError on network connection failures (ECONNREFUSED, EHOSTUNREACH, SocketError)
 - [ ] Test transcribe throws TimeoutError on request timeout (OpenTimeout, ReadTimeout)
-- [ ] Test transcribe handles file not found errors (ENOENT) and throws Error with message
-- [ ] Test transcribe extracts error message from error response JSON (detail/error/message fields)
+- [ ] Test transcribe handles file not found errors (ENOENT) and throws Error with descriptive message including original error
+- [ ] Test transcribe extracts error message from error response JSON (detail/error/message fields, in that priority order)
 - [ ] Test transcribe logs error details for API errors (response code and body preview)
+- [ ] Test transcribe logs error when error response JSON parsing fails (falls back to default error message)
 
 ### `transcribeIo` Method Tests (IO Object)
 - [ ] Test successful transcription with Buffer input
@@ -70,6 +73,8 @@ Write comprehensive unit tests for the ElevenLabsSpeechToTextService class, cove
 - [ ] Test transcribeIo parses JSON response and extracts text field
 - [ ] Test transcribeIo returns transcribed text string
 - [ ] Test transcribeIo logs info when sending audio IO (include filename)
+- [ ] Test transcribeIo logs POST request path to endpoint
+- [ ] Test transcribeIo logs response code and message on successful request
 - [ ] Test transcribeIo logs info on successful transcription (include first 50 chars)
 
 ### `transcribeIo` Method Error Handling Tests
@@ -79,8 +84,9 @@ Write comprehensive unit tests for the ElevenLabsSpeechToTextService class, cove
 - [ ] Test transcribeIo throws InvalidResponseError when JSON parsing fails
 - [ ] Test transcribeIo throws ConnectionError on network connection failures
 - [ ] Test transcribeIo throws TimeoutError on request timeout
-- [ ] Test transcribeIo extracts error message from error response JSON
-- [ ] Test transcribeIo logs error details for API errors
+- [ ] Test transcribeIo extracts error message from error response JSON (detail/error/message fields, in that priority order)
+- [ ] Test transcribeIo logs error details for API errors (response code and body preview)
+- [ ] Test transcribeIo logs error when error response JSON parsing fails (falls back to default error message)
 
 ### Edge Cases and Integration Tests
 - [ ] Test service handles empty audio file gracefully
