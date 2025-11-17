@@ -6,22 +6,88 @@
 
 ## Description
 
-Convert create queue configuration from Rails to TypeScript/Node.js.
+Convert Sidekiq queue configuration from Rails to BullMQ queue configuration in TypeScript/Node.js. This task creates the queue configuration file that sets up Redis connection, default job options, and environment-specific settings for BullMQ, matching the functionality provided by Sidekiq in the Rails application.
+
+**Rails Implementation Reference:**
+- `jarek-va/config/initializers/sidekiq.rb` - Sidekiq initialization with Redis connection, default job options, and logging configuration
+- `jarek-va/config/sidekiq.yml` - Environment-specific queue names and concurrency settings
+- `jarek-va/config/application.rb` - ActiveJob adapter configuration (line 31: `config.active_job.queue_adapter = :sidekiq`)
+
+**Node.js Implementation:**
+- Create `src/config/queue.ts` to configure BullMQ queue system
+- Configure Redis connection using ioredis (matching Sidekiq's Redis setup)
+- Set default job options (retry, backtrace equivalent)
+- Export queue configuration for use by workers and job processors
+- Support environment-specific configuration (development, test, production)
 
 ## Checklist
 
 - [ ] Create `src/config/queue.ts` file
-- [ ] Configure queue connection
-- [ ] Set default queue options
-- [ ] Export configuration
+- [ ] Configure Redis connection:
+  - [ ] Use `REDIS_URL` environment variable (defaults to `redis://localhost:6379/0`)
+  - [ ] Create Redis connection instance using `ioredis`
+  - [ ] Support both server and client configurations (similar to Sidekiq's `configure_server` and `configure_client`)
+- [ ] Set default job options:
+  - [ ] Configure default retry attempts (3 retries, matching Sidekiq's `retry: 3`)
+  - [ ] Configure backtrace/error handling (equivalent to Sidekiq's `backtrace: true`)
+  - [ ] Export default job options for use when creating queues
+- [ ] Configure environment-specific settings:
+  - [ ] Development: concurrency 2, queues: `['default']`
+  - [ ] Test: concurrency 1, queues: `['default']`
+  - [ ] Production: concurrency 10, queues: `['critical', 'default', 'high_priority', 'low_priority']`
+  - [ ] Load settings based on `NODE_ENV` environment variable
+- [ ] Configure logging:
+  - [ ] Set appropriate log level (INFO level, matching Sidekiq's `Logger::INFO`)
+  - [ ] Ensure queue operations are logged appropriately
+- [ ] Export configuration:
+  - [ ] Export Redis connection instance
+  - [ ] Export default job options
+  - [ ] Export environment-specific queue configuration
+  - [ ] Export helper functions for creating queues with proper configuration
+- [ ] Add TypeScript types for queue configuration
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 3. Queue System Setup (BullMQ)
-- Reference the Rails implementation for behavior
-
-- Task can be completed independently by a single agent
+- **Rails Files to Reference:**
+  - `jarek-va/config/initializers/sidekiq.rb` - Main Sidekiq configuration:
+    - Redis connection configuration (server and client)
+    - Default job options: `retry: 3, backtrace: true`
+    - Logging level: `Logger::INFO`
+    - Environment variable: `REDIS_URL` (defaults to `redis://localhost:6379/0`)
+    - Loads `sidekiq.yml` for concurrency settings
+  - `jarek-va/config/sidekiq.yml` - Environment-specific configuration:
+    - Development: concurrency 2, queues: `['default']`
+    - Test: concurrency 1, queues: `['default']`
+    - Production: concurrency 10, queues: `['critical', 'default', 'high_priority', 'low_priority']`
+  - `jarek-va/config/application.rb` - ActiveJob adapter set to `:sidekiq` (line 31)
+- **Dependencies:**
+  - Requires BullMQ and ioredis to be installed (completed in PHASE2-012)
+  - Requires Redis connection setup (completed in Section 2: Redis Integration)
+  - Uses `REDIS_URL` environment variable (should be set in Docker: `redis://redis:6379/0`)
+- **Implementation Details:**
+  - BullMQ uses `Connection` class for Redis connection (similar to Sidekiq's Redis config)
+  - Default job options in BullMQ are set via `JobOptions` interface
+  - BullMQ's `Worker` class accepts `concurrency` option (equivalent to Sidekiq's concurrency)
+  - Queue names are defined when creating `Queue` instances (not in a separate config file)
+  - Environment-specific settings should be loaded based on `NODE_ENV`
+  - The configuration should export a Redis connection instance that can be reused
+  - Default job options should match Sidekiq's: `{ attempts: 3, removeOnComplete: true, removeOnFail: false }`
+  - Consider creating helper functions like `createQueue(name: string, options?: JobOptions)` that apply default options
+- **Key Differences from Rails:**
+  - Rails: Sidekiq uses `Sidekiq.configure_server` and `Sidekiq.configure_client` blocks
+  - Node.js: BullMQ uses `Connection` class and passes connection to `Queue` and `Worker` constructors
+  - Rails: Queue names and concurrency are in `sidekiq.yml` file
+  - Node.js: Queue names are specified when creating `Queue` instances; concurrency is set on `Worker`
+  - Rails: Default job options are set globally via `Sidekiq.default_job_options`
+  - Node.js: Default job options should be applied when creating queues or jobs
+- **Testing Considerations:**
+  - Test that Redis connection is created correctly
+  - Test that default job options are applied
+  - Test environment-specific configuration loading
+  - Test that configuration exports are available for import
+- Task can be completed independently by a single agent (after PHASE2-012 is complete)
 
 ## Related Tasks
 
