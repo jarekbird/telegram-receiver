@@ -6,25 +6,215 @@
 
 ## Description
 
-consolidate duplicate code to improve code quality and maintainability.
+Consolidate duplicate code identified during Phase 4 code duplication detection (PHASE4-005) to improve code quality and maintainability. This task focuses on systematically extracting duplicate code blocks, patterns, and structures into reusable functions, utilities, and shared components, following a prioritized approach to minimize risk and ensure no breaking changes.
+
+This task builds on the code duplication detection work completed in PHASE4-005 and addresses the consolidation of duplicate code as part of the Phase 4 code quality audit refactoring efforts.
+
+## Scope
+
+This task covers:
+- Reviewing code duplication findings from PHASE4-005
+- Extracting exact duplicate code blocks into shared functions
+- Consolidating similar code patterns into reusable utilities
+- Creating shared components for common functionality
+- Refactoring duplicate error handling patterns
+- Consolidating duplicate validation logic
+- Extracting duplicate data transformation patterns
+- Creating shared constants and configuration
+- Updating all duplicate locations to use consolidated code
+- Verifying no breaking changes after consolidation
+- Documenting all consolidations and their impact
+
+**Note**: This task focuses on consolidating duplicate code identified in PHASE4-005. For comprehensive code duplication detection, refer to PHASE4-005 (Detect code duplication).
+
+## Context from PHASE4-005
+
+PHASE4-005 identified duplicate code in:
+- Exact duplicate code blocks (100% similarity)
+- Near-duplicate code blocks (80-99% similarity)
+- Similar code patterns across different files
+- Duplicate error handling logic
+- Duplicate validation logic
+- Duplicate data transformation patterns
+- Duplicate configuration patterns
+
+This task addresses the consolidation of these findings following a safe, prioritized approach.
 
 ## Checklist
 
-- [ ] Review code duplication findings
-- [ ] Extract duplicate code into functions
-- [ ] Create shared utilities
-- [ ] Update all duplicate locations
-- [ ] Test consolidated code
-- [ ] Verify functionality preserved
-- [ ] Document consolidation
-- [ ] Update code to use consolidated version
+### Review PHASE4-005 Findings
+- [ ] Review code duplication report from PHASE4-005
+- [ ] Review jscpd report (if jscpd was used in PHASE4-005)
+- [ ] Review SonarQube duplication findings (if SonarQube was used)
+- [ ] Review duplication report JSON/HTML output
+- [ ] Identify all duplicate code blocks:
+  - Exact duplicates (100% similarity)
+  - Near-duplicates (80-99% similarity)
+- [ ] Categorize duplicates by type:
+  - Duplicate functions/methods
+  - Duplicate error handling patterns
+  - Duplicate validation logic
+  - Duplicate data transformation patterns
+  - Duplicate configuration/constants
+  - Duplicate API request/response handling
+- [ ] Prioritize duplicates for consolidation:
+  - Critical: Large exact duplicates (>100 lines, 100% similarity)
+  - High: Medium exact duplicates (50-100 lines, 100% similarity)
+  - Medium: Large near-duplicates (>100 lines, 80-99% similarity)
+  - Low: Small duplicates (<50 lines)
+- [ ] Identify false positives that should not be consolidated:
+  - Intentionally similar but distinct implementations
+  - Performance-critical code that benefits from duplication
+  - Code with different contexts that shouldn't be shared
+
+### Extract Duplicate Functions/Methods
+- [ ] Identify duplicate function/method implementations
+- [ ] Analyze differences between duplicate functions
+- [ ] Design shared function signature that accommodates all use cases
+- [ ] Extract common logic into shared function
+- [ ] Parameterize differences using function parameters
+- [ ] Create shared function in appropriate utility module
+- [ ] Update all duplicate locations to use shared function
+- [ ] Verify function handles all original use cases
+- [ ] Run tests to ensure functionality is preserved
+- [ ] Verify no breaking changes
+
+### Consolidate Error Handling Patterns
+- [ ] Identify duplicate error handling patterns
+- [ ] Create shared error handling utilities:
+  - Error wrapper functions
+  - Error formatting functions
+  - Error logging utilities
+  - Error response formatters
+- [ ] Extract common error handling logic
+- [ ] Create error handling middleware (if applicable)
+- [ ] Update all duplicate error handling locations
+- [ ] Verify error handling behavior is preserved
+- [ ] Run tests to ensure error handling works correctly
+- [ ] Verify no breaking changes
+
+### Consolidate Validation Logic
+- [ ] Identify duplicate validation patterns
+- [ ] Create shared validation utilities:
+  - Validation functions
+  - Validation schemas (if using validation libraries)
+  - Validation error formatters
+- [ ] Extract common validation logic
+- [ ] Create reusable validation functions
+- [ ] Update all duplicate validation locations
+- [ ] Verify validation behavior is preserved
+- [ ] Run tests to ensure validation works correctly
+- [ ] Verify no breaking changes
+
+### Consolidate Data Transformation Patterns
+- [ ] Identify duplicate data transformation patterns
+- [ ] Create shared transformation utilities:
+  - Data mapping functions
+  - Data formatting functions
+  - Data normalization functions
+- [ ] Extract common transformation logic
+- [ ] Create reusable transformation functions
+- [ ] Update all duplicate transformation locations
+- [ ] Verify transformation behavior is preserved
+- [ ] Run tests to ensure transformations work correctly
+- [ ] Verify no breaking changes
+
+### Create Shared Constants and Configuration
+- [ ] Identify duplicate constants and configuration values
+- [ ] Create shared constants file/module
+- [ ] Create shared configuration utilities
+- [ ] Extract common configuration patterns
+- [ ] Update all duplicate constant/configuration locations
+- [ ] Verify configuration behavior is preserved
+- [ ] Run tests to ensure configuration works correctly
+- [ ] Verify no breaking changes
+
+### Consolidate API Request/Response Handling
+- [ ] Identify duplicate API request/response handling patterns
+- [ ] Create shared API utilities:
+  - Request builders
+  - Response formatters
+  - Error response handlers
+  - Request/response interceptors
+- [ ] Extract common API handling logic
+- [ ] Create reusable API utilities
+- [ ] Update all duplicate API handling locations
+- [ ] Verify API behavior is preserved
+- [ ] Run tests to ensure API handling works correctly
+- [ ] Verify no breaking changes
+
+### Create Shared Utilities Module Structure
+- [ ] Organize shared utilities into logical modules:
+  - `src/utils/errors.ts` - Error handling utilities
+  - `src/utils/validation.ts` - Validation utilities
+  - `src/utils/transform.ts` - Data transformation utilities
+  - `src/utils/api.ts` - API handling utilities
+  - `src/utils/constants.ts` - Shared constants
+  - `src/utils/helpers.ts` - General helper functions
+- [ ] Ensure utilities are properly exported
+- [ ] Add JSDoc comments to shared utilities
+- [ ] Document usage examples for shared utilities
+- [ ] Verify utilities follow project conventions
+
+### Update All Duplicate Locations
+- [ ] Replace exact duplicates with shared function calls
+- [ ] Replace near-duplicates with parameterized shared functions
+- [ ] Update imports to use shared utilities
+- [ ] Remove duplicate code blocks
+- [ ] Verify all duplicate locations are updated
+- [ ] Run tests to ensure functionality is preserved
+- [ ] Verify no breaking changes
+
+### Verification and Testing
+- [ ] Run TypeScript compiler: `npm run type-check`
+- [ ] Run ESLint: `npm run lint`
+- [ ] Run all unit tests: `npm run test:unit`
+- [ ] Run all integration tests: `npm run test:integration`
+- [ ] Run all tests: `npm run test`
+- [ ] Run end-to-end tests: `npm run test:e2e` (if applicable)
+- [ ] Verify application builds successfully: `npm run build`
+- [ ] Verify application starts successfully: `npm start` (test run)
+- [ ] Check for any runtime errors or warnings
+- [ ] Verify no breaking changes in functionality
+- [ ] Run duplication detection again to verify reduction:
+  - Compare duplication percentage before/after
+  - Verify duplicate blocks are reduced
+  - Document improvement metrics
+
+### Documentation
+- [ ] Document all consolidated code:
+  - List consolidated duplicate functions
+  - List created shared utilities
+  - List updated file locations
+  - Document consolidation approach for each duplicate
+- [ ] Document consolidation rationale for significant consolidations
+- [ ] Document any breaking changes (if any)
+- [ ] Update code quality metrics:
+  - Duplication percentage before/after
+  - Number of duplicate blocks removed
+  - Number of shared utilities created
+  - Total lines of code consolidated
+  - Files affected by consolidation
+- [ ] Update CHANGELOG or similar documentation (if applicable)
+- [ ] Add JSDoc comments to all shared utilities
+- [ ] Document usage examples for shared utilities
 
 ## Notes
 
 - This task is part of Phase 4: Code Quality Audit
 - Section: 3. Refactoring
-- Focus on identifying and fixing code quality issues
-- Document all findings and improvements
+- Focus on consolidating duplicate code identified in PHASE4-005 to improve code quality
+- This task builds on PHASE4-005 code duplication detection findings
+- Follow a prioritized approach: start with critical duplicates, then high, then medium, then low
+- Always verify no breaking changes after each consolidation
+- Some "duplicate" code may be intentionally kept separate (e.g., performance-critical code, different contexts)
+- Be careful with false positives - verify that code can be safely consolidated before refactoring
+- Consider the impact of consolidating code (may affect performance, readability, or maintainability)
+- Document all consolidations for traceability
+- Verify improvements through testing and re-running duplication detection
+- When consolidating near-duplicates, ensure the shared function handles all variations correctly
+- Use appropriate abstraction levels - don't over-abstract simple code
+- Consider creating utility modules that group related functionality together
 
 - Task can be completed independently by a single agent
 
@@ -32,6 +222,7 @@ consolidate duplicate code to improve code quality and maintainability.
 
 - Previous: PHASE4-024
 - Next: PHASE4-026
+- Depends on: PHASE4-005 (Detect code duplication)
 
 ---
 
