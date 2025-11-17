@@ -6,21 +6,49 @@
 
 ## Description
 
-Convert create cursorrunnercallbackservice class structure from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/cursor_runner_callback_service.rb`.
+Create the CursorRunnerCallbackService class structure in TypeScript/Node.js. This service manages cursor-runner callback state by storing pending requests in Redis and handling webhook callbacks. It provides methods to store, retrieve, and remove pending request information with TTL support.
+
+Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callback_service.rb` for complete behavior details.
 
 ## Checklist
 
 - [ ] Create `src/services/cursor-runner-callback-service.ts` file
-- [ ] Define class structure
-- [ ] Add constructor with Redis client
-- [ ] Define REDIS_KEY_PREFIX constant
-- [ ] Define DEFAULT_TTL constant
+- [ ] Define `CursorRunnerCallbackService` class
+- [ ] Define `REDIS_KEY_PREFIX` constant with value `'cursor_runner_callback:'`
+- [ ] Define `DEFAULT_TTL` constant with value `3600` (1 hour in seconds)
+- [ ] Add constructor that accepts optional `redisClient` OR `redisUrl` parameter
+  - If `redisClient` is provided, use it directly
+  - If `redisUrl` is provided, create new Redis client from URL
+  - If neither provided, use `REDIS_URL` environment variable (default: `'redis://localhost:6379/0'`)
+  - Store Redis client instance as private property
+- [ ] Add private `redisKey(requestId: string)` helper method that returns `${REDIS_KEY_PREFIX}${requestId}`
+- [ ] Add public `storePendingRequest(requestId: string, data: object, ttl?: number)` method
+  - Stores data as JSON in Redis with TTL (defaults to DEFAULT_TTL)
+  - Uses `redis.setex()` with generated key
+  - Logs info message about stored request
+- [ ] Add public `getPendingRequest(requestId: string)` method
+  - Retrieves data from Redis using generated key
+  - Parses JSON and returns object with symbol keys (or null if not found)
+  - Handles JSON parsing errors gracefully (catches, logs error, returns null)
+- [ ] Add public `removePendingRequest(requestId: string)` method
+  - Deletes key from Redis using generated key
+  - Logs info message about removed request
+- [ ] Add proper TypeScript type definitions for all parameters and return types
+- [ ] Add error handling for JSON parsing errors
+- [ ] Add logging (use appropriate Node.js logger - check project's logging setup)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 6. CursorRunnerCallbackService Conversion
-- Reference the Rails implementation for behavior
+- Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callback_service.rb` for complete behavior details
+
+- **Redis Client**: The project uses both `redis` and `ioredis` packages. Check which one is used elsewhere in the project and use the same for consistency
+- **Logging**: The Rails version uses `Rails.logger`. Check the project's logging setup (may use console.log, winston, pino, or another logger)
+- **Error Handling**: The `getPendingRequest` method must handle JSON parsing errors gracefully - catch errors, log them, and return null
+- **TypeScript Types**: Define proper interfaces/types for the data parameter (likely includes chat_id, message_id, etc. based on usage)
+- **Environment Variables**: In Docker, REDIS_URL is set to `redis://redis:6379/0` (shared Redis instance). Local development falls back to `redis://localhost:6379/0`
+- **Method Naming**: Convert Ruby snake_case method names to TypeScript camelCase (e.g., `store_pending_request` → `storePendingRequest`)
 
 - Task can be completed independently by a single agent
 
