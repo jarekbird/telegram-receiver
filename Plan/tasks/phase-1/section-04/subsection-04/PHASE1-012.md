@@ -6,21 +6,118 @@
 
 ## Description
 
-Add build scripts to package.json
+Add build scripts to package.json to enable TypeScript compilation and application execution. These scripts provide the Node.js/TypeScript equivalent of Rails build and run commands, enabling developers to compile TypeScript code, run the application in development mode with hot reload, and start the production server.
+
+**Rails Equivalent**: Rails uses `make run` (which runs `rails server`) for development and Puma configuration for production. This task sets up the equivalent npm scripts for the TypeScript/Node.js application.
 
 ## Checklist
 
-- [ ] Add `"build": "tsc"` to scripts
-- [ ] Add `"build:watch": "tsc --watch"` to scripts
-- [ ] Add `"dev": "nodemon --exec ts-node src/index.ts"` to scripts
-- [ ] Add `"start": "node dist/index.js"` to scripts
-- [ ] Verify scripts are valid JSON
+- [ ] Add `"build": "tsc"` to scripts (compiles TypeScript to JavaScript in `dist/` directory)
+- [ ] Add `"build:watch": "tsc --watch"` to scripts (watches for TypeScript file changes and recompiles automatically)
+- [ ] Add `"dev": "nodemon --exec ts-node src/index.ts"` to scripts (runs application in development mode with hot reload, equivalent to `rails server` in development)
+- [ ] Add `"start": "node dist/index.js"` to scripts (runs compiled JavaScript in production mode, requires `npm run build` first)
+- [ ] Verify scripts are valid JSON syntax
+- [ ] Ensure scripts section exists in package.json (create if missing)
+
+## Implementation Notes
+
+### Rails Equivalent Commands
+- **Rails**: `make run` → `rails server` (development server on port 3000)
+- **Node.js**: `npm run dev` → runs with nodemon and ts-node for hot reload
+
+- **Rails**: `rails server -e production` (production mode)
+- **Node.js**: `npm run build && npm start` → compiles then runs production build
+
+### Script Purposes
+- **`build`**: Compiles TypeScript source files (`src/**/*.ts`) to JavaScript in the `dist/` directory using the TypeScript compiler (`tsc`). This is required before running in production.
+- **`build:watch`**: Continuously watches TypeScript files for changes and automatically recompiles. Useful for development when you want to ensure compiled output stays in sync.
+- **`dev`**: Runs the application in development mode using `nodemon` (watches for file changes) and `ts-node` (executes TypeScript directly without compilation). Equivalent to Rails development server with auto-reload.
+- **`start`**: Runs the compiled JavaScript application from the `dist/` directory. This is the production entry point and requires the application to be built first.
+
+### Prerequisites
+- TypeScript compiler (`tsc`) must be installed (typically in `devDependencies`)
+- `ts-node` must be installed for the `dev` script
+- `nodemon` must be installed for the `dev` script
+- `src/index.ts` must exist (created in PHASE1-011)
+
+### TypeScript Configuration
+- Scripts assume `tsconfig.json` is configured with:
+  - `outDir: "./dist"` (output directory)
+  - `rootDir: "./src"` (source directory)
+- The `build` script uses the TypeScript compiler configuration from `tsconfig.json`
+
+## Validation Report
+
+### Task Review: PHASE1-012
+
+#### Task Information
+- **Task ID**: PHASE1-012
+- **Task Title**: Add build scripts to package.json
+- **Task Type**: Infrastructure Setup (not a direct Rails code conversion)
+
+#### Validation Results
+
+##### ✓ Correct
+- All requested scripts are appropriate for a TypeScript/Node.js project
+- Script commands are correct and follow Node.js/TypeScript best practices
+- Scripts enable equivalent functionality to Rails development workflow:
+  - `npm run dev` ≈ `rails server` (development with hot reload)
+  - `npm run build && npm start` ≈ `rails server -e production` (production)
+- Checklist items are clear and actionable
+
+##### ℹ️ Current Status
+- **Note**: All requested scripts are already present in `package.json`:
+  - `"build": "tsc"` ✓ (line 7)
+  - `"build:watch": "tsc --watch"` ✓ (line 8)
+  - `"dev": "nodemon --exec ts-node src/index.ts"` ✓ (line 9)
+  - `"start": "node dist/index.js"` ✓ (line 10)
+- The task appears to be already completed, but the task description lacked context about Rails equivalents and implementation details
+
+##### 📝 Enhancements Made
+1. **Enhanced Description**: Added context about Rails equivalents and purpose of each script
+2. **Added Implementation Notes**: Included detailed explanation of each script's purpose, Rails equivalents, prerequisites, and TypeScript configuration requirements
+3. **Added Validation Report**: Documented current status and validation results
+
+##### Script Validation
+All scripts match TypeScript/Node.js best practices:
+- `build`: Standard TypeScript compilation command ✓
+- `build:watch`: Standard watch mode for continuous compilation ✓
+- `dev`: Appropriate development setup with nodemon and ts-node ✓
+- `start`: Standard production entry point ✓
+
+#### Comparison with Rails Workflow
+
+**Rails Development**:
+```bash
+make run          # → rails server (development, port 3000)
+```
+
+**Node.js Development** (after this task):
+```bash
+npm run dev       # → nodemon + ts-node (development, hot reload)
+```
+
+**Rails Production**:
+```bash
+rails server -e production  # → Puma server (production mode)
+```
+
+**Node.js Production** (after this task):
+```bash
+npm run build     # → Compile TypeScript
+npm start         # → Run compiled JavaScript
+```
+
+The scripts provide equivalent functionality to Rails development and production workflows.
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 4. Express.js Framework Setup
 - Task can be completed independently by a single agent
+- **Prerequisites**: `src/index.ts` must exist (created in PHASE1-011)
+- **Dependencies**: Requires `typescript`, `ts-node`, and `nodemon` packages (should be in `devDependencies`)
+- **Note**: This is an infrastructure setup task that doesn't directly convert Rails code, but establishes the build/run workflow equivalent to Rails' `make run` and Puma server configuration
 
 ## Related Tasks
 
