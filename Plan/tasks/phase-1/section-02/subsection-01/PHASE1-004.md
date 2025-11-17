@@ -16,6 +16,7 @@ Create source directory structure
 - [ ] Create `src/controllers/` directory
 - [ ] Create `src/services/` directory
 - [ ] Create `src/models/` directory
+- [ ] Create `src/jobs/` directory
 - [ ] Create `src/middleware/` directory
 - [ ] Create `src/routes/` directory
 - [ ] Create `src/utils/` directory

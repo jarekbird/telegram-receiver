@@ -11,13 +11,13 @@ Create package.json
 ## Checklist
 
 - [ ] Create `package.json` file in project root
-- [ ] Set `name` field to "jarek-va"
+- [ ] Set `name` field to "telegram-receiver"
 - [ ] Set `version` field to "1.0.0"
-- [ ] Set `description` field
+- [ ] Set `description` field to "Telegram webhook receiver that forwards messages to Cursor Runner API"
 - [ ] Set `main` field to "dist/index.js"
-- [ ] Set `scripts` object (empty initially)
-- [ ] Set `keywords` array
-- [ ] Set `author` field
+- [ ] Set `scripts` object (empty initially, will be populated in later tasks)
+- [ ] Set `keywords` array to ["telegram", "webhook", "bot", "cursor-runner", "typescript", "nodejs"]
+- [ ] Set `author` field (optional, can be left empty)
 - [ ] Set `license` field to "MIT"
 
 ## Notes
