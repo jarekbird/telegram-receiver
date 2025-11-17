@@ -12,6 +12,7 @@ Convert the `transcribe_audio` method from Rails to TypeScript/Node.js. This met
 
 - [ ] Create `transcribeAudio` method with signature: `transcribeAudio(fileId: string, chatId: number, messageId: number): Promise<string>`
 - [ ] Send optional status message "🎤 Transcribing audio..." if cursor debug is enabled (check SystemSetting for 'debug')
+- [ ] Wrap status message sending in try-catch that logs errors but doesn't propagate (transcription must proceed even if status message fails)
 - [ ] Download audio file from Telegram using `TelegramService.downloadFile(fileId)` - returns file path
 - [ ] Transcribe audio using `ElevenLabsSpeechToTextService.transcribe(audioPath)` - returns transcribed text
 - [ ] Return transcribed text string
@@ -33,6 +34,9 @@ private async transcribeAudio(
 ### Key Implementation Points
 
 1. **Status Message (Optional)**: If cursor debug is enabled (check `SystemSetting.enabled('debug')`), send a status message "🎤 Transcribing audio..." to the user before starting transcription.
+   - **Important**: Wrap status message sending in try-catch that logs errors but does NOT propagate them
+   - If status message sending fails, transcription should still proceed
+   - This ensures transcription isn't blocked by status message failures
 
 2. **File Download**: Use `TelegramService.downloadFile(fileId)` which:
    - Gets file info from Telegram API
@@ -50,9 +54,10 @@ private async transcribeAudio(
    - Handle cleanup errors gracefully (log warning, don't throw)
 
 5. **Error Handling**: 
-   - The method should propagate errors to the caller
-   - The caller (`handleMessage` method) handles sending error messages to users
-   - Errors from download, transcription, or cleanup should be logged
+   - Status message errors: Catch and log, but do NOT propagate (transcription must proceed)
+   - Download/transcription errors: Propagate to caller (caller handles user error messages)
+   - Cleanup errors: Catch and log warnings, do NOT propagate (cleanup failures shouldn't block method completion)
+   - The caller (`handleMessage` method) handles sending error messages to users for download/transcription failures
 
 ### Dependencies
 
@@ -64,11 +69,11 @@ private async transcribeAudio(
 ### Rails Implementation Reference
 
 Located at `jarek-va/app/jobs/telegram_message_job.rb` lines 315-352. The method:
-- Sends status message if debug enabled (lines 317-328)
+- Sends status message if debug enabled (lines 317-328) - wrapped in begin/rescue that catches and logs errors without propagating
 - Downloads file using `TelegramService.download_file(file_id)` (line 333)
 - Transcribes using `ElevenLabsSpeechToTextService.new.transcribe(audio_path)` (line 338)
 - Returns transcribed text (line 340)
-- Cleans up file in ensure block (lines 341-350)
+- Cleans up file in ensure block (lines 341-350) - wrapped in begin/rescue that catches and logs cleanup errors without propagating
 
 ## Notes
 
