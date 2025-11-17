@@ -6,16 +6,79 @@
 
 ## Description
 
-Review and improve add missing type annotations in the codebase to ensure best practices.
+Review and add missing type annotations throughout the codebase to ensure TypeScript best practices are followed. This task focuses on identifying functions, objects, and exports that lack explicit type annotations and adding them where they improve code clarity, type safety, and developer experience.
+
+## Files Requiring Type Annotation Review
+
+Based on codebase review, the following files need type annotation improvements:
+
+1. **Test Mocks** (`tests/mocks/`):
+   - `tests/mocks/telegramApi.ts` - Missing return types for `resetTelegramApiMocks()`, missing type definitions for mock objects
+   - `tests/mocks/cursorRunnerApi.ts` - Missing return types for `resetCursorRunnerApiMocks()`, missing type definitions for mock objects
+   - `tests/mocks/redis.ts` - Missing return types for `resetRedisMocks()`, missing type definitions for mock Redis client
+
+2. **Test Fixtures** (`tests/fixtures/`):
+   - `tests/fixtures/apiResponses.ts` - Missing return type for `createCursorRunnerResponse()`, missing type definitions for response objects
+   - `tests/fixtures/telegramMessages.ts` - Missing return type for `createTelegramMessage()`, missing type definitions for Telegram message objects
+
+3. **Test Helpers** (`tests/helpers/`):
+   - `tests/helpers/testUtils.ts` - Already reviewed in PHASE3-013, verify all type annotations are complete
+   - `tests/helpers/apiHelpers.ts` - Review for any missing type annotations
+
+4. **Configuration Files**:
+   - `playwright.config.ts` - Verify all configuration options are properly typed
+   - `jest.config.ts` - Verify configuration is properly typed (already uses `Config` type)
+
+5. **Source Files** (`src/`):
+   - `src/index.ts` - Currently empty, but when implemented, ensure all exports are properly typed
 
 ## Checklist
 
-- [ ] Review function return types
-- [ ] Review function parameter types
-- [ ] Add JSDoc type annotations where helpful
-- [ ] Review exported type definitions
-- [ ] Ensure all public APIs are typed
-- [ ] Document type annotation strategy
+### 1. Review Function Return Types
+- [ ] Review all functions in test mocks and add explicit return types where missing
+- [ ] Review all helper functions and add explicit return types
+- [ ] Review all fixture factory functions and add explicit return types
+- [ ] Ensure functions that return `void` are explicitly annotated
+- [ ] Ensure async functions have proper `Promise<T>` return types
+
+### 2. Review Function Parameter Types
+- [ ] Verify all function parameters have explicit types
+- [ ] Review optional parameters and ensure they're properly typed
+- [ ] Check for `any` types in function parameters and replace with proper types
+- [ ] Ensure default parameter values are compatible with their types
+
+### 3. Add Type Definitions for Objects
+- [ ] Create type definitions for Telegram API mock objects (`tests/mocks/telegramApi.ts`)
+- [ ] Create type definitions for Cursor Runner API mock objects (`tests/mocks/cursorRunnerApi.ts`)
+- [ ] Create type definitions for Redis mock client (`tests/mocks/redis.ts`)
+- [ ] Create type definitions for API response fixtures (`tests/fixtures/apiResponses.ts`)
+- [ ] Create type definitions for Telegram message fixtures (`tests/fixtures/telegramMessages.ts`)
+
+### 4. Review Exported Types and Interfaces
+- [ ] Ensure all exported types and interfaces are properly documented
+- [ ] Verify exported types match their actual usage
+- [ ] Check for missing type exports that should be public
+
+### 5. Add JSDoc Type Annotations
+- [ ] Add JSDoc comments with `@param` and `@returns` tags where helpful
+- [ ] Add JSDoc `@type` annotations for complex types where TypeScript types might not be sufficient
+- [ ] Ensure JSDoc comments match TypeScript type annotations
+
+### 6. Verify Public APIs Are Typed
+- [ ] Review all exported functions and ensure they have proper type annotations
+- [ ] Review all exported constants and ensure they have proper types
+- [ ] Review all exported objects and ensure they have type definitions
+
+### 7. Type Annotation Strategy Documentation
+- [ ] Document when explicit return types are required vs when inference is preferred
+- [ ] Document type annotation patterns used in the codebase
+- [ ] Create or update `docs/typescript-patterns.md` with type annotation guidelines
+
+### 8. Verification
+- [ ] Run `npm run type-check` and verify no type errors
+- [ ] Run `npm run lint` and verify no type-related warnings
+- [ ] Run `npm test` to ensure all tests still pass after adding type annotations
+- [ ] Verify TypeScript compiler strict mode compliance
 
 ## Notes
 
