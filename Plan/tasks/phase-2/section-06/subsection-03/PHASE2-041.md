@@ -6,22 +6,78 @@
 
 ## Description
 
-Convert implement get_pending_request method from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/cursor_runner_callback_service.rb`.
+Implement the `getPendingRequest` method in the CursorRunnerCallbackService class. This method retrieves pending cursor-runner request information from Redis. It takes a unique request ID, retrieves the stored JSON data, parses it, and returns the parsed object. If the key doesn't exist or JSON parsing fails, it returns null.
+
+Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callback_service.rb` (lines 37-49) for complete behavior details.
 
 ## Checklist
 
-- [ ] Implement `getPendingRequest` method
-- [ ] Generate Redis key with prefix
-- [ ] Retrieve data from Redis
+- [ ] Implement `getPendingRequest(requestId: string)` method
+  - Method signature: `requestId` (required string)
+  - Return type: `object | null` (returns parsed object with symbol-like keys or null if not found/error)
+- [ ] Use private `redisKey(requestId: string)` helper method to generate Redis key with prefix
+  - The helper method prepends `REDIS_KEY_PREFIX` constant (`'cursor_runner_callback:'`) to the request ID
+- [ ] Retrieve data from Redis using the generated key
+  - Use Redis client's `get()` method: `redis.get(key)`
+  - Returns `string | null` (null if key doesn't exist)
+- [ ] Handle missing keys (null check)
+  - If Redis `get()` returns `null`, return `null` immediately
+  - This handles the case where the key doesn't exist in Redis
 - [ ] Parse JSON response
-- [ ] Handle missing keys
-- [ ] Add error handling
+  - Use `JSON.parse(data)` to parse the JSON string
+  - Note: Rails uses `JSON.parse(data, symbolize_names: true)` which converts keys to symbols
+  - In TypeScript/Node.js, JSON.parse returns a plain object (keys are strings)
+  - If symbol-like behavior is needed, consider using a library or manual transformation, but typically plain objects are sufficient
+- [ ] Add error handling for JSON parsing errors
+  - Wrap `JSON.parse()` in try/catch block
+  - Catch `SyntaxError` (Node.js JSON.parse throws SyntaxError for invalid JSON)
+  - Log error with appropriate level (error level)
+  - Log message should include: request_id and error message
+  - Format: `"Failed to parse pending request data"` with context object: `{ request_id, error: error.message }`
+  - Return `null` on parsing error (graceful degradation)
+- [ ] Add error handling for Redis operations (optional but recommended)
+  - Handle Redis connection errors
+  - Handle Redis operation errors
+  - Log errors appropriately
+  - Return `null` on Redis errors (graceful degradation)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 6. CursorRunnerCallbackService Conversion
-- Reference the Rails implementation for behavior
+- Subsection: 6.3
+- Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callback_service.rb` (lines 37-49) for complete behavior details
+
+**Rails Implementation Details:**
+- Method signature: `get_pending_request(request_id)`
+- Uses `redis_key(request_id)` private helper to generate key with `REDIS_KEY_PREFIX` prefix
+- Uses `@redis.get(key)` to retrieve data (returns `nil` if key doesn't exist)
+- Returns `nil` immediately if data is `nil` (key doesn't exist)
+- Parses JSON with `JSON.parse(data, symbolize_names: true)` which converts keys to symbols
+- Has error handling for `JSON::ParserError`:
+  - Logs error: `Rails.logger.error('Failed to parse pending request data', { request_id: request_id, error: e.message })`
+  - Returns `nil` on parsing error
+- Returns parsed hash (with symbol keys) or `nil`
+
+**TypeScript Implementation Requirements:**
+- Method name: `getPendingRequest` (camelCase conversion from Ruby snake_case)
+- Parameters: `requestId: string`
+- Return type: `object | null` (or more specific type if data structure is known)
+- Use the private `redisKey()` helper method that should already exist from PHASE2-039
+- Use Redis client's `get()` method (both `redis` and `ioredis` packages support `get(key)` which returns `string | null`)
+- Use `JSON.parse()` for parsing (TypeScript/Node.js equivalent of Ruby's `JSON.parse`)
+  - Note: Node.js `JSON.parse()` returns a plain object with string keys (no symbol conversion)
+  - If symbol-like behavior is needed, consider using a library, but typically plain objects are sufficient for TypeScript
+- Handle `SyntaxError` exception (Node.js JSON.parse throws SyntaxError for invalid JSON, equivalent to Ruby's JSON::ParserError)
+- Add proper error handling (try/catch) for JSON parsing errors and log errors
+- Use appropriate logger (check project's logging setup - may be console.log, winston, pino, etc.)
+- Ensure method is added to the `CursorRunnerCallbackService` class created in PHASE2-039
+
+**Dependencies:**
+- Assumes `CursorRunnerCallbackService` class structure exists (from PHASE2-039)
+- Assumes `REDIS_KEY_PREFIX` constant exists
+- Assumes private `redisKey()` helper method exists
+- Assumes Redis client instance is available as private property
 
 - Task can be completed independently by a single agent
 
