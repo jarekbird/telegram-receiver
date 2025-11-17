@@ -18,7 +18,9 @@ Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callb
 - [ ] Use private `redisKey(requestId: string)` helper method to generate Redis key with prefix
   - The helper method prepends `REDIS_KEY_PREFIX` constant (`'cursor_runner_callback:'`) to the request ID
 - [ ] Serialize data object to JSON string using `JSON.stringify(data)`
-- [ ] Store serialized JSON in Redis using `redis.setex(key, ttl, jsonString)`
+- [ ] Store serialized JSON in Redis using the appropriate method based on Redis client package:
+  - If using `redis` package: use `redis.setex(key, ttl, jsonString)` (matches Rails API)
+  - If using `ioredis` package: use `redis.setex(key, ttl, jsonString)` (ioredis also supports setex) OR `redis.set(key, jsonString, 'EX', ttl)` (alternative ioredis API)
   - Use the generated Redis key
   - Use provided `ttl` parameter or default to `DEFAULT_TTL` (3600 seconds)
   - Store the JSON stringified data
@@ -51,7 +53,8 @@ Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callb
 - Parameters: `requestId: string`, `data: object`, `ttl?: number` (optional, defaults to `DEFAULT_TTL`)
 - Use the private `redisKey()` helper method that should already exist from PHASE2-039
 - Use `JSON.stringify()` for serialization (TypeScript/Node.js equivalent of Ruby's `to_json`)
-- Use Redis client's `setex()` method (check if project uses `redis` or `ioredis` package)
+- Use Redis client's `setex()` method (both `redis` and `ioredis` packages support `setex(key, ttl, value)` which matches the Rails API)
+  - Note: `ioredis` also supports `set(key, value, 'EX', ttl)` as an alternative, but `setex()` is preferred for consistency with Rails implementation
 - Add proper error handling (try/catch) for Redis operations and log errors
 - Use appropriate logger (check project's logging setup - may be console.log, winston, pino, etc.)
 - Ensure method is added to the `CursorRunnerCallbackService` class created in PHASE2-039
