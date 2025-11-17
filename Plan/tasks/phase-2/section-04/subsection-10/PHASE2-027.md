@@ -24,6 +24,7 @@ Private methods that should also be tested:
 
 - [ ] Create `tests/unit/services/telegramService.test.ts` (use camelCase naming convention)
 - [ ] Set up proper mocks for Telegram Bot API (use existing `tests/mocks/telegramApi.ts` as reference)
+  - [ ] Add missing mock methods to `tests/mocks/telegramApi.ts`: `getWebhookInfo`, `sendVoice`, `getFile`
 - [ ] Mock file system operations (fs, path modules) for file-related tests
 - [ ] Mock HTTP client for `download_file_from_url()` tests
 - [ ] Test `sendMessage()` method:
@@ -56,9 +57,12 @@ Private methods that should also be tested:
   - [ ] Logs errors and re-throws exceptions on failure
 - [ ] Test `downloadFile()` method:
   - [ ] Successfully downloads file with provided destination path
+  - [ ] Calls `getFile()` API method first to retrieve file path from Telegram
+  - [ ] Constructs correct download URL using bot token and file path
   - [ ] Generates default destination path in temp directory when not provided
-  - [ ] Uses correct filename from Telegram file path
+  - [ ] Uses correct filename from Telegram file path (format: `telegram_{file_id}_{filename}`)
   - [ ] Calls `download_file_from_url()` with correct URL
+  - [ ] Returns the destination path after successful download
   - [ ] Returns early when bot token is blank
   - [ ] Logs errors and re-throws exceptions on failure
 - [ ] Test `downloadFileFromUrl()` private method (if exposed for testing or test via `downloadFile()`):
@@ -100,8 +104,17 @@ Private methods that should also be tested:
 - HTML escaping in `send_message` (lines 20-24): Only escapes HTML entities when `parse_mode == 'HTML'`, otherwise uses text as-is
 - File MIME type detection in `send_voice` (lines 93-100): Maps file extensions to MIME types (.ogg/.oga → audio/ogg, .wav → audio/wav, default → audio/mpeg)
 - Default destination path generation in `download_file` (lines 135-139): Uses temp directory with format `telegram_{file_id}_{filename}` when destination_path is not provided
+- File download flow in `download_file` (lines 127-143):
+  - First calls `bot.api.get_file(file_id: file_id)` to get file info (line 128)
+  - Extracts `file_path` from response: `file_info['result']['file_path']` (line 129)
+  - Constructs download URL: `https://api.telegram.org/file/bot{token}/{file_path}` (line 132)
+  - Logs download start with file ID and destination path (line 142)
+  - Calls `download_file_from_url()` to perform actual download (line 143)
+  - Returns destination path after successful download (line 145)
+- Method naming: The Rails method `webhook_info` calls Telegram API `get_webhook_info`. In TypeScript, use `getWebhookInfo()` to match Telegram API naming convention (or `webhookInfo()` per API conventions doc - verify which naming is used in the actual implementation)
 - Use existing test infrastructure:
   - Use `tests/mocks/telegramApi.ts` as reference for mocking Telegram API
+  - **IMPORTANT**: The mock file currently lacks `getWebhookInfo`, `sendVoice`, and `getFile` methods - these must be added before writing tests
   - Follow patterns in `tests/README.md` for test structure
   - Use Jest for testing framework
 - Task can be completed independently by a single agent
