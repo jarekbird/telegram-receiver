@@ -8,67 +8,95 @@
 
 Review and identify N+1 query problems in the codebase to ensure best practices. This task focuses on detecting patterns where multiple queries are executed in loops when they could be batched or optimized into a single query. The application uses MCP database connections (cursor-runner-shared-sqlite), Redis operations, and external API calls, all of which can exhibit N+1 patterns.
 
+**Key Areas to Review:**
+- **MCP Database Queries**: SystemSetting lookups and tasks table operations via cursor-runner-shared-sqlite MCP connection
+- **Redis Operations**: Callback state management in `CursorRunnerCallbackService`, BullMQ job queue operations
+- **External API Calls**: Telegram Bot API calls in `TelegramService`, Cursor Runner API calls in `CursorRunnerService`, ElevenLabs API calls
+- **Background Job Processing**: BullMQ job processors that might query data for each job item
+- **Message Processing**: `TelegramMessageJob` processing multiple updates or messages sequentially
+
+Reference the Rails implementation patterns where applicable to understand expected query behavior:
+- `jarek-va/app/services/cursor_runner_callback_service.rb` - Redis callback state management
+- `jarek-va/app/services/telegram_service.rb` - Telegram Bot API interactions
+- `jarek-va/app/jobs/telegram_message_job.rb` - Message processing patterns
+
 ## Checklist
 
 ### MCP Database Query Patterns
 - [ ] Review MCP database query patterns (cursor-runner-shared-sqlite)
   - Identify loops that execute MCP queries (SELECT, INSERT, UPDATE, DELETE)
   - Check for patterns where a list query is followed by individual queries for each item
-  - Look for SystemSetting queries executed in loops
-  - Look for tasks table queries executed in loops
+  - Look for SystemSetting queries executed in loops (e.g., checking multiple settings sequentially)
+  - Look for tasks table queries executed in loops (e.g., updating multiple tasks one by one)
+  - Review any service that accesses SystemSetting or tasks table for loop-based queries
   - Identify opportunities to batch multiple queries into single operations
 - [ ] Check for N+1 patterns in MCP queries
   - Review code that fetches a list, then queries each item individually
-  - Check if multiple SystemSetting lookups can be combined
-  - Verify if task queries can be batched (e.g., updating multiple tasks)
+  - Check if multiple SystemSetting lookups can be combined (e.g., fetching multiple settings in one query)
+  - Verify if task queries can be batched (e.g., updating multiple tasks in a single transaction or batch UPDATE)
   - Look for patterns where related data is fetched separately instead of using JOINs or batch queries
+  - Review task operator patterns that might query tasks individually instead of batching
+  - Check if SystemSetting lookups in request handlers could be cached or batched
 
 ### Redis Query Patterns
 - [ ] Review Redis operations for N+1 patterns
   - Check for loops that execute individual Redis GET/SET operations
   - Identify patterns where multiple Redis keys are accessed sequentially in loops
+  - Review `CursorRunnerCallbackService` for patterns where multiple callbacks are processed individually
+  - Check BullMQ job processing for patterns that access Redis keys in loops
   - Look for opportunities to use Redis pipelining for batch operations
   - Check if MGET/MSET could replace multiple individual GET/SET operations
-  - Review callback service for patterns where multiple callbacks are processed individually
+  - Review callback cleanup operations that might delete keys one by one
 - [ ] Check Redis batch operation opportunities
   - Verify if multiple Redis operations can be combined using pipelining
   - Check if hash operations (HGETALL, HMSET) could replace multiple string operations
   - Review if sorted sets or other structures could reduce query count
+  - Check if callback state retrieval can be batched when processing multiple callbacks
+  - Review BullMQ's internal Redis operations (ensure they're efficient, though this is library-managed)
 
 ### External API Call Patterns
 - [ ] Review external API calls for N+1 patterns
-  - Check Telegram Bot API calls executed in loops (sending messages, getting updates)
-  - Review Cursor Runner API calls that might be batched
-  - Check ElevenLabs API calls for batch opportunities
-  - Identify patterns where multiple API calls could be combined
+  - Check `TelegramService` for Telegram Bot API calls executed in loops (sending messages to multiple users, getting file info for multiple files)
+  - Review `CursorRunnerService` for Cursor Runner API calls that might be batched
+  - Check `ElevenLabsSpeechToTextService` and `ElevenLabsTextToSpeechService` for batch opportunities
+  - Review `TelegramMessageJob` for patterns that send multiple messages sequentially
+  - Identify patterns where multiple API calls could be combined (e.g., sending multiple Telegram messages)
+  - Check webhook management endpoints for sequential API calls
 - [ ] Check for sequential API calls that could be parallelized
-  - Review if Promise.all() could parallelize independent API calls
-  - Check if batch endpoints exist for external APIs
-  - Verify if rate limiting considerations allow for batching
+  - Review if Promise.all() could parallelize independent API calls (e.g., sending multiple Telegram messages concurrently)
+  - Check if batch endpoints exist for external APIs (Telegram doesn't support batch, but parallelization is possible)
+  - Verify if rate limiting considerations allow for batching or parallelization
+  - Review callback processing that might make sequential API calls to Telegram
+  - Check if file downloads from Telegram could be parallelized when processing multiple files
 
 ### Loop Analysis
 - [ ] Identify loops with queries
-  - Review all for/while/forEach loops that contain database queries
-  - Check map/filter/reduce operations that trigger queries
-  - Identify async operations in loops that could be batched
+  - Review all for/while/forEach loops that contain database queries (MCP, Redis, API calls)
+  - Check map/filter/reduce operations that trigger queries (common in TypeScript/JavaScript)
+  - Identify async operations in loops that could be batched (await in loops is a red flag)
   - Review recursive functions that might trigger multiple queries
+  - Check `TelegramMessageJob` for loops processing multiple updates sequentially
+  - Review any batch processing logic that might query data per item
 - [ ] Check for unnecessary queries in loops
-  - Verify if data fetched in loops could be prefetched before the loop
-  - Check if queries inside loops could be moved outside
-  - Review if cached data could prevent repeated queries
-  - Identify queries that return unused data
+  - Verify if data fetched in loops could be prefetched before the loop (e.g., fetch all SystemSettings needed upfront)
+  - Check if queries inside loops could be moved outside (e.g., configuration lookups)
+  - Review if cached data could prevent repeated queries (e.g., SystemSetting values, bot client instances)
+  - Identify queries that return unused data (fetching more than needed)
+  - Check if loop iterations could be parallelized with Promise.all() instead of sequential await
 
 ### Batch Operation Opportunities
 - [ ] Review batch operation possibilities
-  - Check if multiple individual queries can be combined into batch queries
-  - Verify if bulk operations are available for MCP database queries
-  - Review if batch endpoints exist for external APIs
-  - Check if Redis pipelining can batch multiple operations
+  - Check if multiple individual queries can be combined into batch queries (MCP supports multiple statements)
+  - Verify if bulk operations are available for MCP database queries (e.g., batch UPDATE for tasks)
+  - Review if batch endpoints exist for external APIs (Telegram doesn't support batch, but parallelization helps)
+  - Check if Redis pipelining can batch multiple operations (MGET, MSET, pipeline)
+  - Review if multiple SystemSetting lookups can be combined into a single query
 - [ ] Identify optimization opportunities
-  - Review if data can be prefetched before processing loops
-  - Check if JOINs or batch queries can replace multiple individual queries
-  - Verify if caching can prevent repeated queries
-  - Review if parallel execution (Promise.all) can improve performance
+  - Review if data can be prefetched before processing loops (e.g., fetch all SystemSettings at startup or per-request)
+  - Check if JOINs or batch queries can replace multiple individual queries (MCP SQLite supports JOINs)
+  - Verify if caching can prevent repeated queries (SystemSetting values, bot clients, etc.)
+  - Review if parallel execution (Promise.all) can improve performance (independent API calls, file downloads)
+  - Check if BullMQ job processing could batch operations when processing multiple jobs
 
 ### Documentation and Fixes
 - [ ] Document identified N+1 patterns
