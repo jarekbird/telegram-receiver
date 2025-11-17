@@ -6,7 +6,7 @@
 
 ## Description
 
-review code maintainability to improve code quality and maintainability.
+Review code maintainability across the telegram-receiver codebase to improve code quality and maintainability. Evaluate the codebase for coupling between modules, extensibility, code complexity, and areas that may be difficult to modify or extend. Focus on identifying architectural patterns, dependency relationships, and code organization that impact long-term maintainability.
 
 ## Checklist
 
@@ -18,6 +18,16 @@ review code maintainability to improve code quality and maintainability.
 - [ ] Identify maintainability issues
 - [ ] Document maintainability findings
 - [ ] Create maintainability improvements list
+- [ ] Review dependency relationships between modules
+- [ ] Check for circular dependencies
+- [ ] Evaluate code organization and structure
+- [ ] Review abstraction levels and interfaces
+- [ ] Check for code duplication that impacts maintainability
+- [ ] Review configuration management and environment handling
+- [ ] Evaluate error handling patterns for consistency
+- [ ] Check for hardcoded values that should be configurable
+- [ ] Review service boundaries and responsibilities
+- [ ] Assess testability of code structure
 
 ## Notes
 
@@ -27,6 +37,73 @@ review code maintainability to improve code quality and maintainability.
 - Document all findings and improvements
 
 - Task can be completed independently by a single agent
+
+## Review Guidelines
+
+### Areas to Focus On
+
+1. **Module Coupling**
+   - Identify tight coupling between modules (high interdependency)
+   - Look for modules that depend on implementation details rather than interfaces
+   - Check for circular dependencies
+   - Evaluate if dependencies are necessary or can be reduced
+
+2. **Code Extensibility**
+   - Review if new features can be added without modifying existing code
+   - Check for proper use of interfaces and abstractions
+   - Evaluate if code follows Open/Closed Principle
+   - Assess if configuration changes require code changes
+
+3. **Code Organization**
+   - Review directory structure and file organization
+   - Check if related code is grouped together
+   - Evaluate if separation of concerns is maintained
+   - Assess if code follows single responsibility principle
+
+4. **Dependency Management**
+   - Review how modules import and depend on each other
+   - Check for unnecessary dependencies
+   - Evaluate if dependencies are at appropriate abstraction levels
+   - Assess if dependency injection is used where beneficial
+
+5. **Configuration and Environment**
+   - Check for hardcoded values that should be configurable
+   - Review environment variable usage
+   - Evaluate configuration management patterns
+   - Assess if configuration is centralized and easy to modify
+
+6. **Error Handling**
+   - Review consistency of error handling patterns
+   - Check if errors are properly propagated
+   - Evaluate if error handling makes code harder to maintain
+   - Assess if error handling is centralized where appropriate
+
+7. **Testability**
+   - Evaluate if code structure supports easy testing
+   - Check for dependencies that make testing difficult
+   - Review if code can be tested in isolation
+   - Assess if mocking and stubbing are straightforward
+
+### Files to Review
+
+- All TypeScript source files in `src/` directory
+- Test files in `tests/` directory (for test maintainability)
+- Configuration files (`jest.config.ts`, `playwright.config.ts`, `tsconfig.json`)
+- Service implementations
+- Controller implementations
+- Model implementations
+- Utility functions
+- Middleware implementations
+
+### Expected Output
+
+After completing this review, document:
+- Overall maintainability assessment
+- Specific maintainability issues found
+- Coupling analysis (which modules are tightly coupled)
+- Extensibility concerns
+- Recommendations for improvement
+- Prioritized list of maintainability improvements
 
 ## Related Tasks
 
