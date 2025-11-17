@@ -13,8 +13,16 @@ The Rails implementation (`jarek-va/app/controllers/telegram_controller.rb`) inh
 - 4 public endpoint methods: `webhook`, `set_webhook`, `webhook_info`, `delete_webhook`
 - 1 protected method: `authenticate_admin` (for admin endpoints)
 - 3 private helper methods: `authenticate_webhook`, `default_webhook_url`, `extract_chat_info_from_update`
-- Error handling that sends error messages to Telegram users when possible
+- Error handling that sends error messages to Telegram users when possible (in webhook method)
 - Always returns 200 OK to Telegram to avoid retries
+
+**Key Implementation Details:**
+- The `webhook` method filters out Rails-specific params (`controller`, `action`, `format`, `telegram`) before processing
+- The `webhook` method enqueues the update as JSON string to `TelegramMessageJob.perform_later`
+- Admin endpoints (`set_webhook`, `webhook_info`, `delete_webhook`) return JSON with `{ ok: true/false, ... }` format
+- The `authenticate_admin` method checks `X-Admin-Secret` header or `admin_secret` param, returns early with 401 if unauthorized
+- The `default_webhook_url` method uses config values (`telegram_webhook_base_url`) or environment variable (`TELEGRAM_WEBHOOK_BASE_URL`)
+- The `extract_chat_info_from_update` method handles three update types: `message`, `edited_message`, and `callback_query` (extracting chat info from nested message in callback_query)
 
 For TypeScript, convert to an Express controller class that:
 - Uses Express Request, Response, and NextFunction types
@@ -39,8 +47,13 @@ For TypeScript, convert to an Express controller class that:
   - `deleteWebhook(req: Request, res: Response): Promise<void>` - will be implemented in PHASE2-060
 - [ ] Add protected/private method stubs for helper methods:
   - `authenticateAdmin(req: Request): boolean` - will be implemented in PHASE2-061
+    - Should check `X-Admin-Secret` header or `admin_secret` query/body param
+    - Returns `true` if authenticated, `false` otherwise
   - `defaultWebhookUrl(): string` - helper method to get default webhook URL from config
+    - Should use config value or environment variable, appends `/telegram/webhook` path
   - `extractChatInfoFromUpdate(update: TelegramUpdate): [number | null, number | null]` - will be implemented in PHASE2-063
+    - Returns tuple of `[chat_id, message_id]` or `[null, null]` if not found
+    - Handles `message`, `edited_message`, and `callback_query` update types
 - [ ] Add basic error handling structure (try-catch pattern, error logging)
 - [ ] Add TypeScript types/interfaces for TelegramUpdate (if not already defined)
 - [ ] Export the class as default export or named export
@@ -55,6 +68,9 @@ For TypeScript, convert to an Express controller class that:
 - Method names should follow TypeScript/JavaScript camelCase convention (e.g., `setWebhook` instead of `set_webhook`)
 - The controller will need to enqueue jobs to process Telegram updates asynchronously (similar to Rails `TelegramMessageJob.perform_later`)
 - Error handling should always return 200 OK to Telegram to prevent retries (see Rails implementation lines 26-48)
+- The `webhook` method should filter out Express-specific params before processing (similar to Rails filtering `controller`, `action`, `format`, `telegram`)
+- The `webhook` method's error handler should attempt to send error messages to Telegram users when chat info is available (see Rails implementation lines 30-45)
+- Admin endpoints should return JSON responses with `{ ok: boolean, ... }` format
 - Task can be completed independently by a single agent
 
 ## Related Tasks
