@@ -16,9 +16,10 @@ The jarek-va Rails application uses `dotenv-rails` (see `jarek-va/Gemfile` line 
 
 ## Checklist
 
-- [ ] Run `npm install dotenv` to install as production dependency
+- [ ] Run `npm install dotenv` to install as production dependency (or verify if already installed)
 - [ ] Verify `dotenv` appears in `package.json` dependencies section
 - [ ] Verify installation by checking `node_modules/dotenv` exists
+- [ ] Verify `dotenv` version matches or exceeds the version in `package.json` (currently ^16.3.1)
 - [ ] Note that configuration will be done in PHASE1-024
 
 ## Notes
@@ -26,9 +27,10 @@ The jarek-va Rails application uses `dotenv-rails` (see `jarek-va/Gemfile` line 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 7. Environment Variables Management
 - Task can be completed independently by a single agent
-- Rails equivalent: `dotenv-rails` gem (jarek-va/Gemfile line 21)
+- Rails equivalent: `dotenv-rails` gem (jarek-va/Gemfile line 21, version ~> 2.8)
 - The Rails application uses `ENV.fetch()` throughout to access environment variables (see jarek-va/config/application.rb)
 - Configuration and usage of dotenv will be implemented in the next task (PHASE1-024)
+- **Note**: If `dotenv` is already installed in `package.json`, the `npm install` step is idempotent and can be skipped; proceed directly to verification steps
 
 ## Related Tasks
 
