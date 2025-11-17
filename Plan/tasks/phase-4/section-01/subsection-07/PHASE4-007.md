@@ -6,18 +6,300 @@
 
 ## Description
 
-check for code smells (long methods, large classes, etc.) to improve code quality and maintainability.
+Run comprehensive code smell detection to identify common code quality issues such as long methods, large classes, deep nesting, magic numbers, and other code smells that impact maintainability and code quality. This task focuses on detecting structural code smells and providing actionable insights for refactoring.
+
+## Current State
+
+The project currently has:
+- **ESLint** configured with TypeScript rules (PHASE4-001)
+- **Prettier** configured for code formatting (PHASE4-002)
+- **SonarQube or similar tool** may be set up (PHASE4-003)
+- **Complexity analysis** may be completed (PHASE4-004)
+- **Code duplication detection** may be completed (PHASE4-005)
+- **Unused code detection** may be completed (PHASE4-006)
+- Basic linting and formatting scripts in package.json
+
+**Existing Code Smell Detection**:
+- ESLint has some complexity rules but may not be comprehensive
+- TypeScript compiler provides basic checks
+- Both tools provide basic detection but may miss:
+  - Long methods (methods exceeding recommended line count)
+  - Large classes/files (classes/files exceeding recommended size)
+  - Deep nesting (excessive control flow nesting)
+  - Magic numbers (hardcoded numeric values without constants)
+  - Code smell patterns (god classes, feature envy, long parameter lists, etc.)
+  - Code quality metrics and thresholds
+
+**Missing**: Comprehensive code smell detection that provides:
+- Identification of long methods (>50 lines)
+- Identification of large classes/files (>500 lines)
+- Detection of deep nesting (>4 levels)
+- Detection of magic numbers
+- Detection of common code smell patterns
+- Prioritization of code smells by severity
+- Integration with existing tooling (ESLint, SonarQube)
+- Automated code smell reporting
+- Code quality metrics and thresholds
+
+## Tool Options
+
+Consider the following options for code smell detection:
+
+1. **SonarJS/SonarQube** (Recommended if PHASE4-003 is completed)
+   - Built-in code smell detection
+   - Detects long methods, large classes, deep nesting
+   - Identifies magic numbers
+   - Provides code smell ratings
+   - Integration with existing SonarQube setup
+   - Visual reports and dashboards
+
+2. **ESLint plugins** (Recommended for integration)
+   - `eslint-plugin-complexity` - Cyclomatic complexity detection
+   - `eslint-plugin-sonarjs` - SonarJS rules for ESLint
+   - `eslint-plugin-no-magic-numbers` - Magic number detection
+   - Integrates with existing ESLint setup
+   - Can be configured with thresholds
+
+3. **CodeClimate** (Cloud-based)
+   - Comprehensive code smell detection
+   - Provides code quality ratings
+   - Integrates with GitHub/GitLab
+   - Free for open source projects
+
+4. **jsinspect** (Code smell detection)
+   - Detects code smells and anti-patterns
+   - Identifies similar code patterns
+   - Command-line tool
+   - Can be integrated into npm scripts
+
+5. **ts-morph** (TypeScript-specific)
+   - TypeScript AST analysis
+   - Can detect structural code smells
+   - Programmatic analysis capabilities
+
+6. **Custom ESLint rules**
+   - Can create custom rules for project-specific smells
+   - Integrates with existing ESLint setup
+   - Requires development effort
+
+## Code Smell Thresholds
+
+Recommended thresholds for code smell detection:
+
+### Method/Function Size
+- **Excellent**: < 20 lines
+- **Good**: 20-50 lines
+- **Acceptable**: 50-100 lines
+- **Needs refactoring**: > 100 lines
+- **Threshold for detection**: > 50 lines
+
+### Class/File Size
+- **Excellent**: < 200 lines
+- **Good**: 200-500 lines
+- **Acceptable**: 500-1000 lines
+- **Needs refactoring**: > 1000 lines
+- **Threshold for detection**: > 500 lines
+
+### Nesting Depth
+- **Excellent**: < 3 levels
+- **Good**: 3-4 levels
+- **Acceptable**: 4-5 levels
+- **Needs refactoring**: > 5 levels
+- **Threshold for detection**: > 4 levels
+
+### Cyclomatic Complexity
+- **Excellent**: < 10
+- **Good**: 10-20
+- **Acceptable**: 20-30
+- **Needs refactoring**: > 30
+- **Threshold for detection**: > 15
+
+### Magic Numbers
+- **Threshold**: Any numeric literal that should be a named constant
+- **Exceptions**: 0, 1, -1 (common in loops/conditions)
+- **Exceptions**: Common mathematical constants (Math.PI, etc.)
 
 ## Checklist
 
-- [ ] Run code smell detection
-- [ ] Identify long methods (>50 lines)
-- [ ] Identify large classes (>500 lines)
-- [ ] Identify deep nesting (>4 levels)
-- [ ] Identify magic numbers
-- [ ] Identify code smells
-- [ ] Document code smell findings
-- [ ] Prioritize code smell fixes
+### Tool Selection and Setup
+- [ ] Research and compare code smell detection tool options
+- [ ] Choose appropriate tool(s) based on project needs and existing setup
+- [ ] Install chosen tool(s) as dev dependencies (if npm packages)
+- [ ] Configure tool with appropriate thresholds and ignore patterns
+- [ ] Add code smell detection script to package.json
+- [ ] Configure ignore patterns (node_modules, dist, coverage, tests if desired)
+- [ ] Test tool configuration on codebase
+
+### ESLint Plugin Configuration (Recommended)
+- [ ] Install eslint-plugin-complexity: `npm install --save-dev eslint-plugin-complexity`
+- [ ] Install eslint-plugin-sonarjs: `npm install --save-dev eslint-plugin-sonarjs`
+- [ ] Install eslint-plugin-no-magic-numbers: `npm install --save-dev eslint-plugin-no-magic-numbers`
+- [ ] Update `.eslintrc.json` to include the plugins
+- [ ] Configure complexity rules:
+  - `complexity: ["warn", 15]` - Warn on complexity > 15
+  - `max-depth: ["warn", 4]` - Warn on nesting depth > 4
+  - `max-lines-per-function: ["warn", 50]` - Warn on functions > 50 lines
+- [ ] Configure SonarJS rules:
+  - `sonarjs/cognitive-complexity: ["warn", 15]`
+  - `sonarjs/max-switch-cases: ["warn", 30]`
+  - `sonarjs/no-small-switch: "warn"`
+- [ ] Configure magic number rules:
+  - `no-magic-numbers: ["warn", { ignore: [0, 1, -1] }]`
+- [ ] Test ESLint configuration
+
+### SonarQube Configuration (If available)
+- [ ] Configure SonarQube code smell rules
+- [ ] Set thresholds for:
+  - Method size
+  - Class size
+  - Nesting depth
+  - Complexity
+- [ ] Configure magic number detection
+- [ ] Test SonarQube analysis
+
+### Running Code Smell Detection
+- [ ] Run ESLint with code smell rules on entire codebase
+- [ ] Run SonarQube analysis (if available)
+- [ ] Generate code smell report (JSON, HTML, or console output)
+- [ ] Identify all long methods (>50 lines):
+  - File locations and line numbers
+  - Method names
+  - Line counts
+- [ ] Identify all large classes/files (>500 lines):
+  - File locations
+  - Line counts
+  - Class names
+- [ ] Identify all deep nesting (>4 levels):
+  - File locations and line numbers
+  - Nesting depth
+  - Function/method names
+- [ ] Identify all magic numbers:
+  - File locations and line numbers
+  - Numeric values
+  - Context of usage
+- [ ] Identify code smell patterns:
+  - God classes (classes with too many responsibilities)
+  - Feature envy (methods accessing other objects' data excessively)
+  - Long parameter lists (>5 parameters)
+  - Data clumps (groups of data that always appear together)
+  - Primitive obsession (overuse of primitives instead of objects)
+- [ ] Calculate code quality metrics:
+  - Average method length
+  - Average class/file size
+  - Average nesting depth
+  - Average cyclomatic complexity
+  - Total magic numbers found
+
+### Analysis and Documentation
+- [ ] Review code smell findings and categorize:
+  - Long methods
+  - Large classes/files
+  - Deep nesting
+  - Magic numbers
+  - Code smell patterns
+- [ ] Document all significant code smells:
+  - File locations and line numbers
+  - Type of code smell
+  - Severity (critical, high, medium, low)
+  - Impact on maintainability
+  - Suggested refactoring approach
+- [ ] Create prioritized list of code smell issues:
+  - Critical: Methods > 100 lines, classes > 1000 lines
+  - High: Methods 50-100 lines, classes 500-1000 lines, nesting > 5 levels
+  - Medium: Methods 30-50 lines, classes 300-500 lines, nesting 4-5 levels
+  - Low: Minor code smells, magic numbers
+- [ ] Document code smell baseline metrics:
+  - Total long methods found
+  - Total large classes/files found
+  - Total deep nesting instances found
+  - Total magic numbers found
+  - Most problematic files (top 10)
+  - Average code quality metrics
+- [ ] Create code smell report document (markdown or HTML)
+- [ ] Identify false positives (code that appears smelly but is acceptable):
+  - Test files (may have longer methods)
+  - Configuration files (may have many constants)
+  - Framework-specific patterns
+
+### Refactoring Plan
+- [ ] Create refactoring plan prioritizing:
+  - Critical code smells (long methods, large classes)
+  - High-impact refactorings (deep nesting, complexity)
+  - Medium-impact improvements (magic numbers, code smell patterns)
+- [ ] Document refactoring strategy for each category
+- [ ] Identify dependencies between code smells
+- [ ] Plan refactoring order to avoid breaking changes
+- [ ] Document testing requirements after refactoring
+
+### Integration
+- [ ] Integrate code smell checks into CI/CD pipeline (if applicable)
+- [ ] Add code smell detection to pre-commit hooks (optional)
+- [ ] Configure code smell gates (warn/fail build if smells exceed threshold)
+- [ ] Set up automated code smell reporting
+- [ ] Document how to run code smell detection locally
+
+### Review and Validation
+- [ ] Verify code smell detection runs successfully
+- [ ] Verify reports are generated correctly
+- [ ] Review code smell findings for accuracy
+- [ ] Validate that all significant code smells are identified
+- [ ] Ensure code smell metrics align with code review findings
+- [ ] Test CI/CD integration (if configured)
+- [ ] Verify ignore patterns work correctly
+- [ ] Verify false positives are properly handled
+
+## Configuration Example (ESLint plugins)
+
+Update `.eslintrc.json`:
+
+```json
+{
+  "plugins": ["@typescript-eslint", "prettier", "complexity", "sonarjs", "no-magic-numbers"],
+  "rules": {
+    "complexity": ["warn", 15],
+    "max-depth": ["warn", 4],
+    "max-lines-per-function": ["warn", { "max": 50, "skipBlankLines": true, "skipComments": true }],
+    "max-params": ["warn", 5],
+    "sonarjs/cognitive-complexity": ["warn", 15],
+    "sonarjs/max-switch-cases": ["warn", 30],
+    "sonarjs/no-small-switch": "warn",
+    "no-magic-numbers": [
+      "warn",
+      {
+        "ignore": [0, 1, -1],
+        "ignoreArrayIndexes": true,
+        "ignoreDefaultValues": true,
+        "detectObjects": false
+      }
+    ]
+  }
+}
+```
+
+## Configuration Example (package.json scripts)
+
+Add code smell detection scripts:
+
+```json
+{
+  "scripts": {
+    "smells": "eslint src --ext .ts",
+    "smells:report": "eslint src --ext .ts --format json --output-file reports/code-smells.json",
+    "smells:fix": "eslint src --ext .ts --fix"
+  }
+}
+```
+
+## Configuration Example (SonarQube)
+
+If using SonarQube, configure in `sonar-project.properties`:
+
+```properties
+sonar.javascript.lcov.reportPaths=coverage/lcov.info
+sonar.javascript.file.suffixes=.ts,.js
+sonar.typescript.lcov.reportPaths=coverage/lcov.info
+sonar.typescript.file.suffixes=.ts
+```
 
 ## Notes
 
@@ -25,7 +307,16 @@ check for code smells (long methods, large classes, etc.) to improve code qualit
 - Section: 1. Automated Code Smell Detection
 - Focus on identifying and fixing code quality issues
 - Document all findings and improvements
-
+- Code smell detection should complement, not replace, code reviews
+- Start with reasonable thresholds and adjust based on baseline results
+- Some code smells may be acceptable in specific contexts (e.g., test files, configuration)
+- Focus on code smells that impact maintainability and readability
+- Integration with SonarQube (if set up in PHASE4-003) provides the most comprehensive analysis
+- Consider both structural smells (size, complexity) and design smells (patterns, anti-patterns)
+- Magic numbers should be replaced with named constants for better readability
+- Long methods should be broken down into smaller, focused methods
+- Large classes should be split into smaller, cohesive classes
+- Deep nesting should be refactored using early returns, guard clauses, or extraction
 - Task can be completed independently by a single agent
 
 ## Related Tasks
