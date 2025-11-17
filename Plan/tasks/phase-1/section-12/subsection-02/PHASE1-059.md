@@ -6,15 +6,44 @@
 
 ## Description
 
-Document project structure
+Create comprehensive documentation of the telegram-receiver project structure, including directory organization, file purposes, and architectural patterns. This documentation will help developers understand the codebase organization and navigate the project effectively.
 
 ## Checklist
 
 - [ ] Create `docs/STRUCTURE.md` file
-- [ ] Document `src/` directory structure
-- [ ] Document `tests/` directory structure
-- [ ] Document `config/` directory structure
-- [ ] Explain purpose of each directory
+- [ ] Document root-level structure (package.json, tsconfig files, config files)
+- [ ] Document `src/` directory structure and subdirectories:
+  - [ ] `src/config/` - Configuration files and settings
+  - [ ] `src/controllers/` - Request handlers and route controllers
+  - [ ] `src/middleware/` - Express middleware functions
+  - [ ] `src/models/` - Data models and database entities
+  - [ ] `src/routes/` - Route definitions and endpoint mappings
+  - [ ] `src/services/` - Business logic and external service integrations
+  - [ ] `src/types/` - TypeScript type definitions and interfaces
+  - [ ] `src/utils/` - Utility functions and helpers
+  - [ ] `src/index.ts` - Application entry point
+- [ ] Document `tests/` directory structure and subdirectories:
+  - [ ] `tests/unit/` - Unit tests organized by source structure
+  - [ ] `tests/integration/` - Integration tests for API and services
+  - [ ] `tests/e2e/` - End-to-end tests
+  - [ ] `tests/fixtures/` - Test data and fixtures
+  - [ ] `tests/helpers/` - Test utility functions
+  - [ ] `tests/mocks/` - Mock implementations for external services
+  - [ ] `tests/setup.ts` - Test configuration and setup
+- [ ] Document root-level configuration files:
+  - [ ] `jest.config.ts` - Jest test runner configuration
+  - [ ] `playwright.config.ts` - Playwright E2E test configuration
+  - [ ] `tsconfig.json` - TypeScript compiler configuration
+  - [ ] `tsconfig.eslint.json` - TypeScript config for ESLint
+  - [ ] `.eslintrc.json` - ESLint linting rules
+  - [ ] `.prettierrc.json` - Prettier code formatting rules
+- [ ] Document other important directories:
+  - [ ] `Plan/` - Conversion plan and task documentation
+  - [ ] `agents/` - Agent role definitions
+  - [ ] `coverage/` - Test coverage reports
+- [ ] Explain purpose of each directory and its role in the application
+- [ ] Include file naming conventions and organization patterns
+- [ ] Document how the structure relates to the Rails-to-Node.js conversion
 
 ## Notes
 
