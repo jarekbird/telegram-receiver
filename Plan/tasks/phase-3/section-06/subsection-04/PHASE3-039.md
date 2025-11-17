@@ -6,17 +6,177 @@
 
 ## Description
 
-Review and improve review secure credential handling in the codebase to ensure best practices.
+Review and improve secure credential handling in the codebase to ensure best practices. This task focuses on identifying and preventing credential exposure, ensuring credentials are stored securely, accessed safely, and never logged or exposed in error messages or responses.
+
+## Rails Implementation Reference
+
+The Rails application uses multiple credential management approaches:
+
+1. **Rails Credentials** (`config/application.rb`):
+   - Uses `Rails.application.credentials.dig()` for encrypted credential storage
+   - Falls back to `ENV.fetch()` for backwards compatibility
+   - Credentials include:
+     - `webhook.secret` → `WEBHOOK_SECRET` env var
+     - `telegram.bot_token` → `TELEGRAM_BOT_TOKEN` env var
+     - `telegram.webhook_secret` → `TELEGRAM_WEBHOOK_SECRET` env var
+     - `telegram.webhook_base_url` → `TELEGRAM_WEBHOOK_BASE_URL` env var
+     - `elevenlabs.api_key` → `ELEVENLABS_API_KEY` env var
+     - `elevenlabs.stt_model_id` → `ELEVENLABS_STT_MODEL_ID` env var
+     - `elevenlabs.tts_model_id` → `ELEVENLABS_TTS_MODEL_ID` env var
+     - `elevenlabs.voice_id` → `ELEVENLABS_VOICE_ID` env var
+
+2. **GitCredential Model** (`app/models/git_credential.rb`):
+   - Uses ActiveRecord encryption: `encrypts :password, :token`
+   - Stores encrypted credentials in database
+   - Provides `environment_variables` method for passing to cursor commands
+   - Validates authentication methods (token or username/password)
+
+3. **Environment Variables**:
+   - All sensitive values should come from environment variables
+   - Default values should be safe (e.g., `'changeme'` for webhook secret, not actual secrets)
+   - Required credentials should fail fast if missing (no silent failures)
+
+4. **Logging Practices**:
+   - Rails services log errors but should not log credential values
+   - Error messages should not expose tokens or secrets
+   - Parameters logged should exclude sensitive fields
 
 ## Checklist
 
-- [ ] Review environment variable usage
-- [ ] Check for hardcoded secrets
-- [ ] Review credential storage
-- [ ] Check for credential exposure in logs
-- [ ] Review API key handling
-- [ ] Identify security issues
-- [ ] Document credential management
+### Environment Variable Usage
+
+- [ ] Review all environment variable access patterns
+  - [ ] Verify all credentials are read from `process.env` (not hardcoded)
+  - [ ] Check that environment variables are accessed through a centralized config module
+  - [ ] Verify default values are safe (e.g., empty strings, not actual secrets)
+  - [ ] Check that required credentials fail fast if missing (throw error, don't silently continue)
+  - [ ] Verify environment variable names match Rails conventions where applicable
+  - [ ] Check for typos in environment variable names
+
+- [ ] Review credential types used:
+  - [ ] `TELEGRAM_BOT_TOKEN` - Telegram Bot API token
+  - [ ] `TELEGRAM_WEBHOOK_SECRET` - Webhook secret token for Telegram
+  - [ ] `TELEGRAM_WEBHOOK_BASE_URL` - Base URL for webhook (not sensitive but should be validated)
+  - [ ] `WEBHOOK_SECRET` - Admin webhook secret
+  - [ ] `ELEVENLABS_API_KEY` - ElevenLabs API key for speech services
+  - [ ] `ELEVENLABS_STT_MODEL_ID` - Speech-to-text model ID
+  - [ ] `ELEVENLABS_TTS_MODEL_ID` - Text-to-speech model ID
+  - [ ] `ELEVENLABS_VOICE_ID` - Voice ID for TTS
+  - [ ] `CURSOR_RUNNER_URL` - URL for cursor-runner service (not sensitive but should be validated)
+  - [ ] `REDIS_URL` - Redis connection URL (may contain password)
+  - [ ] `DATABASE_URL` - Database connection URL (may contain password)
+
+### Hardcoded Secrets
+
+- [ ] Search codebase for hardcoded secrets
+  - [ ] Search for common secret patterns (tokens, keys, passwords)
+  - [ ] Check for API keys in source code
+  - [ ] Check for tokens in configuration files
+  - [ ] Verify `.env` files are in `.gitignore` (not committed)
+  - [ ] Check that `.env.example` doesn't contain real secrets
+  - [ ] Verify no secrets in test files (use mock/test values)
+  - [ ] Check Docker files for hardcoded secrets
+  - [ ] Review any configuration files for embedded secrets
+
+### Credential Storage
+
+- [ ] Review how credentials are stored
+  - [ ] Verify credentials are never stored in code
+  - [ ] Verify credentials are never stored in version control
+  - [ ] Check if database storage is needed (like GitCredential model)
+  - [ ] If database storage is needed, verify encryption is used
+  - [ ] Review credential access patterns (should be read-only after initialization)
+  - [ ] Check for credential rotation mechanisms (if applicable)
+
+- [ ] Review GitCredential model conversion (if applicable)
+  - [ ] Verify password/token fields are encrypted at rest
+  - [ ] Verify encryption keys are managed securely
+  - [ ] Check that credentials are never returned in API responses
+  - [ ] Verify `environment_variables` method doesn't expose secrets unnecessarily
+
+### Credential Exposure in Logs
+
+- [ ] Review all logging statements
+  - [ ] Search for `console.log`, `logger.info`, `logger.error`, etc.
+  - [ ] Verify credentials are never logged
+  - [ ] Check error messages don't expose tokens or secrets
+  - [ ] Verify request/response logging excludes sensitive headers
+  - [ ] Check that API responses don't include credentials
+  - [ ] Review stack traces for credential exposure
+  - [ ] Verify debug logging doesn't expose credentials
+
+- [ ] Review specific logging scenarios:
+  - [ ] Telegram service logging (should not log bot token)
+  - [ ] Cursor runner service logging (should not log API keys)
+  - [ ] Error logging (should not include credentials in error messages)
+  - [ ] Request logging (should mask sensitive headers like `Authorization`)
+  - [ ] Configuration logging (should not log credential values)
+
+### API Key Handling
+
+- [ ] Review API key usage patterns
+  - [ ] Verify API keys are passed in headers (not URL parameters)
+  - [ ] Check that API keys are never exposed in URLs
+  - [ ] Verify API keys are validated before use
+  - [ ] Check for API key rotation support (if applicable)
+  - [ ] Review API key error handling (don't expose keys in errors)
+
+- [ ] Review specific API integrations:
+  - [ ] Telegram Bot API (bot token in headers, not URL)
+  - [ ] ElevenLabs API (API key in headers)
+  - [ ] Cursor runner API (verify no credentials in URLs)
+  - [ ] Redis connection (password in URL, verify it's not logged)
+
+### Environment Variable Validation
+
+- [ ] Review environment variable validation
+  - [ ] Verify required credentials are validated at startup
+  - [ ] Check that missing credentials cause clear error messages
+  - [ ] Verify credential format validation (if applicable)
+  - [ ] Check for credential length validation (prevent injection)
+  - [ ] Review environment variable sanitization
+
+### Configuration Management
+
+- [ ] Review configuration module structure
+  - [ ] Verify centralized configuration module exists
+  - [ ] Check that config is read-only after initialization
+  - [ ] Verify config values are validated on load
+  - [ ] Check for config caching (credentials shouldn't be cached unsafely)
+  - [ ] Review config access patterns (should be through getters, not direct env access)
+
+### Security Issues Identification
+
+- [ ] Identify potential security vulnerabilities
+  - [ ] Check for credential exposure in error messages
+  - [ ] Check for credential exposure in API responses
+  - [ ] Check for credential exposure in logs
+  - [ ] Check for credential exposure in stack traces
+  - [ ] Check for credential exposure in debug output
+  - [ ] Verify credentials are not passed to untrusted code
+  - [ ] Check for credential leakage through side channels (timing attacks, etc.)
+
+### Documentation
+
+- [ ] Document credential management approach
+  - [ ] Document which credentials are required
+  - [ ] Document where credentials should be stored (environment variables)
+  - [ ] Document credential rotation procedures (if applicable)
+  - [ ] Document how to securely handle credentials in development
+  - [ ] Create or update security guidelines for credential handling
+  - [ ] Document credential access patterns and best practices
+
+### Implementation Recommendations
+
+- [ ] Create credential validation utility
+  - [ ] Create function to validate required credentials at startup
+  - [ ] Create function to mask credentials in logs (show only first/last few chars)
+  - [ ] Add TypeScript types for credential configuration
+
+- [ ] Add credential access safeguards
+  - [ ] Ensure credentials are read-only after initialization
+  - [ ] Add runtime checks to prevent credential logging
+  - [ ] Consider using a secrets management library (if needed)
 
 ## Notes
 
