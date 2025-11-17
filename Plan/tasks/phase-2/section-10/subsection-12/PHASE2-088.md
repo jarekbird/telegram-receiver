@@ -51,13 +51,15 @@ Convert TelegramMessageJob unit tests from Rails to TypeScript/Node.js. Create c
   - [ ] Processes local commands if not forwarded
   - [ ] Sends response back to Telegram
 - [ ] Test with audio/voice message
+  - [ ] Tracks original_was_audio flag BEFORE transcription (to preserve audio response preference)
   - [ ] Detects audio file ID
   - [ ] Transcribes audio before processing
-  - [ ] Replaces text with transcribed text
+  - [ ] Replaces text with transcribed text (creates copy of message object, sets text property)
   - [ ] Handles transcription errors gracefully
-  - [ ] Sends error message if transcription fails
-  - [ ] Sends response as audio if original was audio and audio output enabled
-  - [ ] Sends response as text if audio output disabled
+  - [ ] Sends error message if transcription fails (truncates error message to 4000 chars if needed)
+  - [ ] Returns early if transcription fails (after sending error message)
+  - [ ] Sends response as audio if original was audio and audio output enabled (checks SystemSetting.disabled?('allow_audio_output'))
+  - [ ] Sends response as text if audio output disabled or original was not audio
 - [ ] Test with local commands (/start, /help, /status)
   - [ ] Does not forward to cursor-runner
   - [ ] Processes locally
@@ -72,21 +74,27 @@ Convert TelegramMessageJob unit tests from Rails to TypeScript/Node.js. Create c
   - [ ] Extracts message and data correctly
   - [ ] Answers callback query with "Processing..." status
   - [ ] Forwards callback data to cursor-runner as prompt
-  - [ ] Sends simple response if not forwarded
+  - [ ] Returns early if forwarded (does not send "You selected" message)
+  - [ ] Sends "You selected: {data}" message only if NOT forwarded
 - [ ] Test error handling
-  - [ ] Handles missing message gracefully
-  - [ ] Handles missing chat gracefully
-  - [ ] Handles error when answering callback query fails
+  - [ ] Handles missing message gracefully (returns early without processing)
+  - [ ] Handles missing chat gracefully (returns early without processing)
+  - [ ] Handles error when answering callback query fails (logs error but continues processing)
   - [ ] Logs errors appropriately
 
 ### Test `forwardToCursorRunner` Method
 - [ ] Test with valid message
-  - [ ] Generates unique request ID (format: "telegram-{timestamp}-{random}")
-  - [ ] Stores pending request in Redis via CursorRunnerCallbackService
-  - [ ] Stores correct data (chat_id, message_id, prompt, original_was_audio, created_at)
+  - [ ] Generates unique request ID (format: "telegram-{timestamp}-{random}" using SecureRandom equivalent)
+  - [ ] Stores pending request in Redis via CursorRunnerCallbackService.storePendingRequest
+  - [ ] Stores correct data (chat_id, message_id, prompt, original_was_audio, created_at as ISO8601 string)
   - [ ] Sets TTL to 3600 seconds (1 hour)
   - [ ] Calls CursorRunnerService.iterate() with correct parameters
-  - [ ] Passes blank repository value for Telegram messages
+    - [ ] repository: '' (blank string for Telegram messages)
+    - [ ] branch_name: 'main'
+    - [ ] prompt: message_text
+    - [ ] max_iterations: 25
+    - [ ] request_id: generated request ID
+  - [ ] Logs info message with request details (truncates prompt to 50 chars in log)
   - [ ] Returns true to indicate message was forwarded
 - [ ] Test with local commands (/start, /help, /status)
   - [ ] Skips forwarding for local commands
@@ -103,11 +111,12 @@ Convert TelegramMessageJob unit tests from Rails to TypeScript/Node.js. Create c
 - [ ] Test with CURSOR_DEBUG disabled
   - [ ] Does not send acknowledgment message
 - [ ] Test error handling
-  - [ ] Handles CursorRunnerService errors gracefully
-  - [ ] Cleans up pending request on error
-  - [ ] Sends error message to Telegram on failure
+  - [ ] Handles CursorRunnerService::Error specifically (catches this error type)
+  - [ ] Cleans up pending request on error (only if request_id was defined)
+  - [ ] Sends error message to Telegram on failure (only if chat_id is present)
+  - [ ] Error message format: "❌ Error: Failed to execute cursor command. {error.message}"
   - [ ] Returns true even on error to prevent duplicate processing
-  - [ ] Logs errors appropriately
+  - [ ] Logs errors appropriately (warns with "Failed to send Telegram message to cursor-runner")
 
 ### Test `processLocalMessage` Method
 - [ ] Test with /start command
@@ -143,19 +152,23 @@ Convert TelegramMessageJob unit tests from Rails to TypeScript/Node.js. Create c
   - [ ] Extracts file_id from documents with audio mime type
   - [ ] Returns null for non-audio messages
 - [ ] Test `transcribeAudio` method
-  - [ ] Sends processing message if cursor debug enabled
-  - [ ] Downloads audio file using TelegramService
-  - [ ] Transcribes using ElevenLabsSpeechToTextService
-  - [ ] Cleans up downloaded file in finally block
-  - [ ] Handles download errors gracefully
-  - [ ] Handles transcription errors gracefully
-  - [ ] Handles file cleanup errors gracefully
+  - [ ] Sends processing message ("🎤 Transcribing audio...") if cursor debug enabled
+  - [ ] Does not send processing message if cursor debug disabled
+  - [ ] Handles error when sending processing message fails (logs warning but continues)
+  - [ ] Downloads audio file using TelegramService.downloadFile
+  - [ ] Transcribes using ElevenLabsSpeechToTextService.transcribe
+  - [ ] Cleans up downloaded file in finally block (always executes, even on error)
+  - [ ] Handles download errors gracefully (ensures cleanup still happens)
+  - [ ] Handles transcription errors gracefully (ensures cleanup still happens)
+  - [ ] Handles file cleanup errors gracefully (logs warning but doesn't throw)
 - [ ] Test `sendTextAsAudio` method
-  - [ ] Generates audio from text using ElevenLabsTextToSpeechService
-  - [ ] Sends as voice message using TelegramService.sendVoice
-  - [ ] Falls back to text message if audio generation fails
-  - [ ] Cleans up generated audio file in finally block
-  - [ ] Handles errors gracefully
+  - [ ] Generates audio from text using ElevenLabsTextToSpeechService.synthesize
+  - [ ] Sends as voice message using TelegramService.sendVoice (with reply_to_message_id)
+  - [ ] Falls back to text message if audio generation fails (sends text with parse_mode: 'HTML')
+  - [ ] Cleans up generated audio file in finally block (always executes, even on error)
+  - [ ] Handles audio generation errors gracefully (falls back to text, ensures cleanup)
+  - [ ] Handles sendVoice errors gracefully (falls back to text, ensures cleanup)
+  - [ ] Handles file cleanup errors gracefully (logs warning but doesn't throw)
 - [ ] Test `cursorDebugEnabled` method
   - [ ] Returns true when SystemSetting.enabled('debug') is true
   - [ ] Returns false when SystemSetting.enabled('debug') is false
