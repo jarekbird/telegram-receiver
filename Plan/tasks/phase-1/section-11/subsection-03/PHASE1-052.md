@@ -6,22 +6,55 @@
 
 ## Description
 
-Configure CI job - Setup
+Configure the setup steps for the CI test job in the GitHub Actions workflow. This task focuses on the initial job configuration and environment setup steps, mirroring the Rails CI workflow setup (`jarek-va/.github/workflows/test.yml`) but adapted for Node.js/TypeScript. The setup includes defining the job, checking out code with full git history, setting up the Node.js environment, configuring caching, and installing dependencies.
+
+## Reference Implementation
+
+The Rails application (`jarek-va`) has a CI workflow setup that includes:
+- Job definition: `test` job running on `ubuntu-latest`
+- Checkout code with `fetch-depth: 0` for full git history (needed for changed file detection)
+- Set up Ruby environment (version 3.1.2) with bundler cache
+- Install dependencies using `bundle install`
 
 ## Checklist
 
-- [ ] Define `test` job
+- [ ] Define `test` job in the workflow file
 - [ ] Set `runs-on` to `ubuntu-latest`
-- [ ] Add step to checkout code
-- [ ] Add step to setup Node.js (version 18)
-- [ ] Configure Node.js cache for npm
-- [ ] Add step to install dependencies (`npm ci`)
+- [ ] Add step to checkout code using `actions/checkout@v4` with `fetch-depth: 0` (for full git history needed by changed file detection)
+- [ ] Add step to setup Node.js using `actions/setup-node@v4` with version 18 (matching package.json engines requirement: >=18.0.0)
+- [ ] Configure Node.js cache for npm dependencies using `actions/setup-node@v4` cache option (speeds up CI runs)
+- [ ] Add step to install dependencies using `npm ci` (preferred over `npm install` for CI as it provides deterministic, reproducible builds)
+
+## Implementation Details
+
+### Node.js Setup
+- Use `actions/setup-node@v4` (or latest version)
+- Specify Node.js version: `18` or `18.x` (matches package.json engines requirement: >=18.0.0)
+- Enable caching by setting `cache: 'npm'` in the setup-node action (caches node_modules based on package-lock.json)
+
+### Checkout Configuration
+- Use `actions/checkout@v4` (or latest version)
+- Set `fetch-depth: 0` to fetch full git history (required for changed file detection in subsequent steps, as mentioned in PHASE1-051)
+
+### Dependency Installation
+- Use `npm ci` instead of `npm install` for CI environments
+- `npm ci` provides deterministic installs by reading from package-lock.json
+- `npm ci` is faster and fails if package-lock.json is out of sync with package.json
+- This matches the Rails workflow's use of `bundle install` which also provides deterministic installs
+
+### Expected Workflow Structure
+The setup steps should appear in this order:
+1. Checkout code (with fetch-depth: 0)
+2. Set up Node.js (with version and cache configuration)
+3. Install dependencies (npm ci)
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 11. CI/CD Pipeline Configuration
 - Task can be completed independently by a single agent
+- This task adds setup steps to the workflow file created in PHASE1-051
+- The workflow should mirror the Rails CI workflow structure but use Node.js tooling
 
 ## Related Tasks
 
