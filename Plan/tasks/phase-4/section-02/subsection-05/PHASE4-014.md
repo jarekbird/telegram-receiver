@@ -6,18 +6,160 @@
 
 ## Description
 
-check for proper comments where needed to improve code quality and maintainability.
+Review code comments throughout the codebase to improve code quality and maintainability. This task focuses on auditing actual comment implementation in the source code, verifying commenting best practices are followed, identifying inconsistencies, and ensuring comments meet quality standards. Comments should explain "why" rather than "what", provide context for complex logic, and follow consistent formatting standards.
+
+## Context
+
+This task is distinct from:
+- **PHASE4-011**: Check for proper documentation (focused on README files, API docs, architecture docs)
+- **PHASE4-013**: Review logging statements (focused on logging, not comments)
+- **PHASE4-015**: Verify code readability (focused on code structure, not comments)
+
+**PHASE4-014** focuses specifically on:
+- Auditing inline code comments and JSDoc comments in source files
+- Verifying comments follow established patterns and best practices
+- Identifying missing comments where they would add value
+- Ensuring comments explain rationale, not implementation details
+- Removing outdated or incorrect comments
+- Establishing commenting standards for the codebase
+
+## Comment Types to Review
+
+1. **JSDoc Comments** - Function/class documentation comments
+   - Should describe purpose, parameters, return values, exceptions
+   - Should follow JSDoc format standards
+   - Should be present for all public APIs
+
+2. **Inline Comments** - Explanatory comments within code
+   - Should explain "why" not "what"
+   - Should clarify complex logic or non-obvious decisions
+   - Should not duplicate what the code already makes clear
+
+3. **TODO Comments** - Future work markers
+   - Should include context and rationale
+   - Should include issue/ticket references if applicable
+   - Should have clear ownership or timeline
+
+4. **FIXME Comments** - Known issues or bugs
+   - Should explain the issue clearly
+   - Should include workaround if applicable
+   - Should reference bug tracker if available
+
+5. **Section Comments** - Comments organizing code sections
+   - Should help navigate large files
+   - Should be consistent in format
+
+## Architecture Reference
+
+The application should follow TypeScript/JavaScript commenting standards:
+- **JSDoc format** for function and class documentation
+- **Inline comments** for complex logic explanations
+- **Consistent comment style** across the codebase
+- **No redundant comments** that just restate the code
+
+Reference files:
+- `tests/helpers/testUtils.ts` - Example of good JSDoc comments
+- `tests/helpers/apiHelpers.ts` - Example of good JSDoc comments
+- `docs/architecture.md` - Architecture documentation (if exists)
 
 ## Checklist
 
-- [ ] Review code comments
-- [ ] Check for comments explaining why, not what
+- [ ] Review JSDoc comment coverage
+  - [ ] Search for all exported functions and verify JSDoc comments exist
+  - [ ] Search for all exported classes and verify JSDoc comments exist
+  - [ ] Search for all exported interfaces/types and verify JSDoc comments exist
+  - [ ] Verify JSDoc comments include @param tags for all parameters
+  - [ ] Verify JSDoc comments include @returns tags for return values
+  - [ ] Verify JSDoc comments include @throws tags for exceptions
+  - [ ] Check JSDoc comment format consistency (/** vs /*)
+  - [ ] Verify JSDoc comments are accurate and match implementation
+
+- [ ] Review inline comment quality
+  - [ ] Search for all inline comments (// and /* */)
+  - [ ] Verify comments explain "why" not "what"
+  - [ ] Check for comments that just restate the code (remove these)
+  - [ ] Verify comments clarify complex logic or non-obvious decisions
+  - [ ] Check for comments that provide context or background information
+  - [ ] Review comment formatting consistency
+  - [ ] Verify comments are grammatically correct and clear
+
 - [ ] Review TODO comments
-- [ ] Check for FIXME comments
-- [ ] Review comment quality
+  - [ ] Search for all TODO comments in the codebase
+  - [ ] Verify each TODO includes context about what needs to be done
+  - [ ] Check if TODOs reference issues or tickets
+  - [ ] Verify TODOs are still relevant (not outdated)
+  - [ ] Check if TODOs have clear ownership or timeline
+  - [ ] Document TODOs that need to be addressed
+  - [ ] Consider removing or updating outdated TODOs
+
+- [ ] Review FIXME comments
+  - [ ] Search for all FIXME comments in the codebase
+  - [ ] Verify each FIXME explains the issue clearly
+  - [ ] Check if FIXMEs include workarounds or temporary solutions
+  - [ ] Verify FIXMEs reference bug trackers if applicable
+  - [ ] Check if FIXMEs are still relevant
+  - [ ] Document FIXMEs that need to be addressed
+  - [ ] Consider creating issues for FIXMEs that need fixes
+
+- [ ] Review comment formatting and style
+  - [ ] Check for consistent comment style (// vs /* */)
+  - [ ] Verify comment indentation matches code indentation
+  - [ ] Check for consistent spacing around comments
+  - [ ] Verify multi-line comments use proper formatting
+  - [ ] Check for consistent capitalization in comments
+  - [ ] Review comment length (not too long, not too short)
+
 - [ ] Identify missing comments
+  - [ ] Review complex functions for missing explanatory comments
+  - [ ] Check for complex algorithms that need comments
+  - [ ] Review non-obvious code that would benefit from comments
+  - [ ] Check for business logic that needs context comments
+  - [ ] Review error handling that might need explanation
+  - [ ] Check for workarounds or hacks that need comments
+  - [ ] Verify public APIs have proper JSDoc comments
+
 - [ ] Remove outdated comments
+  - [ ] Search for comments that reference old code or removed features
+  - [ ] Check for comments that no longer match the implementation
+  - [ ] Verify comments are still accurate
+  - [ ] Remove comments for code that has been refactored
+  - [ ] Update comments that reference outdated patterns
+
+- [ ] Review comment quality standards
+  - [ ] Verify comments use clear, concise language
+  - [ ] Check for spelling and grammar errors in comments
+  - [ ] Verify comments are written in English (or project standard language)
+  - [ ] Check for comments that are too verbose or too terse
+  - [ ] Review comments for clarity and readability
+
+- [ ] Check for comment-related code smells
+  - [ ] Identify code that needs comments because it's too complex (consider refactoring)
+  - [ ] Check for commented-out code (should be removed, not commented)
+  - [ ] Review for excessive comments (code should be self-documenting)
+  - [ ] Check for comments that indicate missing abstractions
+  - [ ] Verify comments don't mask code quality issues
+
 - [ ] Document commenting standards
+  - [ ] Create or update commenting style guide
+  - [ ] Document when comments are required vs optional
+  - [ ] Create examples of good comments
+  - [ ] Document JSDoc format standards
+  - [ ] Create examples of bad comments (what to avoid)
+  - [ ] Document commenting best practices specific to this codebase
+  - [ ] Update architecture documentation if needed
+
+- [ ] Review test file comments
+  - [ ] Check test files for appropriate comments
+  - [ ] Verify test descriptions are clear (test names should be descriptive)
+  - [ ] Review comments explaining test setup or teardown
+  - [ ] Check for comments explaining complex test scenarios
+  - [ ] Verify mock/stub comments are clear
+
+- [ ] Review configuration file comments
+  - [ ] Check config files for explanatory comments
+  - [ ] Verify environment-specific settings have comments
+  - [ ] Review comments explaining configuration options
+  - [ ] Check for comments explaining default values
 
 ## Notes
 
