@@ -12,15 +12,22 @@ Reference the Rails implementation at `jarek-va/app/services/cursor_runner_servi
 
 ## Checklist
 
-- [ ] Create `src/services/cursor-runner-service.ts` file
+- [ ] Create `src/services/cursorRunnerService.ts` file (use camelCase naming per TypeScript conventions)
 - [ ] Define `CursorRunnerService` class structure
-- [ ] Add constructor with optional `base_url` and `timeout` parameters that default to application config values
-- [ ] Import required types and dependencies (HTTP client, JSON parsing, etc.)
-- [ ] Add custom error classes matching Rails implementation:
-  - `CursorRunnerService.Error` (base error class)
-  - `CursorRunnerService.ConnectionError` (connection failures)
-  - `CursorRunnerService.TimeoutError` (request timeouts)
-  - `CursorRunnerService.InvalidResponseError` (JSON parsing errors)
+- [ ] Add constructor with optional `baseUrl` and `timeout` parameters that default to application config values
+  - Constructor should accept: `constructor(baseUrl?: string, timeout?: number)`
+  - Default `baseUrl` should come from application config (e.g., `process.env.CURSOR_RUNNER_URL` or config module)
+  - Default `timeout` should come from application config (e.g., `process.env.CURSOR_RUNNER_TIMEOUT` or config module)
+- [ ] Import required types and dependencies:
+  - HTTP client: `axios` (already in package.json)
+  - JSON parsing: Built-in `JSON` (no import needed)
+  - UUID generation: `crypto` module for generating request IDs (similar to Rails `SecureRandom`)
+- [ ] Add custom error classes matching Rails implementation (as separate exported classes, not nested):
+  - `CursorRunnerServiceError` (base error class, extends `Error`)
+  - `ConnectionError` (extends `CursorRunnerServiceError` - for connection failures)
+  - `TimeoutError` (extends `CursorRunnerServiceError` - for request timeouts)
+  - `InvalidResponseError` (extends `CursorRunnerServiceError` - for JSON parsing errors)
+  - Note: In TypeScript, these should be exported as separate classes, not nested classes like in Ruby
 
 ## Notes
 
