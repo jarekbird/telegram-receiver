@@ -17,13 +17,14 @@ This task creates the Express route definitions for Telegram webhook endpoints. 
   - Apply webhook authentication middleware (checks X-Telegram-Bot-Api-Secret-Token header)
   - Route should delegate to telegram controller webhook handler
 - [ ] Define POST /telegram/set_webhook route
-  - Apply admin authentication middleware (checks X-Admin-Secret header)
+  - Apply admin authentication middleware (checks X-Admin-Secret header, HTTP_X_ADMIN_SECRET env var, admin_secret query/body params)
   - Route should delegate to telegram controller set_webhook handler
+  - Handler accepts optional `url` and `secret_token` parameters (uses defaults if not provided)
 - [ ] Define GET /telegram/webhook_info route
-  - Apply admin authentication middleware (checks X-Admin-Secret header)
+  - Apply admin authentication middleware (checks X-Admin-Secret header, HTTP_X_ADMIN_SECRET env var, admin_secret query/body params)
   - Route should delegate to telegram controller webhook_info handler
 - [ ] Define DELETE /telegram/webhook route
-  - Apply admin authentication middleware (checks X-Admin-Secret header)
+  - Apply admin authentication middleware (checks X-Admin-Secret header, HTTP_X_ADMIN_SECRET env var, admin_secret query/body params)
   - Route should delegate to telegram controller delete_webhook handler
 - [ ] Export router for use in main application
 
@@ -34,12 +35,15 @@ Based on `jarek-va/app/controllers/telegram_controller.rb`:
 1. **Webhook Authentication** (for POST /telegram/webhook):
    - Checks `X-Telegram-Bot-Api-Secret-Token` header
    - Compares against `telegram_webhook_secret` configuration value
-   - Returns 401 Unauthorized if secret token doesn't match (or if expected secret is blank, allows request)
+   - **Important**: If `telegram_webhook_secret` is blank/empty, authentication is bypassed and request is allowed
+   - Returns 401 Unauthorized only if secret token doesn't match AND expected secret is not blank
+   - Logs warning on unauthorized requests
 
 2. **Admin Authentication** (for set_webhook, webhook_info, delete_webhook):
-   - Checks `X-Admin-Secret` header (or `HTTP_X_ADMIN_SECRET` env var, or `admin_secret` query/body param)
+   - Checks in order: `X-Admin-Secret` header, `HTTP_X_ADMIN_SECRET` environment variable, `admin_secret` query parameter, `admin_secret` body parameter
    - Compares against `webhook_secret` configuration value
    - Returns 401 Unauthorized if secret doesn't match
+   - Note: In test environment, logs authentication failures for debugging
 
 ## Implementation Notes
 
@@ -47,7 +51,11 @@ Based on `jarek-va/app/controllers/telegram_controller.rb`:
 - Reference `jarek-va/app/controllers/telegram_controller.rb` for controller implementation details
 - The webhook endpoint should return 200 OK immediately and process updates asynchronously
 - Admin endpoints should return JSON responses with `ok` field and appropriate data/error fields
-- Error handling should follow the pattern in ApplicationController (returns JSON with ok: false, error message)
+- Error handling should follow the pattern in ApplicationController:
+  - Success responses: `{ ok: true, ... }` with appropriate data fields
+  - Error responses: `{ ok: false, say: 'Sorry, I encountered an error processing your request.', result: { error: errorMessage } }` with 500 status
+  - Admin endpoints (set_webhook, webhook_info, delete_webhook) use simpler format: `{ ok: false, error: errorMessage }` with 500 status
+  - Webhook endpoint always returns 200 OK even on errors (to prevent Telegram retries), but may attempt to send error message to chat if chat info is available
 
 ## Notes
 
