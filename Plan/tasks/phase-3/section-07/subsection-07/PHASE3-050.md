@@ -20,41 +20,64 @@ Review and improve test quality in the codebase to ensure best practices. This i
 
 ### Test Infrastructure Review
 - [ ] Review and improve test utilities (`tests/helpers/testUtils.ts`)
-  - Ensure all utility functions are well-documented
-  - Add type safety improvements where needed
-  - Verify error handling in utility functions
-  - Add missing utility functions if needed
+  - Ensure all utility functions are well-documented with JSDoc comments
+  - Add type safety improvements where needed (currently has basic types)
+  - Verify error handling in utility functions (expectRejection has error handling)
+  - Add missing utility functions if needed:
+    - Database helpers (if mentioned in README but not present)
+    - Mock creation helpers (if mentioned in README but not present)
+    - Date/time utilities for testing (createDate, createTimestamp)
+    - ID generation utilities (createId, createUuid)
 - [ ] Review and improve API helpers (`tests/helpers/apiHelpers.ts`)
-  - Ensure HTTP status codes are complete
+  - Ensure HTTP status codes are complete (currently missing: 202 Accepted, 422 Unprocessable Entity, 429 Too Many Requests, 502 Bad Gateway, 503 Service Unavailable, 504 Gateway Timeout)
   - Verify helper functions are reusable
-  - Add missing helper functions for common test scenarios
+  - Add missing helper functions for common test scenarios (e.g., createTestHeaders, createWebhookHeaders)
+  - Add helper functions for common request patterns (GET, POST, PUT, DELETE, PATCH)
 - [ ] Review and improve mock implementations
   - Review `tests/mocks/telegramApi.ts` - ensure all Telegram API methods are mocked
+    - Verify methods match actual Telegram Bot API: sendMessage, getUpdates, setWebhook, deleteWebhook, getWebhookInfo, getMe, downloadFile, sendVoice, sendPhoto, editMessageText, answerCallbackQuery
+    - Ensure mock return types match Telegram API response structures
   - Review `tests/mocks/cursorRunnerApi.ts` - verify cursor-runner API coverage
+    - Verify methods match actual cursor-runner API: sendMessage, iterate, iterateAsync, execute
+    - Ensure mock return types match cursor-runner API response structures
   - Review `tests/mocks/redis.ts` - ensure Redis operations are properly mocked
-  - Add reset/cleanup functions if missing
-  - Ensure mocks return realistic data structures
+    - Verify all Redis methods used in the application are mocked (get, set, del, exists, expire, keys, hget, hset, hdel, hgetall, ping, quit)
+    - Add missing Redis operations if needed (e.g., mget, mset, incr, decr, ttl, pttl)
+  - Add reset/cleanup functions if missing (verify resetTelegramApiMocks, resetCursorRunnerApiMocks, resetRedisMocks exist)
+  - Ensure mocks return realistic data structures matching actual API responses
 - [ ] Review and improve test fixtures
   - Review `tests/fixtures/telegramMessages.ts` - ensure fixtures cover all message types
+    - Verify fixtures exist for: text messages, callback queries, webhook updates (currently present)
+    - Add missing fixtures: voice messages, edited messages, channel messages, group messages, photo messages, document messages, location messages, contact messages
+    - Add fixtures for edge cases: empty messages, messages with special characters, messages with entities (mentions, hashtags, URLs)
   - Review `tests/fixtures/apiResponses.ts` - verify response fixtures are complete
+    - Ensure success and error response fixtures exist (currently present)
+    - Add fixtures for: partial success responses, timeout responses, rate limit responses, validation error responses
+    - Add fixtures for cursor-runner specific responses: task queued, task in progress, task completed, task failed
   - Add missing fixture types (error responses, edge cases)
-  - Ensure fixtures are well-documented
+  - Ensure fixtures are well-documented with JSDoc comments and usage examples
 
 ### Test Quality Standards
 - [ ] Review test setup (`tests/setup.ts`)
-  - Ensure environment variables are properly configured
-  - Verify timeout settings are appropriate
-  - Add global test utilities if needed
+  - Ensure environment variables are properly configured (NODE_ENV=test is set)
+  - Verify timeout settings are appropriate (currently 10000ms - verify if this is sufficient for all test types)
+  - Add global test utilities if needed (beforeAll, afterAll hooks for global setup/teardown)
+  - Add global mock setup if needed (e.g., console.error suppression, global error handlers)
+  - Consider adding test database setup/teardown if database tests will be added
 - [ ] Review Jest configuration (`jest.config.ts`)
   - Verify coverage settings are appropriate
   - Ensure test patterns match project structure
   - Review module name mappings
 - [ ] Establish test quality guidelines
-  - Document test naming conventions
-  - Create guidelines for test structure (AAA pattern)
-  - Document mock usage best practices
-  - Create guidelines for fixture usage
-  - Document test coverage expectations
+  - Create a new document `tests/TEST_QUALITY_GUIDELINES.md` with comprehensive guidelines
+  - Document test naming conventions (already partially in README.md)
+  - Create guidelines for test structure (AAA pattern - Arrange, Act, Assert)
+  - Document mock usage best practices (when to mock, how to reset mocks, mock data patterns)
+  - Create guidelines for fixture usage (when to use fixtures vs inline data, fixture organization)
+  - Document test coverage expectations (minimum 80% coverage, 100% for critical paths)
+  - Add guidelines for test isolation and independence
+  - Document async test patterns and best practices
+  - Add guidelines for testing error scenarios and edge cases
 
 ### Code Quality Improvements
 - [ ] Improve code documentation
@@ -72,13 +95,20 @@ Review and improve test quality in the codebase to ensure best practices. This i
 
 ### Documentation
 - [ ] Update test README (`tests/README.md`)
-  - Ensure all test utilities are documented
-  - Add examples of using mocks and fixtures
-  - Document test quality standards
+  - Ensure all test utilities are documented (currently has basic structure)
+  - Add examples of using mocks and fixtures (add code examples)
+  - Document test quality standards (reference TEST_QUALITY_GUIDELINES.md)
+  - Add links to helper READMEs (helpers/README.md, mocks/README.md, fixtures/README.md)
+  - Update examples to match actual implementation
+- [ ] Create test quality guidelines document (`tests/TEST_QUALITY_GUIDELINES.md`)
+  - Comprehensive guide for writing tests
+  - Include all guidelines mentioned in "Test Quality Standards" section
+  - Add examples and best practices
 - [ ] Document test improvements made
-  - Create a summary of improvements
+  - Create a summary of improvements in the task notes or a separate document
   - Document any new utilities or helpers added
   - Note any breaking changes or deprecations
+  - Update CHANGELOG if one exists
 
 ## Notes
 
