@@ -48,8 +48,10 @@ Review and improve import/export patterns in the codebase to ensure best practic
 - Focus on identifying issues and improvements
 - Document findings and decisions
 - Current codebase state: Most TypeScript files are in `tests/` directory; `src/` directory is mostly empty but structure exists
-- Path aliases: Jest config uses `@/` mapping to `src/` - verify if this should be extended to tsconfig.json
-- ESLint configuration: Currently doesn't include import-specific rules - consider adding eslint-plugin-import
+- Path aliases: Jest config uses `@/` mapping to `src/` - verify if this should be extended to tsconfig.json for runtime use. Currently no files use the `@/` alias.
+- ESLint configuration: Currently doesn't include import-specific rules - consider adding eslint-plugin-import (not currently installed)
+- Current import patterns: All imports are from external packages (no internal/relative imports yet since src/ is mostly empty)
+- Current export patterns: Config files use `export default`, test utilities use named exports
 
 - Task can be completed independently by a single agent
 
