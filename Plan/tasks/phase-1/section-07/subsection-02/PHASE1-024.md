@@ -6,23 +6,38 @@
 
 ## Description
 
-Create environment configuration module
+Create an environment configuration module that loads environment variables from `.env` files and provides a centralized configuration object. This module is the Node.js/TypeScript equivalent of the Rails `config/application.rb` file, which uses `ENV.fetch()` to access environment variables throughout the application.
+
+The Rails application (`jarek-va/config/application.rb`) uses `dotenv-rails` (automatically loaded via Gemfile) to load environment variables from `.env` files. The Rails app accesses environment variables using `ENV.fetch()` with default values throughout the codebase. This task creates the foundational environment configuration module that will be extended in later tasks as more environment variables are needed.
+
+**Rails Equivalent**: `config/application.rb` (jarek-va/config/application.rb) - specifically the environment variable access patterns using `ENV.fetch()` with defaults
+
+**Note**: This task creates the basic environment configuration module with only `NODE_ENV` and `PORT`. Additional environment variables (such as `CURSOR_RUNNER_URL`, `TELEGRAM_BOT_TOKEN`, `ELEVENLABS_API_KEY`, etc.) will be added in later tasks as the corresponding features are implemented.
 
 ## Checklist
 
 - [ ] Create `src/config/environment.ts` file
 - [ ] Import `dotenv` module
-- [ ] Call `dotenv.config()` with appropriate path based on NODE_ENV
-- [ ] Create `config` object
-- [ ] Add `env` property from `process.env.NODE_ENV` or default to "development"
-- [ ] Add `port` property from `process.env.PORT` or default to 3000
-- [ ] Export `config` object
+- [ ] Call `dotenv.config()` to load `.env` file from project root (dotenv automatically looks for `.env` in current working directory)
+- [ ] Create TypeScript interface/type for the config object structure
+- [ ] Create `config` object with proper typing
+- [ ] Add `env` property from `process.env.NODE_ENV` or default to "development" (matching Rails `Rails.env` behavior)
+- [ ] Add `port` property from `process.env.PORT` or default to 3000 (matching Rails `config/puma.rb` port configuration)
+- [ ] Ensure `port` is converted to number type
+- [ ] Export `config` object as default export
+- [ ] Add JSDoc comments documenting the module and config properties
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 7. Environment Variables Management
 - Task can be completed independently by a single agent
+- Rails equivalent: `config/application.rb` (jarek-va/config/application.rb) and `config/puma.rb` (jarek-va/config/puma.rb)
+- The Rails application uses `ENV.fetch()` throughout to access environment variables with defaults (e.g., `ENV.fetch('PORT') { 3000 }`)
+- Rails uses `dotenv-rails` gem which automatically loads `.env` files (see jarek-va/Gemfile line 21)
+- In Node.js, `dotenv.config()` by default looks for `.env` in the current working directory (project root)
+- The Rails app has many more environment variables (see jarek-va/config/application.rb), but those will be added in later tasks as features are implemented
+- This module provides the foundation for accessing environment variables throughout the application, similar to how Rails uses `Rails.application.config` and `ENV.fetch()`
 
 ## Related Tasks
 
