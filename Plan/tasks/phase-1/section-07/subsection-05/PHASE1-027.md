@@ -6,25 +6,30 @@
 
 ## Description
 
-Create a `.env.test` file that contains test-specific environment variable values. This file is used during test execution and should contain values suitable for automated testing, including minimal logging, test-specific ports, and safe placeholder values for secrets.
+Create or update a `.env.test` file that contains test-specific environment variable values. This file is used during test execution and should contain values suitable for automated testing, including minimal logging, test-specific ports, and safe placeholder values for secrets.
 
-This task creates the `.env.test` file by copying the template from `.env.example` (created in PHASE1-025) and setting appropriate test values. The file should use test-specific URLs (localhost), error-level logging (to reduce test output noise), and placeholder values for secrets that are safe for test execution.
+This task creates or updates the `.env.test` file by copying the template from `.env.example` (created in PHASE1-025) and setting appropriate test values. The file should use test-specific URLs (localhost), error-level logging (to reduce test output noise), and placeholder values for secrets that are safe for test execution.
 
 **Rails Equivalent**: Rails uses `RAILS_ENV=test` environment variable and test-specific configuration in `config/environments/test.rb`. The `.env.test` file serves a similar purpose by providing test-specific environment variable values.
 
-**Note**: This task creates the `.env.test` file with test-appropriate values. The test environment should use minimal logging, isolated database/Redis instances, and safe placeholder values for external service tokens.
+**Note**: This task creates or updates the `.env.test` file with test-appropriate values. The test environment should use minimal logging, isolated database/Redis instances, and safe placeholder values for external service tokens. All environment variables from `.env.example` should be included with test-appropriate values.
 
 ## Checklist
 
-- [ ] Create `.env.test` file in project root directory
-- [ ] Copy all contents from `.env.example` file
+- [ ] Create or update `.env.test` file in project root directory
+- [ ] Copy all contents from `.env.example` file (includes TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET, TELEGRAM_WEBHOOK_BASE_URL, CURSOR_RUNNER_URL, CURSOR_RUNNER_TIMEOUT, REDIS_URL, ELEVENLABS_API_KEY, WEBHOOK_SECRET, PORT, NODE_ENV)
 - [ ] Set `NODE_ENV=test` (matches Rails `RAILS_ENV=test` behavior)
 - [ ] Set `PORT=3001` (different from development port 3000 to avoid conflicts)
-- [ ] Set `LOG_LEVEL=error` (minimal logging for tests, matches Rails test environment minimal logging)
-- [ ] Set `TELEGRAM_WEBHOOK_BASE_URL=http://localhost:3001` (test-specific URL)
+- [ ] Set `LOG_LEVEL=error` (minimal logging for tests, matches Rails test environment minimal logging - add this if not present in `.env.example`)
+- [ ] Set `TELEGRAM_WEBHOOK_BASE_URL=http://localhost:3001` (test-specific URL, matches test port)
 - [ ] Set `CURSOR_RUNNER_URL=http://localhost:3001` (test-specific URL for cursor-runner service)
+- [ ] Set `CURSOR_RUNNER_TIMEOUT=30` (shorter timeout for tests, matches Rails test environment faster timeouts)
 - [ ] Set `REDIS_URL=redis://localhost:6379/1` (test-specific Redis database, isolated from development)
-- [ ] Use test placeholder values for secrets (TELEGRAM_BOT_TOKEN=test_bot_token, TELEGRAM_WEBHOOK_SECRET=test_webhook_secret, WEBHOOK_SECRET=test_webhook_secret, ELEVENLABS_API_KEY empty)
+- [ ] Use test placeholder values for secrets:
+  - `TELEGRAM_BOT_TOKEN=test_bot_token`
+  - `TELEGRAM_WEBHOOK_SECRET=test_webhook_secret`
+  - `WEBHOOK_SECRET=test_webhook_secret`
+  - `ELEVENLABS_API_KEY=` (empty, no real API key needed for tests)
 - [ ] Add header comment indicating this is a test environment configuration file
 - [ ] Ensure all values are safe for test execution (no production secrets, isolated resources)
 
@@ -39,6 +44,8 @@ This task creates the `.env.test` file by copying the template from `.env.exampl
 - Test environment should use isolated resources (different Redis database, different port) to avoid conflicts with development
 - Placeholder values for secrets allow tests to run without requiring real external service credentials
 - The test environment is used exclusively for running the test suite and should not be used for development work
+- All environment variables from `.env.example` must be included in `.env.test` with test-appropriate values
+- `CURSOR_RUNNER_TIMEOUT` should be set to a shorter value (30 seconds) for faster test execution
 
 ## Related Tasks
 
