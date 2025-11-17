@@ -6,23 +6,54 @@
 
 ## Description
 
-Convert create webhook authentication middleware from Rails to TypeScript/Node.js.
+Convert create webhook authentication middleware from Rails to TypeScript/Node.js. This middleware authenticates incoming Telegram webhook requests by validating the `X-Telegram-Bot-Api-Secret-Token` header against a configured secret.
+
+**Rails Implementation Reference**: `jarek-va/app/controllers/telegram_controller.rb` (lines 134-143)
+
+**Rails Implementation Details**:
+- The `authenticate_webhook` method is a private method in `TelegramController`
+- It's used as a `before_action` filter (line 9) that only applies to the `webhook` action
+- Gets the secret token from the `X-Telegram-Bot-Api-Secret-Token` request header
+- Gets the expected secret from `Rails.application.config.telegram_webhook_secret`
+- Allows the request if:
+  - The expected secret is blank/not configured (development mode), OR
+  - The provided secret token matches the expected secret
+- Returns 401 Unauthorized if the secret is configured but doesn't match
+- Logs a warning message when authentication fails: "Unauthorized Telegram webhook request - invalid secret token"
+
+**Configuration**:
+- The webhook secret is configured via environment variable `TELEGRAM_WEBHOOK_SECRET`
+- If the secret is not configured (blank/empty), requests are allowed (backward compatibility)
+- Defaults to empty string if not set (allows requests when not configured)
 
 ## Checklist
 
-- [ ] Create `src/middleware/webhook-auth.ts`
-- [ ] Implement Express middleware function
-- [ ] Check X-Telegram-Bot-Api-Secret-Token header
-- [ ] Validate against configured secret
-- [ ] Return 401 if invalid
-- [ ] Call next() if valid
+- [ ] Create `src/middleware/telegram-webhook-auth.middleware.ts` (matching naming from PHASE2-095)
+- [ ] Implement Express middleware function following the pattern: `(req, res, next) => { ... }`
+- [ ] Extract `X-Telegram-Bot-Api-Secret-Token` header from request
+- [ ] Get expected secret from application configuration (environment variable `TELEGRAM_WEBHOOK_SECRET`)
+- [ ] Implement authentication logic:
+  - [ ] Allow request if expected secret is blank/not configured (development mode) - call `next()`
+  - [ ] Allow request if provided token matches expected secret - call `next()`
+  - [ ] Return 401 Unauthorized if secret is configured but doesn't match - do NOT call `next()`
+- [ ] Log warning message when authentication fails: "Unauthorized Telegram webhook request - invalid secret token"
+- [ ] Ensure middleware calls `next()` to continue request processing when authentication succeeds
+- [ ] Ensure middleware returns 401 response and does not call `next()` when authentication fails
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 12. Middleware
-- Reference the Rails implementation for behavior
-
+- Reference the Rails implementation in `jarek-va/app/controllers/telegram_controller.rb` for exact behavior
+- The middleware should be applied only to the webhook endpoint, similar to how Rails uses `before_action :authenticate_webhook, only: [:webhook]`
+- In Express, this will be a middleware function that can be applied to specific routes
+- Test cases should verify:
+  - Request is allowed when secret is not configured (blank/empty)
+  - Request is allowed when header token matches configured secret
+  - Request is rejected (401) when secret is configured but header token doesn't match
+  - Request is rejected (401) when secret is configured but header is missing
+  - Warning is logged when authentication fails
+- File naming should match PHASE2-095: `telegram-webhook-auth.middleware.ts`
 - Task can be completed independently by a single agent
 
 ## Related Tasks
