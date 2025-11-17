@@ -6,7 +6,13 @@
 
 ## Description
 
-Review and verify dependency injection patterns in the codebase to ensure best practices. This review should evaluate how services, controllers, and jobs handle dependencies, identify hard-coded dependencies or singletons, verify proper constructor injection usage, and ensure the codebase follows Node.js/TypeScript dependency injection best practices for testability and maintainability.
+Review and verify dependency injection patterns in the codebase to ensure best practices. This review should evaluate how services, controllers, and jobs handle dependencies (or are planned to handle them), identify hard-coded dependencies or singletons, verify proper constructor injection usage, and ensure the codebase follows Node.js/TypeScript dependency injection best practices for testability and maintainability.
+
+**Current Implementation Status**: As of this review, the codebase is in early development with minimal source code implemented. The main application code (services, controllers, models) has not yet been converted from Rails. This review should focus on:
+1. Verifying the planned architecture documentation specifies proper DI patterns
+2. Ensuring guidelines are in place for future implementations
+3. Reviewing any existing code (if present) for DI compliance
+4. Documenting the DI strategy and patterns to be used going forward
 
 ## Architecture Reference
 
@@ -29,6 +35,21 @@ In Node.js/TypeScript applications, dependency injection should follow these pat
 
 ## Checklist
 
+### Architecture Documentation Review
+- [ ] Review `docs/architecture.md` for DI pattern specifications
+  - [ ] Verify constructor injection is specified as the standard pattern
+  - [ ] Check that examples show proper DI usage
+  - [ ] Ensure rationale for DI choice is documented
+  - [ ] Verify trade-offs are documented
+- [ ] Review `docs/API_CONVENTIONS.md` for DI guidelines
+  - [ ] Verify service constructor injection patterns are documented
+  - [ ] Check that controller DI patterns are specified
+  - [ ] Ensure examples demonstrate proper DI usage
+- [ ] Review `Plan/app-description.md` and `Plan/CONVERSION_STEPS.md`
+  - [ ] Verify DI patterns are mentioned in conversion considerations
+  - [ ] Check that Rails-to-Node.js DI differences are documented
+
+### Code Review (if implementation exists)
 - [ ] Review service instantiation patterns
   - [ ] Check how services are created (direct instantiation vs factory vs DI container)
   - [ ] Verify services accept dependencies via constructor
@@ -67,11 +88,18 @@ In Node.js/TypeScript applications, dependency injection should follow these pat
   - [ ] Find services that create dependencies internally (service locator anti-pattern)
   - [ ] Check for global state or module-level singletons
   - [ ] Identify tight coupling that could be reduced with DI
-- [ ] Document current patterns
+
+### Documentation and Guidelines
+- [ ] Document current/planned DI patterns
   - [ ] Document the DI pattern used (constructor injection, factory functions, DI container)
   - [ ] Create examples of proper dependency injection usage
   - [ ] Document any deviations from best practices and reasoning
   - [ ] Create guidelines for adding new services with proper DI
+- [ ] Verify DI guidelines are comprehensive
+  - [ ] Check that guidelines cover all component types (services, controllers, jobs)
+  - [ ] Ensure guidelines include examples for common scenarios
+  - [ ] Verify guidelines address testing with DI
+  - [ ] Check that guidelines cover factory functions or DI container usage (if applicable)
 
 ## Notes
 
@@ -79,9 +107,20 @@ In Node.js/TypeScript applications, dependency injection should follow these pat
 - Section: 1. Architecture Review
 - Focus on identifying issues and improvements
 - Document findings and decisions
-- Compare implemented patterns with Node.js/TypeScript best practices
-- Review both existing code and planned structure to ensure proper DI patterns
+- Compare implemented patterns (or planned patterns) with Node.js/TypeScript best practices
+- Review both existing code (if any) and planned structure to ensure proper DI patterns
+- Since the codebase is in early development, focus on verifying architecture documentation and ensuring guidelines are comprehensive
 - Task can be completed independently by a single agent
+
+## Implementation Status Note
+
+**Current State**: The telegram-receiver codebase is in early development. The `src/` directory structure exists but contains minimal implementation (primarily empty directories). The main application code (services, controllers, models) has not yet been converted from the Rails application.
+
+**Review Approach**:
+1. **Primary Focus**: Review architecture documentation (`docs/architecture.md`, `docs/API_CONVENTIONS.md`) to verify DI patterns are properly specified
+2. **Secondary Focus**: Review any existing implementation code (if present) for DI compliance
+3. **Documentation**: Ensure comprehensive DI guidelines are in place for future implementations
+4. **Future Review**: Once Phase 2 conversion tasks are completed, this review should be revisited to verify actual implementation follows the documented patterns
 
 ## Related Tasks
 
