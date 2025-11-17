@@ -13,8 +13,8 @@ The `synthesize_to_io` method is located in `jarek-va/app/services/eleven_labs_t
 ## Checklist
 
 - [ ] Implement `synthesizeToIo` method signature: `synthesizeToIo(text: string, options?: { voiceSettings?: object }): Promise<Buffer>`
-- [ ] Validate text input is not blank (throw error if blank)
-- [ ] Validate voice_id is configured (throw error if not configured)
+- [ ] Validate text input is not blank (throw `ElevenLabsTextToSpeechServiceError` with message `'Text is required'` if blank, matching Rails: `raise Error, 'Text is required'`)
+- [ ] Validate voice_id is configured (throw `ElevenLabsTextToSpeechServiceError` with message `'ElevenLabs voice_id is not configured'` if not configured, matching Rails: `raise Error, 'ElevenLabs voice_id is not configured'`)
 - [ ] Build URI with voice_id in path: `https://api.elevenlabs.io/v1/text-to-speech/{voice_id}`
 - [ ] Build HTTP client with SSL and timeout settings (use private `buildHttp` method)
 - [ ] Build request body JSON with:
@@ -30,9 +30,10 @@ The `synthesize_to_io` method is located in `jarek-va/app/services/eleven_labs_t
 - [ ] Execute HTTP request (use private `executeRequest` method)
 - [ ] Return audio as Buffer (Node.js equivalent of StringIO): `Buffer.from(response.body)`
 - [ ] Add error handling:
-  - Catch JSON parsing errors and raise `InvalidResponseError`
+  - Catch JSON parsing errors and raise `InvalidResponseError` with message: `"Failed to parse response: {error.message}"` (matching Rails rescue block: `rescue JSON::ParserError => e; raise InvalidResponseError, "Failed to parse response: #{e.message}"; end`)
   - Connection/timeout errors are handled in `executeRequest` method
   - HTTP error responses are handled in `executeRequest` method (raises `SynthesisError`)
+  - Note: The JSON parsing error rescue is defensive; in normal operation, the response is binary audio data and not parsed as JSON
 
 ## Notes
 
@@ -47,8 +48,8 @@ The `synthesize_to_io` method is located in `jarek-va/app/services/eleven_labs_t
    - Returns: StringIO object containing audio data (Buffer in Node.js)
 
 2. **Validation**:
-   - Raises error if `text` is blank
-   - Raises error if `voice_id` is not configured
+   - Raises `Error` (base error class, which is `ElevenLabsTextToSpeechServiceError` in TypeScript) if `text` is blank: `raise Error, 'Text is required'`
+   - Raises `Error` (base error class, which is `ElevenLabsTextToSpeechServiceError` in TypeScript) if `voice_id` is not configured: `raise Error, 'ElevenLabs voice_id is not configured'`
 
 3. **Request body structure**:
    ```json
@@ -70,9 +71,10 @@ The `synthesize_to_io` method is located in `jarek-va/app/services/eleven_labs_t
    - No file is written to disk (unlike `synthesize` method)
 
 6. **Error handling**:
-   - JSON parsing errors are caught and wrapped in `InvalidResponseError`
+   - JSON parsing errors are caught and wrapped in `InvalidResponseError` with message: `"Failed to parse response: {error.message}"` (Rails: `rescue JSON::ParserError => e; raise InvalidResponseError, "Failed to parse response: #{e.message}"; end`)
    - HTTP errors, connection errors, and timeout errors are handled in `executeRequest` method
    - See PHASE2-053 for complete error handling implementation details
+   - Note: The JSON parsing error rescue is defensive; in normal operation, the response is binary audio data and not parsed as JSON
 
 7. **Dependencies**:
    - Uses private `buildHttp` method for HTTP client setup
