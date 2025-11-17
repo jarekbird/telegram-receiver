@@ -6,24 +6,83 @@
 
 ## Description
 
-Convert implement handle_callback_query method from Rails to TypeScript/Node.js. Reference `jarek-va/app/jobs/telegram_message_job.rb`.
+Convert the `handle_callback_query` method from Rails to TypeScript/Node.js. This method processes Telegram callback queries (button presses) by answering the callback, extracting the callback data, and forwarding it to cursor-runner as a prompt. If not forwarded, it sends a simple response message to the user.
+
+Reference: `jarek-va/app/jobs/telegram_message_job.rb` (lines 135-171)
 
 ## Checklist
 
-- [ ] Create `handleCallbackQuery` method
-- [ ] Extract callback data
-- [ ] Answer callback query
-- [ ] Forward to cursor-runner
-- [ ] Send response if not forwarded
-- [ ] Add error handling
+- [ ] Create `handleCallbackQuery(callbackQuery)` method
+  - [ ] Accept callbackQuery parameter (Telegram callback query object)
+  - [ ] Extract `message` from `callbackQuery.message`
+  - [ ] Extract `data` from `callbackQuery.data`
+  - [ ] Log the callback query data for debugging: "Received callback query: {data}"
+  - [ ] Answer the callback query with "Processing..." status
+    - [ ] Use `TelegramService.bot.api.answerCallbackQuery()` or equivalent
+    - [ ] Pass `callback_query_id` from `callbackQuery.id`
+    - [ ] Pass `text: 'Processing...'`
+    - [ ] Wrap in try-catch to handle errors gracefully
+    - [ ] Log errors if answering callback query fails (don't fail the entire method)
+  - [ ] Validate that message and message.chat exist (return early if not)
+  - [ ] Extract `chat_id` from `message.chat.id`
+  - [ ] Extract `message_id` from `message.message_id`
+  - [ ] Forward callback data to cursor-runner
+    - [ ] Create a message-like object: `{ text: data, message_id: message_id }`
+    - [ ] Call `forwardToCursorRunner(messageObject, chatId, messageId)`
+    - [ ] Store the return value (boolean indicating if forwarded)
+  - [ ] If not forwarded to cursor-runner, send simple response
+    - [ ] Use `TelegramService.sendMessage()`
+    - [ ] Send to `chat_id`
+    - [ ] Message text: `"You selected: {data}"`
+    - [ ] Return early after sending response
+  - [ ] Add comprehensive error handling
+    - [ ] Handle errors when answering callback query (log but continue)
+    - [ ] Handle errors when forwarding to cursor-runner (handled by forwardToCursorRunner)
+    - [ ] Handle errors when sending response message
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 10. TelegramMessageJob Conversion
-- Reference the Rails implementation for behavior
+- Reference the Rails implementation for behavior: `jarek-va/app/jobs/telegram_message_job.rb` (lines 135-171)
+
+### Key Implementation Details
+
+- **Method Signature**: `handleCallbackQuery(callbackQuery: TelegramCallbackQuery): Promise<void>`
+- **Callback Query Structure**: 
+  - `callbackQuery.id` - unique identifier for the callback query
+  - `callbackQuery.data` - data payload from the button press
+  - `callbackQuery.message` - the original message that contained the button
+- **Answering Callback Query**: 
+  - Must answer the callback query to acknowledge receipt (prevents loading spinner)
+  - Uses text "Processing..." to inform user
+  - Errors in answering should be logged but not fail the method
+- **Message Validation**: 
+  - Must check that `message` and `message.chat` exist before proceeding
+  - Return early if validation fails (prevents errors)
+- **Forwarding to Cursor Runner**: 
+  - Creates a message-like object with `text: data` and `message_id`
+  - Uses the same `forwardToCursorRunner` method as regular messages
+  - This allows callback data to be processed by cursor-runner as a prompt
+- **Fallback Response**: 
+  - If message is not forwarded (e.g., local command or error), send simple response
+  - Response format: "You selected: {data}"
+  - This provides user feedback for button presses
+
+### Dependencies
+
+This method depends on:
+- `TelegramService` - for answering callback queries and sending messages
+  - `TelegramService.bot.api.answerCallbackQuery()` or equivalent method
+  - `TelegramService.sendMessage()` method
+- `forwardToCursorRunner()` method - for forwarding callback data to cursor-runner
+  - Should be implemented in PHASE2-077 or earlier task
+- Logging utilities - for debugging and error logging
+
+### Task Scope
 
 - Task can be completed independently by a single agent
+- Requires `forwardToCursorRunner` method to be available (can be stubbed for testing)
 
 ## Related Tasks
 
