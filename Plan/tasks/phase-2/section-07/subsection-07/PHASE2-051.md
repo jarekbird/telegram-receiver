@@ -13,8 +13,8 @@ The `synthesize` method is located in `jarek-va/app/services/eleven_labs_text_to
 ## Checklist
 
 - [ ] Implement `synthesize` method signature: `synthesize(text: string, options?: { outputPath?: string, voiceSettings?: object }): Promise<string>`
-- [ ] Validate text input is not blank (throw error if blank)
-- [ ] Validate voice_id is configured (throw error if not configured)
+- [ ] Validate text input is not blank (throw Error if blank, matching Rails: `raise Error, 'Text is required'`)
+- [ ] Validate voice_id is configured (throw Error if not configured, matching Rails: `raise Error, 'ElevenLabs voice_id is not configured'`)
 - [ ] Build URI with voice_id in path: `https://api.elevenlabs.io/v1/text-to-speech/{voice_id}`
 - [ ] Build HTTP client with SSL and timeout settings (use private `buildHttp` method)
 - [ ] Determine output path:
@@ -35,7 +35,7 @@ The `synthesize` method is located in `jarek-va/app/services/eleven_labs_text_to
 - [ ] Log success: "Generated audio file: {output_path} ({response.body.length} bytes)"
 - [ ] Return output path string
 - [ ] Add error handling:
-  - Catch JSON parsing errors and raise `InvalidResponseError`
+  - Catch JSON parsing errors and raise `InvalidResponseError` with message: `"Failed to parse response: {error.message}"` (matching Rails rescue block)
   - Connection/timeout errors are handled in `executeRequest` method
   - HTTP error responses are handled in `executeRequest` method (raises `SynthesisError`)
 
@@ -52,8 +52,8 @@ The `synthesize` method is located in `jarek-va/app/services/eleven_labs_text_to
    - Returns: String path to generated audio file
 
 2. **Validation**:
-   - Raises error if `text` is blank
-   - Raises error if `voice_id` is not configured
+   - Raises `Error` if `text` is blank: `raise Error, 'Text is required'`
+   - Raises `Error` if `voice_id` is not configured: `raise Error, 'ElevenLabs voice_id is not configured'`
 
 3. **Output path handling**:
    - If `output_path` not provided, generates temp file: `File.join(Dir.tmpdir, "elevenlabs_tts_#{SecureRandom.hex(8)}.mp3")`
@@ -79,9 +79,10 @@ The `synthesize` method is located in `jarek-va/app/services/eleven_labs_text_to
    - Response body length is logged for debugging
 
 7. **Error handling**:
-   - JSON parsing errors are caught and wrapped in `InvalidResponseError`
+   - JSON parsing errors are caught and wrapped in `InvalidResponseError` with message: `"Failed to parse response: {error.message}"` (Rails: `rescue JSON::ParserError => e; raise InvalidResponseError, "Failed to parse response: #{e.message}"; end`)
    - HTTP errors, connection errors, and timeout errors are handled in `executeRequest` method
    - See PHASE2-053 for complete error handling implementation details
+   - Note: The JSON parsing error rescue is defensive; in normal operation, the response is binary audio data and not parsed as JSON
 
 8. **Dependencies**:
    - Uses private `buildHttp` method for HTTP client setup
