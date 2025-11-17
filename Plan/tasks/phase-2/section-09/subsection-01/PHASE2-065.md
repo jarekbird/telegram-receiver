@@ -6,21 +6,81 @@
 
 ## Description
 
-Convert create cursorrunnercallbackcontroller class structure from Rails to TypeScript/Node.js. Reference `jarek-va/app/controllers/*_controller.rb` files.
+Create the CursorRunnerCallbackController class structure for handling webhook callbacks from cursor-runner. This controller receives POST requests at `/cursor-runner/callback` when cursor-runner completes an iterate operation. It processes the callback results, retrieves pending request data from Redis, and sends formatted responses back to Telegram.
+
+Reference the Rails implementation in `jarek-va/app/controllers/cursor_runner_callback_controller.rb` for the complete behavior and functionality.
+
+**Rails Controller Overview:**
+- Handles POST `/cursor-runner/callback` endpoint
+- Authenticates webhook requests using X-Webhook-Secret header
+- Processes callback results from cursor-runner
+- Retrieves pending request data from Redis via CursorRunnerCallbackService
+- Formats and sends responses to Telegram via TelegramService
+- Supports audio responses via ElevenLabsTextToSpeechService
+- Handles error cases and sends error notifications
+
+**Key Dependencies:**
+- CursorRunnerCallbackService (for Redis state management)
+- TelegramService (for sending messages to Telegram)
+- ElevenLabsTextToSpeechService (for audio responses)
+- SystemSetting model (for checking debug mode and audio output settings)
 
 ## Checklist
 
 - [ ] Create `src/controllers/cursor-runner-callback-controller.ts` file
-- [ ] Define controller class
-- [ ] Import Express types
-- [ ] Import required services
-- [ ] Add basic structure
+- [ ] Define CursorRunnerCallbackController class
+- [ ] Import Express types (Request, Response, NextFunction)
+- [ ] Import required services:
+  - [ ] CursorRunnerCallbackService
+  - [ ] TelegramService
+  - [ ] ElevenLabsTextToSpeechService
+- [ ] Add `create` method (POST handler) with basic structure
+- [ ] Add `authenticateWebhook` middleware method (checks X-Webhook-Secret header)
+- [ ] Add placeholder private methods (will be implemented in later tasks):
+  - [ ] `processCallback` - processes callback result and pending data
+  - [ ] `sendErrorNotification` - sends error messages to Telegram
+  - [ ] `normalizeResult` - normalizes callback result (handles camelCase/snake_case)
+  - [ ] `sendResponseToTelegram` - formats and sends response to Telegram
+  - [ ] `sendTextAsAudio` - converts text to speech and sends as voice message
+  - [ ] `cursorDebugEnabled` - checks if debug mode is enabled
+  - [ ] `formatSuccessMessage` - formats success response message
+  - [ ] `formatErrorMessage` - formats error response message
+  - [ ] `formatMetadata` - formats metadata (iterations, duration)
+  - [ ] `formatOutput` - formats output with truncation and code blocks
+  - [ ] `formatWarnings` - formats warning messages
+  - [ ] `sendErrorFallbackMessage` - sends fallback error message
+  - [ ] `cleanAnsiEscapeSequences` - removes ANSI escape codes from text
+- [ ] Add error handling structure
+- [ ] Add proper TypeScript types for callback result and pending data
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 9. CursorRunnerCallbackController Conversion
-- Reference the Rails implementation for behavior
+- Reference the Rails implementation in `jarek-va/app/controllers/cursor_runner_callback_controller.rb` for complete behavior
+
+**Rails Implementation Details:**
+- Route: `POST /cursor-runner/callback` (defined in `jarek-va/config/routes.rb`)
+- Authentication: Uses `before_action :authenticate_webhook` which checks:
+  - `X-Webhook-Secret` or `X-Cursor-Runner-Secret` header
+  - `secret` query parameter
+  - Compares against `Rails.application.config.webhook_secret`
+  - Allows requests if secret matches or if secret is not configured (development mode)
+- Main `create` action:
+  - Accepts callback parameters: success, requestId/request_id, repository, branchName/branch_name, iterations, maxIterations/max_iterations, output, error, exitCode/exit_code, duration, timestamp
+  - Normalizes request_id (handles both camelCase and snake_case)
+  - Retrieves pending request data from Redis via CursorRunnerCallbackService
+  - Processes callback synchronously
+  - Always returns 200 OK (even on errors) to prevent cursor-runner retries
+- Error handling: Catches exceptions, logs errors, attempts to send error notifications to Telegram, but always returns 200 OK
+
+**TypeScript/Node.js Considerations:**
+- Use Express Request/Response types
+- Implement authentication as Express middleware
+- Handle both camelCase and snake_case parameter names (cursor-runner may send either)
+- Use async/await for service calls
+- Properly type callback result and pending data structures
+- This task creates the structure only - implementation details will be added in subsequent tasks
 
 - Task can be completed independently by a single agent
 
