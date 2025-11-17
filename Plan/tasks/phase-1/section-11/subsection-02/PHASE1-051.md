@@ -6,20 +6,102 @@
 
 ## Description
 
-Create CI workflow file
+Create a comprehensive CI workflow file for the telegram-receiver Node.js/TypeScript application. The workflow should mirror the functionality of the Rails CI workflow (`jarek-va/.github/workflows/test.yml`) but adapted for Node.js/TypeScript tooling. The workflow should run on pushes and pull requests to main/develop branches, performing code quality checks, linting, type checking, and running tests.
+
+## Reference Implementation
+
+The Rails application (`jarek-va`) has a CI workflow at `.github/workflows/test.yml` that includes:
+- Checkout code with full git history
+- Set up Ruby environment (version 3.1.2)
+- Install dependencies (bundle install)
+- Detect changed files (Ruby files)
+- Run RuboCop linter (on changed files or all files)
+- Set up test database
+- Run RSpec tests with smart test selection based on changed files
 
 ## Checklist
 
+### Workflow Configuration
 - [ ] Create `.github/workflows/ci.yml` file
-- [ ] Set workflow name to "CI"
+- [ ] Set workflow name to "CI" or "Run Automated Tests"
 - [ ] Configure trigger on push to main/develop branches
 - [ ] Configure trigger on pull requests to main/develop branches
+- [ ] Add workflow_dispatch for manual trigger from GitHub UI
+
+### Job Setup
+- [ ] Create a test job that runs on ubuntu-latest
+- [ ] Add checkout step with fetch-depth: 0 to get full git history for diff comparison
+- [ ] Set up Node.js environment (use actions/setup-node@v4, version >=18.0.0 per package.json engines)
+- [ ] Install dependencies using `npm ci` (preferred for CI) or `npm install`
+
+### Changed Files Detection
+- [ ] Add step to detect changed TypeScript files (.ts, .tsx)
+- [ ] For pull requests: compare against base branch (github.event.pull_request.base.sha)
+- [ ] For pushes: compare against previous commit (HEAD~1)
+- [ ] Output changed files to GITHUB_OUTPUT for use in subsequent steps
+- [ ] Handle case when no files are changed (fallback to all files)
+
+### Code Quality Checks
+- [ ] Run ESLint linter on changed TypeScript files (or all files if none changed)
+- [ ] Filter out test files from linting if only source files should be linted
+- [ ] Run Prettier format check on changed TypeScript files (or all files if none changed)
+- [ ] Run TypeScript type checking using `npm run type-check` or `tsc --noEmit`
+
+### Testing
+- [ ] Run Jest tests with smart test selection based on changed files
+- [ ] For changed source files, find and run related test files
+- [ ] For changed test files, run those tests directly
+- [ ] If no changed files detected, run all tests
+- [ ] Use `npm run test` or `jest` command
+- [ ] Set appropriate test timeout and environment variables if needed
+
+### Optional Enhancements
+- [ ] Add test coverage reporting (if coverage is configured in jest.config.ts)
+- [ ] Add step to run E2E tests with Playwright (if applicable)
+- [ ] Add caching for node_modules to speed up CI runs
+- [ ] Add step to build the TypeScript project to ensure it compiles successfully
+
+## Implementation Details
+
+### File Structure
+- Source files: `src/**/*.ts`
+- Test files: `tests/**/*.ts` (matches pattern `**/__tests__/**/*.ts` or `**/?(*.)+(spec|test).ts` per jest.config.ts)
+- Test files are located in `tests/` directory (not `src/`)
+
+### NPM Scripts Available
+- `npm run lint` - Run ESLint on src and tests directories
+- `npm run lint:fix` - Run ESLint with auto-fix
+- `npm run format:check` - Check Prettier formatting
+- `npm run format` - Format files with Prettier
+- `npm run type-check` - Run TypeScript type checking (tsc --noEmit)
+- `npm run test` - Run Jest tests
+- `npm run test:coverage` - Run tests with coverage
+- `npm run build` - Build TypeScript project (tsc)
+
+### Test File Mapping
+- Source file: `src/services/telegram_service.ts`
+- Related test file: `tests/services/telegram_service.test.ts` or `tests/services/telegram_service.spec.ts`
+- The mapping follows: `src/**/*.ts` → `tests/**/*.test.ts` or `tests/**/*.spec.ts`
+
+### Expected Workflow Structure
+The workflow should follow this general structure:
+1. Checkout code
+2. Set up Node.js
+3. Install dependencies
+4. Detect changed files
+5. Run linting (ESLint)
+6. Run formatting check (Prettier)
+7. Run type checking (TypeScript)
+8. Run tests (Jest) with smart selection
+9. Optionally: Build project, run E2E tests, generate coverage
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 11. CI/CD Pipeline Configuration
 - Task can be completed independently by a single agent
+- The workflow should be similar in structure to `jarek-va/.github/workflows/test.yml` but adapted for Node.js/TypeScript
+- Reference the Rails CI workflow for the pattern of changed file detection and smart test selection
 
 ## Related Tasks
 
