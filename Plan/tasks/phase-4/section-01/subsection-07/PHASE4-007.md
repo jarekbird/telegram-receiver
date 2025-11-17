@@ -20,7 +20,7 @@ The project currently has:
 - Basic linting and formatting scripts in package.json
 
 **Existing Code Smell Detection**:
-- ESLint has some complexity rules but may not be comprehensive
+- ESLint is configured but does NOT currently have complexity rules enabled (no `complexity`, `max-depth`, `max-lines-per-function`, `max-params` rules)
 - TypeScript compiler provides basic checks
 - Both tools provide basic detection but may miss:
   - Long methods (methods exceeding recommended line count)
