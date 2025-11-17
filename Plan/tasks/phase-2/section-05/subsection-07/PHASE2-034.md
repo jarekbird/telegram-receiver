@@ -38,7 +38,7 @@ The method should POST to `/git/checkout` with the following JSON body:
 ```
 
 **Important Notes**:
-- The request body uses `repository` and `branch` (both camelCase)
+- The request body uses `repository` and `branch` (both lowercase strings)
 - Both parameters are required
 
 ### Response Parsing
@@ -71,7 +71,7 @@ The method should handle and potentially throw the following error types:
 
 - [ ] Implement `checkoutBranch` method with correct TypeScript signature
 - [ ] Accept required parameters: `repository` and `branch`
-- [ ] Build request body with `repository` and `branch` (camelCase)
+- [ ] Build request body with `repository` and `branch` (lowercase strings)
 - [ ] POST to `/git/checkout` endpoint
 - [ ] Set proper HTTP headers (`Content-Type: application/json`, `Accept: application/json`)
 - [ ] Handle connection errors (ConnectionError)
