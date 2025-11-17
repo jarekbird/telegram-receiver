@@ -6,7 +6,11 @@
 
 ## Description
 
-Create API documentation directory
+Create the directory structure for API documentation. This includes:
+- The main `docs/` directory for general project documentation
+- The `docs/api/` subdirectory for API endpoint-specific documentation
+
+These directories will be used by subsequent tasks to organize API documentation files, including project structure documentation, API conventions, endpoint documentation, and API overview files.
 
 ## Checklist
 
