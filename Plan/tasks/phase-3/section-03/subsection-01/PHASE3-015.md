@@ -24,22 +24,38 @@ Common Node.js style guide standards to reference:
 ## Checklist
 
 - [ ] Run ESLint (`npm run lint`) and review all warnings/errors
+  - Note: ESLint checks both `src/` and `tests/` directories
+  - Review all warnings, even if they're in test files
 - [ ] Run Prettier format check (`npm run format:check`) and verify compliance
+  - Checks both `src/` and `tests/` directories
 - [ ] Review code against configured ESLint rules in `.eslintrc.json`
 - [ ] Check naming conventions (camelCase for variables/functions, PascalCase for classes/types)
+  - Review both source code and test files
 - [ ] Review file organization and directory structure consistency
 - [ ] Check module patterns (ES modules vs CommonJS, import/export usage)
 - [ ] Review error handling patterns (try/catch, error types, error propagation)
 - [ ] Check TypeScript type usage (avoid `any`, proper type definitions)
+  - Note: Generic utility functions in test helpers may legitimately use `any` for type parameters
+  - Document acceptable exceptions vs violations
 - [ ] Review async/await patterns and Promise handling
 - [ ] Check console.log usage (should use console.warn/error or proper logging)
+  - Verify no `console.log` statements exist in source code
+  - Check that only `console.warn` and `console.error` are used if needed
 - [ ] Review code comments and JSDoc documentation
 - [ ] Check for unused variables/imports (enforced by TypeScript strict mode)
 - [ ] Verify consistent code formatting (semicolons, quotes, indentation)
+- [ ] Review test files for style guide compliance
+  - Test utilities, mocks, fixtures, and test cases should follow same style standards
 - [ ] Identify style guide violations and document them
+  - Include file path, line number, rule violated, and severity
 - [ ] Create a report of findings with specific file locations and line numbers
+  - Categorize findings by severity (error, warning, suggestion)
+  - Include examples of violations
 - [ ] Propose fixes for identified violations
+  - Prioritize auto-fixable issues (use `npm run lint:fix` and `npm run format`)
+  - Document manual fixes needed
 - [ ] Update ESLint/Prettier config if needed to align with best practices
+  - Document any config changes and rationale
 
 ## Notes
 
@@ -50,6 +66,9 @@ Common Node.js style guide standards to reference:
 - Use `npm run lint` and `npm run format:check` to identify violations
 - Fix auto-fixable issues using `npm run lint:fix` and `npm run format`
 - Task can be completed independently by a single agent
+- **Scope**: Review both `src/` and `tests/` directories for style guide compliance
+- **Current State**: As of evaluation, ESLint reports 2 warnings about `any` types in `tests/helpers/testUtils.ts` (line 15) - these may be acceptable for generic test utility functions
+- **Expected Deliverable**: A comprehensive report documenting all style guide violations, categorized by severity, with specific file locations and proposed fixes
 
 ## Related Tasks
 
