@@ -6,20 +6,57 @@
 
 ## Description
 
-Integrate logger in middleware
+Integrate logger utility in the request logging middleware (`src/middleware/request-logger.middleware.ts`) to replace console.log statements with proper logging using the logger utility wrapper created in PHASE1-032. This task ensures that request/response logging uses the configured logger instead of console methods, matching Rails logging patterns from jarek-va with request_id tagging.
+
+**Rails Logging Patterns to Replicate:**
+- The jarek-va Rails application uses `config.log_tags = [:request_id]` in production (see `jarek-va/config/environments/production.rb` line 43), which prepends request_id to all log lines
+- Rails' built-in request logging middleware automatically logs incoming requests with method, path, IP, and request_id
+- Request logging uses `Rails.logger.info()` for normal request/response logging
+- The request_id is included in all log entries for request tracing (see `jarek-va/config/environments/production.rb` line 69: `ActiveSupport::TaggedLogging` wrapper)
+
+**Purpose:**
+- Replace console.log with proper logger methods for consistent logging across the application
+- Ensure request/response logging uses the configured logger (matching Rails logging patterns with request_id tagging)
+- Enable structured logging for request/response events (useful for log aggregation in production)
+- Maintain request_id context in logs for request tracing (matching Rails `config.log_tags = [:request_id]` behavior)
 
 ## Checklist
 
-- [ ] Open `src/middleware/request-logger.middleware.ts`
-- [ ] Import logger utility
-- [ ] Replace console.log with logger.info()
-- [ ] Add appropriate log level for requests
+- [ ] Open `src/middleware/request-logger.middleware.ts` (created in PHASE1-020)
+- [ ] Import logger utility from `@/utils/logger` (created in PHASE1-032)
+- [ ] Replace `console.log()` calls with `logger.info()` for request logging:
+  - [ ] Replace request logging (method, URL, IP, request ID, timestamp) with `logger.info()`
+  - [ ] Replace response logging (status code, duration, request ID) with `logger.info()`
+- [ ] Ensure request_id is included in log messages (for request tracing, matching Rails `config.log_tags = [:request_id]` behavior)
+- [ ] Use structured logging format that includes request_id (matching Rails TaggedLogging behavior)
+- [ ] Verify all console.log statements are replaced with logger methods
+- [ ] Ensure logging format is consistent with the logger configuration (from PHASE1-031)
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 8. Logging Infrastructure
 - Task can be completed independently by a single agent
+- **Prerequisite**: PHASE1-032 must be completed first to create the logger utility wrapper
+- **Prerequisite**: PHASE1-020 must be completed first to create the request logging middleware (`src/middleware/request-logger.middleware.ts`)
+- **Rails Reference**: The jarek-va Rails application uses request_id tagging for request tracing:
+  - `jarek-va/config/environments/production.rb` (line 43) - Request ID tagging via `config.log_tags = [:request_id]`
+  - `jarek-va/config/environments/production.rb` (line 69) - `ActiveSupport::TaggedLogging` wrapper that prepends request_id to all log lines
+  - Rails automatically logs requests with request_id included in log output
+- **Request Logging**: The `src/middleware/request-logger.middleware.ts` file (created in PHASE1-020) should already have request/response logging code using `console.log()`. This task replaces those console statements with logger methods.
+- **Request ID Context**: The middleware should log request_id in all log messages to enable request tracing, matching Rails' `config.log_tags = [:request_id]` behavior. The logger utility (from PHASE1-032) should support request_id context if needed.
+- **Usage Pattern**: Replace console statements like:
+  ```typescript
+  // Before (from PHASE1-020):
+  console.log(`[${requestId}] ${method} ${url} - ${ip}`);
+  console.log(`[${requestId}] ${statusCode} ${duration}ms`);
+  
+  // After (this task):
+  import logger from '@/utils/logger';
+  logger.info(`[${requestId}] ${method} ${url} - ${ip}`);
+  logger.info(`[${requestId}] ${statusCode} ${duration}ms`);
+  ```
+- **Structured Logging**: Consider logging in a structured format (JSON) that includes request_id, matching Rails TaggedLogging behavior where request_id is prepended to all log lines.
 
 ## Related Tasks
 
