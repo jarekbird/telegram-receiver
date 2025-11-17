@@ -10,6 +10,7 @@ You are tasked with:
 - Ensuring task descriptions accurately reflect the Rails code they're converting
 - Verifying that task scope is appropriate and complete
 - Identifying any mismatches or missing components in conversion tasks
+- **Directly updating task files with fixes and improvements** when issues are found
 
 ## Understanding the jarek-va Application
 
@@ -188,24 +189,31 @@ Document any issues found:
    - Unclear requirements
    - Missing dependencies
 
-### Step 5: Provide Feedback
+### Step 5: Provide Feedback and Update Task
 
-When issues are found, provide:
+When issues are found, you must:
 
-1. **Specific Feedback**
-   - Point to exact line numbers or methods
-   - Reference the Rails file location
-   - Explain what's missing or incorrect
-
-2. **Recommendations**
-   - Suggest how to fix the task
-   - Recommend splitting or merging tasks
-   - Suggest additional checklist items
-
-3. **Documentation**
-   - Update task descriptions if needed
+1. **Directly Update the Task File**
+   - **IMPORTANT**: You must update the task file directly with all fixes and improvements
+   - Fix incorrect file references in the task
+   - Update task descriptions to accurately reflect the Rails implementation
    - Add missing checklist items
-   - Correct file references
+   - Correct method names and functionality descriptions
+   - Update scope if the task is too large or too small
+   - Add missing dependencies and error handling requirements
+   - Enhance descriptions with specific guidance where needed
+
+2. **Run Deploy Script**
+   - **IMPORTANT**: After making all fixes to the task file, you must run the deploy script
+   - Navigate to the telegram-receiver directory: `cd /Users/jarekbird/Documents/VirtualAssistant/telegram-receiver`
+   - Run the deploy script: `./deploy.sh`
+   - The deploy script will:
+     - Run linting and formatting checks
+     - Run all tests
+     - Generate test coverage
+     - Commit changes (if any)
+     - Push changes to origin
+   - If the deploy script fails, fix any issues before completing the validation
 
 ## Task Review Checklist
 
@@ -216,7 +224,7 @@ When reviewing a conversion task, use this checklist:
 - [ ] Checklist includes all public methods from the Rails file
 - [ ] Checklist includes error handling
 - [ ] Checklist includes dependencies
-- [ ] Task scope is appropriate (not too large/small)
+- [ ] Task scope is appropriate (not too large)
 - [ ] Related components are properly grouped
 - [ ] Edge cases are mentioned
 - [ ] Test requirements are appropriate
@@ -249,116 +257,35 @@ When reviewing a conversion task, use this checklist:
    - Referenced files don't exist
    - Incorrect component names
 
-## Tools and Commands
+### Deploying Changes
 
-### Reviewing Rails Files
-
-```bash
-# Navigate to jarek-va directory
-cd /Users/jarekbird/Documents/VirtualAssistant/jarek-va
-
-# View file structure
-find app -name "*.rb" | grep -E "(telegram|cursor)" | sort
-
-# Read a specific file
-cat app/services/telegram_service.rb
-
-# Search for method definitions
-grep -n "def " app/services/telegram_service.rb
-
-# View routes
-cat config/routes.rb
-
-# Check for related files
-grep -r "TelegramService" app/
-```
-
-### Comparing with Task Files
+After making fixes to task files, you must run the deploy script:
 
 ```bash
-# Navigate to task directory
-cd /Users/jarekbird/Documents/VirtualAssistant/telegram-receiver/Plan/tasks
+# Navigate to telegram-receiver directory
+cd /Users/jarekbird/Documents/VirtualAssistant/telegram-receiver
 
-# Read task file
-cat phase-2/section-04/subsection-01/PHASE2-018.md
-
-# Search for Rails file references
-grep -r "telegram_service.rb" phase-2/
+# Run deploy script (runs tests, linting, commits, and pushes)
+./deploy.sh
 ```
 
-## Example Review Process
+The deploy script will:
+- Run linting and formatting checks
+- Run all tests
+- Generate test coverage
+- Automatically commit changes with a generated commit message
+- Push changes to origin
 
-### Example: Reviewing PHASE2-018 (Create TelegramService class structure)
-
-1. **Read the task file**
-   - Task: "Create TelegramService class structure"
-   - References: `jarek-va/app/services/telegram_service.rb`
-
-2. **Read the Rails file**
-   ```bash
-   cat /Users/jarekbird/Documents/VirtualAssistant/jarek-va/app/services/telegram_service.rb
-   ```
-
-3. **Extract key information**
-   - Class: `TelegramService`
-   - Methods: `send_message`, `set_webhook`, `delete_webhook`, `webhook_info`, `send_voice`, `download_file`
-   - Dependencies: `telegram/bot`, `faraday`, `stringio`
-   - Error handling: try-catch blocks, logging
-
-4. **Compare with task**
-   - Task mentions creating class structure ✓
-   - Task references correct file ✓
-   - Checklist should include all methods (verify in subsequent tasks)
-
-5. **Provide feedback**
-   - If methods are missing from checklist, note it
-   - If dependencies are missing, add them
-   - If error handling is not mentioned, suggest adding it
-
-## Validation Report Format
-
-When providing feedback, use this format:
-
-```markdown
-## Task Review: [TASK_ID]
-
-### Task Information
-- **Task ID**: PHASE2-XXX
-- **Task Title**: [Title]
-- **Rails File**: [Path to Rails file]
-
-### Validation Results
-
-#### ✓ Correct
-- [List what's correct]
-
-#### ⚠️ Issues Found
-- [List issues with specific details]
-
-#### 📝 Recommendations
-- [Suggestions for improvement]
-
-### Detailed Comparison
-
-#### Methods in Rails File
-1. `method_name` - [Description]
-   - Task coverage: [Yes/No/Partial]
-   - Notes: [Any issues]
-
-#### Dependencies
-- [List dependencies and whether they're mentioned in task]
-
-#### Error Handling
-- [Review error handling coverage]
-```
-
-## Important Notes
+**Important**: Always run the deploy script after making any fixes to task files to ensure changes are properly committed and pushed.
 
 - **Always verify against actual Rails code** - Don't assume task descriptions are correct
 - **Check related files** - Some functionality may span multiple files
 - **Consider the conversion context** - Some Rails patterns may need different approaches in Node.js
 - **Document discrepancies** - If Rails code differs from task description, document it
 - **Be thorough** - Missing functionality in tasks leads to incomplete conversions
+- **Fix issues directly** - When you find issues, update the task file immediately. Don't just report problems—fix them.
+- **Update, then deploy, then report** - First update the task file with all fixes, run the deploy script to commit and push changes, then document what was changed in your validation report
+- **Always run deploy script** - After making any fixes to task files, you must run `./deploy.sh` in the telegram-receiver directory to ensure changes are committed and pushed
 
 ## Resources
 
