@@ -10,26 +10,31 @@ Convert and implement the `setWebhook` method from Rails to TypeScript/Node.js. 
 
 The Rails implementation:
 - Takes `url` (required) and optional `secret_token` parameter
-- Returns early if bot token is blank (similar to other methods in the service)
+- Returns `nil` (undefined in TypeScript) early if bot token is blank (similar to other methods in the service)
 - Builds a params object with the `url`
-- Conditionally adds `secret_token` to params only if it's present (not nil/blank)
-- Calls Telegram Bot API `setWebhook` endpoint
-- Logs errors and re-raises exceptions
-- Returns the API response from Telegram
+- Conditionally adds `secret_token` to params only if it's present (not nil/blank, uses `.present?` check)
+- Calls Telegram Bot API `setWebhook` endpoint via `bot.api.set_webhook(params)`
+- Logs errors with full stack trace and re-raises exceptions (using `raise` in Rails, `throw` in TypeScript)
+- Returns the API response from Telegram (implicit return of `bot.api.set_webhook(params)` result)
 
 ## Checklist
 
 - [ ] Implement `setWebhook` method with proper TypeScript signature:
   - Parameters: `url: string` (required), `secretToken?: string` (optional)
-  - Return type: `Promise<TelegramApiResponse>` (or appropriate Telegram API response type)
-- [ ] Add early return check if bot token is blank (use the validation method from PHASE2-018)
+  - Return type: `Promise<TelegramApiResponse | undefined>` (returns `undefined` on early return when bot token is blank, otherwise returns Telegram API response)
+- [ ] Add early return check if bot token is blank (use the validation method from PHASE2-018 - typically a private method like `isBotTokenValid()` or `validateBotToken()` that returns boolean)
+  - If bot token is blank/invalid, return `undefined` immediately (matching Rails `return` behavior which returns `nil`)
 - [ ] Build params object with `url` parameter
-- [ ] Conditionally add `secret_token` to params only if `secretToken` is provided and not empty
-- [ ] Make HTTP request to Telegram Bot API `setWebhook` endpoint using axios
+- [ ] Conditionally add `secret_token` to params only if `secretToken` is provided and not empty (check for truthy and non-empty string)
+- [ ] Make HTTP request to Telegram Bot API `setWebhook` endpoint using axios:
+  - Endpoint URL: `https://api.telegram.org/bot{token}/setWebhook`
+  - Method: POST
+  - Request body: JSON with `url` and optionally `secret_token`
+  - Response: Telegram API response object with `ok` boolean and `result` field
 - [ ] Add comprehensive error handling:
   - Wrap in try-catch block
   - Log errors with descriptive messages (include error message and stack trace)
-  - Re-raise exceptions after logging (maintain Rails behavior)
+  - Re-throw exceptions after logging using `throw` (maintains Rails `raise` behavior - allows callers to handle errors)
 - [ ] Return the API response from Telegram (not webhook info - that's a separate method)
 - [ ] Reference `jarek-va/app/services/telegram_service.rb` lines 39-51 for exact behavior
 
@@ -38,10 +43,11 @@ The Rails implementation:
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 4. TelegramService Conversion
 - Reference the Rails implementation (`jarek-va/app/services/telegram_service.rb` lines 39-51) for exact behavior
-- The `secret_token` parameter is optional and should only be included in the API request if provided
-- Error handling should match Rails pattern: log error details, then re-raise the exception
+- The `secret_token` parameter is optional and should only be included in the API request if provided and not empty (Rails uses `.present?` which checks for non-nil and non-blank)
+- Error handling should match Rails pattern: log error details with full stack trace, then re-throw the exception
 - Method should follow camelCase naming convention (`setWebhook` not `set_webhook`)
 - This method sets the webhook URL, but does not return webhook info (that's handled by `getWebhookInfo` method in a separate task)
+- The Rails method implicitly returns the result of `bot.api.set_webhook(params)` - TypeScript should explicitly return the axios response
 - Task can be completed independently by a single agent
 
 ## Related Tasks
