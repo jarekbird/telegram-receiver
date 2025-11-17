@@ -31,14 +31,14 @@ Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callb
 - [ ] Add error handling for JSON parsing errors
   - Wrap `JSON.parse()` in try/catch block
   - Catch `SyntaxError` (Node.js JSON.parse throws SyntaxError for invalid JSON)
-  - Log error with appropriate level (error level)
+  - Log error using `console.error()` (matching PHASE2-039 convention)
   - Log message should include: request_id and error message
-  - Format: `"Failed to parse pending request data"` with context object: `{ request_id, error: error.message }`
+  - Format: `console.error('Failed to parse pending request data', { request_id: requestId, error: error.message })`
   - Return `null` on parsing error (graceful degradation)
 - [ ] Add error handling for Redis operations (optional but recommended)
   - Handle Redis connection errors
   - Handle Redis operation errors
-  - Log errors appropriately
+  - Log errors using `console.error()` (matching PHASE2-039 convention)
   - Return `null` on Redis errors (graceful degradation)
 
 ## Notes
@@ -70,7 +70,7 @@ Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callb
   - If symbol-like behavior is needed, consider using a library, but typically plain objects are sufficient for TypeScript
 - Handle `SyntaxError` exception (Node.js JSON.parse throws SyntaxError for invalid JSON, equivalent to Ruby's JSON::ParserError)
 - Add proper error handling (try/catch) for JSON parsing errors and log errors
-- Use appropriate logger (check project's logging setup - may be console.log, winston, pino, etc.)
+- Use `console.error()` for error logging (matching PHASE2-039 convention, as no logger utility exists yet in the project)
 - Ensure method is added to the `CursorRunnerCallbackService` class created in PHASE2-039
 
 **Dependencies:**
