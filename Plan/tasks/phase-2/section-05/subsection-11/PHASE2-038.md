@@ -6,22 +6,98 @@
 
 ## Description
 
-Convert write cursorrunnerservice unit tests from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/cursor_runner_service.rb`.
+Write comprehensive unit tests for CursorRunnerService in TypeScript/Node.js. Reference the Rails implementation at `jarek-va/app/services/cursor_runner_service.rb` and the Rails spec at `jarek-va/spec/services/cursor_runner_service_spec.rb` for test coverage requirements.
 
 ## Checklist
 
-- [ ] Create `tests/services/cursor-runner-service.test.ts`
-- [ ] Mock HTTP requests
-- [ ] Test all methods
-- [ ] Test error handling
-- [ ] Test timeout scenarios
-- [ ] Achieve >80% coverage
+- [ ] Create `tests/unit/services/cursor-runner-service.test.ts`
+- [ ] Set up test fixtures and mocks for HTTP requests
+  - Mock HTTP client (fetch or axios depending on implementation)
+  - Mock successful responses (200 OK)
+  - Mock error responses (400, 500, etc.)
+  - Mock connection errors
+  - Mock timeout errors
+- [ ] Test `execute` method
+  - Test successful execution with all required parameters (repository, branch_name, prompt)
+  - Test with optional request_id parameter
+  - Test request_id generation when not provided
+  - Test POST request to `/cursor/execute` endpoint
+  - Test request body contains correct fields (repository, branchName, prompt, id)
+  - Test HTTP error handling (non-200 status codes)
+  - Test connection errors (ECONNREFUSED, EHOSTUNREACH, SocketError)
+  - Test timeout errors (OpenTimeout, ReadTimeout)
+- [ ] Test `iterate` method
+  - Test successful iteration with all required parameters
+  - Test with optional request_id parameter
+  - Test with optional callback_url parameter
+  - Test with max_iterations parameter (default: 25)
+  - Test POST request to `/cursor/iterate` endpoint
+  - Test request body contains correct fields (repository, branchName, prompt, maxIterations, id, callbackUrl when provided)
+  - Test response parsing with iterations count
+  - Test error handling (HTTP errors, connection errors, timeout errors)
+- [ ] Test `clone_repository` method
+  - Test successful clone with repository_url
+  - Test with optional repository_name parameter
+  - Test POST request to `/git/clone` endpoint
+  - Test request body contains correct fields (repositoryUrl, repositoryName when provided)
+  - Test error handling
+- [ ] Test `list_repositories` method
+  - Test successful list retrieval
+  - Test GET request to `/git/repositories` endpoint
+  - Test response parsing with repositories array and count
+  - Test error handling
+- [ ] Test `checkout_branch` method
+  - Test successful checkout
+  - Test POST request to `/git/checkout` endpoint
+  - Test request body contains correct fields (repository, branch)
+  - Test error handling
+- [ ] Test `push_branch` method
+  - Test successful push
+  - Test POST request to `/git/push` endpoint
+  - Test request body contains correct fields (repository, branch)
+  - Test error handling
+- [ ] Test `pull_branch` method
+  - Test successful pull
+  - Test POST request to `/git/pull` endpoint
+  - Test request body contains correct fields (repository, branch)
+  - Test error handling
+- [ ] Test error handling scenarios
+  - Test ConnectionError for connection failures (ECONNREFUSED, EHOSTUNREACH, SocketError)
+  - Test TimeoutError for timeout scenarios (OpenTimeout, ReadTimeout)
+  - Test InvalidResponseError for JSON parsing failures
+  - Test generic Error for HTTP error responses (non-200, non-422)
+  - Test HTTP 422 Unprocessable Entity is treated as valid response (not an error)
+  - Test error messages include original error details
+- [ ] Test response parsing
+  - Test successful JSON parsing with symbol keys (or equivalent in TypeScript)
+  - Test InvalidResponseError when JSON parsing fails
+  - Test error body parsing for HTTP error responses
+- [ ] Test request ID generation
+  - Test request_id is generated when not provided
+  - Test request_id format matches Rails pattern (req-{timestamp}-{random})
+- [ ] Test initialization
+  - Test with custom base_url and timeout
+  - Test with default base_url and timeout from config
+- [ ] Achieve >80% code coverage
+  - Ensure all public methods are tested
+  - Ensure all error paths are tested
+  - Ensure all edge cases are covered
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 5. CursorRunnerService Conversion
-- Reference the Rails implementation for behavior
+- Reference the Rails implementation at `jarek-va/app/services/cursor_runner_service.rb` for exact behavior
+- Reference the Rails spec at `jarek-va/spec/services/cursor_runner_service_spec.rb` for test coverage examples
+- Test file should be located at `tests/unit/services/cursor-runner-service.test.ts` (following the project's test directory structure)
+- Use Jest or the project's configured test framework
+- Mock HTTP client library (fetch, axios, or whatever the implementation uses)
+- Test all 7 public methods: execute, iterate, clone_repository, list_repositories, checkout_branch, push_branch, pull_branch
+- Test all error types: ConnectionError, TimeoutError, InvalidResponseError, and generic Error
+- HTTP 422 status code should be treated as a valid response (not an error) to allow callers to receive error details
+- Request ID generation should match Rails pattern: "req-{timestamp}-{random_hex}"
+- All error messages should include original error details for debugging
+- Test both success and error scenarios for comprehensive coverage
 
 - Task can be completed independently by a single agent
 
