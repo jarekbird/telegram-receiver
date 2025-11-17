@@ -8,6 +8,13 @@
 
 Review and improve memory usage patterns in the codebase to ensure best practices. This task focuses on analyzing memory consumption, identifying potential memory leaks, reviewing object lifecycle management, and ensuring efficient memory usage throughout the application.
 
+**Rails Implementation References:**
+- `jarek-va/app/services/cursor_runner_service.rb` - Creates new HTTP connections per request (line 152: `Net::HTTP.new(uri.host, uri.port)`). **Issue**: No connection pooling/reuse. TypeScript implementation should use Axios with connection pooling or a shared HTTP agent.
+- `jarek-va/app/services/telegram_service.rb` - Uses singleton pattern for bot client (`@bot ||= ...` on line 11). TypeScript should implement similar singleton/shared instance pattern for bot clients, but with per-token caching (Map keyed by token) for multi-bot support.
+- `jarek-va/app/services/cursor_runner_callback_service.rb` - Creates Redis client per instance (line 20: `Redis.new(url: redis_url)`). **Issue**: Should use shared/pooled Redis connection. TypeScript implementation should use a shared Redis client instance (ioredis connection pool).
+- `jarek-va/app/jobs/telegram_message_job.rb` - File cleanup patterns in `ensure` blocks (lines 341-351 for audio transcription, 378-388 for TTS). TypeScript should implement similar cleanup patterns using try/finally blocks to ensure temporary files are deleted.
+- `jarek-va/app/jobs/telegram_message_job.rb` - Downloads files to temp directory and cleans up (line 333: `TelegramService.download_file`, cleanup in ensure block). TypeScript should ensure file streams are properly closed and temp files are cleaned up.
+
 Reference the Rails implementation patterns where applicable to understand expected memory behavior and ensure the TypeScript implementation follows Node.js best practices for memory management.
 
 ## Checklist
@@ -65,25 +72,33 @@ Reference the Rails implementation patterns where applicable to understand expec
 
 ### Connection and Resource Management
 - [ ] Review Redis connection management
-  - Verify Redis client uses connection pooling (not creating new clients per request)
+  - **Rails Reference**: `jarek-va/app/services/cursor_runner_callback_service.rb` creates Redis client per instance (line 20). TypeScript should use a shared Redis client instance.
+  - Verify Redis client uses connection pooling (ioredis connection pool, not creating new clients per request)
   - Check if Redis connections are properly closed on shutdown
-  - Review connection reuse patterns
+  - Review connection reuse patterns (should use singleton/shared instance pattern)
   - Verify no connection leaks (connections not closed)
+  - Check that all services (CallbackService, BullMQ workers) share the same Redis connection pool
 - [ ] Review HTTP client connections (Axios)
+  - **Rails Reference**: `jarek-va/app/services/cursor_runner_service.rb` creates new HTTP connections per request (line 152: `Net::HTTP.new`). TypeScript should use Axios with connection pooling.
   - Check if HTTP clients are reused (not created per request)
-  - Verify connection pooling is configured appropriately
+  - Verify Axios instance is shared across services (CursorRunnerService, TelegramService, ElevenLabs services)
+  - Verify connection pooling is configured appropriately (HTTP keep-alive, maxSockets)
   - Review if connections are properly closed
   - Check for connection leaks in error scenarios
+  - Verify Axios default instance or shared instance is used (not creating new instances per request)
 - [ ] Review BullMQ queue and worker management
   - Verify workers are properly closed on shutdown
   - Check if queues hold references to completed jobs unnecessarily
   - Review job data retention (ensure completed jobs are cleaned up)
   - Verify workers don't accumulate state over time
 - [ ] Review file and stream handling
-  - Check if file streams are properly closed
-  - Verify buffers are released after use
-  - Review large file handling (e.g., Telegram file downloads)
+  - **Rails Reference**: `jarek-va/app/jobs/telegram_message_job.rb` uses `ensure` blocks for file cleanup (lines 341-351, 378-388). TypeScript should use try/finally blocks.
+  - Check if file streams are properly closed (use try/finally or stream.on('end') handlers)
+  - Verify buffers are released after use (don't hold references to large buffers)
+  - Review large file handling (e.g., Telegram file downloads - Rails downloads to temp dir and cleans up)
   - Check for stream leaks (streams not closed)
+  - Verify temporary files are deleted after use (Rails pattern: download to temp, use, then delete in ensure block)
+  - Review file download patterns (TelegramService.download_file downloads to temp directory - ensure cleanup)
 
 ### Large Object Retention
 - [ ] Identify large objects in memory
@@ -124,10 +139,12 @@ Reference the Rails implementation patterns where applicable to understand expec
   - Check for event listeners that aren't removed
   - Review closures holding references to large objects
 - [ ] Review service-level memory retention
-  - Check TelegramService for retained state
-  - Review CursorRunnerService for retained state
-  - Check CallbackService for retained callback state
-  - Verify services don't accumulate state over time
+  - **Rails Reference**: `jarek-va/app/services/telegram_service.rb` uses singleton pattern (`@bot ||= ...`). TypeScript should use per-token caching (Map) for multi-bot support.
+  - Check TelegramService for retained state (bot client instances should be cached per token, not accumulate)
+  - Review CursorRunnerService for retained state (should not hold HTTP connections or large request/response data)
+  - Check CallbackService for retained callback state (should only store minimal data in Redis, not in-memory)
+  - Verify services don't accumulate state over time (check for growing Maps/Objects that never clear)
+  - Review singleton/shared instance patterns (ensure they don't accumulate data over time)
 - [ ] Review request-level memory retention
   - Check Express middleware for retained request data
   - Review if request objects are held after response is sent
@@ -171,6 +188,13 @@ Reference the Rails implementation patterns where applicable to understand expec
 - Document findings and decisions
 
 - Task can be completed independently by a single agent
+
+**TypeScript/Node.js Specific Libraries to Review:**
+- **Axios** (`axios`): HTTP client for CursorRunnerService, TelegramService, ElevenLabs services. Should use shared instance with connection pooling.
+- **ioredis** (`ioredis`): Redis client for CallbackService and BullMQ. Should use shared connection pool.
+- **BullMQ** (`bullmq`): Job queue system. Review worker lifecycle, job data retention, and connection management.
+- **Express** (`express`): Web framework. Review middleware memory patterns and request/response object lifecycle.
+- **@elevenlabs/elevenlabs-js** (`@elevenlabs/elevenlabs-js`): ElevenLabs SDK. Review file handling and stream management for audio transcription/TTS.
 
 ## Related Tasks
 
