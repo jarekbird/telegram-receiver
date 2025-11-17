@@ -1,4 +1,4 @@
-# PHASE2-026: Add error handling to TelegramService
+# PHASE2-026: Add comprehensive error handling to TelegramService
 
 **Section**: 4. TelegramService Conversion
 **Subsection**: 4.9
@@ -6,21 +6,51 @@
 
 ## Description
 
-Convert add error handling to telegramservice from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/telegram_service.rb`.
+Review and ensure comprehensive error handling is implemented across all TelegramService methods, matching the Rails implementation patterns. This task consolidates error handling requirements and ensures consistency across all methods. Reference `jarek-va/app/services/telegram_service.rb`.
+
+The Rails implementation uses consistent error handling patterns:
+- All public methods (`send_message`, `set_webhook`, `delete_webhook`, `webhook_info`, `send_voice`, `download_file`) wrap operations in `begin/rescue/end` blocks
+- All methods log errors with descriptive messages and full stack traces using `Rails.logger.error`
+- All methods re-raise exceptions after logging (using `raise`)
+- Specific validations include file existence checks (`send_voice`) and HTTP response validation (`download_file_from_url`)
+- All methods check for blank bot token before proceeding (early return pattern)
 
 ## Checklist
 
-- [ ] Add try-catch blocks to all methods
-- [ ] Log errors appropriately
-- [ ] Throw custom error types
-- [ ] Handle API rate limits
+- [ ] Verify all public methods have try-catch blocks:
+  - [ ] `sendMessage()` - wrap Telegram API call in try-catch
+  - [ ] `setWebhook()` - wrap Telegram API call in try-catch
+  - [ ] `deleteWebhook()` - wrap Telegram API call in try-catch
+  - [ ] `getWebhookInfo()` - wrap Telegram API call in try-catch
+  - [ ] `sendVoice()` - wrap file operations and Telegram API call in try-catch
+  - [ ] `downloadFile()` - wrap file operations and Telegram API call in try-catch
+- [ ] Verify all methods log errors appropriately:
+  - [ ] Log error messages with descriptive context (e.g., "Error sending Telegram message: {error message}")
+  - [ ] Log full stack traces for debugging
+  - [ ] Use appropriate logging level (error level)
+- [ ] Verify all methods re-throw exceptions after logging (maintain Rails behavior of propagating errors)
+- [ ] Verify specific error validations are implemented:
+  - [ ] `sendVoice()` validates file exists before reading (throw error: "Voice file does not exist" if file missing)
+  - [ ] `downloadFileFromUrl()` validates HTTP response is successful (throw error: "Failed to download file: HTTP {code} {message}" if not successful)
+- [ ] Verify all methods have early return checks for blank bot token (consistent with Rails `return if Rails.application.config.telegram_bot_token.blank?` pattern)
+- [ ] Ensure error handling is consistent across all methods (same pattern: try-catch, log, re-throw)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 4. TelegramService Conversion
-- Reference the Rails implementation for behavior
-
+- **This is a review/consolidation task** - it ensures error handling is comprehensive and consistent across all TelegramService methods
+- Reference the Rails implementation (`jarek-va/app/services/telegram_service.rb`) for exact error handling patterns
+- Error handling should match Rails behavior:
+  - All methods use `begin/rescue/end` blocks (lines 17-36, 42-50, 56-62, 68-74, 86-116, 126-150)
+  - Error messages follow pattern: "Error {operation}: {error message}" (e.g., "Error sending Telegram message:", "Error setting Telegram webhook:")
+  - Full stack traces are logged using `Rails.logger.error(e.backtrace.join("\n"))`
+  - Exceptions are re-raised after logging using `raise`
+- Specific error validations from Rails:
+  - `send_voice` (line 87): Validates file exists with `raise 'Voice file does not exist' unless File.exist?(voice_path)`
+  - `download_file_from_url` (line 166): Validates HTTP response with `raise "Failed to download file: HTTP #{response.code} #{response.message}" unless response.is_a?(Net::HTTPSuccess)`
+- All methods check for blank bot token before proceeding (early return pattern, e.g., line 15, 40, 54, 66, 84, 124)
+- This task should be completed after all individual method implementation tasks (PHASE2-019 through PHASE2-025) to ensure comprehensive error handling review
 - Task can be completed independently by a single agent
 
 ## Related Tasks
