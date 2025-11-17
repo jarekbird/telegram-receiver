@@ -18,20 +18,23 @@ Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callb
 - [ ] Use private `redisKey(requestId: string)` helper method to generate Redis key with prefix
   - The helper method prepends `REDIS_KEY_PREFIX` constant (`'cursor_runner_callback:'`) to the request ID
 - [ ] Serialize data object to JSON string using `JSON.stringify(data)`
-- [ ] Store serialized JSON in Redis using the appropriate method based on Redis client package:
-  - If using `redis` package: use `redis.setex(key, ttl, jsonString)` (matches Rails API)
-  - If using `ioredis` package: use `redis.setex(key, ttl, jsonString)` (ioredis also supports setex) OR `redis.set(key, jsonString, 'EX', ttl)` (alternative ioredis API)
-  - Use the generated Redis key
+- [ ] Store serialized JSON in Redis using `redis.setex(key, ttl, jsonString)` method
+  - **IMPORTANT**: Use `ioredis` package (project standard from PHASE2-039)
+  - The `ioredis` package supports `setex(key, ttl, value)` method which matches the Rails API exactly
+  - Use the generated Redis key from `redisKey()` helper
   - Use provided `ttl` parameter or default to `DEFAULT_TTL` (3600 seconds)
   - Store the JSON stringified data
+  - Note: `ioredis` also supports `set(key, value, 'EX', ttl)` as an alternative, but `setex()` is preferred for consistency with Rails implementation
 - [ ] Add error handling for Redis operations
-  - Handle Redis connection errors
-  - Handle serialization errors (if any)
-  - Log errors appropriately
-- [ ] Log successful operation with info level
+  - Wrap Redis operations in try/catch block
+  - Handle Redis connection errors (catch Redis client exceptions)
+  - Note: `JSON.stringify()` typically doesn't throw errors for plain objects, but Redis operations can fail
+  - Log errors with `console.error()` including request ID and error message
+  - Re-throw or handle errors appropriately (consider whether to throw or log silently - Rails version doesn't handle errors explicitly)
+- [ ] Log successful operation with info level using `console.log()`
   - Log message should include: request ID and TTL value
   - Format: `"Stored pending cursor-runner request: {requestId}, TTL: {ttl}s"`
-  - Use the project's logging system (check existing logger usage in the codebase)
+  - Use `console.log()` for info messages (matching PHASE2-039 convention, as no logger utility exists yet in the project)
 
 ## Notes
 
@@ -53,10 +56,15 @@ Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callb
 - Parameters: `requestId: string`, `data: object`, `ttl?: number` (optional, defaults to `DEFAULT_TTL`)
 - Use the private `redisKey()` helper method that should already exist from PHASE2-039
 - Use `JSON.stringify()` for serialization (TypeScript/Node.js equivalent of Ruby's `to_json`)
-- Use Redis client's `setex()` method (both `redis` and `ioredis` packages support `setex(key, ttl, value)` which matches the Rails API)
+- Use Redis client's `setex()` method from `ioredis` package (project standard from PHASE2-039)
+  - `ioredis` supports `setex(key, ttl, value)` which matches the Rails API exactly
   - Note: `ioredis` also supports `set(key, value, 'EX', ttl)` as an alternative, but `setex()` is preferred for consistency with Rails implementation
 - Add proper error handling (try/catch) for Redis operations and log errors
-- Use appropriate logger (check project's logging setup - may be console.log, winston, pino, etc.)
+  - Wrap Redis `setex()` call in try/catch block
+  - Catch Redis client exceptions (connection errors, etc.)
+  - Log errors with `console.error()` including request ID and error details
+  - Consider whether to re-throw errors or handle gracefully (Rails version doesn't handle errors explicitly)
+- Use `console.log()` for info messages (matching PHASE2-039 convention, as no logger utility exists yet in the project)
 - Ensure method is added to the `CursorRunnerCallbackService` class created in PHASE2-039
 
 **Dependencies:**
