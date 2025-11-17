@@ -6,23 +6,103 @@
 
 ## Description
 
-Convert create base job processor class from Rails to TypeScript/Node.js.
+Convert the base job processor class from Rails `ApplicationJob` to TypeScript/Node.js. This abstract base class provides common functionality for all BullMQ job processors, including default queue configuration, retry logic with exponential backoff, and error handling patterns that match the Rails Sidekiq implementation.
+
+**Rails Implementation Reference:**
+- `jarek-va/app/jobs/application_job.rb` - Base job class using ActiveJob with Sidekiq adapter
+  - Queue configuration: `queue_as :default` (line 11)
+  - Retry configuration: `retry_on StandardError, wait: :exponentially_longer, attempts: 3` (line 14)
+  - Discard configuration: `discard_on ActiveJob::DeserializationError` (line 17)
+  - All jobs extend this base class (e.g., `TelegramMessageJob < ApplicationJob`)
+
+**Node.js Implementation:**
+- Create `src/jobs/base-job-processor.ts` as an abstract base class
+- Define default queue name ("default") matching Rails `queue_as :default`
+- Implement retry configuration with exponential backoff (3 attempts) matching Rails behavior
+- Add error handling for deserialization errors (equivalent to `discard_on ActiveJob::DeserializationError`)
+- Define abstract `process` method that child classes must implement
+- Add logging infrastructure for job processing
+- This base class will be extended by specific job processors (e.g., `TelegramMessageJob`)
 
 ## Checklist
 
-- [ ] Create `src/jobs/base-job-processor.ts`
-- [ ] Define abstract process method
-- [ ] Add error handling
-- [ ] Add logging
-- [ ] Export base class
+- [ ] Create `src/jobs/base-job-processor.ts` file
+- [ ] Define abstract base class `BaseJobProcessor`:
+  - [ ] Abstract `process` method signature: `abstract process(job: Job): Promise<void>`
+  - [ ] Accept BullMQ `Job` type from `bullmq` package
+  - [ ] Return `Promise<void>` for async processing
+- [ ] Add default queue configuration:
+  - [ ] Define default queue name as "default" (matching Rails `queue_as :default`)
+  - [ ] Allow child classes to override queue name
+  - [ ] Export queue name constant or getter method
+- [ ] Implement retry configuration:
+  - [ ] Configure retry attempts: 3 attempts (matching Rails `attempts: 3`)
+  - [ ] Configure exponential backoff delay (matching Rails `wait: :exponentially_longer`)
+  - [ ] Retry on StandardError/Error (matching Rails `retry_on StandardError`)
+  - [ ] Use BullMQ job options for retry configuration
+- [ ] Add error handling:
+  - [ ] Handle deserialization errors (discard, don't retry) - matching Rails `discard_on ActiveJob::DeserializationError`
+  - [ ] Implement try-catch wrapper around process method
+  - [ ] Log errors appropriately before re-throwing or discarding
+- [ ] Add logging:
+  - [ ] Import logger utility
+  - [ ] Log job start/complete/failure events
+  - [ ] Include job ID and queue name in log messages
+- [ ] Export base class:
+  - [ ] Export `BaseJobProcessor` class for use by child job processors
+  - [ ] Export any related types or interfaces
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 3. Queue System Setup (BullMQ)
-- Reference the Rails implementation for behavior
-
-- Task can be completed independently by a single agent
+- **Rails Files to Reference:**
+  - `jarek-va/app/jobs/application_job.rb` - Base job class:
+    - Line 11: `queue_as :default` - Default queue configuration
+    - Line 14: `retry_on StandardError, wait: :exponentially_longer, attempts: 3` - Retry with exponential backoff, 3 attempts
+    - Line 17: `discard_on ActiveJob::DeserializationError` - Discard deserialization errors without retry
+    - Extends `ActiveJob::Base` which provides the job processing infrastructure
+  - `jarek-va/app/jobs/telegram_message_job.rb` - Example job extending ApplicationJob:
+    - Line 10: `class TelegramMessageJob < ApplicationJob` - Extends base class
+    - Line 11: `queue_as :default` - Uses default queue (inherited from base, but can override)
+    - Line 15: `def perform(update)` - Implements the job processing logic
+- **Dependencies:**
+  - Requires BullMQ to be installed (completed in PHASE2-012)
+  - Requires queue connection utility (completed in PHASE2-014)
+  - Requires queue configuration (completed in PHASE2-013)
+- **Implementation Details:**
+  - In BullMQ, job processors are functions passed to `Worker` constructor, not classes
+  - However, we can create an abstract base class pattern that provides:
+    - Common retry/error handling logic
+    - Default queue configuration
+    - Logging infrastructure
+    - Type safety for job payloads
+  - Child job processors will extend this base class and implement the `process` method
+  - The `process` method will be called by BullMQ Worker with a `Job` object
+  - Retry configuration should be set in BullMQ job options (when adding jobs to queue) or Worker options
+  - Exponential backoff in BullMQ: Use `backoff` option with exponential strategy
+  - Example: `{ attempts: 3, backoff: { type: 'exponential', delay: 2000 } }`
+  - For deserialization errors, check for specific error types and discard (don't retry)
+  - The base class should provide a consistent interface for all job processors
+- **Key Differences from Rails:**
+  - Rails: `ApplicationJob` extends `ActiveJob::Base` which handles job execution automatically
+  - Node.js: BullMQ uses Worker functions, but we can wrap them in a class pattern for consistency
+  - Rails: Retry configuration is in the job class definition
+  - Node.js: Retry configuration is in job options when adding to queue or Worker options
+  - Rails: `perform` method is the entry point
+  - Node.js: `process` method will be the entry point (wrapped by Worker)
+- **Usage Pattern:**
+  - Child classes will extend: `class TelegramMessageJob extends BaseJobProcessor`
+  - Child classes will implement: `async process(job: Job): Promise<void> { ... }`
+  - Child classes can override queue name if needed
+  - The base class provides common error handling and logging
+- **Testing Considerations:**
+  - Test that abstract class cannot be instantiated directly
+  - Test that child classes must implement `process` method
+  - Test retry configuration is applied correctly
+  - Test error handling for deserialization errors
+  - Test logging functionality
+- Task can be completed independently by a single agent (after PHASE2-012, PHASE2-013, and PHASE2-014 are complete)
 
 ## Related Tasks
 
