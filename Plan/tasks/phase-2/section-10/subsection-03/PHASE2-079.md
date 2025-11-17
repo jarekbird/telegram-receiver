@@ -6,26 +6,110 @@
 
 ## Description
 
-Convert implement handle_message method from Rails to TypeScript/Node.js. Reference `jarek-va/app/jobs/telegram_message_job.rb`.
+Convert the `handle_message` method from Rails to TypeScript/Node.js. This method processes incoming Telegram messages, handles audio transcription, forwards messages to cursor-runner, and processes local commands. Reference `jarek-va/app/jobs/telegram_message_job.rb` lines 59-133.
+
+The method:
+- Extracts message data (chat_id, text, message_id)
+- Detects and transcribes audio/voice messages
+- Forwards messages to cursor-runner (unless local command)
+- Processes local commands if not forwarded
+- Sends responses (as audio if original was audio, otherwise as text)
 
 ## Checklist
 
-- [ ] Create `handleMessage` method
-- [ ] Extract chat_id and text
-- [ ] Check for audio/voice
-- [ ] Transcribe audio if present
-- [ ] Forward to cursor-runner or process locally
-- [ ] Send response to user
-- [ ] Handle audio responses
-- [ ] Add error handling
+### Core Method Structure
+- [ ] Create `handleMessage` method that accepts a Telegram message object
+- [ ] Extract `chat_id` from `message.chat.id`
+- [ ] Extract `text` from `message.text`
+- [ ] Extract `message_id` from `message.message_id`
+- [ ] Log the incoming message for debugging
+
+### Audio Detection and Transcription
+- [ ] Track `original_was_audio` flag before processing (using `extractAudioFileId` helper)
+- [ ] Check for audio/voice using `extractAudioFileId` method (checks voice, audio, and document with audio mime_type)
+- [ ] If audio detected:
+  - [ ] Call `transcribeAudio` method with file_id, chat_id, and message_id
+  - [ ] Handle transcription errors:
+    - [ ] Send error message to user if transcription fails
+    - [ ] Return early if transcription fails
+    - [ ] Truncate error messages to fit Telegram's 4096 character limit
+  - [ ] Replace `text` variable with transcribed text
+  - [ ] Update message object with transcribed text (create copy to avoid mutation issues)
+
+### Message Forwarding
+- [ ] Call `forwardToCursorRunner` method with:
+  - [ ] Message object (with transcribed text if applicable)
+  - [ ] chat_id
+  - [ ] message_id
+  - [ ] `original_was_audio` flag as parameter
+- [ ] Check return value (boolean) to determine if message was forwarded
+- [ ] If forwarded, return early (don't process locally)
+
+### Local Command Processing
+- [ ] If not forwarded, call `processLocalMessage` with text, chat_id, and message_id
+- [ ] Store result object (should have `say` property)
+- [ ] Check if `result.say` is present before sending response
+- [ ] Check if `chat_id` is present before sending response
+
+### Response Handling
+- [ ] Determine response type based on:
+  - [ ] If `original_was_audio` is true AND `SystemSetting.disabled('allow_audio_output')` is false:
+    - [ ] Call `sendTextAsAudio` method with chat_id, result.say, and message_id
+  - [ ] Otherwise:
+    - [ ] Call `TelegramService.sendMessage` with chat_id, result.say, message_id, and parse_mode: 'HTML'
+
+### Error Handling
+- [ ] Wrap transcription logic in try-catch block
+- [ ] Send user-friendly error messages on transcription failures
+- [ ] Handle edge cases (missing chat_id, empty text, etc.)
+- [ ] Ensure proper error logging
+
+### Dependencies
+- [ ] Method depends on:
+  - [ ] `extractAudioFileId` helper method (checks voice, audio, document with audio mime_type)
+  - [ ] `transcribeAudio` method (downloads file, transcribes, cleans up)
+  - [ ] `forwardToCursorRunner` method (forwards to cursor-runner API)
+  - [ ] `processLocalMessage` method (handles /start, /help, /status commands)
+  - [ ] `sendTextAsAudio` method (converts text to speech and sends as voice)
+  - [ ] `TelegramService.sendMessage` (sends text messages)
+  - [ ] `SystemSetting.disabled` (checks if audio output is disabled)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 10. TelegramMessageJob Conversion
-- Reference the Rails implementation for behavior
+- Reference the Rails implementation at `jarek-va/app/jobs/telegram_message_job.rb` lines 59-133
 
-- Task can be completed independently by a single agent
+### Implementation Details
+
+- The method processes both regular messages and edited messages (they use the same handler)
+- Audio detection checks three sources: `message.voice`, `message.audio`, and `message.document` (with audio mime_type)
+- The `original_was_audio` flag is tracked BEFORE transcription to determine response format
+- Transcription errors are handled gracefully with user feedback
+- Messages are forwarded to cursor-runner unless they are local commands (/start, /help, /status)
+- Response format (audio vs text) depends on:
+  - Whether the original message was audio
+  - Whether audio output is disabled via SystemSetting
+- The method uses `processLocalMessage` for local command handling when not forwarded
+- Error messages sent to users should be truncated to fit Telegram's 4096 character limit
+
+### Related Methods (may be implemented in other tasks)
+
+- `extractAudioFileId` - Extracts audio file ID from message (voice, audio, or document)
+- `transcribeAudio` - Downloads and transcribes audio using ElevenLabs
+- `forwardToCursorRunner` - Forwards message to cursor-runner API
+- `processLocalMessage` - Handles local commands like /start, /help, /status
+- `sendTextAsAudio` - Converts text to speech and sends as voice message
+
+### Dependencies
+
+- `TelegramService` - For sending messages and downloading files
+- `SystemSetting` - For checking feature flags (debug, allow_audio_output)
+- `CursorRunnerService` - For forwarding messages (via forwardToCursorRunner)
+- `ElevenLabsSpeechToTextService` - For audio transcription (via transcribeAudio)
+- `ElevenLabsTextToSpeechService` - For text-to-speech (via sendTextAsAudio)
+
+- Task can be completed independently by a single agent, but depends on helper methods that may be implemented in other tasks
 
 ## Related Tasks
 
