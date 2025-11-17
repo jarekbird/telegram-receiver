@@ -6,7 +6,7 @@
 
 ## Description
 
-Create package.json
+Create `package.json` file in the project root with basic project metadata for the telegram-receiver Node.js/TypeScript application. This file defines the project name, version, description, entry point, and basic configuration. Scripts and dependencies will be added in subsequent tasks.
 
 ## Checklist
 
