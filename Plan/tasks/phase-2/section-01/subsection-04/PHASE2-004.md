@@ -25,9 +25,10 @@ Create TypeScript type definitions for Redis callback data structures. These typ
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 1. TypeScript Type Definitions
 - Reference `jarek-va/app/services/cursor_runner_callback_service.rb` for service implementation
-- Reference `jarek-va/app/jobs/telegram_message_job.rb` (lines 191-199) for the actual data structure stored
+- Reference `jarek-va/app/jobs/telegram_message_job.rb` (lines 193-199) for the actual data structure stored in Redis
+  - The hash structure is: `{ chat_id, message_id, prompt, original_was_audio, created_at }`
+  - Stored via `store_pending_request` method call (line 191)
 - The data is stored as JSON in Redis with a TTL (default: 3600 seconds / 1 hour)
-- The data structure matches what's stored in `telegram_message_job.rb` (lines 193-199) when calling `store_pending_request`
 - When retrieved, `original_was_audio` may be undefined/null and should default to `false` (see `cursor_runner_callback_controller.rb` line 104)
 - The TypeScript interface should mark `original_was_audio` as optional (`original_was_audio?: boolean`) to reflect that it may be missing from stored data
 - Task can be completed independently by a single agent
