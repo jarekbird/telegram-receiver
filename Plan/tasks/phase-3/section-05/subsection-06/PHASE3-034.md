@@ -18,7 +18,9 @@ Create performance benchmarks for the telegram-receiver application to establish
 - [ ] Benchmark critical service operations:
   - [ ] TelegramService.sendMessage() - Message sending to Telegram API
   - [ ] TelegramService.downloadFile() - File downloading from Telegram
-  - [ ] CursorRunnerService.execute() - Cursor Runner API calls
+  - [ ] TelegramService.sendVoice() - Voice message sending to Telegram API
+  - [ ] CursorRunnerService.execute() - Cursor Runner API calls (single execution)
+  - [ ] CursorRunnerService.iterate() - Cursor Runner API calls (iterative execution, primary method for message forwarding)
   - [ ] CursorRunnerCallbackService operations - Redis state management
 - [ ] Benchmark background job processing:
   - [ ] TelegramMessageJob processing time
@@ -26,8 +28,9 @@ Create performance benchmarks for the telegram-receiver application to establish
 - [ ] Benchmark Redis operations:
   - [ ] State storage and retrieval
   - [ ] TTL-based cleanup operations
-- [ ] Benchmark audio transcription operations (if applicable):
-  - [ ] ElevenLabs speech-to-text processing time
+- [ ] Benchmark audio operations (if applicable):
+  - [ ] ElevenLabs speech-to-text processing time (ElevenLabsSpeechToTextService.transcribe)
+  - [ ] ElevenLabs text-to-speech processing time (ElevenLabsTextToSpeechService.synthesize)
 - [ ] Document benchmark results with:
   - [ ] Baseline metrics (mean, median, p95, p99 response times)
   - [ ] Throughput measurements (requests/second)
