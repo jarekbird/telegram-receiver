@@ -32,7 +32,7 @@ Apply authentication middleware to Express routes to match Rails `before_action`
 - PHASE2-092: Create cursor-runner callback routes (must exist: `src/routes/cursor-runner-routes.ts`)
 - PHASE2-096: Create webhook authentication middleware (must exist: `src/middleware/telegram-webhook-auth.middleware.ts`)
 - PHASE2-097: Create admin authentication middleware (must exist: `src/middleware/admin-auth.ts`)
-- Cursor-runner webhook auth middleware (should exist: `src/middleware/cursor-runner-webhook-auth.middleware.ts` - may need to be created if not already done)
+- Cursor-runner webhook auth middleware (may need to be created: `src/middleware/cursor-runner-webhook-auth.middleware.ts` - see checklist item below for creation instructions if it doesn't exist)
 
 ## Checklist
 
@@ -49,11 +49,12 @@ Apply authentication middleware to Express routes to match Rails `before_action`
 - [ ] Apply admin auth middleware to DELETE `/telegram/webhook` route
   - Route path: `DELETE /webhook` (mounted under `/telegram` prefix)
 - [ ] Open `src/routes/cursor-runner-routes.ts` (created in PHASE2-092)
-- [ ] Import cursor-runner webhook auth middleware (create if it doesn't exist: `src/middleware/cursor-runner-webhook-auth.middleware.ts`)
-  - If middleware doesn't exist, create it based on `jarek-va/app/controllers/cursor_runner_callback_controller.rb` (lines 72-91)
-  - Should check `X-Webhook-Secret` OR `X-Cursor-Runner-Secret` headers OR `secret` query/body param
+- [ ] Import cursor-runner webhook auth middleware from `../middleware/cursor-runner-webhook-auth.middleware` (create the middleware file if it doesn't exist)
+  - **If middleware doesn't exist**, create `src/middleware/cursor-runner-webhook-auth.middleware.ts` based on `jarek-va/app/controllers/cursor_runner_callback_controller.rb` (lines 72-91)
+  - Should check `X-Webhook-Secret` OR `X-Cursor-Runner-Secret` headers OR `secret` query/body param (in that order of precedence)
   - Should compare against `process.env.WEBHOOK_SECRET` (not `TELEGRAM_WEBHOOK_SECRET`)
   - Should allow requests when secret is blank (development mode)
+  - Should return 401 Unauthorized with JSON error response when authentication fails
 - [ ] Apply cursor-runner webhook auth middleware to POST `/cursor-runner/callback` route
   - Middleware should be applied before the controller handler
   - Route path: `POST /callback` (mounted under `/cursor-runner` prefix)
@@ -64,7 +65,7 @@ Apply authentication middleware to Express routes to match Rails `before_action`
   - [ ] Test telegram admin routes reject requests without valid `X-Admin-Secret` header
   - [ ] Test telegram admin routes accept requests with valid `X-Admin-Secret` header
   - [ ] Test cursor-runner callback route rejects requests without valid webhook secret
-  - [ ] Test cursor-runner callback route accepts requests with valid `X-Webhook-Secret` or `X-Cursor-Runner-Secret` header
+  - [ ] Test cursor-runner callback route accepts requests with valid `X-Webhook-Secret` or `X-Cursor-Runner-Secret` header or `secret` query/body param
 
 ## Implementation Notes
 
@@ -72,7 +73,7 @@ Apply authentication middleware to Express routes to match Rails `before_action`
 - Middleware functions should call `next()` when authentication succeeds
 - Middleware functions should return 401 response and NOT call `next()` when authentication fails
 - The telegram webhook auth middleware (from PHASE2-096) checks `X-Telegram-Bot-Api-Secret-Token` header
-- The admin auth middleware (from PHASE2-097) checks `X-Admin-Secret` header or `admin_secret` query/body param
+- The admin auth middleware (from PHASE2-097) checks `X-Admin-Secret` header or `admin_secret` query/body param (checks header first, then params)
 - The cursor-runner webhook auth middleware checks `X-Webhook-Secret` OR `X-Cursor-Runner-Secret` headers OR `secret` query/body param
 - All middleware should allow requests when the expected secret is not configured (development mode)
 
