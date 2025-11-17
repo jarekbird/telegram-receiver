@@ -6,7 +6,7 @@
 
 ## Description
 
-Create a comprehensive CI workflow file for the telegram-receiver Node.js/TypeScript application. The workflow should mirror the functionality of the Rails CI workflow (`jarek-va/.github/workflows/test.yml`) but adapted for Node.js/TypeScript tooling. The workflow should run on pushes and pull requests to main/develop branches, performing code quality checks, linting, type checking, and running tests.
+Create a comprehensive CI workflow file for the telegram-receiver Node.js/TypeScript application. The workflow should mirror the functionality of the Rails CI workflow (`jarek-va/.github/workflows/test.yml`) but adapted for Node.js/TypeScript tooling. The workflow should run on pushes and pull requests to main branch, performing code quality checks, linting, type checking, and running tests.
 
 ## Reference Implementation
 
@@ -24,8 +24,8 @@ The Rails application (`jarek-va`) has a CI workflow at `.github/workflows/test.
 ### Workflow Configuration
 - [ ] Create `.github/workflows/ci.yml` file
 - [ ] Set workflow name to "CI" or "Run Automated Tests"
-- [ ] Configure trigger on push to main/develop branches
-- [ ] Configure trigger on pull requests to main/develop branches
+- [ ] Configure trigger on push to main branch
+- [ ] Configure trigger on pull requests to main branch
 - [ ] Add workflow_dispatch for manual trigger from GitHub UI
 
 ### Job Setup
@@ -35,24 +35,30 @@ The Rails application (`jarek-va`) has a CI workflow at `.github/workflows/test.
 - [ ] Install dependencies using `npm ci` (preferred for CI) or `npm install`
 
 ### Changed Files Detection
-- [ ] Add step to detect changed TypeScript files (.ts, .tsx)
+- [ ] Add step to detect changed TypeScript files (.ts files only - this is a backend API, no .tsx files)
 - [ ] For pull requests: compare against base branch (github.event.pull_request.base.sha)
 - [ ] For pushes: compare against previous commit (HEAD~1)
+- [ ] Use git diff with filter for .ts files: `git diff --name-only --diff-filter=ACMR $BASE_SHA..$HEAD_SHA | grep -E '\.ts$'`
 - [ ] Output changed files to GITHUB_OUTPUT for use in subsequent steps
 - [ ] Handle case when no files are changed (fallback to all files)
 
 ### Code Quality Checks
 - [ ] Run ESLint linter on changed TypeScript files (or all files if none changed)
-- [ ] Filter out test files from linting if only source files should be linted
+- [ ] Filter out test files (`tests/**/*.ts`) from linting - only lint source files (`src/**/*.ts`) when changed files are detected
 - [ ] Run Prettier format check on changed TypeScript files (or all files if none changed)
 - [ ] Run TypeScript type checking using `npm run type-check` or `tsc --noEmit`
 
 ### Testing
-- [ ] Run Jest tests with smart test selection based on changed files
-- [ ] For changed source files, find and run related test files
-- [ ] For changed test files, run those tests directly
-- [ ] If no changed files detected, run all tests
-- [ ] Use `npm run test` or `jest` command
+- [ ] Run Jest tests with smart test selection based on changed files (mirror Rails workflow logic)
+- [ ] For changed source files (`src/**/*.ts`), find and run related test files:
+  - Map `src/services/telegram_service.ts` → `tests/services/telegram_service.test.ts` or `tests/services/telegram_service.spec.ts`
+  - Use bash/sed to transform: `src/**/*.ts` → `tests/**/*.test.ts` or `tests/**/*.spec.ts`
+  - Check if mapped test file exists before adding to test list
+- [ ] For changed test files (`tests/**/*.test.ts` or `tests/**/*.spec.ts`), run those tests directly
+- [ ] Collect all test files to run (changed tests + related tests for changed sources)
+- [ ] Remove duplicates and empty entries from test file list
+- [ ] If no changed files detected or no test files found, run all tests
+- [ ] Use `npm run test` or `jest` command with specific test files when available
 - [ ] Set appropriate test timeout and environment variables if needed
 
 ### Optional Enhancements
@@ -82,18 +88,32 @@ The Rails application (`jarek-va`) has a CI workflow at `.github/workflows/test.
 - Source file: `src/services/telegram_service.ts`
 - Related test file: `tests/services/telegram_service.test.ts` or `tests/services/telegram_service.spec.ts`
 - The mapping follows: `src/**/*.ts` → `tests/**/*.test.ts` or `tests/**/*.spec.ts`
+- Implementation pattern (similar to Rails workflow):
+  - For each changed source file in `src/`, check for corresponding test file in `tests/` with same relative path
+  - Transform path: `src/services/telegram_service.ts` → `tests/services/telegram_service.test.ts`
+  - Also check for `.spec.ts` variant: `tests/services/telegram_service.spec.ts`
+  - Use bash script to map paths and check file existence before adding to test list
 
 ### Expected Workflow Structure
-The workflow should follow this general structure:
-1. Checkout code
-2. Set up Node.js
-3. Install dependencies
-4. Detect changed files
-5. Run linting (ESLint)
-6. Run formatting check (Prettier)
-7. Run type checking (TypeScript)
-8. Run tests (Jest) with smart selection
+The workflow should follow this general structure (mirroring Rails workflow pattern):
+1. Checkout code with `fetch-depth: 0` for full git history
+2. Set up Node.js (version >=18.0.0)
+3. Install dependencies (`npm ci` preferred for CI)
+4. Detect changed files (`.ts` files only, compare against base branch for PRs or HEAD~1 for pushes)
+5. Run linting (ESLint on source files only, filter out test files)
+6. Run formatting check (Prettier on changed files or all files)
+7. Run type checking (TypeScript `tsc --noEmit`)
+8. Run tests (Jest) with smart selection:
+   - Find changed test files
+   - Find related test files for changed source files
+   - Run collected test files or all tests if none found
 9. Optionally: Build project, run E2E tests, generate coverage
+
+### Implementation Notes
+- Reference the Rails workflow (`jarek-va/.github/workflows/test.yml`) for the exact bash script patterns
+- The changed file detection and test file mapping logic should closely mirror the Rails implementation
+- Use `GITHUB_OUTPUT` to pass changed files between steps
+- Handle edge cases: no changed files, no test files found, etc.
 
 ## Notes
 
