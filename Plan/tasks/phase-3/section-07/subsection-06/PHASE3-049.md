@@ -6,24 +6,149 @@
 
 ## Description
 
-Review and improve add missing tests in the codebase to ensure best practices.
+Review the codebase and add missing tests to ensure comprehensive test coverage. This task involves identifying untested code, adding unit tests, integration tests, and edge case tests to improve overall test coverage and ensure code reliability.
 
 ## Checklist
 
-- [ ] Add tests for uncovered code
-- [ ] Add edge case tests
-- [ ] Add error scenario tests
-- [ ] Add integration tests
-- [ ] Improve test coverage
+### Coverage Analysis
+- [ ] Run test coverage report using `npm run test:coverage`
+- [ ] Review coverage report to identify uncovered code areas
+- [ ] Identify source files in `src/` directory that lack test coverage
+- [ ] Review coverage gaps across different directories:
+  - [ ] Controllers (`src/controllers/`)
+  - [ ] Services (`src/services/`)
+  - [ ] Models (`src/models/`)
+  - [ ] Middleware (`src/middleware/`)
+  - [ ] Utils (`src/utils/`)
+  - [ ] Routes (`src/routes/`)
+  - [ ] Config (`src/config/`)
+  - [ ] Types (`src/types/`)
+- [ ] Document uncovered files and functions
+
+### Unit Test Creation
+- [ ] Add unit tests for uncovered controllers
+  - [ ] Create test files in `tests/unit/controllers/`
+  - [ ] Test all public methods
+  - [ ] Mock external dependencies using existing mocks (`tests/mocks/`)
+  - [ ] Use test fixtures from `tests/fixtures/` where appropriate
+- [ ] Add unit tests for uncovered services
+  - [ ] Create test files in `tests/unit/services/`
+  - [ ] Test business logic and service methods
+  - [ ] Mock external API calls (Telegram API, Cursor Runner API)
+  - [ ] Test error handling and edge cases
+- [ ] Add unit tests for uncovered models
+  - [ ] Create test files in `tests/unit/models/`
+  - [ ] Test model methods and validations
+  - [ ] Test database interactions (with mocked database)
+- [ ] Add unit tests for uncovered middleware
+  - [ ] Create test files in `tests/unit/middleware/`
+  - [ ] Test request/response handling
+  - [ ] Test authentication and authorization logic
+  - [ ] Test error handling middleware
+- [ ] Add unit tests for uncovered utilities
+  - [ ] Create test files in `tests/unit/utils/`
+  - [ ] Test utility functions with various inputs
+  - [ ] Test edge cases and error conditions
+- [ ] Add unit tests for route handlers
+  - [ ] Create test files in `tests/unit/routes/`
+  - [ ] Test route handler functions
+  - [ ] Mock Express request/response objects
+
+### Integration Test Creation
+- [ ] Add integration tests for API endpoints
+  - [ ] Create test files in `tests/integration/api/`
+  - [ ] Use Supertest to test HTTP endpoints
+  - [ ] Test complete request/response cycles
+  - [ ] Test authentication flows
+  - [ ] Test error responses
+- [ ] Add integration tests for services
+  - [ ] Create test files in `tests/integration/services/`
+  - [ ] Test service interactions with mocked external APIs
+  - [ ] Test service-to-service communication
+  - [ ] Test database service interactions (with test database)
+
+### Edge Case and Error Scenario Tests
+- [ ] Add tests for edge cases:
+  - [ ] Empty/null inputs
+  - [ ] Boundary values
+  - [ ] Invalid data formats
+  - [ ] Missing required fields
+  - [ ] Extremely large inputs
+- [ ] Add tests for error scenarios:
+  - [ ] Network failures
+  - [ ] API timeouts
+  - [ ] Invalid responses from external APIs
+  - [ ] Database connection failures
+  - [ ] Authentication failures
+  - [ ] Authorization failures
+- [ ] Add tests for error handling:
+  - [ ] Verify appropriate error messages
+  - [ ] Verify correct HTTP status codes
+  - [ ] Verify error logging
+
+### Test Quality Checks
+- [ ] Ensure all new tests follow AAA pattern (Arrange, Act, Assert)
+- [ ] Ensure test names are descriptive and clear
+- [ ] Ensure tests are independent and can run in any order
+- [ ] Ensure proper cleanup in `afterEach`/`afterAll` hooks
+- [ ] Verify tests use appropriate mocks from `tests/mocks/`
+- [ ] Verify tests use fixtures from `tests/fixtures/` where appropriate
+- [ ] Ensure tests follow patterns in `tests/README.md`
+
+### Verification
+- [ ] Run all tests: `npm test`
+- [ ] Run unit tests: `npm run test:unit`
+- [ ] Run integration tests: `npm run test:integration`
 - [ ] Verify all tests pass
-- [ ] Document test additions
+- [ ] Run coverage report again: `npm run test:coverage`
+- [ ] Verify coverage improvement
+- [ ] Check that coverage meets minimum thresholds (80% for new code)
+
+### Documentation
+- [ ] Document test additions in this task file
+- [ ] List newly created test files
+- [ ] Document any test patterns or conventions established
+- [ ] Update `tests/README.md` if new patterns are introduced
+- [ ] Document any uncovered code that cannot be tested (with justification)
 
 ## Notes
 
 - This task is part of Phase 3: Holistic Review and Best Practices
 - Section: 7. Testing Review
-- Focus on identifying issues and improvements
-- Document findings and decisions
+- Subsection: 7.6 - Adding Missing Tests
+- Focus on identifying untested code and adding comprehensive tests
+- Document findings and test additions
+
+- **Test Infrastructure**: The project has test infrastructure in place:
+  - Jest configured in `jest.config.ts` for unit and integration tests
+  - Test setup in `tests/setup.ts`
+  - Mocks available in `tests/mocks/` (telegramApi, cursorRunnerApi, redis)
+  - Fixtures available in `tests/fixtures/` (telegramMessages, apiResponses)
+  - Test helpers in `tests/helpers/` (testUtils, apiHelpers)
+  - Test directory structure mirrors `src/` structure
+
+- **Test Naming**: Follow conventions:
+  - Unit/integration tests: `*.test.ts` suffix
+  - E2E tests: `*.spec.ts` suffix (Playwright)
+  - Test files should mirror source file structure
+
+- **Test Best Practices**:
+  - Use AAA pattern (Arrange, Act, Assert)
+  - Mock all external dependencies
+  - Keep tests independent and isolated
+  - Use descriptive test names
+  - Test both happy paths and error cases
+  - Aim for high coverage of business logic
+
+- **Coverage Goals**:
+  - Minimum 80% coverage for new code
+  - 100% coverage for critical business logic
+  - Focus on controllers, services, and core functionality
+
+- **Current State**: The codebase may have minimal source code initially. Focus on:
+  - Testing any existing source files in `src/`
+  - Establishing test patterns for future code
+  - Ensuring test infrastructure is ready for use
 
 - Task can be completed independently by a single agent
 
