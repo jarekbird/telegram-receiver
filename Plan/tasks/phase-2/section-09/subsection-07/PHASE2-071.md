@@ -6,23 +6,74 @@
 
 ## Description
 
-Convert implement format_success_message utility from Rails to TypeScript/Node.js. Reference `jarek-va/app/controllers/*_controller.rb` files.
+Convert and implement the `format_success_message` utility function from Rails to TypeScript/Node.js. This utility function formats success messages for cursor-runner callback results, including metadata (when debug is enabled), output with truncation, and warnings.
+
+**Rails Reference**: `jarek-va/app/controllers/cursor_runner_callback_controller.rb` (lines 261-267)
 
 ## Checklist
 
-- [ ] Create `formatSuccessMessage` utility function
-- [ ] Add metadata if debug enabled
-- [ ] Format output with truncation
-- [ ] Add warnings if present
-- [ ] Use HTML code blocks for formatting
+- [ ] Create `formatSuccessMessage` utility function with signature: `(result: NormalizedResult, cursorDebug: boolean): string`
+- [ ] Create helper function `formatMetadata(result: NormalizedResult): string[]` that returns:
+  - `'✅ Cursor command completed successfully'`
+  - `'📊 Iterations: {result.iterations || 0}'`
+  - `'⏱ Duration: {result.duration || 'N/A'}'`
+- [ ] Create helper function `formatOutput(output: string, cursorDebug: boolean): string` that:
+  - Uses `cleanAnsiEscapeSequences` (PHASE2-073) to clean the output
+  - Sets max_length: `cursorDebug ? 3500 : 4000`
+  - If output length > max_length:
+    - Truncates to max_length
+    - If cursorDebug: returns `'\n📝 Output (truncated):\n<pre><code>{truncated}\n...</code></pre>'`
+    - If not cursorDebug: returns `'{truncated}\n...'`
+  - Else if cursorDebug: returns `'\n📝 Output:\n<pre><code>{cleaned_output}</code></pre>'`
+  - Else: returns cleaned_output
+- [ ] Create helper function `formatWarnings(error: string, cursorDebug: boolean): string` that:
+  - Uses `cleanAnsiEscapeSequences` (PHASE2-073) to clean the error text
+  - Truncates error to 500 characters if longer: `'{error_text[0, 500]}...'`
+  - Returns `'\n⚠️ Warnings:\n<pre><code>{error_text}</code></pre>'`
+- [ ] Implement main `formatSuccessMessage` function logic:
+  - Create empty array `messageParts: string[]`
+  - If `cursorDebug` is true: concatenate `formatMetadata(result)` array to messageParts
+  - If `result.output` is present/truthy: append `formatOutput(result.output, cursorDebug)` to messageParts
+  - If `cursorDebug` is true AND `result.error` is present/truthy: append `formatWarnings(result.error, cursorDebug)` to messageParts
+  - Join messageParts with `'\n'` and return as string
+- [ ] Handle edge cases:
+  - Empty/undefined output should not add output section
+  - Empty/undefined error should not add warnings section
+  - Empty messageParts should return empty string
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 9. CursorRunnerCallbackController Conversion
-- Reference the Rails implementation for behavior
-
-- Task can be completed independently by a single agent
+- **Rails Implementation**: `jarek-va/app/controllers/cursor_runner_callback_controller.rb` (lines 261-267, 274-280, 282-300, 302-307)
+- The function is called from `sendResponseToTelegram` method (PHASE2-070) when `result.success` is true
+- The `result` parameter is a `NormalizedResult` object (from `normalizeResult` utility - PHASE2-069) with the following structure:
+  - `success: boolean` - indicates if cursor command succeeded
+  - `request_id: string` - request identifier
+  - `repository?: string` - repository name
+  - `branch_name?: string` - branch name
+  - `iterations: number` - number of iterations (defaults to 0)
+  - `max_iterations: number` - max iterations (defaults to 25)
+  - `output?: string` - command output (defaults to empty string)
+  - `error?: string` - error message if failed (used for warnings when success is true)
+  - `exit_code: number` - exit code (defaults to 0)
+  - `duration?: string` - execution duration
+  - `timestamp?: string` - timestamp
+- The `cursorDebug` parameter determines:
+  - Whether to include metadata (iterations, duration)
+  - Whether to include warnings from error field
+  - Output formatting style (HTML code blocks vs plain text)
+  - Output truncation length (3500 vs 4000 characters)
+- **Dependencies**:
+  - `cleanAnsiEscapeSequences` utility (PHASE2-073) - used by `formatOutput` and `formatWarnings` helper functions
+  - `NormalizedResult` type (from PHASE2-069)
+- **Helper Functions**: This task should implement three helper functions:
+  - `formatMetadata` - formats metadata lines (iterations, duration)
+  - `formatOutput` - formats output with ANSI cleaning, truncation, and HTML code blocks
+  - `formatWarnings` - formats warnings from error field with ANSI cleaning and truncation
+- HTML code blocks (`<pre><code>...</code></pre>`) are used for better compatibility with Telegram's Markdown/HTML parsing
+- The function returns a string that will be sent to Telegram via `TelegramService.sendMessage()`
+- Task can be completed independently by a single agent (after PHASE2-073 is complete for `cleanAnsiEscapeSequences` dependency)
 
 ## Related Tasks
 
