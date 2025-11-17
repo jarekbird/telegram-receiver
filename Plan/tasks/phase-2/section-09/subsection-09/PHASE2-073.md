@@ -6,22 +6,67 @@
 
 ## Description
 
-Convert implement clean_ansi_escape_sequences utility from Rails to TypeScript/Node.js. Reference `jarek-va/app/controllers/*_controller.rb` files.
+Convert the `clean_ansi_escape_sequences` utility method from Rails to TypeScript/Node.js. This utility function is used to clean ANSI escape sequences from cursor-runner output before sending it to Telegram.
+
+**Rails Implementation Reference**: `jarek-va/app/controllers/cursor_runner_callback_controller.rb` (lines 320-328)
+
+The function is a private method in `CursorRunnerCallbackController` that:
+- Removes ANSI escape codes from text output (e.g., `\u001b[?25h`, `\u001b[0m`, color codes, cursor positioning codes)
+- Normalizes Windows line endings (`\r\n`) to Unix line endings (`\n`)
+- Strips leading and trailing whitespace
+- Handles blank/null input by returning an empty string
+
+This utility is used in three places within the controller:
+1. `format_error_message` - cleans error messages
+2. `format_output` - cleans command output
+3. `format_warnings` - cleans warning/error text
 
 ## Checklist
 
-- [ ] Create `cleanAnsiEscapeSequences` utility function
-- [ ] Remove ANSI escape codes
-- [ ] Normalize line endings
-- [ ] Strip whitespace
-- [ ] Handle edge cases
+- [ ] Create `cleanAnsiEscapeSequences` utility function (should accept `string | null | undefined` and return `string`)
+- [ ] Handle blank/null/undefined input by returning empty string
+- [ ] Remove ANSI escape codes using regex pattern matching `\u001b\[[?0-9;]*[a-zA-Z]`
+  - Pattern matches: ESC[ followed by optional `?` and numbers/semicolons, ending with a letter
+  - Examples: `\u001b[0m`, `\u001b[?25h`, `\u001b[31m`, `\u001b[1;33m`
+- [ ] Normalize line endings: convert `\r\n` (Windows) to `\n` (Unix)
+- [ ] Strip leading and trailing whitespace from the result
+- [ ] Export the function appropriately for use in the callback controller
+- [ ] Add TypeScript type annotations
+- [ ] Handle edge cases (empty strings, null, undefined, strings with only ANSI codes)
+
+## Implementation Details
+
+**Rails Implementation**:
+```ruby
+def clean_ansi_escape_sequences(text)
+  return '' if text.blank?
+
+  # Remove ANSI escape codes (e.g., \u001b[?25h, \u001b[0m, etc.)
+  # Pattern matches: ESC[ followed by optional ? and numbers/semicolons, ending with a letter
+  text.gsub(/\u001b\[[?0-9;]*[a-zA-Z]/, '')
+      .gsub("\r\n", "\n")
+      .strip
+end
+```
+
+**Expected TypeScript Signature**:
+```typescript
+function cleanAnsiEscapeSequences(text: string | null | undefined): string
+```
+
+**Usage Context**:
+- Used in `formatErrorMessage` to clean error text
+- Used in `formatOutput` to clean command output before truncation
+- Used in `formatWarnings` to clean warning/error text
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 9. CursorRunnerCallbackController Conversion
-- Reference the Rails implementation for behavior
-
+- Subsection: 9.9 - Utility Functions
+- The function should be placed in an appropriate utilities module/file
+- Consider creating a dedicated file like `src/utils/textUtils.ts` or similar
+- The function is critical for ensuring clean output in Telegram messages
 - Task can be completed independently by a single agent
 
 ## Related Tasks
