@@ -12,9 +12,9 @@ Create health endpoint integration test using Supertest to verify the health end
 
 ## Checklist
 
-- [ ] Create `tests/integration/api/health.integration.test.ts` file
+- [ ] Create `tests/integration/api/health.test.ts` file
 - [ ] Import app from `../../../src/index` (or appropriate app export path)
-- [ ] Import `request` from `supertest`
+- [ ] Import `request` from `supertest` (use: `import request from 'supertest'`)
 - [ ] Write test suite using `describe('Health Endpoint', ...)`
 - [ ] Write test for GET `/health` endpoint
 - [ ] Verify response status is 200
