@@ -6,22 +6,81 @@
 
 ## Description
 
-Convert implement process_callback method from Rails to TypeScript/Node.js. Reference `jarek-va/app/controllers/*_controller.rb` files.
+Convert and implement the `process_callback` private method from Rails to TypeScript/Node.js. This method processes callback results from cursor-runner, normalizes the result data, extracts chat information from pending request data, sends formatted responses to Telegram, and cleans up the pending request from Redis.
+
+**Reference**: `jarek-va/app/controllers/cursor_runner_callback_controller.rb` (lines 93-139)
+
+**Method Signature**: `private processCallback(requestId: string, result: any, pendingData: any): Promise<void>`
+
+**Rails Implementation Overview:**
+- Logs callback processing with request_id and success status
+- Normalizes result data using `normalize_result` method (handles camelCase/snake_case)
+- Extracts chat_id, message_id, and original_was_audio from pending_data
+- Validates chat_id and returns early if blank (with warning log)
+- Sends response to Telegram using `send_response_to_telegram` method
+- Cleans up pending request using `CursorRunnerCallbackService.remove_pending_request`
+- Comprehensive error handling that attempts to send error notifications to user via Telegram
 
 ## Checklist
 
-- [ ] Create `processCallback` private method
+- [ ] Create `processCallback` private method with signature: `private async processCallback(requestId: string, result: any, pendingData: any): Promise<void>`
+- [ ] Add logging at method start
+  - [ ] Log callback processing with request_id and success status
+  - [ ] Format: "Processing cursor-runner callback (request_id: {requestId}, success: {result.success})"
 - [ ] Normalize result data
+  - [ ] Call `normalizeResult(result)` method to handle camelCase/snake_case conversion
+  - [ ] Store normalized result for use in subsequent steps
 - [ ] Extract chat info from pending data
+  - [ ] Extract `chat_id` (handle both symbol keys `:chat_id` and string keys `'chat_id'`)
+  - [ ] Extract `message_id` (handle both symbol keys `:message_id` and string keys `'message_id'`)
+  - [ ] Extract `original_was_audio` (handle both symbol and string keys, default to `false` if not present)
+- [ ] Validate chat_id
+  - [ ] Check if chat_id is blank/undefined/null
+  - [ ] If blank, log warning: "Callback processed but no chat_id found (request_id: {requestId})"
+  - [ ] Return early if chat_id is blank (don't process further)
 - [ ] Send response to Telegram
+  - [ ] Call `sendResponseToTelegram(chatId, messageId, normalizedResult, { originalWasAudio: originalWasAudio })`
+  - [ ] Pass the normalized result and original_was_audio flag
 - [ ] Clean up pending request
-- [ ] Add error handling
+  - [ ] Create instance of `CursorRunnerCallbackService`
+  - [ ] Call `removePendingRequest(requestId)` to delete pending request from Redis
+  - [ ] This should happen after successful Telegram response sending
+- [ ] Add comprehensive error handling
+  - [ ] Wrap entire method body in try-catch block
+  - [ ] Log errors with request_id and full stack trace (first 10 lines)
+  - [ ] Extract chat_id and message_id from pending_data in error handler
+  - [ ] If chat_id is available, attempt to send error message to user via Telegram
+  - [ ] Error message format: "❌ Error processing cursor command result: {error.message}"
+  - [ ] Use HTML parse mode for error message
+  - [ ] Reply to original message_id
+  - [ ] Handle errors when sending error notifications (nested try-catch)
+
+## Dependencies
+
+- `normalizeResult` method - Must be implemented (handles camelCase/snake_case conversion)
+- `sendResponseToTelegram` method - Must be implemented (formats and sends response to Telegram)
+- `CursorRunnerCallbackService` - For removing pending requests from Redis
+- `TelegramService` - For sending error notifications to Telegram
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 9. CursorRunnerCallbackController Conversion
-- Reference the Rails implementation for behavior
+- Reference the Rails implementation in `jarek-va/app/controllers/cursor_runner_callback_controller.rb` (lines 93-139) for complete behavior
+
+**Rails Implementation Details:**
+- Method is called from `create` action after retrieving pending_data from Redis
+- Handles both symbol keys (`:chat_id`) and string keys (`'chat_id'`) in pending_data (from JSON parsing)
+- Normalizes result to handle both camelCase and snake_case formats from cursor-runner
+- Always attempts to clean up pending request, even if errors occur
+- Error handling ensures user is notified of failures via Telegram when possible
+
+**TypeScript/Node.js Considerations:**
+- Use async/await for service calls
+- Handle both symbol and string keys in pendingData (JSON.parse may return either)
+- Properly type the result and pendingData parameters
+- Ensure error handling doesn't throw unhandled exceptions
+- Method should be private and async
 
 - Task can be completed independently by a single agent
 
