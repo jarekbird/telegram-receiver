@@ -6,27 +6,277 @@
 
 ## Description
 
-extract reusable components to improve code quality and maintainability.
+Extract reusable components to improve code quality and maintainability. This task focuses on identifying common patterns, duplicate code blocks, and shared functionality that can be extracted into reusable utilities, services, types, and components. The goal is to reduce code duplication, improve maintainability, and establish a library of reusable building blocks for the application.
+
+## Current State
+
+Reusable component extraction should be informed by:
+
+- **PHASE4-005**: Code duplication detection (duplication reports, jscpd findings, SonarQube duplication metrics)
+- **PHASE4-009**: Automated code quality report (consolidated findings from all automated tools)
+- **PHASE4-017**: Manual code review findings (`docs/manual-code-review.md`)
+- **PHASE4-019**: Complex logic simplification (may have already extracted some helpers)
+
+**Code Duplication Findings** (from PHASE4-005):
+- Check duplication detection reports (jscpd reports, SonarQube duplication analysis)
+- Review identified duplicate code blocks with:
+  - Exact duplicates (100% similarity)
+  - Near-duplicates (80-99% similarity)
+  - Similar patterns (structural similarities)
+- Prioritize duplicates by size and frequency (larger, more frequent duplicates have higher impact)
+
+**Common Patterns to Extract**:
+1. **Error Handling**: Repeated error handling patterns, error formatting, error response creation
+2. **Validation Logic**: Input validation, data sanitization, format checking
+3. **API Client Patterns**: HTTP request handling, response parsing, error handling
+4. **Data Transformation**: Data mapping, format conversion, serialization/deserialization
+5. **Utility Functions**: Date formatting, string manipulation, number formatting, array/object operations
+6. **Type Definitions**: Shared interfaces, types, enums used across multiple modules
+7. **Configuration Helpers**: Environment variable access, configuration parsing
+8. **Logging Patterns**: Consistent logging formats, log level handling
+9. **Middleware**: Common middleware patterns, authentication checks, request validation
+10. **Service Patterns**: Base service classes, common service methods
 
 ## Checklist
 
-- [ ] Identify duplicate code from analysis
-- [ ] Extract common functionality
-- [ ] Create utility functions
-- [ ] Create shared services
-- [ ] Create reusable types
-- [ ] Update all usages
-- [ ] Test extracted components
-- [ ] Document reusable components
+### Preparation and Analysis
+- [ ] Review code duplication findings from PHASE4-005:
+  - [ ] Review jscpd duplication reports (if available)
+  - [ ] Review SonarQube duplication metrics (if available)
+  - [ ] Review automated code quality report (`docs/code-quality-report.md`) if PHASE4-009 is completed
+  - [ ] Review manual code review findings (`docs/manual-code-review.md`)
+- [ ] Analyze codebase for common patterns:
+  - [ ] Scan for repeated code blocks (exact and near-duplicates)
+  - [ ] Identify similar function implementations across files
+  - [ ] Identify repeated validation logic
+  - [ ] Identify repeated error handling patterns
+  - [ ] Identify repeated data transformation logic
+  - [ ] Identify repeated API client patterns
+  - [ ] Identify shared type definitions that should be centralized
+- [ ] Compile comprehensive list of extraction opportunities:
+  - [ ] Document each duplicate code block with:
+    - File locations and line numbers
+    - Similarity percentage (if from duplication detection)
+    - Size of duplicate block (lines/tokens)
+    - Number of occurrences
+    - Suggested extraction approach (utility function, service, type, etc.)
+  - [ ] Document common patterns with:
+    - Pattern description
+    - Files/modules using the pattern
+    - Suggested reusable component structure
+    - Dependencies and requirements
+- [ ] Prioritize extraction opportunities by:
+  - **Critical**: Large exact duplicates (>100 lines, 100% similarity, used in 3+ places)
+  - **High**: Medium exact duplicates (50-100 lines, 100% similarity, used in 2+ places)
+  - **Medium**: Large near-duplicates (>100 lines, 80-99% similarity)
+  - **Low**: Small duplicates (<50 lines) or patterns used in only 2 places
+- [ ] Create extraction plan with:
+  - Order of extraction (dependencies first)
+  - Component organization structure
+  - Naming conventions for extracted components
+  - Testing strategy for each extraction
+
+### Identifying Reusable Components
+
+#### Utility Functions
+- [ ] Identify repeated utility operations:
+  - [ ] String manipulation (trimming, formatting, parsing)
+  - [ ] Number formatting and validation
+  - [ ] Date/time formatting and parsing
+  - [ ] Array/object operations (filtering, mapping, searching)
+  - [ ] URL manipulation and parsing
+  - [ ] File path operations
+  - [ ] Data type conversions
+- [ ] Group related utilities into logical modules:
+  - [ ] `src/utils/stringUtils.ts` - String operations
+  - [ ] `src/utils/dateUtils.ts` - Date/time operations
+  - [ ] `src/utils/arrayUtils.ts` - Array operations
+  - [ ] `src/utils/objectUtils.ts` - Object operations
+  - [ ] `src/utils/validationUtils.ts` - Validation helpers
+  - [ ] `src/utils/formatUtils.ts` - Formatting helpers
+- [ ] Document each utility function with:
+  - [ ] JSDoc comments explaining purpose and usage
+  - [ ] TypeScript types for parameters and return values
+  - [ ] Usage examples in comments
+  - [ ] Edge cases and error handling
+
+#### Shared Services
+- [ ] Identify common service patterns:
+  - [ ] Base service class with common methods
+  - [ ] API client patterns (HTTP request handling)
+  - [ ] Database access patterns
+  - [ ] Caching patterns
+  - [ ] Error handling patterns
+- [ ] Extract base service classes:
+  - [ ] Create base service with common functionality
+  - [ ] Extract shared error handling
+  - [ ] Extract shared logging patterns
+  - [ ] Extract shared configuration access
+- [ ] Create shared service utilities:
+  - [ ] HTTP client wrapper with common error handling
+  - [ ] Database query helpers
+  - [ ] Cache management utilities
+  - [ ] Service lifecycle management
+
+#### Reusable Types
+- [ ] Identify shared type definitions:
+  - [ ] Common interfaces used across multiple modules
+  - [ ] Shared enums
+  - [ ] Common type aliases
+  - [ ] API request/response types
+  - [ ] Error types
+- [ ] Organize types into logical modules:
+  - [ ] `src/types/api.ts` - API-related types
+  - [ ] `src/types/models.ts` - Data model types
+  - [ ] `src/types/common.ts` - Common utility types
+  - [ ] `src/types/errors.ts` - Error types
+- [ ] Ensure type definitions are:
+  - [ ] Well-documented with JSDoc
+  - [ ] Properly exported
+  - [ ] Used consistently across codebase
+  - [ ] Not duplicated in multiple files
+
+#### Shared Middleware
+- [ ] Identify common middleware patterns:
+  - [ ] Authentication middleware
+  - [ ] Request validation middleware
+  - [ ] Error handling middleware
+  - [ ] Logging middleware
+  - [ ] Rate limiting middleware
+- [ ] Extract reusable middleware:
+  - [ ] Create middleware factory functions
+  - [ ] Extract common middleware logic
+  - [ ] Create configurable middleware components
+- [ ] Document middleware usage and configuration
+
+### Extracting Components
+
+#### Creating Utility Functions
+- [ ] For each identified utility pattern:
+  - [ ] Create utility function with descriptive name
+  - [ ] Extract duplicate code into function
+  - [ ] Add proper TypeScript types
+  - [ ] Add JSDoc documentation
+  - [ ] Handle edge cases and errors
+  - [ ] Write unit tests for utility function
+- [ ] Replace all duplicate code with utility function calls
+- [ ] Verify functionality is preserved after extraction
+- [ ] Run tests after each extraction
+
+#### Creating Shared Services
+- [ ] For each identified service pattern:
+  - [ ] Create base service class or interface
+  - [ ] Extract common service methods
+  - [ ] Create service factory functions if needed
+  - [ ] Add proper error handling
+  - [ ] Add logging and monitoring
+  - [ ] Write unit tests for service
+- [ ] Refactor existing services to use shared base
+- [ ] Update all service usages
+- [ ] Verify functionality is preserved
+- [ ] Run tests after each refactoring
+
+#### Creating Reusable Types
+- [ ] For each identified type pattern:
+  - [ ] Create type definition in appropriate module
+  - [ ] Export type properly
+  - [ ] Add JSDoc documentation
+  - [ ] Update all usages to import from shared location
+  - [ ] Remove duplicate type definitions
+- [ ] Verify type consistency across codebase
+- [ ] Run type checking: `npm run type-check`
+
+#### Creating Shared Middleware
+- [ ] For each identified middleware pattern:
+  - [ ] Create middleware function or factory
+  - [ ] Extract common middleware logic
+  - [ ] Add configuration options
+  - [ ] Add proper error handling
+  - [ ] Write unit tests for middleware
+- [ ] Update route definitions to use shared middleware
+- [ ] Verify middleware behavior is preserved
+- [ ] Run integration tests
+
+### Updating Usages
+- [ ] For each extracted component:
+  - [ ] Find all usages of duplicate code
+  - [ ] Replace with extracted component
+  - [ ] Update imports
+  - [ ] Verify functionality is preserved
+  - [ ] Run tests for affected modules
+- [ ] Remove duplicate code after replacement
+- [ ] Verify no duplicate code remains
+- [ ] Run full test suite: `npm test`
+- [ ] Run type checking: `npm run type-check`
+- [ ] Run linting: `npm run lint`
+
+### Testing Extracted Components
+- [ ] Write comprehensive unit tests for each extracted component:
+  - [ ] Test normal operation
+  - [ ] Test edge cases
+  - [ ] Test error handling
+  - [ ] Test with various inputs
+- [ ] Write integration tests for components used together
+- [ ] Run full test suite: `npm test`
+- [ ] Verify test coverage hasn't decreased: `npm run test:coverage`
+- [ ] Add tests for edge cases if they weren't covered before
+- [ ] Manually test affected functionality if applicable
+
+### Documentation
+- [ ] Document each extracted component:
+  - [ ] What was extracted (file, function/class name, pattern type)
+  - [ ] Why it was extracted (duplication metrics, maintainability impact)
+  - [ ] How to use the component (usage examples)
+  - [ ] Dependencies and requirements
+  - [ ] Any breaking changes (if applicable)
+- [ ] Create or update component documentation:
+  - [ ] Document utility functions in `src/utils/README.md`
+  - [ ] Document shared services in `src/services/README.md`
+  - [ ] Document shared types in `src/types/README.md`
+  - [ ] Document middleware in `src/middleware/README.md`
+- [ ] Update code comments and JSDoc as needed
+- [ ] Create extraction summary document or update code quality report
+- [ ] Update architecture documentation if structural changes were made
+- [ ] Document extraction patterns used for future reference
+
+### Verification
+- [ ] Re-run duplication detection to verify improvements:
+  - [ ] Run jscpd: `npm run duplication` (if configured)
+  - [ ] Review SonarQube duplication metrics (if available)
+  - [ ] Compare before/after duplication percentage (should decrease)
+- [ ] Verify code quality improvements:
+  - [ ] Run ESLint: `npm run lint` (should have fewer issues)
+  - [ ] Run type checking: `npm run type-check` (should pass)
+  - [ ] Review code quality metrics (if available)
+- [ ] Verify functionality is preserved:
+  - [ ] Run full test suite: `npm test` (all tests should pass)
+  - [ ] Run integration tests
+  - [ ] Manually test affected functionality
+- [ ] Verify maintainability improvements:
+  - [ ] Code should be easier to understand
+  - [ ] Changes should be easier to make (single source of truth)
+  - [ ] Testing should be easier (test once, use everywhere)
+- [ ] Ensure no regressions were introduced
+- [ ] Verify code reusability improved
 
 ## Notes
 
 - This task is part of Phase 4: Code Quality Audit
 - Section: 3. Refactoring
-- Focus on identifying and fixing code quality issues
+- Focus on systematically extracting reusable components identified in previous tasks
 - Document all findings and improvements
-
-- Task can be completed independently by a single agent
+- **Important**: Always run tests after each extraction to ensure no functionality is broken
+- **Important**: Extraction should improve code quality without changing behavior
+- **Important**: If code duplication detection (PHASE4-005) is not available, work with manual review findings (PHASE4-017) and manual code analysis
+- Start with high-impact, low-risk extractions (large duplicates used in many places)
+- Consider dependencies between components (some may need to be extracted together)
+- Not all duplication needs extraction - consider if extraction improves maintainability
+- Use descriptive names for extracted components - clarity is key
+- Prefer composition over inheritance when creating shared services
+- Create utility functions even if they're only used in 2-3 places if it improves readability
+- Consider creating a shared utilities index file for easier imports
+- Task can be completed independently by a single agent, but may require multiple iterations if many extraction opportunities are identified
+- **Note**: This task focuses on proactive extraction of reusable components. PHASE4-025 focuses on consolidating duplicate code that was already identified. These tasks complement each other but have different approaches.
 
 ## Related Tasks
 
