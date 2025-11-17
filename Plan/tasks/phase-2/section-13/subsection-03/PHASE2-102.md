@@ -6,21 +6,70 @@
 
 ## Description
 
-Convert create job test fixtures from Rails to TypeScript/Node.js.
+Create test fixtures for TelegramMessageJob payloads. These fixtures should cover all update types and scenarios that the job processes, based on the Rails implementation in `jarek-va/app/jobs/telegram_message_job.rb` and `jarek-va/spec/jobs/telegram_message_job_spec.rb`.
+
+The fixtures should provide reusable test data for job payloads that match the Telegram Bot API update structure, including messages, edited messages, callback queries, and various message types (text commands, non-command messages, audio/voice messages).
+
+## Rails Reference
+
+- **Source File**: `jarek-va/app/jobs/telegram_message_job.rb`
+- **Test File**: `jarek-va/spec/jobs/telegram_message_job_spec.rb`
+- **Existing Fixtures Pattern**: `telegram-receiver/tests/fixtures/telegramMessages.ts`
 
 ## Checklist
 
-- [ ] Create `tests/fixtures/job-payloads.ts`
-- [ ] Create TelegramMessageJob payload fixtures
-- [ ] Create various update scenarios
-- [ ] Export fixtures
+- [ ] Create `tests/fixtures/job-payloads.ts` file
+- [ ] Create basic message update fixture (with /start command)
+- [ ] Create non-command message update fixture
+- [ ] Create edited message update fixture
+- [ ] Create callback query update fixture
+- [ ] Create audio/voice message update fixtures (voice, audio, document with audio mime type)
+- [ ] Create update with missing chat_id (error scenario)
+- [ ] Create update as JSON string format (job accepts both Hash and String)
+- [ ] Create helper function `createJobPayload(overrides)` for custom payloads
+- [ ] Export all fixtures following the pattern in `telegramMessages.ts`
+- [ ] Ensure fixtures match Telegram Bot API update structure
+- [ ] Include all required fields: update_id, message/edited_message/callback_query, chat, from, message_id, text
+
+## Implementation Details
+
+Based on the Rails spec, the fixtures should include:
+
+1. **Command Message Payload** (`/start`, `/help`, `/status`)
+   - Message with text starting with `/`
+   - Includes chat_id, message_id, from, text fields
+
+2. **Non-Command Message Payload**
+   - Regular text message that gets forwarded to cursor-runner
+   - Should not match `/start`, `/help`, or `/status` patterns
+
+3. **Edited Message Payload**
+   - Uses `edited_message` field instead of `message` field
+   - Same structure as regular message
+
+4. **Callback Query Payload**
+   - Uses `callback_query` field
+   - Includes callback_query.id, data, message fields
+
+5. **Audio/Voice Message Payloads**
+   - Voice message: message.voice.file_id
+   - Audio file: message.audio.file_id
+   - Document with audio mime type: message.document.file_id with mime_type starting with 'audio/'
+
+6. **Error Scenario Payloads**
+   - Update with missing chat_id
+   - Update with missing message_id
+
+7. **JSON String Format**
+   - Same payloads but as JSON strings (job accepts both formats)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 13. Testing
-- Reference the Rails implementation for behavior
-
+- Reference the Rails implementation in `jarek-va/spec/jobs/telegram_message_job_spec.rb` for exact payload structures
+- Follow the existing fixture pattern in `telegram-receiver/tests/fixtures/telegramMessages.ts`
+- Payloads should match the structure used in Rails spec `let` blocks (message_data, update_data, etc.)
 - Task can be completed independently by a single agent
 
 ## Related Tasks
