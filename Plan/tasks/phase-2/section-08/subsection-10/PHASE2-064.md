@@ -28,8 +28,11 @@ The Rails test suite covers:
 - [ ] Set up test configuration and mocks
 
 ### Mocking Setup
-- [ ] Mock TelegramService (all methods: sendMessage, setWebhook, webhookInfo, deleteWebhook)
+- [ ] Mock TelegramService (all methods: sendMessage, setWebhook, webhookInfo/getWebhookInfo, deleteWebhook)
+  - Note: Verify the actual method name used in TelegramService implementation (may be `webhookInfo` or `getWebhookInfo` based on API conventions)
 - [ ] Mock queue system (job enqueueing - equivalent to TelegramMessageJob.perform_later)
+  - Mock the job queue/enqueue function that processes Telegram updates asynchronously
+  - Verify that the correct update data (excluding controller/action/format params) is passed to the queue
 - [ ] Mock configuration values (telegram_webhook_secret, webhook_secret, telegram_webhook_base_url)
 - [ ] Reset mocks in beforeEach/afterEach hooks
 
@@ -54,28 +57,45 @@ The Rails test suite covers:
 - [ ] Test set_webhook without admin authentication - returns 401
 - [ ] Test set_webhook with admin authentication - returns success
 - [ ] Test set_webhook calls TelegramService.set_webhook with correct parameters
+  - Response format: `{ ok: true, message: 'Webhook set successfully', webhook_info: {...} }` (see Rails controller lines 59-63)
 - [ ] Test set_webhook uses default webhook URL when not provided
+  - Default URL format: `{base_url}/telegram/webhook` (see Rails controller lines 145-149)
+  - Base URL comes from config or ENV['TELEGRAM_WEBHOOK_BASE_URL'] (defaults to 'http://localhost:3000')
 - [ ] Test set_webhook uses provided secret_token parameter
+- [ ] Test set_webhook uses config telegram_webhook_secret when secret_token not provided
 - [ ] Test set_webhook error handling - returns error response when TelegramService raises error
+  - Response format: `{ ok: false, error: string }` with 500 status (see Rails controller lines 64-69)
 
 ### GET /telegram/webhook_info Tests (Admin Endpoint)
 - [ ] Test webhook_info without admin authentication - returns 401
 - [ ] Test webhook_info with admin authentication - returns success
 - [ ] Test webhook_info returns webhook info from TelegramService
+  - Response format: `{ ok: true, webhook_info: {...} }` (see Rails controller lines 78-81)
 - [ ] Test webhook_info error handling - returns error response when TelegramService raises error
+  - Response format: `{ ok: false, error: string }` with 500 status (see Rails controller lines 82-87)
 
 ### DELETE /telegram/webhook Tests (Admin Endpoint)
 - [ ] Test delete_webhook without admin authentication - returns 401
 - [ ] Test delete_webhook with admin authentication - returns success
+  - Response format: `{ ok: true, message: 'Webhook deleted successfully' }` (see Rails controller lines 96-99)
 - [ ] Test delete_webhook calls TelegramService.delete_webhook
 - [ ] Test delete_webhook error handling - returns error response when TelegramService raises error
+  - Response format: `{ ok: false, error: string }` with 500 status (see Rails controller lines 100-105)
+- [ ] Note: Rails test uses workaround for DELETE requests (stubs authenticate_admin) - verify if similar approach needed in TypeScript tests
 
 ### Authentication Tests
 - [ ] Test webhook authentication via X-Telegram-Bot-Api-Secret-Token header
+  - When secret is configured and header matches → allows request
+  - When secret is configured and header doesn't match → returns 401
+  - When secret is not configured (blank) → allows request (see Rails controller lines 134-143)
 - [ ] Test admin authentication via X-Admin-Secret header
-- [ ] Test admin authentication via HTTP_X_ADMIN_SECRET env variable
-- [ ] Test admin authentication via query parameters (admin_secret)
+- [ ] Test admin authentication via HTTP_X_ADMIN_SECRET env variable (request.env['HTTP_X_ADMIN_SECRET'])
+  - Note: Rails controller supports this (line 113) but Rails test doesn't explicitly test it - add test for completeness
+- [ ] Test admin authentication via query parameters (admin_secret or params[:admin_secret])
+  - Note: Rails controller supports this (lines 114-115) but Rails test doesn't explicitly test it - add test for completeness
 - [ ] Test authentication failure scenarios
+  - Invalid secret values
+  - Missing headers when required
 
 ## Notes
 
@@ -95,7 +115,13 @@ The Rails test suite covers:
 4. **Mocks**: 
    - Use `tests/mocks/telegramApi.ts` for TelegramService mocking
    - Mock the queue system (equivalent to Rails' `TelegramMessageJob.perform_later`)
+     - Create a mock function that tracks enqueued jobs
+     - Verify job is enqueued with correct update data (as JSON string, excluding controller/action/format params)
    - Mock configuration values appropriately
+     - Mock `telegram_webhook_secret` (can be blank for optional auth tests)
+     - Mock `webhook_secret` (admin secret)
+     - Mock `telegram_webhook_base_url` (for default webhook URL tests)
+   - Mock logger to verify error logging
 
 5. **Test Structure**: Follow the Rails test structure:
    - Group tests by endpoint (POST #webhook, POST #set_webhook, etc.)
@@ -103,17 +129,26 @@ The Rails test suite covers:
    - Test both success and error paths
 
 6. **Key Behaviors to Test**:
-   - Webhook endpoint always returns 200 OK (even on errors) to prevent Telegram retries
-   - Job enqueueing happens asynchronously
-   - Error messages are sent to users when chat_id is available
-   - Admin endpoints require X-Admin-Secret header authentication
-   - Webhook endpoint requires X-Telegram-Bot-Api-Secret-Token header when secret is configured
+   - Webhook endpoint always returns 200 OK (even on errors) to prevent Telegram retries (see Rails controller lines 25, 47)
+   - Job enqueueing happens asynchronously (see Rails controller line 22)
+   - Update data passed to job excludes controller/action/format/telegram params (see Rails controller line 16)
+   - Error messages are sent to users when chat_id is available (see Rails controller lines 34-41)
+   - Error handling when sending error message fails (see Rails controller lines 42-44) - logs error but doesn't raise
+   - Admin endpoints require X-Admin-Secret header authentication (or alternatives: HTTP_X_ADMIN_SECRET env, query params)
+   - Webhook endpoint requires X-Telegram-Bot-Api-Secret-Token header when secret is configured (optional when blank)
+   - Chat info extraction from different update types (message, edited_message, callback_query) for error handling
 
 7. **Update Types**: Test all Telegram update types:
-   - `message` (command and non-command)
-   - `edited_message`
-   - `callback_query`
-   - Unhandled update types
+   - `message` (command message like '/start' and non-command message)
+   - `edited_message` (edited text messages)
+   - `callback_query` (button callback queries)
+   - Unhandled update types (should still return 200 and enqueue job)
+
+8. **Error Handling Details**:
+   - When webhook processing fails, controller extracts chat_id and message_id from update (see Rails controller lines 151-169)
+   - Error message format: "Sorry, I encountered an error processing your message: {error.message}" (see Rails controller line 38)
+   - Error message includes reply_to_message_id and parse_mode: 'HTML' (see Rails controller lines 39-40)
+   - If sending error message fails, error is logged but doesn't prevent returning 200 OK (see Rails controller lines 42-44)
 
 - Task can be completed independently by a single agent
 
