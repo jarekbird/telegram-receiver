@@ -6,23 +6,114 @@
 
 ## Description
 
-Create docker-compose.prod.yml for production
+Create a production docker-compose.prod.yml file for the telegram-receiver Node.js/TypeScript application. The docker-compose.prod.yml should configure all services needed for production deployment, including the application service, Redis service (for BullMQ job queue), Traefik reverse proxy for SSL termination, worker service for background jobs, shared volumes, and production-specific settings. Reference the jarek-va docker-compose.yml (`/cursor/repositories/jarek-va/docker-compose.yml`) for patterns, but adapt for Node.js/TypeScript production needs.
 
 ## Checklist
 
-- [ ] Create `docker-compose.prod.yml` file
-- [ ] Define `app` service
-- [ ] Set build context
-- [ ] Set production environment variables
-- [ ] Configure restart policy
-- [ ] Set appropriate port mapping
-- [ ] Add healthcheck configuration
+- [ ] Create `docker-compose.prod.yml` file in project root
+- [ ] Define `traefik` service (reverse proxy for SSL termination):
+  - [ ] Use `traefik:v2.11` image (matching jarek-va)
+  - [ ] Set container name to `telegram-receiver-traefik` (or similar)
+  - [ ] Configure SSL/TLS with Let's Encrypt ACME challenge
+  - [ ] Set up HTTP to HTTPS redirect
+  - [ ] Configure entrypoints (web:80, websecure:443)
+  - [ ] Mount Docker socket for service discovery
+  - [ ] Mount letsencrypt volume for certificate storage
+  - [ ] Set restart policy to `unless-stopped`
+  - [ ] Add to `virtual-assistant-network` network
+  - [ ] Expose ports 80, 443, and 8080 (dashboard)
+- [ ] Define `redis` service:
+  - [ ] Use `redis:7-alpine` image (matching jarek-va)
+  - [ ] Set container name to `telegram-receiver-redis` (or similar)
+  - [ ] Configure Redis persistence with `--appendonly yes`
+  - [ ] Add volume for Redis data persistence (`shared_redis_data:/data`)
+  - [ ] Set restart policy to `unless-stopped`
+  - [ ] Add healthcheck using `redis-cli ping`
+  - [ ] Add to `virtual-assistant-network` network
+- [ ] Define `app` service:
+  - [ ] Set build context to current directory (`.`)
+  - [ ] Set dockerfile path to `Dockerfile`
+  - [ ] Set container name to `telegram-receiver-app` (or similar)
+  - [ ] **Do NOT expose ports directly** - Traefik will route traffic
+  - [ ] Set `NODE_ENV` environment variable to `production`
+  - [ ] Set `PORT` environment variable to `3000`
+  - [ ] Set `REDIS_URL` to `redis://redis:6379` (using Redis service name)
+  - [ ] Set `CURSOR_RUNNER_URL` to `http://cursor-runner:3001`
+  - [ ] Set `CURSOR_RUNNER_TIMEOUT` to `${CURSOR_RUNNER_TIMEOUT:-300}`
+  - [ ] Set other production environment variables (TELEGRAM_BOT_TOKEN, LOG_LEVEL=info, etc.)
+  - [ ] Add volume mount for shared SQLite database (`shared_sqlite_db:/app/shared_db`)
+  - [ ] Add volume mount for logs (`./log:/app/log`) if needed
+  - [ ] Set restart policy to `unless-stopped`
+  - [ ] Add depends_on for `redis` and `traefik` services
+  - [ ] Add to `virtual-assistant-network` network
+  - [ ] Add Traefik labels for routing:
+    - [ ] `traefik.enable=true`
+    - [ ] Router rule: `Host(\`${DOMAIN_NAME:-localhost}\`) && !PathPrefix(\`/agents\`)`
+    - [ ] Entrypoint: `websecure` (HTTPS)
+    - [ ] TLS cert resolver: `letsencrypt`
+    - [ ] Service port: `3000`
+    - [ ] Security headers middleware (SSL redirect, HSTS, etc.)
+  - [ ] Add healthcheck: `curl -f http://localhost:3000/health`
+- [ ] Define `worker` service (BullMQ worker for background jobs):
+  - [ ] Set build context to current directory (`.`)
+  - [ ] Set dockerfile path to `Dockerfile`
+  - [ ] Set container name to `telegram-receiver-worker` (or similar)
+  - [ ] Set command to run BullMQ worker (e.g., `npm run worker` or `node dist/worker.js`)
+  - [ ] Set `NODE_ENV` environment variable to `production`
+  - [ ] Set `REDIS_URL` to `redis://redis:6379`
+  - [ ] Set `CURSOR_RUNNER_URL` to `http://cursor-runner:3001`
+  - [ ] Set other production environment variables matching `app` service
+  - [ ] Add volume mount for shared SQLite database (`shared_sqlite_db:/app/shared_db`)
+  - [ ] Add volume mount for logs (`./log:/app/log`) if needed
+  - [ ] Set restart policy to `unless-stopped`
+  - [ ] Add depends_on for `redis` and `app` services
+  - [ ] Add to `virtual-assistant-network` network
+- [ ] Define volumes:
+  - [ ] `shared_redis_data` volume (driver: local, name: shared_redis_data)
+  - [ ] `shared_sqlite_db` volume (driver: local, name: shared_sqlite_db)
+- [ ] Define networks:
+  - [ ] Reference `virtual-assistant-network` as external network (matching jarek-va)
+  - [ ] Network name: `virtual-assistant-network`
+- [ ] Add production-specific configurations:
+  - [ ] Ensure no source code volume mounts (production uses built image)
+  - [ ] Configure logging to stdout for Docker logging
+  - [ ] Set appropriate healthcheck intervals and timeouts
+  - [ ] Ensure security headers are configured via Traefik middleware
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 9. Docker Configuration
 - Task can be completed independently by a single agent
+- Reference the jarek-va docker-compose.yml (`/cursor/repositories/jarek-va/docker-compose.yml`) for patterns:
+  - Traefik reverse proxy configuration
+  - Redis service configuration
+  - Shared volume setup (Redis data, SQLite database)
+  - Network configuration
+  - Healthcheck patterns
+  - Traefik labels for routing and SSL
+  - Security headers middleware
+- The production docker-compose.prod.yml should:
+  - Use Traefik for SSL termination and routing (no direct port exposure)
+  - Include Redis for BullMQ job queue
+  - Include worker service for background job processing
+  - Use shared volumes for Redis data and SQLite database
+  - Connect to `virtual-assistant-network` for service communication
+  - Configure production environment variables (NODE_ENV=production, LOG_LEVEL=info)
+  - Include healthchecks for all services
+  - Set restart policies to `unless-stopped` for production reliability
+- Environment variables should match those defined in `.env.example`:
+  - `NODE_ENV=production`
+  - `PORT=3000`
+  - `REDIS_URL=redis://redis:6379`
+  - `CURSOR_RUNNER_URL=http://cursor-runner:3001`
+  - `CURSOR_RUNNER_TIMEOUT=300`
+  - `TELEGRAM_BOT_TOKEN` (from environment)
+  - `LOG_LEVEL=info` (for production)
+- The app service should NOT expose ports directly - Traefik handles routing
+- The worker service runs background jobs using BullMQ (equivalent to Sidekiq in Rails)
+- Shared volumes enable cross-service access to Redis data and SQLite database
+- Traefik labels configure HTTPS routing, SSL certificates, and security headers
 
 ## Related Tasks
 
