@@ -6,21 +6,136 @@
 
 ## Description
 
-Create health check controller
+Create health check controller that returns application health status, service name, and version information. This endpoint should match the Rails implementation in `jarek-va/app/controllers/health_controller.rb`.
+
+**Rails Reference**: `jarek-va/app/controllers/health_controller.rb`
 
 ## Checklist
 
 - [ ] Create `src/controllers/health.controller.ts` file
 - [ ] Create `getHealth` function
 - [ ] Function should return status 200
-- [ ] Function should return JSON with `{ status: "ok" }`
+- [ ] Function should return JSON with:
+  - `status: "healthy"` (not "ok" - must match Rails implementation)
+  - `service: string` (from `process.env.APP_NAME` or default to `'Virtual Assistant API'`)
+  - `version: string` (from `process.env.APP_VERSION` or default to `'1.0.0'`)
 - [ ] Export `getHealth` function
+- [ ] Support environment variables: `APP_NAME` and `APP_VERSION` with defaults
+
+## Validation Report
+
+### Task Review: PHASE1-013
+
+#### Task Information
+- **Task ID**: PHASE1-013
+- **Task Title**: Create health check controller
+- **Rails File**: `jarek-va/app/controllers/health_controller.rb`
+
+#### Validation Results
+
+##### ✓ Correct
+- Task correctly identifies the need for a health check controller
+- File path structure (`src/controllers/health.controller.ts`) is appropriate
+- Function naming (`getHealth`) is acceptable for TypeScript conversion
+- Status 200 requirement is correct
+
+##### ⚠️ Issues Found
+
+1. **Incorrect Status Value**
+   - **Issue**: Task specifies `status: "ok"` but Rails implementation returns `status: "healthy"`
+   - **Location**: Checklist item 4
+   - **Impact**: Response won't match Rails API contract
+   - **Fix Required**: Change to `status: "healthy"`
+
+2. **Missing Response Fields**
+   - **Issue**: Task only specifies `{ status: "ok" }` but Rails returns three fields: `status`, `service`, and `version`
+   - **Location**: Checklist item 4
+   - **Impact**: Incomplete API response, missing service identification and version info
+   - **Fix Required**: Add `service` and `version` fields to response
+
+3. **Missing Environment Variable Support**
+   - **Issue**: Task doesn't mention reading `APP_NAME` and `APP_VERSION` from environment variables
+   - **Location**: Missing from checklist
+   - **Impact**: Won't match Rails behavior which reads from `Rails.application.config.app_name` and `Rails.application.config.app_version` (which use `ENV.fetch('APP_NAME', ...)` and `ENV.fetch('APP_VERSION', ...)`)
+   - **Fix Required**: Add checklist item for environment variable support
+
+4. **Missing Root Route Information**
+   - **Issue**: Task doesn't mention that health endpoint also serves as root route (`GET /`)
+   - **Location**: Missing from description/notes
+   - **Impact**: May need separate task or clarification for root route setup
+   - **Note**: This may be handled in routing configuration task, but should be documented
+
+##### 📝 Recommendations
+
+1. **Update Checklist Item 4**: Change from `{ status: "ok" }` to include all three fields:
+   ```json
+   {
+     "status": "healthy",
+     "service": "Virtual Assistant API",  // or from APP_NAME env var
+     "version": "1.0.0"                    // or from APP_VERSION env var
+   }
+   ```
+
+2. **Add Environment Variable Support**: Add checklist item for reading `APP_NAME` and `APP_VERSION` with defaults
+
+3. **Consider Root Route**: Note that this endpoint should also be accessible at root (`GET /`) per Rails routes configuration
+
+#### Detailed Comparison
+
+##### Methods in Rails File
+1. `show` method (Rails) → `getHealth` function (TypeScript)
+   - **Task coverage**: Partial
+   - **Notes**: Method name conversion is fine, but response structure is incomplete
+
+##### Response Structure Comparison
+
+**Rails Implementation** (`health_controller.rb:5-9`):
+```ruby
+render json: {
+  status: 'healthy',
+  service: Rails.application.config.app_name || 'Virtual Assistant API',
+  version: Rails.application.config.app_version || '1.0.0'
+}
+```
+
+**Task Specification**:
+```json
+{ status: "ok" }
+```
+
+**Discrepancy**: Missing `service` and `version` fields, incorrect status value
+
+##### Dependencies
+- **Rails**: `ApplicationController` (base class)
+- **Config**: `Rails.application.config.app_name`, `Rails.application.config.app_version`
+- **Environment**: `APP_NAME`, `APP_VERSION` environment variables
+- **Task Coverage**: Not mentioned - needs to be added
+
+##### Error Handling
+- **Rails**: None (simple response)
+- **Task Coverage**: Not mentioned - acceptable for this simple endpoint
+
+##### Routes
+- **Rails**: 
+  - `GET /health` → `health#show`
+  - `GET /` (root) → `health#show`
+- **Task Coverage**: Not mentioned - may be handled in separate routing task
+
+##### Test Requirements
+- **Rails Tests** (`health_controller_spec.rb`):
+  - Verifies 200 status
+  - Verifies `status: 'healthy'`
+  - Verifies `service` field is present
+  - Verifies `version` field is present
+- **Task Coverage**: Not mentioned - may be handled in separate testing task
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 5. Health Check Endpoint
 - Task can be completed independently by a single agent
+- **Important**: In the Rails implementation, this endpoint also serves as the root route (`GET /`). Route configuration should be handled in a separate routing task, but the controller function should be reusable for both `/health` and `/` routes.
+- **Environment Variables**: The implementation should read `APP_NAME` and `APP_VERSION` from environment variables, defaulting to `'Virtual Assistant API'` and `'1.0.0'` respectively if not set.
 
 ## Related Tasks
 

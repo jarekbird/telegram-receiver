@@ -6,20 +6,195 @@
 
 ## Description
 
-Create JSON body parser middleware
+Create JSON body parser middleware to enable Express to parse JSON request bodies. In Rails, `ActionController::API` automatically parses JSON when `Content-Type: application/json` is set, making request data available in `params`. Express requires explicit middleware (`express.json()`) to populate `req.body` with parsed JSON data.
+
+**Rails Reference**: `jarek-va/app/controllers/application_controller.rb` - Rails uses `ActionController::API` which automatically parses JSON request bodies when `Content-Type: application/json` is set. Express requires explicit middleware to achieve the same functionality.
 
 ## Checklist
 
 - [ ] Open `src/app.ts`
-- [ ] Import `express.json()` middleware
+- [ ] Import Express (if not already imported): `import express from 'express'`
+- [ ] Use `express.json()` middleware (it's a method, not a separate import)
 - [ ] Apply middleware using `app.use(express.json())`
-- [ ] Verify middleware is applied before routes
+- [ ] Verify middleware is applied before routes (middleware order matters in Express - JSON parser should be early in the stack)
+
+## Validation Report
+
+### Task Review: PHASE1-017
+
+#### Task Information
+- **Task ID**: PHASE1-017
+- **Task Title**: Create JSON body parser middleware
+- **Rails File**: `jarek-va/app/controllers/application_controller.rb` (ActionController::API automatically handles JSON parsing)
+
+#### Validation Results
+
+##### ✓ Correct
+- Task correctly identifies the need for JSON body parser middleware in Express
+- File path structure (`src/app.ts`) is appropriate and matches previous tasks (PHASE1-010, PHASE1-015)
+- Task scope is appropriate - focused on adding JSON parsing middleware only
+- Checklist correctly specifies using `express.json()` middleware
+- Checklist correctly emphasizes middleware ordering (before routes)
+- Task follows logical sequence (after route registration in PHASE1-015, before other middleware tasks)
+
+##### ⚠️ Issues Found
+
+1. **Missing Rails Reference**
+   - **Issue**: Task doesn't reference how Rails handles JSON parsing for context
+   - **Location**: Missing from description
+   - **Impact**: Less context for developers to understand why this middleware is needed
+   - **Fix Required**: Add Rails reference noting that `ActionController::API` automatically parses JSON, but Express requires explicit middleware
+
+2. **Incomplete Description**
+   - **Issue**: Description is very brief ("Create JSON body parser middleware")
+   - **Location**: Description section
+   - **Impact**: Doesn't provide enough context about what this middleware does and why it's needed
+   - **Fix Required**: Expand description to mention that this middleware enables Express to parse JSON request bodies, which Rails does automatically via ActionController::API
+
+3. **Missing Configuration Options**
+   - **Issue**: Task doesn't mention any configuration options for `express.json()` middleware (e.g., `limit`, `strict`, `type`)
+   - **Location**: Checklist item 2
+   - **Impact**: May miss important configuration that Rails has by default (e.g., body size limits)
+   - **Fix Required**: Add note about default configuration being sufficient for now, or mention that configuration can be added later if needed
+
+4. **Unclear Middleware Ordering**
+   - **Issue**: Task says "Verify middleware is applied before routes" but doesn't specify exact placement relative to other middleware
+   - **Location**: Checklist item 4
+   - **Impact**: Developer may not know where exactly to place it in the middleware stack
+   - **Fix Required**: Clarify that JSON parser should be applied early in the middleware stack, before route handlers but after basic Express setup
+
+5. **Missing Import Statement Example**
+   - **Issue**: Task says "Import `express.json()` middleware" but doesn't show the exact import syntax
+   - **Location**: Checklist item 2
+   - **Impact**: Unclear whether to import from 'express' or use express.json() directly
+   - **Fix Required**: Clarify that `express.json()` is a method, not a separate import: `import express from 'express';` then use `express.json()`
+
+6. **Missing Context About Rails Behavior**
+   - **Issue**: Task doesn't explain that Rails controllers automatically receive parsed JSON in `params`, but Express requires this middleware to populate `req.body`
+   - **Location**: Missing from description/notes
+   - **Impact**: Developers may not understand the conversion context
+   - **Fix Required**: Add note explaining the Rails vs Express difference
+
+##### 📝 Recommendations
+
+1. **Add Rails Reference**: Add to description:
+   - **Rails Reference**: `jarek-va/app/controllers/application_controller.rb` - Rails uses `ActionController::API` which automatically parses JSON request bodies when `Content-Type: application/json` is set. Express requires explicit middleware to achieve the same functionality.
+
+2. **Expand Description**: Update to:
+   - "Create JSON body parser middleware to enable Express to parse JSON request bodies. In Rails, `ActionController::API` automatically parses JSON when `Content-Type: application/json` is set, making request data available in `params`. Express requires explicit middleware (`express.json()`) to populate `req.body` with parsed JSON data."
+
+3. **Clarify Import Syntax**: Update checklist item 2 to:
+   - "Import Express (if not already imported): `import express from 'express'`"
+   - "Use `express.json()` middleware (it's a method, not a separate import)"
+
+4. **Add Configuration Note**: Add to Notes section:
+   - "The `express.json()` middleware uses default configuration. If body size limits or other options are needed later, they can be configured by passing options: `express.json({ limit: '10mb' })`"
+
+5. **Clarify Middleware Ordering**: Update checklist item 4 to:
+   - "Verify middleware is applied before routes (middleware order matters in Express - JSON parser should be early in the stack)"
+
+6. **Add Context Note**: Add to Notes section:
+   - "**Rails Comparison**: Rails controllers automatically receive parsed JSON in `params` hash. Express requires this middleware to parse JSON and populate `req.body`. Without this middleware, `req.body` will be `undefined` for JSON requests."
+
+#### Detailed Comparison
+
+##### JSON Parsing in Rails
+
+**Rails Implementation** (`application_controller.rb:3`, `telegram_controller.rb:14-15`):
+```ruby
+class ApplicationController < ActionController::API
+  # Rails automatically parses JSON when Content-Type is application/json
+  # Request data is available in params hash
+end
+
+# In controllers:
+def webhook
+  # Telegram sends updates as JSON in the request body
+  # Rails automatically parses JSON when Content-Type is application/json
+  update = request.content_type&.include?('application/json') ? request.parameters : params
+  # params already contains parsed JSON data
+end
+```
+
+**Rails Behavior**:
+- `ActionController::API` automatically parses JSON request bodies
+- Parsed data is available in `params` hash
+- No explicit middleware configuration needed
+- Works when `Content-Type: application/json` header is present
+
+##### JSON Parsing in Express
+
+**Expected Express Implementation** (this task):
+```typescript
+import express from 'express';
+
+const app = express();
+
+// JSON body parser middleware - must be applied before routes
+app.use(express.json());
+
+// Now routes can access parsed JSON in req.body
+app.post('/telegram/webhook', (req, res) => {
+  // req.body contains parsed JSON data
+  const update = req.body;
+});
+```
+
+**Express Behavior**:
+- Requires explicit `express.json()` middleware
+- Parsed data is available in `req.body` (not `req.params`)
+- Must be applied before route handlers
+- Works when `Content-Type: application/json` header is present
+
+**Comparison**:
+- ✓ Task correctly identifies need for explicit middleware in Express
+- ✓ Task correctly specifies using `express.json()`
+- ⚠️ Task could better explain the Rails vs Express difference
+- ⚠️ Task could mention configuration options if needed
+
+##### Middleware Ordering
+
+**Express Middleware Stack** (typical order):
+1. Basic Express setup (app creation)
+2. **JSON parser** ← This task (should be early)
+3. URL-encoded parser (PHASE1-018)
+4. CORS (PHASE1-019)
+5. Routes (PHASE1-015)
+6. Error handlers (later tasks)
+
+**Task Coverage**: Task correctly emphasizes ordering but could be more specific about placement relative to other middleware
+
+##### Dependencies
+- **Express**: Required (installed in PHASE1-009)
+- **App Instance**: `src/app.ts` created in PHASE1-010, routes registered in PHASE1-015
+- **Task Coverage**: Task correctly depends on app.ts existing
+
+##### Related Components
+- **App File**: `src/app.ts` (created in PHASE1-010, routes added in PHASE1-015)
+- **Next Middleware**: PHASE1-018 (URL-encoded parser) should come after JSON parser
+- **Controllers**: Will use `req.body` to access parsed JSON (similar to Rails `params`)
+- **Task Coverage**: Task correctly focuses only on JSON parser middleware
+
+##### Rails Controllers Using JSON
+
+**Examples from Rails**:
+- `TelegramController#webhook` - receives JSON webhook updates
+- `CursorRunnerController#execute` - receives JSON with repository, prompt, etc.
+- `CursorRunnerController#iterate` - receives JSON with iteration parameters
+- `AgentToolsController#create` - receives JSON with tool parameters
+
+**All these controllers rely on automatic JSON parsing**, which Express needs this middleware to replicate.
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 6. Request/Response Middleware
 - Task can be completed independently by a single agent
+- **Rails Reference**: `jarek-va/app/controllers/application_controller.rb` - Rails uses `ActionController::API` which automatically parses JSON request bodies when `Content-Type: application/json` is set. Express requires explicit `express.json()` middleware to achieve the same functionality.
+- **Middleware Ordering**: The JSON parser middleware must be applied before route handlers. Typical Express middleware order: JSON parser → URL-encoded parser → CORS → Routes → Error handlers.
+- **Import Syntax**: `express.json()` is a method, not a separate import. Import Express with `import express from 'express'`, then use `express.json()`.
+- **Configuration**: Default configuration is sufficient for now. If body size limits or other options are needed later, configure with: `express.json({ limit: '10mb' })`.
+- **Rails Comparison**: Rails controllers automatically receive parsed JSON in `params` hash. Express requires this middleware to parse JSON and populate `req.body`. Without this middleware, `req.body` will be `undefined` for JSON requests.
 
 ## Related Tasks
 

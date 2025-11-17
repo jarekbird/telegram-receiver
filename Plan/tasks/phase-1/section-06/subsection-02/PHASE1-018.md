@@ -6,21 +6,223 @@
 
 ## Description
 
-Create URL encoded parser middleware
+Create URL encoded parser middleware to enable Express to parse URL-encoded form data (application/x-www-form-urlencoded). In Rails, `ActionController::API` automatically parses URL-encoded form data, making request data available in `params`. Express requires explicit middleware (`express.urlencoded()`) to populate `req.body` with parsed form data.
+
+**Rails Reference**: `jarek-va/app/controllers/application_controller.rb` - Rails uses `ActionController::API` which automatically parses URL-encoded form data when `Content-Type: application/x-www-form-urlencoded` is set. Express requires explicit middleware to achieve the same functionality.
 
 ## Checklist
 
 - [ ] Open `src/app.ts`
-- [ ] Import `express.urlencoded()` middleware
-- [ ] Configure with `{ extended: true }`
-- [ ] Apply middleware using `app.use()`
-- [ ] Verify middleware is applied before routes
+- [ ] Import Express (if not already imported): `import express from 'express'`
+- [ ] Use `express.urlencoded()` middleware (it's a method, not a separate import)
+- [ ] Configure with `{ extended: true }` option
+- [ ] Apply middleware using `app.use(express.urlencoded({ extended: true }))`
+- [ ] Verify middleware is applied after JSON parser (PHASE1-017) but before routes (middleware order matters in Express)
+
+## Validation Report
+
+### Task Review: PHASE1-018
+
+#### Task Information
+- **Task ID**: PHASE1-018
+- **Task Title**: Create URL encoded parser middleware
+- **Rails File**: `jarek-va/app/controllers/application_controller.rb` (ActionController::API automatically handles URL-encoded parsing)
+
+#### Validation Results
+
+##### ✓ Correct
+- Task correctly identifies the need for URL-encoded body parser middleware in Express
+- File path structure (`src/app.ts`) is appropriate and matches previous tasks (PHASE1-010, PHASE1-015, PHASE1-017)
+- Task scope is appropriate - focused on adding URL-encoded parsing middleware only
+- Checklist correctly specifies using `express.urlencoded()` middleware
+- Checklist correctly specifies `{ extended: true }` configuration option
+- Task follows logical sequence (after JSON parser in PHASE1-017, before CORS in PHASE1-019)
+
+##### ⚠️ Issues Found
+
+1. **Missing Rails Reference**
+   - **Issue**: Task doesn't reference how Rails handles URL-encoded parsing for context
+   - **Location**: Missing from description
+   - **Impact**: Less context for developers to understand why this middleware is needed
+   - **Fix Required**: Add Rails reference noting that `ActionController::API` automatically parses URL-encoded form data, but Express requires explicit middleware
+
+2. **Incomplete Description**
+   - **Issue**: Description is very brief ("Create URL encoded parser middleware")
+   - **Location**: Description section
+   - **Impact**: Doesn't provide enough context about what this middleware does and why it's needed
+   - **Fix Required**: Expand description to mention that this middleware enables Express to parse URL-encoded form data, which Rails does automatically via ActionController::API
+
+3. **Incorrect Import Statement**
+   - **Issue**: Checklist says "Import `express.urlencoded()` middleware" which is misleading
+   - **Location**: Checklist item 2
+   - **Impact**: Unclear whether to import from 'express' or use express.urlencoded() directly
+   - **Fix Required**: Clarify that `express.urlencoded()` is a method, not a separate import: `import express from 'express';` then use `express.urlencoded()`
+
+4. **Unclear Middleware Ordering**
+   - **Issue**: Task says "Verify middleware is applied before routes" but doesn't specify exact placement relative to other middleware
+   - **Location**: Checklist item 5
+   - **Impact**: Developer may not know where exactly to place it in the middleware stack
+   - **Fix Required**: Clarify that URL-encoded parser should be applied after JSON parser (PHASE1-017) but before route handlers
+
+5. **Missing Context About Rails Behavior**
+   - **Issue**: Task doesn't explain that Rails controllers automatically receive parsed URL-encoded data in `params`, but Express requires this middleware to populate `req.body`
+   - **Location**: Missing from description/notes
+   - **Impact**: Developers may not understand the conversion context
+   - **Fix Required**: Add note explaining the Rails vs Express difference
+
+6. **Missing Explanation of `extended: true`**
+   - **Issue**: Task specifies `{ extended: true }` but doesn't explain what it does
+   - **Location**: Checklist item 3
+   - **Impact**: Developer may not understand why this option is needed
+   - **Fix Required**: Add note explaining that `extended: true` uses `qs` library (supports nested objects), while `extended: false` uses `querystring` (flat objects only). Rails uses nested params, so `extended: true` matches Rails behavior.
+
+7. **Missing Configuration Options**
+   - **Issue**: Task doesn't mention other configuration options for `express.urlencoded()` middleware (e.g., `limit`, `parameterLimit`, `type`)
+   - **Location**: Checklist item 3
+   - **Impact**: May miss important configuration that Rails has by default (e.g., body size limits)
+   - **Fix Required**: Add note about default configuration being sufficient for now, or mention that configuration can be added later if needed
+
+##### 📝 Recommendations
+
+1. **Add Rails Reference**: Add to description:
+   - **Rails Reference**: `jarek-va/app/controllers/application_controller.rb` - Rails uses `ActionController::API` which automatically parses URL-encoded form data when `Content-Type: application/x-www-form-urlencoded` is set. Express requires explicit middleware to achieve the same functionality.
+
+2. **Expand Description**: Update to:
+   - "Create URL encoded parser middleware to enable Express to parse URL-encoded form data (application/x-www-form-urlencoded). In Rails, `ActionController::API` automatically parses URL-encoded form data, making request data available in `params`. Express requires explicit middleware (`express.urlencoded()`) to populate `req.body` with parsed form data."
+
+3. **Clarify Import Syntax**: Update checklist item 2 to:
+   - "Import Express (if not already imported): `import express from 'express'`"
+   - "Use `express.urlencoded()` middleware (it's a method, not a separate import)"
+
+4. **Clarify Middleware Ordering**: Update checklist item 5 to:
+   - "Verify middleware is applied after JSON parser (PHASE1-017) but before routes (middleware order matters in Express - URL-encoded parser should come after JSON parser)"
+
+5. **Add Context Note**: Add to Notes section:
+   - "**Rails Comparison**: Rails controllers automatically receive parsed URL-encoded form data in `params` hash. Express requires this middleware to parse URL-encoded data and populate `req.body`. Without this middleware, `req.body` will be `undefined` for URL-encoded form requests."
+
+6. **Explain `extended: true`**: Add to Notes section:
+   - "**Extended Option**: The `extended: true` option uses the `qs` library which supports nested objects (e.g., `user[name]=John&user[age]=30` becomes `{user: {name: 'John', age: 30}}`). This matches Rails behavior where nested parameters are supported. `extended: false` uses `querystring` which only supports flat objects."
+
+7. **Add Configuration Note**: Add to Notes section:
+   - "**Configuration**: Default configuration is sufficient for now. If body size limits or other options are needed later, configure with: `express.urlencoded({ extended: true, limit: '10mb', parameterLimit: 1000 })`"
+
+#### Detailed Comparison
+
+##### URL-Encoded Parsing in Rails
+
+**Rails Implementation** (`application_controller.rb:3`, `telegram_controller.rb:54-55`, `cursor_runner_controller.rb:12-15`):
+```ruby
+class ApplicationController < ActionController::API
+  # Rails automatically parses URL-encoded form data when Content-Type is application/x-www-form-urlencoded
+  # Request data is available in params hash
+end
+
+# In controllers:
+def set_webhook
+  webhook_url = params[:url] || default_webhook_url
+  secret_token = params[:secret_token] || Rails.application.config.telegram_webhook_secret
+  # params automatically contains parsed URL-encoded form data
+end
+
+def execute
+  repository: params[:repository],
+  branch_name: params[:branch_name] || params[:branchName],
+  prompt: params[:prompt],
+  # params can contain both JSON and URL-encoded form data
+end
+```
+
+**Rails Behavior**:
+- `ActionController::API` automatically parses URL-encoded form data
+- Parsed data is available in `params` hash
+- Supports nested parameters (e.g., `user[name]=John` becomes `params[:user][:name]`)
+- No explicit middleware configuration needed
+- Works when `Content-Type: application/x-www-form-urlencoded` header is present
+- Also handles query string parameters automatically
+
+##### URL-Encoded Parsing in Express
+
+**Expected Express Implementation** (this task):
+```typescript
+import express from 'express';
+
+const app = express();
+
+// JSON body parser middleware (from PHASE1-017)
+app.use(express.json());
+
+// URL-encoded body parser middleware - must be applied after JSON parser but before routes
+app.use(express.urlencoded({ extended: true }));
+
+// Now routes can access parsed URL-encoded form data in req.body
+app.post('/telegram/set_webhook', (req, res) => {
+  // req.body contains parsed URL-encoded form data
+  const webhook_url = req.body.url || default_webhook_url;
+  const secret_token = req.body.secret_token || config.telegram_webhook_secret;
+});
+```
+
+**Express Behavior**:
+- Requires explicit `express.urlencoded()` middleware
+- Parsed data is available in `req.body` (not `req.params`)
+- `extended: true` supports nested objects (matches Rails behavior)
+- Must be applied before route handlers
+- Works when `Content-Type: application/x-www-form-urlencoded` header is present
+- Query string parameters are handled separately via `req.query` (not this middleware)
+
+**Comparison**:
+- ✓ Task correctly identifies need for explicit middleware in Express
+- ✓ Task correctly specifies using `express.urlencoded()` with `extended: true`
+- ⚠️ Task could better explain the Rails vs Express difference
+- ⚠️ Task could explain why `extended: true` is needed (matches Rails nested params)
+- ⚠️ Task could mention configuration options if needed
+
+##### Middleware Ordering
+
+**Express Middleware Stack** (typical order):
+1. Basic Express setup (app creation)
+2. JSON parser (PHASE1-017) ← Should be first body parser
+3. **URL-encoded parser** ← This task (should come after JSON parser)
+4. CORS (PHASE1-019)
+5. Routes (PHASE1-015)
+6. Error handlers (later tasks)
+
+**Task Coverage**: Task correctly emphasizes ordering but could be more specific about placement relative to JSON parser
+
+##### Dependencies
+- **Express**: Required (installed in PHASE1-009)
+- **App Instance**: `src/app.ts` created in PHASE1-010, routes registered in PHASE1-015
+- **JSON Parser**: Should be applied after JSON parser middleware (PHASE1-017)
+- **Task Coverage**: Task correctly depends on app.ts existing
+
+##### Related Components
+- **App File**: `src/app.ts` (created in PHASE1-010, routes added in PHASE1-015, JSON parser added in PHASE1-017)
+- **Previous Middleware**: PHASE1-017 (JSON parser) should come before URL-encoded parser
+- **Next Middleware**: PHASE1-019 (CORS) should come after URL-encoded parser
+- **Controllers**: Will use `req.body` to access parsed URL-encoded form data (similar to Rails `params`)
+- **Task Coverage**: Task correctly focuses only on URL-encoded parser middleware
+
+##### Rails Controllers Using URL-Encoded Form Data
+
+**Examples from Rails**:
+- `TelegramController#set_webhook` - receives URL-encoded form data with `url` and `secret_token` parameters
+- `TelegramController#authenticate_admin` - reads `admin_secret` from params (can come from URL-encoded form or query string)
+- `CursorRunnerController#execute` - receives parameters that could come from URL-encoded form data
+- `AgentToolsController#create` - receives `tool`, `args`, and `conversation_id` parameters
+
+**All these controllers rely on automatic URL-encoded parsing**, which Express needs this middleware to replicate.
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 6. Request/Response Middleware
 - Task can be completed independently by a single agent
+- **Rails Reference**: `jarek-va/app/controllers/application_controller.rb` - Rails uses `ActionController::API` which automatically parses URL-encoded form data when `Content-Type: application/x-www-form-urlencoded` is set. Express requires explicit `express.urlencoded()` middleware to achieve the same functionality.
+- **Middleware Ordering**: The URL-encoded parser middleware must be applied after JSON parser (PHASE1-017) but before route handlers. Typical Express middleware order: JSON parser → URL-encoded parser → CORS → Routes → Error handlers.
+- **Import Syntax**: `express.urlencoded()` is a method, not a separate import. Import Express with `import express from 'express'`, then use `express.urlencoded()`.
+- **Extended Option**: The `extended: true` option uses the `qs` library which supports nested objects (e.g., `user[name]=John&user[age]=30` becomes `{user: {name: 'John', age: 30}}`). This matches Rails behavior where nested parameters are supported. `extended: false` uses `querystring` which only supports flat objects.
+- **Configuration**: Default configuration is sufficient for now. If body size limits or other options are needed later, configure with: `express.urlencoded({ extended: true, limit: '10mb', parameterLimit: 1000 })`
+- **Rails Comparison**: Rails controllers automatically receive parsed URL-encoded form data in `params` hash. Express requires this middleware to parse URL-encoded data and populate `req.body`. Without this middleware, `req.body` will be `undefined` for URL-encoded form requests.
 
 ## Related Tasks
 

@@ -6,21 +6,207 @@
 
 ## Description
 
-Test health endpoint manually
+Test health endpoint manually by building the project, starting the server, and verifying the health endpoint returns the correct response format matching the Rails implementation. This task validates that the health endpoint implementation from PHASE1-013, PHASE1-014, and PHASE1-015 works correctly.
+
+**Rails Reference**: `jarek-va/app/controllers/health_controller.rb` (for expected response format)
 
 ## Checklist
 
 - [ ] Build the project (`npm run build`)
 - [ ] Start the server (`npm start`)
+- [ ] Determine server port (check `process.env.PORT` or default port from `src/index.ts`)
 - [ ] Make GET request to `http://localhost:PORT/health`
-- [ ] Verify response is `{ status: "ok" }`
+- [ ] Verify response status code is 200
+- [ ] Verify response body is JSON with:
+  - `status: "healthy"` (must match Rails implementation, not "ok")
+  - `service: string` (should be `'Virtual Assistant API'` or value from `APP_NAME` env var)
+  - `version: string` (should be `'1.0.0'` or value from `APP_VERSION` env var)
+- [ ] Make GET request to `http://localhost:PORT/` (root route)
+- [ ] Verify root route also returns same health response
 - [ ] Stop the server
+
+## Validation Report
+
+### Task Review: PHASE1-016
+
+#### Task Information
+- **Task ID**: PHASE1-016
+- **Task Title**: Test health endpoint manually
+- **Rails File**: `jarek-va/app/controllers/health_controller.rb` (for response format reference)
+
+#### Validation Results
+
+##### ✓ Correct
+- Task correctly identifies the need for manual testing
+- Build and start steps are appropriate
+- Task follows logical sequence (after implementation tasks PHASE1-013, PHASE1-014, PHASE1-015)
+- Task scope is appropriate - focused on manual verification
+
+##### ⚠️ Issues Found
+
+1. **Incorrect Expected Response Format**
+   - **Issue**: Task expects `{ status: "ok" }` but Rails implementation and PHASE1-013 specify `{ status: "healthy", service: "...", version: "..." }`
+   - **Location**: Checklist item 4
+   - **Impact**: Test will fail or incorrectly validate the endpoint, as the actual response doesn't match expectations
+   - **Fix Required**: Update to verify the correct response format:
+     ```json
+     {
+       "status": "healthy",
+       "service": "Virtual Assistant API",
+       "version": "1.0.0"
+     }
+     ```
+
+2. **Missing Response Fields Verification**
+   - **Issue**: Task only verifies `status` field, but Rails implementation returns three fields: `status`, `service`, and `version`
+   - **Location**: Checklist item 4
+   - **Impact**: Incomplete test validation - won't verify that all fields are present and correct
+   - **Fix Required**: Add verification for all three fields: `status`, `service`, and `version`
+
+3. **Missing Status Code Verification**
+   - **Issue**: Task doesn't explicitly verify HTTP status code is 200
+   - **Location**: Missing from checklist
+   - **Impact**: Test may not catch if endpoint returns wrong status code
+   - **Fix Required**: Add checklist item to verify response status code is 200
+
+4. **Missing Root Route Testing**
+   - **Issue**: Rails implementation has both `/health` and `/` (root) routes pointing to the same controller, but task only tests `/health`
+   - **Location**: Missing from checklist
+   - **Impact**: Root route functionality won't be validated, breaking Rails API contract
+   - **Fix Required**: Add checklist item to test root route (`GET /`) and verify it returns the same health response
+
+5. **Unclear Port Specification**
+   - **Issue**: Task says `http://localhost:PORT/health` but doesn't specify how to determine PORT
+   - **Location**: Checklist item 3
+   - **Impact**: Tester may not know what port to use
+   - **Fix Required**: Add checklist item to determine port (check `process.env.PORT` or default from `src/index.ts`)
+
+6. **Incomplete Description**
+   - **Issue**: Description is very brief ("Test health endpoint manually")
+   - **Location**: Description section
+   - **Impact**: Doesn't provide enough context about what this test validates
+   - **Fix Required**: Expand description to mention validating the health endpoint implementation and matching Rails response format
+
+7. **Missing Rails Reference**
+   - **Issue**: Task doesn't reference the Rails health controller for expected response format
+   - **Location**: Missing from description
+   - **Impact**: Less context for understanding what the expected response should be
+   - **Fix Required**: Add Rails reference: `jarek-va/app/controllers/health_controller.rb`
+
+##### 📝 Recommendations
+
+1. **Update Expected Response**: Change checklist item 4 from:
+   - `Verify response is { status: "ok" }`
+   - To: Verify response body is JSON with:
+     - `status: "healthy"` (must match Rails implementation)
+     - `service: string` (should be `'Virtual Assistant API'` or value from `APP_NAME` env var)
+     - `version: string` (should be `'1.0.0'` or value from `APP_VERSION` env var)
+
+2. **Add Status Code Verification**: Add checklist item:
+   - "Verify response status code is 200"
+
+3. **Add Root Route Testing**: Add checklist item:
+   - "Make GET request to `http://localhost:PORT/` (root route)"
+   - "Verify root route also returns same health response"
+
+4. **Clarify Port**: Add checklist item:
+   - "Determine server port (check `process.env.PORT` or default port from `src/index.ts`)"
+
+5. **Expand Description**: Update to:
+   - "Test health endpoint manually by building the project, starting the server, and verifying the health endpoint returns the correct response format matching the Rails implementation. This task validates that the health endpoint implementation from PHASE1-013, PHASE1-014, and PHASE1-015 works correctly."
+
+6. **Add Rails Reference**: Add to description:
+   - **Rails Reference**: `jarek-va/app/controllers/health_controller.rb` (for expected response format)
+
+#### Detailed Comparison
+
+##### Expected Response Format
+
+**Rails Implementation** (`health_controller.rb:5-9`):
+```ruby
+render json: {
+  status: 'healthy',
+  service: Rails.application.config.app_name || 'Virtual Assistant API',
+  version: Rails.application.config.app_version || '1.0.0'
+}
+```
+
+**Task Specification**:
+```json
+{ status: "ok" }
+```
+
+**Discrepancy**: 
+- ❌ Status value is incorrect (`"ok"` vs `"healthy"`)
+- ❌ Missing `service` field
+- ❌ Missing `version` field
+
+**Correct Expected Response** (based on PHASE1-013 and Rails):
+```json
+{
+  "status": "healthy",
+  "service": "Virtual Assistant API",
+  "version": "1.0.0"
+}
+```
+
+##### Routes to Test
+
+**Rails Implementation** (`routes.rb:4-5, 8`):
+- `GET /health` → `health#show`
+- `GET /` (root) → `health#show`
+
+**Task Specification**:
+- Only tests `GET /health`
+- Missing root route test
+
+**Discrepancy**: Task doesn't test root route, which is part of Rails API contract
+
+##### Test Coverage
+
+**Rails Tests** (`health_controller_spec.rb` - inferred):
+- Verifies 200 status code
+- Verifies `status: 'healthy'`
+- Verifies `service` field is present
+- Verifies `version` field is present
+
+**Task Coverage**:
+- ⚠️ Missing status code verification
+- ❌ Incorrect status value check (`"ok"` instead of `"healthy"`)
+- ❌ Missing `service` field verification
+- ❌ Missing `version` field verification
+- ❌ Missing root route test
+
+##### Dependencies
+- **Previous Tasks**: PHASE1-013 (controller), PHASE1-014 (route), PHASE1-015 (route registration)
+- **Server Setup**: Requires `src/index.ts` to be configured with port
+- **Environment Variables**: May use `APP_NAME` and `APP_VERSION` (should be tested)
+- **Task Coverage**: Task correctly depends on previous implementation tasks
+
+##### Testing Approach
+- **Manual Testing**: Appropriate for initial validation
+- **Automated Testing**: May be handled in separate test suite tasks
+- **Task Coverage**: Manual testing approach is correct, but verification criteria need correction
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 5. Health Check Endpoint
 - Task can be completed independently by a single agent
+- **Rails Reference**: `jarek-va/app/controllers/health_controller.rb` (for expected response format)
+- **Previous Tasks**: This task validates the implementation from PHASE1-013 (controller), PHASE1-014 (route), and PHASE1-015 (route registration)
+- **Expected Response Format**: The health endpoint should return:
+  ```json
+  {
+    "status": "healthy",
+    "service": "Virtual Assistant API",
+    "version": "1.0.0"
+  }
+  ```
+  - Note: Status must be `"healthy"` (not `"ok"`) to match Rails implementation
+  - `service` and `version` may come from `APP_NAME` and `APP_VERSION` environment variables
+- **Routes to Test**: Both `/health` and `/` (root) routes should be tested, as Rails has both routes pointing to the same controller
+- **Port Configuration**: Check `process.env.PORT` or the default port configured in `src/index.ts` to determine the correct port for testing
 
 ## Related Tasks
 
