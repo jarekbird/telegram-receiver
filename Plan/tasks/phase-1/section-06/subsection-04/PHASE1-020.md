@@ -27,21 +27,23 @@ The middleware should log:
 - [ ] Attach request ID to `req` object for use in other middleware/handlers
 - [ ] Use `res.on('finish', ...)` to log response when request completes
 - [ ] Log response with: status code, response time/duration, and request ID
-- [ ] Use application logger (if available) or `console.log` with structured format
-- [ ] Handle errors appropriately and ensure `next()` is always called
+- [ ] Use application logger (if available) or `console.log` with structured format (for now, use `console.log` since logger infrastructure may not exist yet)
+- [ ] Handle errors appropriately and ensure `next()` is always called (wrap in try-catch if needed)
 - [ ] Export middleware function
-- [ ] Import and apply in `src/app.ts` (before route handlers, after other middleware like CORS)
+- [ ] Import and apply in `src/app.ts` (middleware order: JSON parser → URL-encoded parser → CORS → Request logger → Routes)
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 6. Request/Response Middleware
 - Task can be completed independently by a single agent
-- **Rails Reference**: The jarek-va Rails application uses `config.log_tags = [:request_id]` in production (see `jarek-va/config/environments/production.rb`), which prepends request_id to all log lines. This middleware should provide similar request tracing capability.
+- **Rails Reference**: The jarek-va Rails application uses `config.log_tags = [:request_id]` in production (see `jarek-va/config/environments/production.rb` line 43), which prepends request_id to all log lines automatically. Rails generates a unique request ID for each request and tags all log entries with it. This Express middleware provides similar request tracing capability by logging request/response details with a unique request ID, enabling request correlation in logs. Note: Rails tags ALL log lines with request_id, while this middleware logs request/response events - both approaches enable request tracing.
 - **Logging Format**: Consider logging in a structured format (JSON) for easier parsing and analysis. Example format: `{ "timestamp": "...", "requestId": "...", "method": "GET", "url": "/health", "ip": "127.0.0.1", "statusCode": 200, "duration": 15 }`
-- **Request ID**: If a request-id middleware is already in place, use `req.id`. Otherwise, generate a UUID using `crypto.randomUUID()` or the `uuid` package.
-- **Response Time**: Calculate duration as the difference between request start time and response finish time. Express `res.on('finish')` event fires when the response has been sent.
-- **IP Address**: Extract client IP from `req.ip` (if Express trust proxy is configured) or `req.connection.remoteAddress`. Consider `req.headers['x-forwarded-for']` for proxied requests.
+- **Request ID**: If a request-id middleware is already in place, use `req.id`. Otherwise, generate a UUID using `crypto.randomUUID()` (Node.js 14.17.0+) or the `uuid` package. Attach the request ID to `req.requestId` or `req.id` for use in other middleware/handlers.
+- **Response Time**: Calculate duration as the difference between request start time and response finish time. Express `res.on('finish')` event fires when the response has been sent. Use `process.hrtime()` or `Date.now()` for timing (hrtime provides higher precision).
+- **IP Address**: Extract client IP from `req.ip` (if Express trust proxy is configured via `app.set('trust proxy', true)`) or `req.connection.remoteAddress`. Consider `req.headers['x-forwarded-for']` for proxied requests (may contain comma-separated list of IPs).
+- **Logger**: Since logger infrastructure may not exist yet (logger setup is in Phase 3), use `console.log` with structured JSON format for now. The middleware can be updated later to use a proper logger when available.
+- **Middleware Ordering**: Request logger should be placed after CORS middleware (PHASE1-019) but before route handlers. This ensures all requests are logged, including those that fail CORS checks. Typical order: JSON parser → URL-encoded parser → CORS → **Request logger** → Routes → Error handlers.
 
 ## Related Tasks
 
