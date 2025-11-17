@@ -9,11 +9,13 @@
 Create the TelegramService class structure in TypeScript/Node.js. This is the foundational task that sets up the class skeleton. Method implementations will be added in subsequent tasks (PHASE2-019 through PHASE2-025).
 
 The Rails implementation (`jarek-va/app/services/telegram_service.rb`) uses class methods (`class << self`) and includes:
-- A `bot` method that creates/returns a Telegram::Bot::Client instance
+- A `bot` method that creates/returns a Telegram::Bot::Client instance (memoized with `@bot ||=`)
 - Bot token configuration via `Rails.application.config.telegram_bot_token`
-- All methods check if bot token is blank before proceeding
+- All methods check if bot token is blank before proceeding (early return pattern)
 - 6 public methods: `send_message`, `set_webhook`, `delete_webhook`, `webhook_info`, `send_voice`, `download_file`
 - 2 private helper methods: `download_file_from_url`, `escape_html_entities`
+- Consistent error handling: all methods use `begin/rescue` blocks, log errors with full stack trace via `Rails.logger.error`, and re-raise exceptions
+- Dependencies: `telegram/bot` gem, `faraday` (for UploadIO in send_voice), `stringio`, `net/http`, `uri`, `fileutils`
 
 For TypeScript, convert to an instance-based class that:
 - Accepts bot token via constructor or environment variable (`TELEGRAM_BOT_TOKEN`)
@@ -27,19 +29,28 @@ For TypeScript, convert to an instance-based class that:
 - [ ] Add private `botToken` property to store the Telegram bot token
 - [ ] Add constructor that accepts bot token (or reads from `process.env.TELEGRAM_BOT_TOKEN`)
 - [ ] Add private method to validate bot token is present (similar to Rails blank check)
-- [ ] Add placeholder for Telegram Bot API client initialization (will use axios or similar)
-- [ ] Import required types and dependencies (axios for HTTP requests, types for Telegram API)
+- [ ] Add placeholder for Telegram Bot API client initialization (will use axios for HTTP requests)
+- [ ] Import required types and dependencies:
+  - `axios` for HTTP requests to Telegram Bot API
+  - `fs` (Node.js `fs/promises` or `fs`) for file operations (needed for sendVoice and downloadFile)
+  - `path` (Node.js `path`) for path operations
+  - `os` (Node.js `os`) for temp directory access (`os.tmpdir()`)
+  - FormData or similar for multipart uploads in sendVoice (Node.js built-in `FormData` or `form-data` package)
+  - Types for Telegram API responses (can use `any` or define interfaces)
 - [ ] Add method stubs with proper TypeScript signatures for:
-  - `sendMessage()` - will be implemented in PHASE2-019
-  - `setWebhook()` - will be implemented in PHASE2-020
-  - `deleteWebhook()` - will be implemented in PHASE2-021
-  - `getWebhookInfo()` - will be implemented in PHASE2-022
-  - `sendVoice()` - will be implemented in PHASE2-023
-  - `downloadFile()` - will be implemented in PHASE2-024
+  - `sendMessage(chatId: number | string, text: string, parseMode?: string, replyToMessageId?: number): Promise<any>` - will be implemented in PHASE2-019
+  - `setWebhook(url: string, secretToken?: string): Promise<any>` - will be implemented in PHASE2-020
+  - `deleteWebhook(): Promise<any>` - will be implemented in PHASE2-021
+  - `getWebhookInfo(): Promise<any>` - will be implemented in PHASE2-022 (Rails method is `webhook_info` which calls `bot.api.get_webhook_info`)
+  - `sendVoice(chatId: number | string, voicePath: string, replyToMessageId?: number, caption?: string): Promise<any>` - will be implemented in PHASE2-023 (needs file reading, MIME type detection, multipart upload)
+  - `downloadFile(fileId: string, destinationPath?: string): Promise<string>` - will be implemented in PHASE2-024 (two-step process: get_file then download, temp directory fallback)
 - [ ] Add private method stubs for helper methods:
-  - `downloadFileFromUrl()` - helper for file downloads
-  - `escapeHtmlEntities()` - helper for HTML escaping (will be implemented in PHASE2-025)
-- [ ] Add basic error handling structure (try-catch pattern, error logging)
+  - `downloadFileFromUrl(url: string, destinationPath: string): Promise<void>` - helper for downloading files from URLs (used by downloadFile)
+  - `escapeHtmlEntities(text: string): string` - helper for HTML escaping (used by sendMessage when parseMode is 'HTML', will be implemented in PHASE2-025)
+- [ ] Add consistent error handling structure:
+  - All methods should follow the same pattern: early return if token is blank, try-catch block, log error with message and stack trace, re-raise exception
+  - Use `console.error` for error logging (or application logger if one exists) - log both error message and stack trace
+  - Maintain Rails behavior: log errors but re-raise exceptions to allow callers to handle them
 - [ ] Export the class as default export
 
 ## Notes
@@ -48,10 +59,22 @@ For TypeScript, convert to an instance-based class that:
 - Section: 4. TelegramService Conversion
 - **This task only creates the class structure** - method implementations are in subsequent tasks
 - Reference the Rails implementation (`jarek-va/app/services/telegram_service.rb`) for behavior patterns
-- The Rails service uses class methods, but TypeScript version should use instance methods
+- The Rails service uses class methods (`class << self`), but TypeScript version should use instance methods
 - Bot token should be validated in each method (similar to Rails `return if Rails.application.config.telegram_bot_token.blank?`)
 - Use `axios` (already in dependencies) for HTTP requests to Telegram Bot API
 - Method names should follow TypeScript/JavaScript camelCase convention (e.g., `sendMessage` instead of `send_message`)
+- **Error Handling Pattern**: All methods follow the same pattern:
+  - Early return if bot token is blank
+  - Wrap operations in try-catch block
+  - Log errors with descriptive message and full stack trace
+  - Re-raise exceptions after logging (maintains Rails behavior)
+- **Dependencies Needed**:
+  - `axios` for HTTP requests (already in package.json)
+  - Node.js built-in modules: `fs`/`fs/promises` (file operations), `path` (path operations), `os` (temp directory), `FormData` (multipart uploads)
+- **Method-Specific Notes**:
+  - `sendVoice`: Will need file existence check, binary file reading, MIME type detection based on file extension (.ogg/.oga → 'audio/ogg', .wav → 'audio/wav', default → 'audio/mpeg'), and multipart form data upload
+  - `downloadFile`: Two-step process - first call `get_file` API to get file path, then construct download URL and download file. If `destinationPath` is not provided, use temp directory with pattern `telegram_{fileId}_{filename}`
+  - `getWebhookInfo`: Rails method name is `webhook_info` but it calls `bot.api.get_webhook_info` - TypeScript method should be `getWebhookInfo` to match Telegram API naming
 - Task can be completed independently by a single agent
 
 ## Related Tasks
