@@ -6,17 +6,162 @@
 
 ## Description
 
-Review and improve analyze memory usage patterns in the codebase to ensure best practices.
+Review and improve memory usage patterns in the codebase to ensure best practices. This task focuses on analyzing memory consumption, identifying potential memory leaks, reviewing object lifecycle management, and ensuring efficient memory usage throughout the application.
+
+Reference the Rails implementation patterns where applicable to understand expected memory behavior and ensure the TypeScript implementation follows Node.js best practices for memory management.
 
 ## Checklist
 
-- [ ] Profile memory usage
-- [ ] Check for memory leaks
-- [ ] Review object lifecycle
-- [ ] Check for large object retention
-- [ ] Review garbage collection
-- [ ] Identify memory issues
-- [ ] Document findings
+### Memory Profiling and Monitoring
+- [ ] Set up memory profiling tools
+  - Configure Node.js memory profiling (e.g., `--inspect` flag, Chrome DevTools)
+  - Set up heap snapshots for baseline and comparison
+  - Configure memory monitoring in production (if applicable)
+  - Review Node.js heap size limits and configuration
+- [ ] Establish memory usage baselines
+  - Measure baseline memory usage at application startup
+  - Measure memory usage under normal load
+  - Measure memory usage under peak load
+  - Document memory usage patterns over time
+- [ ] Monitor memory trends
+  - Check for memory growth patterns (potential leaks)
+  - Review memory spikes and their causes
+  - Monitor heap size over extended periods
+  - Track memory usage per service/module
+
+### Object Lifecycle Management
+- [ ] Review object creation patterns
+  - Check for unnecessary object creation in hot paths
+  - Review if objects can be reused or pooled
+  - Identify objects created per request that could be shared
+  - Check for object creation in loops
+- [ ] Review object cleanup
+  - Verify objects are properly dereferenced when no longer needed
+  - Check for proper cleanup in error paths
+  - Review cleanup in async operations (promises, callbacks)
+  - Verify cleanup handlers are called (e.g., `finally` blocks)
+- [ ] Review singleton and shared instances
+  - Verify singletons are used appropriately (e.g., Redis client, HTTP clients)
+  - Check that shared instances don't hold unnecessary state
+  - Review if singletons prevent proper garbage collection
+  - Verify shared instances are thread-safe/concurrent-safe
+
+### Event Listener Management
+- [ ] Review event listener registration
+  - Check for event listeners that are never removed
+  - Verify listeners are removed when objects are destroyed
+  - Review Express middleware and route handlers for listener leaks
+  - Check BullMQ worker event listeners
+- [ ] Review event listener cleanup
+  - Verify `removeListener` or `removeAllListeners` is called appropriately
+  - Check for proper cleanup in error scenarios
+  - Review cleanup in async operations
+  - Verify listeners don't hold references to large objects
+- [ ] Review closure references
+  - Check if closures capture large objects unnecessarily
+  - Verify closures don't prevent garbage collection
+  - Review callback functions for memory retention
+  - Check for circular references in closures
+
+### Connection and Resource Management
+- [ ] Review Redis connection management
+  - Verify Redis client uses connection pooling (not creating new clients per request)
+  - Check if Redis connections are properly closed on shutdown
+  - Review connection reuse patterns
+  - Verify no connection leaks (connections not closed)
+- [ ] Review HTTP client connections (Axios)
+  - Check if HTTP clients are reused (not created per request)
+  - Verify connection pooling is configured appropriately
+  - Review if connections are properly closed
+  - Check for connection leaks in error scenarios
+- [ ] Review BullMQ queue and worker management
+  - Verify workers are properly closed on shutdown
+  - Check if queues hold references to completed jobs unnecessarily
+  - Review job data retention (ensure completed jobs are cleaned up)
+  - Verify workers don't accumulate state over time
+- [ ] Review file and stream handling
+  - Check if file streams are properly closed
+  - Verify buffers are released after use
+  - Review large file handling (e.g., Telegram file downloads)
+  - Check for stream leaks (streams not closed)
+
+### Large Object Retention
+- [ ] Identify large objects in memory
+  - Check for large buffers (e.g., audio files, images)
+  - Review large data structures (arrays, objects)
+  - Identify cached data that could be too large
+  - Check for large strings or JSON objects
+- [ ] Review large object lifecycle
+  - Verify large objects are released when no longer needed
+  - Check if large objects are held in closures or event listeners
+  - Review if large objects can be streamed instead of buffered
+  - Verify large objects aren't unnecessarily copied
+- [ ] Review caching of large objects
+  - Check if cache size limits are appropriate
+  - Verify LRU eviction is working for large cached objects
+  - Review if large objects should be cached at all
+  - Check for memory pressure from large cached objects
+
+### Garbage Collection Patterns
+- [ ] Review garbage collection behavior
+  - Check GC frequency and duration (using `--expose-gc` flag)
+  - Review if objects are being collected appropriately
+  - Identify objects that survive multiple GC cycles unnecessarily
+  - Check for memory fragmentation
+- [ ] Review weak references and weak maps
+  - Check if WeakMap or WeakSet could replace Map/Set for better GC
+  - Review if weak references are appropriate for certain use cases
+  - Verify weak references don't prevent necessary object retention
+- [ ] Review circular references
+  - Check for circular references that prevent garbage collection
+  - Verify circular references are broken when objects are no longer needed
+  - Review if circular references are necessary or can be avoided
+
+### Memory Leak Detection
+- [ ] Identify common leak patterns
+  - Check for global variables accumulating data
+  - Review timers (setInterval/setTimeout) that aren't cleared
+  - Check for event listeners that aren't removed
+  - Review closures holding references to large objects
+- [ ] Review service-level memory retention
+  - Check TelegramService for retained state
+  - Review CursorRunnerService for retained state
+  - Check CallbackService for retained callback state
+  - Verify services don't accumulate state over time
+- [ ] Review request-level memory retention
+  - Check Express middleware for retained request data
+  - Review if request objects are held after response is sent
+  - Verify request handlers don't accumulate state
+  - Check for request context leaks
+
+### Memory Optimization Opportunities
+- [ ] Review data structure choices
+  - Check if Map/Object size is appropriate for use case
+  - Review if arrays could be replaced with more memory-efficient structures
+  - Verify data structures don't waste memory (sparse arrays, etc.)
+  - Check if data can be compressed or serialized more efficiently
+- [ ] Review memory allocation patterns
+  - Check for unnecessary object copying
+  - Review if objects can be mutated instead of creating new ones
+  - Verify array/object operations don't create unnecessary copies
+  - Check for string concatenation that could use more efficient methods
+- [ ] Review async operation memory
+  - Check if promises hold references to large data unnecessarily
+  - Review async/await patterns for memory efficiency
+  - Verify callbacks don't retain unnecessary context
+  - Check for promise chains that accumulate memory
+
+### Documentation and Guidelines
+- [ ] Document memory usage patterns
+  - Document expected memory usage for each service
+  - Document memory cleanup responsibilities
+  - Create guidelines for memory-efficient coding patterns
+  - Document memory monitoring procedures
+- [ ] Document memory optimization strategies
+  - Document when to use object pooling
+  - Document when to use weak references
+  - Document memory-efficient patterns for common operations
+  - Create guidelines for avoiding memory leaks
 
 ## Notes
 
