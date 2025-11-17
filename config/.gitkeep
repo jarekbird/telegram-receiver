@@ -1,0 +1,3 @@
+# This directory is for non-TypeScript configuration files
+# (JSON, YAML, etc.) separate from src/config/ which contains TypeScript modules
+
