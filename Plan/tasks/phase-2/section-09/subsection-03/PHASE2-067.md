@@ -6,22 +6,40 @@
 
 ## Description
 
-Convert implement webhook authentication from Rails to TypeScript/Node.js. Reference `jarek-va/app/controllers/*_controller.rb` files.
+Convert webhook authentication middleware from Rails to TypeScript/Node.js. This middleware authenticates incoming webhook requests from cursor-runner by validating a secret token.
+
+**Rails Reference**: `jarek-va/app/controllers/cursor_runner_callback_controller.rb` (lines 72-91)
+
+The Rails implementation:
+- Checks for secret in headers (`X-Webhook-Secret` or `X-Cursor-Runner-Secret`) or query parameter (`secret`)
+- Compares against configured webhook secret from `Rails.application.config.webhook_secret`
+- Allows requests if secret matches or if expected secret is not configured (development mode)
+- Logs warnings for unauthorized requests with secret status and IP address
+- Returns 401 Unauthorized with JSON error message if authentication fails
 
 ## Checklist
 
-- [ ] Create `authenticateWebhook` middleware
-- [ ] Check X-Webhook-Secret or X-Cursor-Runner-Secret header
-- [ ] Compare with configured secret
-- [ ] Return 401 if invalid
-- [ ] Allow if secret not configured (dev mode)
+- [ ] Create `authenticateWebhook` middleware function
+- [ ] Check for secret in `X-Webhook-Secret` header
+- [ ] Check for secret in `X-Cursor-Runner-Secret` header (alternative header name)
+- [ ] Check for secret in query parameter `secret` (fallback option)
+- [ ] Get expected secret from application configuration (environment variable `WEBHOOK_SECRET`)
+- [ ] Compare provided secret with expected secret
+- [ ] Allow request if secret matches expected secret
+- [ ] Allow request if expected secret is not configured (blank/empty) - development mode
+- [ ] Log warning message for unauthorized requests (include secret status and IP address)
+- [ ] Return 401 Unauthorized status with JSON error `{ error: 'Unauthorized' }` if authentication fails
+- [ ] Ensure middleware can be used as Express middleware or route handler
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 9. CursorRunnerCallbackController Conversion
-- Reference the Rails implementation for behavior
-
+- **Rails Implementation**: `jarek-va/app/controllers/cursor_runner_callback_controller.rb` (lines 72-91)
+- **Configuration**: Webhook secret is configured via `Rails.application.config.webhook_secret` which reads from Rails credentials or `WEBHOOK_SECRET` environment variable (see `jarek-va/config/application.rb` lines 24-25)
+- The middleware should be applied as a `before_action` equivalent (Express middleware) to protect the callback route
+- In development mode, if no webhook secret is configured, all requests are allowed (blank check)
+- The Rails implementation logs warnings with format: `'Unauthorized cursor-runner callback - invalid secret (provided_secret: [present|missing], ip: <ip>)'`
 - Task can be completed independently by a single agent
 
 ## Related Tasks
