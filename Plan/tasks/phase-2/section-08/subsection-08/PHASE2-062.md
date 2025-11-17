@@ -19,21 +19,27 @@ Add comprehensive error handling to all TelegramController handler methods. This
 ### Error Handling for `webhook` Handler
 - [ ] Wrap handler logic in try-catch block
 - [ ] Catch all errors (StandardError equivalent)
-- [ ] Log error message and stack trace using logger
+- [ ] Log error message using logger: `"Error handling Telegram webhook: #{error.message}"`
+- [ ] Log error stack trace using logger (convert backtrace array to string)
+- [ ] Convert update to plain object if needed (handle Hash/object conversion like Rails: `update.is_a?(Hash) ? update : update.to_h`)
 - [ ] Extract chat info from update using `extractChatInfoFromUpdate` helper method (from PHASE2-063)
 - [ ] If chat_id is available, attempt to send error message to user via TelegramService:
-  - [ ] Use `TelegramService.sendMessage()` with error message text
+  - [ ] Use `TelegramService.sendMessage()` with error message text: `"Sorry, I encountered an error processing your message: #{error.message}"`
   - [ ] Include `reply_to_message_id` if available
+  - [ ] Include `parse_mode: 'HTML'` parameter
   - [ ] Wrap TelegramService call in try-catch to handle send failures gracefully
+  - [ ] Log send error if TelegramService call fails: `"Error sending error message: #{send_error.message}"`
 - [ ] Always return 200 OK status to Telegram (even on error) to prevent retries
 - [ ] Reference Rails implementation lines 26-48 for exact behavior
 
 ### Error Handling for Admin Handlers (`setWebhook`, `getWebhookInfo`, `deleteWebhook`)
 - [ ] Wrap each handler method in try-catch block
 - [ ] Catch all errors (StandardError equivalent)
-- [ ] Log error message and stack trace using logger
+- [ ] Log error message using logger with format: `"Error [operation]: #{error.message}"` (e.g., "Error setting webhook: ...")
+- [ ] Log error stack trace using logger (convert backtrace array to string)
 - [ ] Return JSON error response: `{ ok: false, error: error.message }` with HTTP 500 status
 - [ ] Ensure error handling doesn't interfere with admin authentication checks (401 responses)
+- [ ] Error handling should be placed after authentication checks (authentication failures return 401, not 500)
 - [ ] Reference Rails implementation:
   - `set_webhook`: lines 64-70
   - `webhook_info`: lines 82-88
@@ -46,8 +52,12 @@ Add comprehensive error handling to all TelegramController handler methods. This
 - **Important**: The `webhook` handler has special error handling requirements - it must always return 200 OK to Telegram to prevent retries, even when errors occur
 - Admin handlers (`setWebhook`, `getWebhookInfo`, `deleteWebhook`) return JSON error responses with 500 status
 - The `extractChatInfoFromUpdate` helper method is implemented in PHASE2-063 - use it if available, otherwise implement inline for this task
+- **Update Conversion**: The update object may need to be converted to a plain object before passing to `extractChatInfoFromUpdate` (Rails uses `update.is_a?(Hash) ? update : update.to_h`)
+- **Error Message Format**: When sending error messages to Telegram users, use the exact format: `"Sorry, I encountered an error processing your message: #{error.message}"` with `parse_mode: 'HTML'`
 - Error logging should use the application logger (not console.log)
+- Log both error message and full stack trace for debugging purposes
 - When sending error messages to Telegram users, wrap the TelegramService call in its own try-catch to prevent error handling failures from causing additional errors
+- Admin handler error messages should include the operation name in the log message (e.g., "Error setting webhook:", "Error getting webhook info:", "Error deleting webhook:")
 - Reference the Rails implementation (`jarek-va/app/controllers/telegram_controller.rb`) for exact error handling patterns
 - Task can be completed independently by a single agent
 
