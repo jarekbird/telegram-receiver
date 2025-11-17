@@ -6,28 +6,59 @@
 
 ## Description
 
-Create logger configuration module
+Create logger configuration module that replicates Rails logging patterns from jarek-va. The module must configure log levels, formats, and transports based on environment variables, matching the Rails application's logging behavior.
+
+**Rails Logging Patterns to Replicate:**
+- Production: Log level `:info` (see `jarek-va/config/environments/production.rb` line 40)
+- Production: Request ID tagging (see `jarek-va/config/environments/production.rb` line 43)
+- Production: Stdout logging (see `jarek-va/config/environments/production.rb` lines 66-69)
+- Application: `LOG_LEVEL` environment variable support (defaults to 'info', see `jarek-va/config/application.rb` line 28)
+- Error logging: Full stack traces (see `jarek-va/app/controllers/application_controller.rb` lines 10-11)
+- Sidekiq: Logger::INFO level (see `jarek-va/config/initializers/sidekiq.rb` line 31)
 
 ## Checklist
 
 - [ ] Create `src/config/logger.ts` file
-- [ ] Import logging library
-- [ ] Create logger instance
-- [ ] Configure log levels based on NODE_ENV
-- [ ] Configure log format (JSON for production, pretty for development)
-- [ ] Configure log transports (console, file if needed)
-- [ ] Export logger instance
+- [ ] Import logging library chosen in PHASE1-030 (winston or pino)
+- [ ] Create logger instance with proper configuration
+- [ ] Configure log levels based on NODE_ENV and LOG_LEVEL environment variable:
+  - [ ] Production: 'info' level (or value from LOG_LEVEL env var)
+  - [ ] Development: 'debug' level (or value from LOG_LEVEL env var)
+  - [ ] Test: 'error' level (or value from LOG_LEVEL env var)
+  - [ ] Default: 'info' if LOG_LEVEL not set
+- [ ] Configure log format:
+  - [ ] Production: JSON format (structured logging for log aggregation)
+  - [ ] Development: Pretty/human-readable format
+  - [ ] Test: JSON format (for test consistency)
+- [ ] Configure log transports:
+  - [ ] Console transport (stdout for production, supports Docker logging)
+  - [ ] Ensure stdout logging for production (matches Rails `RAILS_LOG_TO_STDOUT` behavior)
+  - [ ] File transport optional (only if needed for local development)
+- [ ] Configure request ID support (for production request tracing, matches Rails `config.log_tags = [:request_id]`)
+- [ ] Ensure error logging includes stack traces (matches Rails error logging pattern)
+- [ ] Export configured logger instance
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 8. Logging Infrastructure
 - Task can be completed independently by a single agent
+- **Prerequisite**: PHASE1-030 must be completed first to determine which logging library (winston or pino) to use
+- **Rails Reference**: The jarek-va Rails application logging configuration:
+  - `jarek-va/config/application.rb` (line 28) - LOG_LEVEL environment variable support
+  - `jarek-va/config/environments/production.rb` (lines 40, 43, 60, 66-69) - Production logging configuration
+  - `jarek-va/app/controllers/application_controller.rb` (lines 10-11) - Error logging with backtraces
+  - `jarek-va/config/initializers/sidekiq.rb` (line 31) - Sidekiq logging level
+- **Environment Variables**:
+  - `NODE_ENV`: Determines environment (production, development, test)
+  - `LOG_LEVEL`: Overrides default log level (info, debug, warn, error)
+- **Production Requirements**: Must support stdout logging for Docker/containerized environments (matches Rails `RAILS_LOG_TO_STDOUT` behavior)
+- **Request ID Support**: The logger should support adding request IDs to log entries (via child loggers or context) to match Rails' `config.log_tags = [:request_id]` behavior. This will be used by PHASE1-020 (request logging middleware).
 
 ## Related Tasks
 
-- Previous: PHASE1-030
-- Next: PHASE1-032
+- Previous: PHASE1-030 (Choose logging library - must be completed first)
+- Next: PHASE1-032 (Create logger utility wrapper)
 
 
 ---
