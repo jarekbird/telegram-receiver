@@ -6,27 +6,160 @@
 
 ## Description
 
-refactor identified code smells to improve code quality and maintainability.
+Refactor identified code smells to improve code quality and maintainability. This task focuses on systematically addressing code smells identified through automated detection (PHASE4-007), consolidated code quality reports (PHASE4-009), and manual code review findings (PHASE4-017). The goal is to improve code maintainability, readability, and reduce technical debt by refactoring structural code smells such as long methods, large classes, deep nesting, magic numbers, and other code quality issues.
+
+## Current State
+
+Code smells may have been identified through:
+
+- **PHASE4-007**: Automated code smell detection (long methods, large classes, deep nesting, magic numbers)
+- **PHASE4-009**: Automated code quality report (consolidated findings from all automated tools)
+- **PHASE4-017**: Manual code review report (`docs/manual-code-review.md`)
+
+**Manual Code Review Findings** (from PHASE4-017):
+- Magic numbers in configuration files (`playwright.config.ts`, `jest.config.ts`)
+- Missing JSDoc comments in test files
+- Test fixture error format inconsistency
+
+**Automated Findings** (if PHASE4-007 and PHASE4-009 are completed):
+- Check `docs/code-quality-report.md` for consolidated automated findings
+- Check ESLint reports for code smell violations
+- Check SonarQube reports (if configured) for code quality issues
+
+**Code Smell Categories to Address**:
+1. **Long Methods**: Methods exceeding 50 lines (threshold from PHASE4-007)
+2. **Large Classes**: Classes/files exceeding 500 lines (threshold from PHASE4-007)
+3. **Deep Nesting**: Nesting depth exceeding 4 levels (threshold from PHASE4-007)
+4. **Magic Numbers**: Hardcoded numeric values that should be named constants
+5. **Code Smell Patterns**: God classes, feature envy, long parameter lists, data clumps, primitive obsession
 
 ## Checklist
 
-- [ ] Prioritize code smell fixes
-- [ ] Refactor long methods
-- [ ] Refactor large classes
-- [ ] Reduce deep nesting
-- [ ] Replace magic numbers with constants
-- [ ] Fix other code smells
-- [ ] Run tests after each refactoring
-- [ ] Document refactoring changes
+### Preparation and Prioritization
+- [ ] Review automated code quality report (`docs/code-quality-report.md`) if PHASE4-009 is completed
+- [ ] Review manual code review findings (`docs/manual-code-review.md`)
+- [ ] Review ESLint code smell findings (run `npm run lint` or `npm run smells`)
+- [ ] Review SonarQube reports (if available)
+- [ ] Compile comprehensive list of all identified code smells with:
+  - File locations and line numbers
+  - Code smell type and severity
+  - Impact on maintainability
+  - Estimated refactoring effort
+- [ ] Prioritize code smell fixes by:
+  - Critical: Methods > 100 lines, classes > 1000 lines, security-related smells
+  - High: Methods 50-100 lines, classes 500-1000 lines, nesting > 5 levels
+  - Medium: Methods 30-50 lines, classes 300-500 lines, nesting 4-5 levels, magic numbers
+  - Low: Minor code smells, style issues
+- [ ] Create refactoring plan with dependencies and order of execution
+- [ ] Ensure test coverage exists before refactoring (add tests if needed)
+
+### Refactoring Long Methods
+- [ ] Identify all methods exceeding 50 lines (from automated reports or manual review)
+- [ ] For each long method:
+  - [ ] Analyze method responsibilities and identify extraction opportunities
+  - [ ] Extract logical blocks into well-named helper functions
+  - [ ] Ensure extracted functions have single responsibility
+  - [ ] Maintain method behavior (no functional changes)
+  - [ ] Update method documentation (JSDoc)
+- [ ] Run tests after each method refactoring
+- [ ] Verify no functionality was broken
+
+### Refactoring Large Classes
+- [ ] Identify all classes/files exceeding 500 lines (from automated reports)
+- [ ] For each large class:
+  - [ ] Analyze class responsibilities and identify separation opportunities
+  - [ ] Extract related functionality into separate classes/modules
+  - [ ] Use composition or inheritance as appropriate
+  - [ ] Ensure extracted classes have clear, single responsibility
+  - [ ] Update class documentation
+- [ ] Run tests after each class refactoring
+- [ ] Verify no functionality was broken
+
+### Reducing Deep Nesting
+- [ ] Identify all code blocks with nesting depth > 4 levels (from automated reports)
+- [ ] For each deeply nested block:
+  - [ ] Use early returns/guard clauses to reduce nesting
+  - [ ] Extract nested logic into separate functions
+  - [ ] Use strategy pattern or polymorphism for complex conditionals
+  - [ ] Simplify conditional logic where possible
+- [ ] Run tests after each nesting reduction
+- [ ] Verify logic correctness
+
+### Replacing Magic Numbers
+- [ ] Identify all magic numbers (from automated reports or manual review)
+- [ ] For each magic number:
+  - [ ] Determine appropriate constant name based on context
+  - [ ] Extract to named constant with descriptive name
+  - [ ] Add JSDoc comment explaining the constant's purpose
+  - [ ] Place constant in appropriate location (file-level, class-level, or module-level)
+  - [ ] Update all usages to reference the constant
+- [ ] Common locations to check:
+  - Configuration files (`playwright.config.ts`, `jest.config.ts`)
+  - Service files with timeouts, retries, limits
+  - Utility functions with thresholds or limits
+- [ ] Run tests after replacing magic numbers
+- [ ] Verify behavior is unchanged
+
+### Fixing Other Code Smells
+- [ ] Address code smell patterns identified in reports:
+  - [ ] **God Classes**: Split classes with too many responsibilities
+  - [ ] **Feature Envy**: Move methods closer to data they operate on
+  - [ ] **Long Parameter Lists**: Use parameter objects or builder pattern
+  - [ ] **Data Clumps**: Extract related data into objects/classes
+  - [ ] **Primitive Obsession**: Replace primitives with value objects
+- [ ] Address manual review findings:
+  - [ ] Add missing JSDoc comments to test files
+  - [ ] Fix test fixture error format inconsistency
+- [ ] Run tests after each code smell fix
+- [ ] Verify functionality is maintained
+
+### Testing and Validation
+- [ ] Run full test suite after each refactoring: `npm test`
+- [ ] Run type checking: `npm run type-check`
+- [ ] Run linting: `npm run lint`
+- [ ] Verify test coverage hasn't decreased: `npm run test:coverage`
+- [ ] Manually test affected functionality if applicable
+- [ ] Ensure no new code smells were introduced
+
+### Documentation
+- [ ] Document each refactoring change:
+  - [ ] What was refactored (file, method/class name)
+  - [ ] Why it was refactored (code smell type, impact)
+  - [ ] How it was refactored (extraction, splitting, simplification)
+  - [ ] Any breaking changes (if applicable)
+- [ ] Update code comments and JSDoc as needed
+- [ ] Create refactoring summary document or update code quality report
+- [ ] Update architecture documentation if structural changes were made
+
+### Verification
+- [ ] Re-run code smell detection tools to verify improvements:
+  - [ ] ESLint code smell rules: `npm run smells`
+  - [ ] SonarQube analysis (if available)
+- [ ] Compare before/after metrics:
+  - [ ] Number of long methods (should decrease)
+  - [ ] Number of large classes (should decrease)
+  - [ ] Average nesting depth (should decrease)
+  - [ ] Number of magic numbers (should decrease)
+- [ ] Verify code quality score improved (if metrics available)
+- [ ] Ensure no regressions were introduced
 
 ## Notes
 
 - This task is part of Phase 4: Code Quality Audit
 - Section: 3. Refactoring
-- Focus on identifying and fixing code quality issues
+- Focus on systematically addressing code quality issues identified in previous tasks
 - Document all findings and improvements
-
-- Task can be completed independently by a single agent
+- **Important**: Always run tests after each refactoring to ensure no functionality is broken
+- **Important**: Refactoring should improve code quality without changing behavior
+- **Important**: If automated code smell reports (PHASE4-009) are not available, work with manual review findings (PHASE4-017) and run ESLint code smell detection
+- Start with high-impact, low-risk refactorings
+- Consider dependencies between code smells (some may need to be fixed together)
+- Extract constants for magic numbers even if they're only used once if they represent important thresholds or limits
+- Long methods should be broken down into smaller, focused methods with clear names
+- Large classes should be split into smaller, cohesive classes following Single Responsibility Principle
+- Deep nesting should be refactored using early returns, guard clauses, or extraction
+- Magic numbers should be replaced with named constants for better readability and maintainability
+- Task can be completed independently by a single agent, but may require multiple iterations if many code smells are identified
 
 ## Related Tasks
 
