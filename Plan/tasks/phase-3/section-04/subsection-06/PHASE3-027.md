@@ -6,24 +6,124 @@
 
 ## Description
 
-Review and improve refactor code organization issues in the codebase to ensure best practices.
+Review and refactor code organization issues in the codebase to ensure best practices and alignment with the architecture documentation (`docs/architecture.md`). This task focuses on identifying and fixing misplaced files, reorganizing modules, extracting duplicate code, creating shared utilities, fixing naming inconsistencies, and improving module boundaries.
 
 ## Checklist
 
-- [ ] Move misplaced files
-- [ ] Reorganize modules
-- [ ] Extract duplicate code
-- [ ] Create shared utilities
-- [ ] Fix naming inconsistencies
-- [ ] Improve module boundaries
-- [ ] Verify improvements
+### File Placement Review
+
+- [ ] Verify all source files are in appropriate directories according to `docs/architecture.md`
+  - [ ] Controllers in `src/controllers/`
+  - [ ] Services in `src/services/`
+  - [ ] Models in `src/models/`
+  - [ ] Routes in `src/routes/`
+  - [ ] Middleware in `src/middleware/`
+  - [ ] Utilities in `src/utils/`
+  - [ ] Types in `src/types/`
+  - [ ] Configuration in `src/config/`
+  - [ ] Jobs in `src/jobs/` (if created per PHASE3-022)
+  - [ ] Errors in `src/errors/` (if created per PHASE3-022)
+  - [ ] Validators in `src/validators/` (if created per PHASE3-022)
+- [ ] Check for files in wrong locations (e.g., business logic in controllers, routes in services)
+- [ ] Verify no source files are in root directory (except `src/index.ts`)
+- [ ] Check that configuration files are in root (jest.config.ts, playwright.config.ts, tsconfig.json, etc.)
+- [ ] Verify test files follow the structure: `tests/unit/`, `tests/integration/`, `tests/e2e/`, `tests/helpers/`, `tests/mocks/`, `tests/fixtures/`
+
+### Module Organization
+
+- [ ] Review module boundaries and ensure proper separation of concerns
+  - [ ] Routes should only define endpoints and call controllers
+  - [ ] Controllers should be thin and delegate to services
+  - [ ] Services should contain business logic and be framework-agnostic
+  - [ ] Models should only handle data structures and validation
+  - [ ] Middleware should handle cross-cutting concerns
+- [ ] Check for circular dependencies between modules
+- [ ] Verify modules follow single responsibility principle
+- [ ] Ensure proper use of barrel exports (index.ts) where appropriate
+- [ ] Review import/export patterns for consistency
+
+### Duplicate Code Identification
+
+- [ ] Scan all TypeScript files in `src/` for duplicate code patterns
+- [ ] Review test files for duplicate test utilities or patterns
+- [ ] Check for repeated error handling patterns that could be unified
+- [ ] Identify duplicate validation logic that could be extracted
+- [ ] Look for repeated API call patterns that could be abstracted
+- [ ] Check for duplicate type definitions that could be shared
+- [ ] Review repeated string literals that should be constants
+- [ ] Identify repeated magic numbers that should be named constants
+
+### Shared Utilities
+
+- [ ] Review existing utilities in `src/utils/` (when files exist)
+- [ ] Check if test utilities in `tests/helpers/` could be moved to `src/utils/` for production use
+  - [ ] Review `tests/helpers/testUtils.ts` - identify utilities that could be shared
+  - [ ] Review `tests/helpers/apiHelpers.ts` - check if HTTP_STATUS constants should be in `src/utils/`
+- [ ] Create shared utilities for common patterns:
+  - [ ] Error handling utilities
+  - [ ] Validation utilities
+  - [ ] HTTP client utilities
+  - [ ] Date/time utilities
+  - [ ] String manipulation utilities
+- [ ] Ensure utilities are properly exported and documented
+- [ ] Verify utilities follow DRY principles
+
+### Naming Conventions
+
+- [ ] Verify file naming follows consistent pattern (kebab-case or camelCase)
+- [ ] Check that class names use PascalCase
+- [ ] Verify function/variable names use camelCase
+- [ ] Check that constants use UPPER_SNAKE_CASE or PascalCase
+- [ ] Ensure interface names use PascalCase and start with 'I' or descriptive names
+- [ ] Verify type aliases use PascalCase
+- [ ] Check that test files follow naming pattern: `*.test.ts` or `*.spec.ts`
+- [ ] Review naming consistency across similar modules
+
+### Module Boundaries
+
+- [ ] Verify services don't depend on Express or other framework-specific code
+- [ ] Check that controllers don't contain business logic
+- [ ] Ensure models don't contain business logic
+- [ ] Verify routes don't contain business logic
+- [ ] Check that middleware is reusable and composable
+- [ ] Review dependency direction (dependencies should flow inward: routes → controllers → services → models)
+- [ ] Ensure proper use of dependency injection pattern
+
+### Code Structure Improvements
+
+- [ ] Create `.gitkeep` files in empty directories to preserve structure
+- [ ] Review and consolidate related files into appropriate modules
+- [ ] Identify opportunities to create shared base classes or interfaces
+- [ ] Check for opportunities to create shared middleware
+- [ ] Review if any directories should be created or removed
+- [ ] Verify alignment with Node.js/TypeScript best practices
+- [ ] Ensure consistency with Express.js conventions
+
+### Documentation and Verification
+
+- [ ] Document any structural changes made
+- [ ] Update `docs/architecture.md` if structure changes are made
+- [ ] Document any deviations from standard patterns and rationale
+- [ ] Verify all changes maintain test compatibility
+- [ ] Run linting and type checking to ensure no issues introduced
+- [ ] Verify improvements don't break existing functionality
 
 ## Notes
 
 - This task is part of Phase 3: Holistic Review and Best Practices
 - Section: 4. Code Organization
-- Focus on identifying issues and improvements
+- Focus on identifying issues and improvements based on `docs/architecture.md`
 - Document findings and decisions
+- Current codebase state: `src/` directory structure exists but is mostly empty; test utilities exist in `tests/helpers/`
+- Reference findings from previous tasks:
+  - PHASE3-022: Identified missing directories (`src/jobs/`, `src/errors/`, `src/validators/`)
+  - PHASE3-023: Review naming conventions consistency
+  - PHASE3-024: Review module boundaries
+  - PHASE3-025: Review import/export patterns
+  - PHASE3-026: Review code reusability
+- When reviewing, consider both existing code and patterns that should be established for future code
+- Pay special attention to test utilities - ensure they follow DRY principles and are reusable
+- Consider creating shared utilities early to establish patterns for future development
 
 - Task can be completed independently by a single agent
 
