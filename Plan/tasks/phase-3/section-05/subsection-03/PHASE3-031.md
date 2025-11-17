@@ -8,22 +8,29 @@
 
 Review and improve caching strategies in the codebase to ensure best practices. This task focuses on analyzing existing caching implementations, identifying caching opportunities, and ensuring efficient cache usage throughout the application.
 
-Reference the Rails implementation at `jarek-va/app/services/telegram_service.rb` to understand the original bot client caching pattern (bot clients cached per token using `@bot ||=` singleton pattern) and ensure the TypeScript implementation follows best practices.
+**Rails Implementation References:**
+- `jarek-va/app/services/telegram_service.rb` - Bot client caching using `@bot ||=` singleton pattern (line 11). Note: The Rails implementation currently caches a single bot client instance, not per token. However, the documentation (`jarek-va/docs/MULTI_BOT_SETUP.md`) suggests per-token caching should be implemented for multi-bot support. The TypeScript implementation should support per-token caching using a Map/Object keyed by bot token.
+- `jarek-va/app/services/cursor_runner_callback_service.rb` - Redis usage for state storage (not caching) with TTL (default 1 hour). Uses Redis keys with prefix `cursor_runner_callback:` for storing callback state.
+- `jarek-va/app/services/tool_router.rb` - Memoization pattern using `@handlers ||= {}` for caching tool handlers (line 56).
 
 ## Checklist
 
 ### Existing Caching Implementation
 - [ ] Review bot client caching implementation
-  - Check if Telegram bot clients are cached per token (matching Rails `@bot ||=` pattern)
-  - Verify singleton pattern or in-memory cache is used for bot clients
-  - Review cache key strategy (should be per bot token)
-  - Check if cache invalidation is needed when bot tokens change
-  - Verify cache is thread-safe/concurrent-safe for Node.js
+  - Check if Telegram bot clients are cached per token (Rails uses `@bot ||=` for single instance, but TypeScript should support per-token caching for multi-bot support)
+  - Verify in-memory cache (Map/Object) is used for bot clients, keyed by bot token
+  - Review cache key strategy (should be per bot token, e.g., `Map<token, BotClient>`)
+  - Check if cache invalidation is needed when bot tokens change (clear cache entry for updated token)
+  - Verify cache is concurrent-safe for Node.js (Map is safe for concurrent reads, ensure writes are atomic)
+  - Note: Rails implementation (`telegram_service.rb` line 11) only caches one bot client, but multi-bot documentation suggests per-token caching
 - [ ] Review Redis usage for caching vs. state storage
   - Distinguish between Redis as cache (temporary, can be evicted) vs. state storage (required for operation)
-  - Check callback state storage (currently uses Redis with TTL, but is state storage, not cache)
+  - Check callback state storage (`CursorRunnerCallbackService` uses Redis with TTL, but is state storage, not cache)
+    - Reference: `jarek-va/app/services/cursor_runner_callback_service.rb` - Uses Redis keys with prefix `cursor_runner_callback:` and 1-hour TTL (DEFAULT_TTL = 3600)
+    - This is required state for callback processing, not cache (should not be evicted before TTL)
   - Identify if any Redis data should be treated as cache vs. required state
   - Review if Redis is used appropriately for caching vs. other purposes
+  - Verify callback state storage follows Rails pattern (key prefix, TTL, JSON serialization)
 
 ### Cache Opportunities
 - [ ] Identify external API response caching opportunities
@@ -33,9 +40,10 @@ Reference the Rails implementation at `jarek-va/app/services/telegram_service.rb
   - Identify frequently accessed data that doesn't change often
 - [ ] Review in-memory caching opportunities
   - Check for repeated calculations that could be cached
-  - Identify configuration data that could be cached (e.g., system settings)
+  - Identify configuration data that could be cached (e.g., system settings from MCP database)
   - Review parsed data structures that could be cached
   - Check for repeated validation results that could be cached
+  - Review tool handler memoization (Rails `tool_router.rb` uses `@handlers ||= {}` pattern - should be implemented similarly in TypeScript)
 - [ ] Review database query caching opportunities
   - Check MCP database queries (SystemSetting lookups, task queries) that could be cached
   - Identify frequently accessed data from shared SQLite database
@@ -57,7 +65,8 @@ Reference the Rails implementation at `jarek-va/app/services/telegram_service.rb
   - Verify TTL values are appropriate for cached data
   - Check if different TTLs are needed for different data types
   - Review if TTL should be configurable via environment variables
-  - Verify TTL is set correctly (matches Rails 1-hour default for callback state if applicable)
+  - Verify TTL is set correctly (Rails callback state uses 1-hour TTL - `CursorRunnerCallbackService::DEFAULT_TTL = 3600`)
+  - Note: TTL applies to Redis state storage, not in-memory caches (which typically don't expire unless invalidated)
 
 ### Cache Invalidation
 - [ ] Review cache invalidation strategies
