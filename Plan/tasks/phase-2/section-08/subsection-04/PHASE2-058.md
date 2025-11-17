@@ -13,10 +13,11 @@ Convert the `set_webhook` endpoint from Rails to TypeScript/Node.js. This endpoi
 **Route**: `POST /telegram/set_webhook`
 
 **Key Functionality**:
-- Requires admin authentication via `authenticate_admin` method (checks `X-Admin-Secret` header or `admin_secret` param)
+- Requires admin authentication via `authenticate_admin` method (checks `X-Admin-Secret` header, `HTTP_X_ADMIN_SECRET` env var, or `admin_secret` param)
+- Admin authentication compares against `webhook_secret` config value (not `telegram_webhook_secret`)
 - Accepts optional `url` parameter (defaults to constructed webhook URL if not provided)
-- Accepts optional `secret_token` parameter (defaults to config value if not provided)
-- Calls `TelegramService.set_webhook(url, secret_token)` to set the webhook via Telegram Bot API
+- Accepts optional `secret_token` parameter (defaults to `telegram_webhook_secret` config value if not provided)
+- Calls `TelegramService.set_webhook(url: webhook_url, secret_token: secret_token)` to set the webhook via Telegram Bot API
 - Returns JSON response with success status, message, and webhook info
 - Handles errors and returns appropriate error responses
 
@@ -28,10 +29,10 @@ Convert the `set_webhook` endpoint from Rails to TypeScript/Node.js. This endpoi
 ## Checklist
 
 - [ ] Implement `setWebhook` handler method
-- [ ] Require admin authentication (check `X-Admin-Secret` header or `admin_secret` param)
-- [ ] Get webhook URL from request params or use default (construct from config/env + `/telegram/webhook`)
-- [ ] Get secret_token from request params or use config default
-- [ ] Call `TelegramService.setWebhook(url, secretToken)` with both parameters
+- [ ] Require admin authentication (check `X-Admin-Secret` header, `HTTP_X_ADMIN_SECRET` env var, or `admin_secret` param against `webhook_secret` config)
+- [ ] Get webhook URL from request params or use default (construct from `telegram_webhook_base_url` config or `TELEGRAM_WEBHOOK_BASE_URL` env var + `/telegram/webhook`, defaulting to `http://localhost:3000/telegram/webhook`)
+- [ ] Get secret_token from request params or use `telegram_webhook_secret` config default
+- [ ] Call `TelegramService.setWebhook(url, secretToken)` with both parameters (adapt Rails keyword arguments to TypeScript/Node.js style)
 - [ ] Return JSON success response with format: `{ ok: true, message: 'Webhook set successfully', webhook_info: result }`
 - [ ] Handle errors and return JSON error response: `{ ok: false, error: errorMessage }` with 500 status
 - [ ] Return 401 Unauthorized if admin authentication fails
