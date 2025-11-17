@@ -22,7 +22,7 @@ The function checks for audio content in three ways, in this specific order:
 
 ## Checklist
 
-- [ ] Create `extractAudioFileId` utility function with signature: `extractAudioFileId(message: TelegramMessage | null | undefined): string | null | undefined`
+- [ ] Create `extractAudioFileId` private method in TelegramMessageJob class with signature: `extractAudioFileId(message: TelegramMessage | null | undefined): string | null | undefined`
 - [ ] Check for `message.voice.file_id` FIRST (voice messages) - return immediately if found
 - [ ] Check for `message.audio.file_id` SECOND (audio files) - return immediately if found
 - [ ] Check for `message.document.file_id` THIRD when `document.mime_type` starts with `'audio/'` (audio documents) - return immediately if found
@@ -37,7 +37,8 @@ The function checks for audio content in three ways, in this specific order:
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 10. TelegramMessageJob Conversion
 - Reference the Rails implementation for behavior
-
+- This is a private method of the TelegramMessageJob class (not a separate utility file)
+- The method is used internally by `handleMessage` to detect audio content before transcription
 - Task can be completed independently by a single agent
 
 ## Related Tasks
