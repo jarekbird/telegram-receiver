@@ -6,7 +6,7 @@
 
 ## Description
 
-review complex business logic to improve code quality and maintainability.
+Review complex business logic to improve code quality and maintainability. This task involves identifying complex business logic sections in the converted codebase, reviewing their correctness, checking for edge cases, verifying error handling, ensuring test coverage, documenting complex logic, and identifying opportunities for simplification.
 
 ## Checklist
 
