@@ -6,16 +6,81 @@
 
 ## Description
 
-Review and improve check for n+1 query problems in the codebase to ensure best practices.
+Review and identify N+1 query problems in the codebase to ensure best practices. This task focuses on detecting patterns where multiple queries are executed in loops when they could be batched or optimized into a single query. The application uses MCP database connections (cursor-runner-shared-sqlite), Redis operations, and external API calls, all of which can exhibit N+1 patterns.
 
 ## Checklist
 
-- [ ] Review database-like query patterns
-- [ ] Check for loops with queries
-- [ ] Review batch operations
-- [ ] Check for unnecessary queries
-- [ ] Identify N+1 patterns
-- [ ] Document findings
+### MCP Database Query Patterns
+- [ ] Review MCP database query patterns (cursor-runner-shared-sqlite)
+  - Identify loops that execute MCP queries (SELECT, INSERT, UPDATE, DELETE)
+  - Check for patterns where a list query is followed by individual queries for each item
+  - Look for SystemSetting queries executed in loops
+  - Look for tasks table queries executed in loops
+  - Identify opportunities to batch multiple queries into single operations
+- [ ] Check for N+1 patterns in MCP queries
+  - Review code that fetches a list, then queries each item individually
+  - Check if multiple SystemSetting lookups can be combined
+  - Verify if task queries can be batched (e.g., updating multiple tasks)
+  - Look for patterns where related data is fetched separately instead of using JOINs or batch queries
+
+### Redis Query Patterns
+- [ ] Review Redis operations for N+1 patterns
+  - Check for loops that execute individual Redis GET/SET operations
+  - Identify patterns where multiple Redis keys are accessed sequentially in loops
+  - Look for opportunities to use Redis pipelining for batch operations
+  - Check if MGET/MSET could replace multiple individual GET/SET operations
+  - Review callback service for patterns where multiple callbacks are processed individually
+- [ ] Check Redis batch operation opportunities
+  - Verify if multiple Redis operations can be combined using pipelining
+  - Check if hash operations (HGETALL, HMSET) could replace multiple string operations
+  - Review if sorted sets or other structures could reduce query count
+
+### External API Call Patterns
+- [ ] Review external API calls for N+1 patterns
+  - Check Telegram Bot API calls executed in loops (sending messages, getting updates)
+  - Review Cursor Runner API calls that might be batched
+  - Check ElevenLabs API calls for batch opportunities
+  - Identify patterns where multiple API calls could be combined
+- [ ] Check for sequential API calls that could be parallelized
+  - Review if Promise.all() could parallelize independent API calls
+  - Check if batch endpoints exist for external APIs
+  - Verify if rate limiting considerations allow for batching
+
+### Loop Analysis
+- [ ] Identify loops with queries
+  - Review all for/while/forEach loops that contain database queries
+  - Check map/filter/reduce operations that trigger queries
+  - Identify async operations in loops that could be batched
+  - Review recursive functions that might trigger multiple queries
+- [ ] Check for unnecessary queries in loops
+  - Verify if data fetched in loops could be prefetched before the loop
+  - Check if queries inside loops could be moved outside
+  - Review if cached data could prevent repeated queries
+  - Identify queries that return unused data
+
+### Batch Operation Opportunities
+- [ ] Review batch operation possibilities
+  - Check if multiple individual queries can be combined into batch queries
+  - Verify if bulk operations are available for MCP database queries
+  - Review if batch endpoints exist for external APIs
+  - Check if Redis pipelining can batch multiple operations
+- [ ] Identify optimization opportunities
+  - Review if data can be prefetched before processing loops
+  - Check if JOINs or batch queries can replace multiple individual queries
+  - Verify if caching can prevent repeated queries
+  - Review if parallel execution (Promise.all) can improve performance
+
+### Documentation and Fixes
+- [ ] Document identified N+1 patterns
+  - List all identified N+1 query problems
+  - Document the impact of each issue (query count, performance impact)
+  - Prioritize fixes based on frequency and impact
+  - Create a plan for fixing identified issues
+- [ ] Implement fixes for critical N+1 patterns
+  - Fix high-impact N+1 patterns (frequently executed, high query count)
+  - Refactor loops to use batch operations where possible
+  - Implement prefetching strategies where appropriate
+  - Add batching for external API calls where supported
 
 ## Notes
 
