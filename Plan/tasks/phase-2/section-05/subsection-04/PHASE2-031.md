@@ -20,7 +20,7 @@ iterate(params: {
   maxIterations?: number;
   requestId?: string;
   callbackUrl?: string;
-}): Promise<IterateResponse>
+}): Promise<CursorIterateResponse>
 ```
 
 **Parameters**:
@@ -31,7 +31,7 @@ iterate(params: {
 - `requestId` (optional): Request ID for tracking. If not provided, should be auto-generated
 - `callbackUrl` (optional): Callback URL for async completion notification. If provided, the response will be immediate and the actual result will be sent to the callback URL when complete
 
-**Return Type**: Promise resolving to a response object with `success`, `output`, `iterations`, etc.
+**Return Type**: Promise resolving to `CursorIterateResponse` (defined in PHASE2-002) with `success`, `output`, `iterations`, `maxIterations`, `error`, `exitCode`, `duration`, etc.
 
 ## Implementation Details
 
