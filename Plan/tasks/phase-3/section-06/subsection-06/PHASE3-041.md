@@ -18,13 +18,65 @@ This audit should identify any remaining security issues and verify that securit
 
 ## Rails Security Implementation Reference
 
-The jarek-va Rails application implements several security mechanisms that should be reviewed in the converted TypeScript/Node.js application:
+The jarek-va Rails application implements several security mechanisms that should be reviewed in the converted TypeScript/Node.js application. Reference the following Rails files for security implementation details:
+
+### Rails Files to Review
+
+- `app/controllers/telegram_controller.rb` - Telegram webhook authentication (`authenticate_webhook`), admin authentication (`authenticate_admin`), error handling
+- `app/controllers/cursor_runner_callback_controller.rb` - Cursor-runner callback authentication (`authenticate_webhook`), error handling, IP logging
+- `app/controllers/agent_tools_controller.rb` - Agent tools authentication (`authenticate_webhook`), input validation (`validate_request_params`)
+- `app/controllers/application_controller.rb` - Base error handling (`handle_error`), generic error responses
+- `config/application.rb` - Secret configuration (webhook_secret, telegram_webhook_secret), default values ('changeme'), environment variable precedence
+
+### Security Mechanisms in Rails
 
 1. **Webhook Authentication**: Multiple authentication mechanisms using secret tokens
-2. **Input Validation**: Parameter filtering and validation
+   - Telegram webhook: `X-Telegram-Bot-Api-Secret-Token` header (uses `telegram_webhook_secret`)
+   - Admin endpoints: `X-Admin-Secret` header or `admin_secret` param (uses `webhook_secret`)
+   - Cursor-runner callback: `X-Webhook-Secret` or `X-Cursor-Runner-Secret` headers, or `secret` query param (uses `webhook_secret`)
+   - Agent tools: `X-EL-Secret` header or `Authorization: Bearer <token>` (uses `webhook_secret`)
+   - Development mode bypasses: Some endpoints allow blank secrets when `expected_secret.blank?`
+
+2. **Input Validation**: Parameter filtering using `params.permit()` and validation methods
+   - Example: `CursorRunnerCallbackController#create` uses `params.permit()` to filter allowed parameters
+   - Example: `AgentToolsController#validate_request_params` checks for required parameters
+
 3. **Error Handling**: Careful error messages that don't leak sensitive information
+   - Generic error messages: "Sorry, I encountered an error processing your request."
+   - Error responses don't expose stack traces or internal details
+   - Logging includes IP addresses and secret presence (`[present]`/`[missing]`) but not actual secret values
+
 4. **Secret Management**: Environment-based secret configuration with safe defaults
+   - Secrets loaded from Rails credentials first, then ENV variables, then defaults
+   - Default secrets: `'changeme'` for `webhook_secret` and `telegram_webhook_secret` (security risk if used in production)
+   - Configuration in `config/application.rb` lines 24-25, 44-45
+
 5. **Development Mode Bypasses**: Some authentication allows blank secrets in development
+   - `TelegramController#authenticate_webhook`: Allows blank secret if `expected_secret.blank?`
+   - `CursorRunnerCallbackController#authenticate_webhook`: Allows blank secret if `expected_secret.blank?`
+   - This is a security concern - verify Node.js implementation handles this appropriately
+
+### Security Concerns Found in Rails Implementation
+
+1. **Timing Attack Vulnerabilities**: Rails uses simple `==` comparison for secrets (vulnerable to timing attacks)
+   - Example: `TelegramController#authenticate_webhook` line 139: `secret_token == expected_secret`
+   - Example: `TelegramController#authenticate_admin` line 118: `admin_secret == expected_secret`
+   - **Node.js Fix Required**: Use `crypto.timingSafeEqual()` for constant-time comparison
+
+2. **Default Secrets**: Default 'changeme' values are used when secrets are not configured
+   - `config/application.rb` lines 24-25, 44-45 use `ENV.fetch('WEBHOOK_SECRET', 'changeme')`
+   - **Node.js Fix Required**: Require explicit secret configuration in production or fail securely
+
+3. **Multiple Secret Sources**: Secrets can be passed via headers, query params, or body params
+   - This flexibility may create security vulnerabilities
+   - **Review Required**: Determine if this flexibility is necessary or should be restricted
+
+4. **Inconsistent Secret Usage**: Different endpoints use different secret configurations
+   - `webhook_secret` vs `telegram_webhook_secret` - verify if this is intentional or should be standardized
+
+5. **Error Message Information Leakage**: Some error messages may expose too much information
+   - Review error messages in controllers to ensure they don't leak sensitive information
+   - Verify stack traces are not exposed in production responses
 
 ## Checklist
 
@@ -71,34 +123,71 @@ The jarek-va Rails application implements several security mechanisms that shoul
 
 - [ ] **Input Validation and Sanitization**
   - [ ] Review all API endpoints for input validation
+    - [ ] Verify all endpoints use parameter filtering/validation (similar to Rails `params.permit()`)
+    - [ ] Check `CursorRunnerCallbackController` pattern: uses `params.permit()` to filter allowed parameters
+    - [ ] Check `AgentToolsController` pattern: uses `validate_request_params` to check required parameters
   - [ ] Check for SQL injection vulnerabilities (if using raw SQL queries)
   - [ ] Verify parameter sanitization (prevent XSS, command injection)
   - [ ] Review file upload handling (if applicable)
   - [ ] Check for path traversal vulnerabilities
   - [ ] Review JSON parsing for DoS vulnerabilities (large payloads)
+    - [ ] Check Express body parser limits (prevent large payload DoS attacks)
+    - [ ] Verify request size limits are configured appropriately
 
 - [ ] **Authentication and Authorization**
   - [ ] Verify all webhook endpoints require authentication (reference PHASE3-036)
   - [ ] Check for authentication bypass vulnerabilities
   - [ ] Review secret comparison for timing attack vulnerabilities
+    - [ ] **CRITICAL**: Verify all secret comparisons use `crypto.timingSafeEqual()` instead of `==` (Rails uses vulnerable `==` comparison)
+    - [ ] Check Telegram webhook authentication uses timing-safe comparison
+    - [ ] Check admin authentication uses timing-safe comparison
+    - [ ] Check cursor-runner callback authentication uses timing-safe comparison
+    - [ ] Check agent tools authentication uses timing-safe comparison
   - [ ] Verify development mode authentication bypasses are safe
+    - [ ] Review blank secret handling (Rails allows blank secrets when `expected_secret.blank?`)
+    - [ ] Ensure production mode requires explicit secret configuration
+    - [ ] Verify development bypasses don't accidentally work in production
   - [ ] Check for hardcoded secrets or credentials in code
   - [ ] Review token/session management (if applicable)
+  - [ ] Verify multiple secret sources (headers, query params, body params) are handled securely
+    - [ ] Review if multiple secret sources are necessary or should be restricted
+    - [ ] Check for security implications of accepting secrets from multiple sources
 
 - [ ] **Error Handling and Information Disclosure**
   - [ ] Review error messages for information leakage
+    - [ ] Verify error messages are generic (e.g., "Sorry, I encountered an error processing your request." as in Rails)
+    - [ ] Check that authentication errors don't reveal which secret failed or why
+    - [ ] Verify error messages match Rails implementation patterns
   - [ ] Verify stack traces are not exposed in production
+    - [ ] Check that production error responses don't include stack traces
+    - [ ] Verify error handling middleware filters stack traces in production
   - [ ] Check that error responses don't reveal internal system details
+    - [ ] Verify error responses don't expose file paths, system paths, or internal URLs
+    - [ ] Check that error responses don't reveal database structure or query details
   - [ ] Review logging for sensitive information (secrets, passwords, tokens)
+    - [ ] Verify logs don't contain actual secret values
+    - [ ] Check that logs indicate secret presence (`[present]`/`[missing]`) but not values (as in Rails)
+    - [ ] Verify IP addresses are logged for security monitoring (as in Rails)
   - [ ] Verify error handling doesn't expose file paths or system information
+    - [ ] Review all error handlers to ensure they don't leak paths or system details
+    - [ ] Check that error messages match Rails `ApplicationController#handle_error` pattern
 
 - [ ] **Secret and Credential Management**
   - [ ] Review environment variable handling
+    - [ ] Verify secret loading precedence matches Rails (credentials → ENV → default)
+    - [ ] Check that default 'changeme' secrets are not used in production (Rails uses `ENV.fetch('WEBHOOK_SECRET', 'changeme')`)
+    - [ ] Verify production mode requires explicit secret configuration or fails securely
   - [ ] Check for secrets in code, config files, or logs
   - [ ] Verify default secrets are not used in production
+    - [ ] **CRITICAL**: Check that `webhook_secret` default 'changeme' is not used in production
+    - [ ] **CRITICAL**: Check that `telegram_webhook_secret` default 'changeme' is not used in production
   - [ ] Review secret rotation capabilities
   - [ ] Check for secrets exposed in error messages or logs
+    - [ ] Verify logs indicate secret presence (`[present]`/`[missing]`) but not actual secret values (as in Rails)
+    - [ ] Verify IP addresses are logged for security monitoring (as in Rails `CursorRunnerCallbackController`)
   - [ ] Verify `.env` files are in `.gitignore`
+  - [ ] Review inconsistent secret usage
+    - [ ] Check if `webhook_secret` vs `telegram_webhook_secret` distinction is intentional or should be standardized
 
 - [ ] **API Security**
   - [ ] Review rate limiting implementation (if any)
@@ -202,8 +291,19 @@ The jarek-va Rails application implements several security mechanisms that shoul
 - **Dependency Updates**: Be cautious when updating dependencies - test thoroughly to ensure no breaking changes
 - **OWASP Top 10**: Reference the OWASP Top 10 2021 list as a comprehensive security checklist
 - **Rails Comparison**: Compare security implementation with jarek-va Rails application to ensure feature parity
+  - **Critical**: Rails has timing attack vulnerabilities in secret comparison - Node.js implementation MUST use `crypto.timingSafeEqual()`
+  - **Critical**: Rails uses default 'changeme' secrets - Node.js implementation MUST require explicit secrets in production
+  - Review all Rails security patterns and ensure Node.js implementation improves upon them where possible
 - **Production vs Development**: Pay special attention to differences between development and production security configurations
+  - Rails allows blank secrets in development mode - verify Node.js implementation handles this appropriately
+  - Ensure development bypasses don't accidentally work in production
 - **Documentation**: All security findings should be documented for future reference and compliance
+- **Rails Security Concerns**: The audit should specifically address the security concerns found in Rails:
+  1. Timing attack vulnerabilities (use `crypto.timingSafeEqual()`)
+  2. Default 'changeme' secrets (require explicit configuration)
+  3. Multiple secret sources (review if necessary)
+  4. Inconsistent secret usage (verify if intentional)
+  5. Error message information leakage (ensure generic messages)
 
 - Task can be completed independently by a single agent
 
