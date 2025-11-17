@@ -6,20 +6,39 @@
 
 ## Description
 
-Create .env.test file
+Create a `.env.test` file that contains test-specific environment variable values. This file is used during test execution and should contain values suitable for automated testing, including minimal logging, test-specific ports, and safe placeholder values for secrets.
+
+This task creates the `.env.test` file by copying the template from `.env.example` (created in PHASE1-025) and setting appropriate test values. The file should use test-specific URLs (localhost), error-level logging (to reduce test output noise), and placeholder values for secrets that are safe for test execution.
+
+**Rails Equivalent**: Rails uses `RAILS_ENV=test` environment variable and test-specific configuration in `config/environments/test.rb`. The `.env.test` file serves a similar purpose by providing test-specific environment variable values.
+
+**Note**: This task creates the `.env.test` file with test-appropriate values. The test environment should use minimal logging, isolated database/Redis instances, and safe placeholder values for external service tokens.
 
 ## Checklist
 
-- [ ] Create `.env.test` file
-- [ ] Copy contents from `.env.example`
-- [ ] Set `NODE_ENV=test`
-- [ ] Set `PORT=3001` (different from development)
+- [ ] Create `.env.test` file in project root directory
+- [ ] Copy all contents from `.env.example` file
+- [ ] Set `NODE_ENV=test` (matches Rails `RAILS_ENV=test` behavior)
+- [ ] Set `PORT=3001` (different from development port 3000 to avoid conflicts)
+- [ ] Set `LOG_LEVEL=error` (minimal logging for tests, matches Rails test environment minimal logging)
+- [ ] Set `TELEGRAM_WEBHOOK_BASE_URL=http://localhost:3001` (test-specific URL)
+- [ ] Set `CURSOR_RUNNER_URL=http://localhost:3001` (test-specific URL for cursor-runner service)
+- [ ] Set `REDIS_URL=redis://localhost:6379/1` (test-specific Redis database, isolated from development)
+- [ ] Use test placeholder values for secrets (TELEGRAM_BOT_TOKEN=test_bot_token, TELEGRAM_WEBHOOK_SECRET=test_webhook_secret, WEBHOOK_SECRET=test_webhook_secret, ELEVENLABS_API_KEY empty)
+- [ ] Add header comment indicating this is a test environment configuration file
+- [ ] Ensure all values are safe for test execution (no production secrets, isolated resources)
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 7. Environment Variables Management
 - Task can be completed independently by a single agent
+- Rails equivalent: Rails uses `RAILS_ENV=test` and test-specific configuration in `config/environments/test.rb` (see jarek-va/config/environments/test.rb)
+- The `.env.test` file should never be committed to version control (should be in `.gitignore`)
+- Test values should use minimal logging (error level) to reduce test output noise
+- Test environment should use isolated resources (different Redis database, different port) to avoid conflicts with development
+- Placeholder values for secrets allow tests to run without requiring real external service credentials
+- The test environment is used exclusively for running the test suite and should not be used for development work
 
 ## Related Tasks
 
