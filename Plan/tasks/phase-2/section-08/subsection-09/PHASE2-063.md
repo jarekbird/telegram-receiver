@@ -12,13 +12,15 @@ Create the `extractChatInfoFromUpdate` utility function in TypeScript/Node.js. T
 - `jarek-va/app/controllers/telegram_controller.rb` (lines 151-169)
 - `jarek-va/app/jobs/telegram_message_job.rb` (lines 279-295)
 
-Both implementations are identical and handle three types of Telegram updates: `message`, `edited_message`, and `callback_query`.
+Both implementations handle three types of Telegram updates: `message`, `edited_message`, and `callback_query`. The implementations are nearly identical, with one key difference:
+- **Controller version**: Converts update to hash if needed: `update_hash = update.is_a?(Hash) ? update : update.to_h` (needed because controller receives `ActionController::Parameters` which may need conversion)
+- **Job version**: Assumes update is already a hash (Sidekiq passes hash directly, no conversion needed)
 
 ## Checklist
 
 - [ ] Create `extractChatInfoFromUpdate` utility function in `src/utils/` directory
 - [ ] Function signature: `extractChatInfoFromUpdate(update: TelegramUpdate): [number | null, number | null]`
-- [ ] Handle type conversion: ensure update is treated as a plain object (handle Hash/object conversion)
+- [ ] Handle plain object: In TypeScript, updates will be plain JavaScript objects (no hash conversion needed, unlike Rails controller which handles `ActionController::Parameters`)
 - [ ] Handle `message` updates:
   - [ ] Extract `chat.id` from `update.message.chat.id`
   - [ ] Extract `message_id` from `update.message.message_id`
@@ -41,15 +43,17 @@ Both implementations are identical and handle three types of Telegram updates: `
 - Section: 8. TelegramController Conversion
 - **Purpose**: This utility function is primarily used for error handling - extracting chat information from Telegram updates so error messages can be sent to users
 - **Rails Implementation Details**:
-  - The function converts the update to a hash if needed: `update_hash = update.is_a?(Hash) ? update : update.to_h`
-  - Uses safe navigation operator (`&.[]`) for nested property access
-  - Returns `[nil, nil]` if no matching update type is found
-  - The function is identical in both `telegram_controller.rb` and `telegram_message_job.rb`
+  - **Controller version** (lines 151-169): Converts update to hash if needed: `update_hash = update.is_a?(Hash) ? update : update.to_h` (handles `ActionController::Parameters`)
+  - **Job version** (lines 279-295): Assumes update is already a hash (no conversion needed, Sidekiq passes hash directly)
+  - Both versions use safe navigation operator (`&.[]`) for nested property access: `update_hash['message']['chat']&.[]('id')`
+  - Both return `[nil, nil]` if no matching update type is found
+  - Both handle the same three update types: `message`, `edited_message`, and `callback_query`
 - **TypeScript Conversion**:
   - Use optional chaining (`?.`) instead of Ruby's safe navigation (`&.[]`)
   - Return `[null, null]` instead of `[nil, nil]`
-  - Ensure the function handles plain objects (TypeScript doesn't have Hash types)
+  - No hash conversion needed: TypeScript/Node.js receives plain JavaScript objects (unlike Rails controller which handles `ActionController::Parameters`)
   - The function should be placed in `src/utils/` as a reusable utility
+  - Use bracket notation or dot notation with optional chaining: `update.message?.chat?.id` or `update['message']?.['chat']?.['id']`
 - **Usage**: This function will be used by TelegramController (PHASE2-062) and TelegramMessageJob (future task) for error handling
 - Task can be completed independently by a single agent
 
