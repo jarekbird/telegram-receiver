@@ -6,22 +6,87 @@
 
 ## Description
 
-Convert create health routes from Rails to TypeScript/Node.js. Reference `jarek-va/config/routes.rb`.
+Create health check routes for the Express.js application, converting from Rails routes configuration. This task implements the health routes file (`src/routes/health.routes.ts`) that defines both the `/health` endpoint and the root `/` endpoint, both mapping to the health controller's show method.
+
+Reference `jarek-va/config/routes.rb` for route definitions and `jarek-va/app/controllers/health_controller.rb` for the controller implementation and expected response format.
+
+## Rails Implementation Reference
+
+From `jarek-va/config/routes.rb`:
+```ruby
+# Health check endpoint
+get 'health', to: 'health#show'
+root 'health#show'
+```
+
+From `jarek-va/app/controllers/health_controller.rb`:
+- The `show` method returns JSON: `{ status: 'healthy', service: '...', version: '...' }`
+- Service name comes from `Rails.application.config.app_name` (defaults to 'Virtual Assistant API')
+- Version comes from `Rails.application.config.app_version` (defaults to '1.0.0')
 
 ## Checklist
 
-- [ ] Create `src/routes/health-routes.ts`
-- [ ] Define GET /health route
-- [ ] Define GET / route (root)
-- [ ] Export router
-- [ ] Reference `jarek-va/config/routes.rb`
+- [ ] Create `src/routes/health.routes.ts` (note: use dot notation, not hyphen - `health.routes.ts`)
+- [ ] Import Express Router
+- [ ] Import HealthController from `../controllers/health.controller`
+- [ ] Create Express Router instance
+- [ ] Instantiate HealthController
+- [ ] Define GET `/health` route that calls `healthController.show`
+- [ ] Define GET `/` route (root) that also calls `healthController.show`
+- [ ] Export router as default export
+- [ ] Use proper TypeScript types (Express Request/Response)
+- [ ] Bind controller methods properly (use `.bind(healthController)` or arrow functions)
+- [ ] Reference `jarek-va/config/routes.rb` for route definitions
+- [ ] Reference `jarek-va/app/controllers/health_controller.rb` for controller implementation
+
+## Implementation Notes
+
+### Express Router Pattern
+The route file should follow this pattern:
+
+```typescript
+import { Router } from 'express';
+import { HealthController } from '../controllers/health.controller';
+
+const router = Router();
+const healthController = new HealthController();
+
+router.get('/health', healthController.show.bind(healthController));
+router.get('/', healthController.show.bind(healthController));
+
+export default router;
+```
+
+### Expected Response Format
+The health endpoint should return JSON matching the Rails implementation:
+```json
+{
+  "status": "healthy",
+  "service": "Virtual Assistant API",
+  "version": "1.0.0"
+}
+```
+
+- `status`: Always `"healthy"` when service is running (must match Rails, not "ok")
+- `service`: Application name from config (defaults to 'Virtual Assistant API')
+- `version`: Application version from config (defaults to '1.0.0')
+
+### Route Mounting
+This route file will be mounted in `src/routes/index.ts` (created in PHASE2-089) with:
+```typescript
+app.use('/', healthRoutes);
+```
+
+Since the route file defines both `/health` and `/`, mounting at `/` makes both routes accessible.
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 11. Routes Configuration
-- Reference the Rails implementation for behavior
-
+- Subsection: 11.2
+- This task implements the health routes file that was created as a placeholder in PHASE2-089
+- The HealthController should already exist (created in earlier Phase 1 tasks)
+- Reference the Rails implementation for exact behavior and response format
 - Task can be completed independently by a single agent
 
 ## Related Tasks
