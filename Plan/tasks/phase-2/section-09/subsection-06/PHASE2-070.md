@@ -6,24 +6,63 @@
 
 ## Description
 
-Convert implement send_response_to_telegram method from Rails to TypeScript/Node.js. Reference `jarek-va/app/controllers/*_controller.rb` files.
+Convert and implement the `send_response_to_telegram` method from Rails to TypeScript/Node.js. This method handles sending cursor-runner callback results to Telegram, with support for audio responses, parse mode fallbacks, and error handling.
+
+**Rails Reference**: `jarek-va/app/controllers/cursor_runner_callback_controller.rb` (lines 170-218)
 
 ## Checklist
 
-- [ ] Create `sendResponseToTelegram` method
-- [ ] Format success or error message
-- [ ] Handle original_was_audio flag
-- [ ] Send as audio or text
-- [ ] Try Markdown, fallback to HTML, fallback to plain text
-- [ ] Add error handling
+- [ ] Create `sendResponseToTelegram` method with signature: `(chatId: string, messageId: number, result: NormalizedResult, originalWasAudio?: boolean)`
+- [ ] Return early if `chatId` is blank/null/undefined
+- [ ] Check if cursor debug is enabled using `SystemSetting.enabled?('debug')` (store in `cursorDebug` variable)
+- [ ] Format response text based on `result.success`:
+  - If `result.success` is true: call `formatSuccessMessage(result, cursorDebug)` (PHASE2-071)
+  - If `result.success` is false: call `formatErrorMessage(result, cursorDebug)` (PHASE2-072)
+- [ ] Handle audio response logic:
+  - If `originalWasAudio` is true AND `!SystemSetting.disabled?('allow_audio_output')`:
+    - Call `sendTextAsAudio(chatId, responseText, messageId)` (PHASE2-074)
+    - Return early (don't send text message)
+- [ ] Send text message with parse mode fallback:
+  - First attempt: `TelegramService.sendMessage()` with `parseMode: 'Markdown'` and `replyToMessageId: messageId`
+  - If Markdown fails: catch error, log warning, retry with `parseMode: 'HTML'`
+  - If HTML fails: catch error, log warning, retry with `parseMode: undefined` (plain text)
+- [ ] Add comprehensive error handling:
+  - Wrap entire method in try-catch
+  - On error: log error message and stack trace
+  - Call `sendErrorFallbackMessage(chatId, messageId)` as fallback (implement as simple helper method that sends fallback error message via TelegramService)
+- [ ] Ensure all `TelegramService.sendMessage()` calls include `replyToMessageId: messageId` parameter
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 9. CursorRunnerCallbackController Conversion
-- Reference the Rails implementation for behavior
-
-- Task can be completed independently by a single agent
+- **Rails Implementation**: `jarek-va/app/controllers/cursor_runner_callback_controller.rb` (lines 170-218)
+- The method is called from `process_callback` method (line 112) with normalized result and original_was_audio flag
+- The `result` parameter is a normalized result object (from `normalizeResult` utility - PHASE2-069) with the following structure:
+  - `success: boolean` - indicates if cursor command succeeded
+  - `request_id: string` - request identifier
+  - `repository?: string` - repository name
+  - `branch_name?: string` - branch name
+  - `iterations: number` - number of iterations (defaults to 0)
+  - `max_iterations: number` - max iterations (defaults to 25)
+  - `output?: string` - command output (defaults to empty string)
+  - `error?: string` - error message if failed
+  - `exit_code: number` - exit code (defaults to 0)
+  - `duration?: string` - execution duration
+  - `timestamp?: string` - timestamp
+- The method depends on several helper methods:
+  - `formatSuccessMessage` - PHASE2-071 (separate task)
+  - `formatErrorMessage` - PHASE2-072 (separate task)
+  - `sendTextAsAudio` - PHASE2-074 (separate task)
+  - `sendErrorFallbackMessage` - Simple helper method that sends fallback error message (can be implemented inline or as a small helper)
+  - `cleanAnsiEscapeSequences` - PHASE2-073 (used by format methods, not directly by this method)
+- SystemSetting checks:
+  - `SystemSetting.enabled?('debug')` - determines if debug information should be included
+  - `SystemSetting.disabled?('allow_audio_output')` - determines if audio output is disabled
+- Parse mode fallback logic is critical: Markdown → HTML → plain text ensures message delivery even if formatting fails
+- All TelegramService calls must include `replyToMessageId` to maintain conversation context
+- Error handling ensures user always receives feedback even if formatting or sending fails
+- Task can be completed independently by a single agent (after dependencies PHASE2-071, PHASE2-072, and PHASE2-074 are complete)
 
 ## Related Tasks
 
