@@ -21,6 +21,37 @@ This task follows the comprehensive security audit performed in **PHASE3-041** a
 
 This task should fix all identified security vulnerabilities and implement security improvements based on the audit findings.
 
+## Critical Rails Security Concerns to Address
+
+PHASE3-041 identified several critical security concerns in the Rails implementation that MUST be fixed in the Node.js version:
+
+1. **Timing Attack Vulnerabilities** (CRITICAL):
+   - Rails uses simple `==` comparison for secrets (vulnerable to timing attacks)
+   - Found in `jarek-va/app/controllers/telegram_controller.rb`:
+     - Line 118: `admin_secret == expected_secret` in `authenticate_admin`
+     - Line 139: `secret_token == expected_secret` in `authenticate_webhook`
+   - **Node.js Fix Required**: Use `crypto.timingSafeEqual()` for constant-time comparison in all secret comparisons
+
+2. **Default 'changeme' Secrets** (CRITICAL):
+   - Rails uses default 'changeme' values when secrets are not configured
+   - Found in `jarek-va/config/application.rb`:
+     - Line 25: `ENV.fetch('WEBHOOK_SECRET', 'changeme')`
+     - Line 45: `ENV.fetch('TELEGRAM_WEBHOOK_SECRET', 'changeme')`
+   - **Node.js Fix Required**: Require explicit secret configuration in production or fail securely (no default secrets)
+
+3. **Debug Logging of Secrets** (HIGH):
+   - Rails logs actual secret values in test environment
+   - Found in `jarek-va/app/controllers/telegram_controller.rb` lines 122-126
+   - **Node.js Fix Required**: Never log actual secret values, even in debug/test mode (mask or exclude)
+
+4. **Multiple Secret Sources**:
+   - Secrets can be passed via headers, query params, or body params
+   - Review if this flexibility is necessary or creates security vulnerabilities
+
+5. **Inconsistent Secret Usage**:
+   - Different endpoints use different secret configurations (`webhook_secret` vs `telegram_webhook_secret`)
+   - Verify if this distinction is intentional or should be standardized
+
 ## Checklist
 
 ### Dependency Vulnerability Fixes
@@ -48,7 +79,13 @@ This task should fix all identified security vulnerabilities and implement secur
 
 - [ ] **Fix Authentication Issues** (reference PHASE3-036)
   - [ ] Fix any authentication bypass vulnerabilities identified
-  - [ ] Implement secure secret comparison (prevent timing attacks)
+  - [ ] **CRITICAL: Fix Timing Attack Vulnerabilities**
+    - [ ] Replace all secret comparisons with `crypto.timingSafeEqual()` (Rails uses vulnerable `==` comparison)
+    - [ ] Fix Telegram webhook authentication to use timing-safe comparison (reference: `jarek-va/app/controllers/telegram_controller.rb` line 139)
+    - [ ] Fix admin authentication to use timing-safe comparison (reference: `jarek-va/app/controllers/telegram_controller.rb` line 118)
+    - [ ] Fix cursor-runner callback authentication to use timing-safe comparison
+    - [ ] Fix agent tools authentication to use timing-safe comparison
+    - [ ] Ensure all secret comparisons are constant-time (use `crypto.timingSafeEqual()`)
   - [ ] Fix development mode authentication bypasses if unsafe
   - [ ] Remove or secure any hardcoded secrets or credentials
   - [ ] Fix token/session management issues (if applicable)
@@ -89,10 +126,18 @@ This task should fix all identified security vulnerabilities and implement secur
   - [ ] Fix credential exposure in API responses
   - [ ] Fix credential exposure in logs
   - [ ] Fix credential exposure in stack traces
+  - [ ] **CRITICAL: Fix Debug/Test Logging of Secrets**
+    - [ ] Remove or mask secret logging in debug/test mode (reference: `jarek-va/app/controllers/telegram_controller.rb` lines 122-126)
+    - [ ] Never log actual secret values, even in test/debug mode
+    - [ ] Log secret presence (`[present]`/`[missing]`) but not actual values
   - [ ] Fix credential exposure in debug output
   - [ ] Ensure all credentials are read from environment variables
   - [ ] Implement credential masking in logs (show only first/last few chars)
-  - [ ] Fix default secret values (remove 'changeme' defaults)
+  - [ ] **CRITICAL: Fix Default 'changeme' Secrets**
+    - [ ] Remove default 'changeme' values for `WEBHOOK_SECRET` (reference: `jarek-va/config/application.rb` line 25)
+    - [ ] Remove default 'changeme' values for `TELEGRAM_WEBHOOK_SECRET` (reference: `jarek-va/config/application.rb` line 45)
+    - [ ] Require explicit secret configuration in production (fail fast if missing)
+    - [ ] Ensure production mode does not use default secrets
   - [ ] Ensure required credentials fail fast if missing
 
 - [ ] **Verify Credential Handling Fixes**
@@ -197,6 +242,10 @@ This task should fix all identified security vulnerabilities and implement secur
   - [ ] Remove sensitive data from logs
   - [ ] Fix log file permissions and access controls
   - [ ] Ensure authentication tokens or secrets are not logged
+  - [ ] **CRITICAL: Fix Debug Logging of Secrets**
+    - [ ] Remove debug logging that logs actual secret values (reference: `jarek-va/app/controllers/telegram_controller.rb` lines 122-126)
+    - [ ] Ensure test/debug mode never logs actual secret values
+    - [ ] Log secret presence status but not actual values
   - [ ] Implement log rotation and retention policies
   - [ ] Fix logging that exposes sensitive information
 
@@ -265,6 +314,13 @@ This task should fix all identified security vulnerabilities and implement secur
 - **Testing**: After fixing each category of issues, run tests to verify fixes work correctly and don't break functionality
 - **Documentation**: All security fixes should be documented for future reference and compliance
 - **Verification**: Use `npm audit` and security testing tools to verify vulnerabilities are fixed
+
+- **Rails Security Concerns**: This task MUST address the critical security concerns identified in PHASE3-041:
+  1. **Timing Attack Vulnerabilities**: Replace all `==` secret comparisons with `crypto.timingSafeEqual()` (reference Rails files: `jarek-va/app/controllers/telegram_controller.rb` lines 118, 139)
+  2. **Default 'changeme' Secrets**: Remove default secrets and require explicit configuration in production (reference: `jarek-va/config/application.rb` lines 25, 45)
+  3. **Debug Logging of Secrets**: Never log actual secret values, even in test/debug mode (reference: `jarek-va/app/controllers/telegram_controller.rb` lines 122-126)
+  4. **Multiple Secret Sources**: Review if accepting secrets from headers/query/body params is necessary
+  5. **Inconsistent Secret Usage**: Verify if `webhook_secret` vs `telegram_webhook_secret` distinction is intentional
 
 - Task can be completed independently by a single agent, but may require coordination if multiple security issues are identified
 
