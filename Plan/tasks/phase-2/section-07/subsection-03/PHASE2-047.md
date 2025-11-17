@@ -19,7 +19,7 @@ def transcribe_io(audio_io, filename: 'audio.ogg', language: nil)
 
 **Key Implementation Details:**
 - Accepts an IO object (`audio_io`), optional `filename` (default: 'audio.ogg'), and optional `language` parameter
-- Validates that `audio_io` is not nil
+- Validates that `audio_io` is not nil (raises `Error` if nil)
 - Rewinds the IO object if it responds to `rewind` (to ensure reading from the beginning)
 - Reads the IO content into memory
 - Creates multipart form data with:
@@ -28,10 +28,19 @@ def transcribe_io(audio_io, filename: 'audio.ogg', language: nil)
   - `language` field (if provided)
 - Sends POST request to `https://api.elevenlabs.io/v1/speech-to-text`
 - Sets `xi-api-key` header with API key
-- Parses JSON response and extracts transcribed text from `result['text']` or `result[:text]`
+- Sets `Content-Type` header to `multipart/form-data`
+- Validates HTTP response status - non-success responses raise `TranscriptionError` (not just validation)
+- For error responses, attempts to parse error JSON and extract error message from `detail`, `error`, or `message` fields
+- Parses JSON response and extracts transcribed text from `result['text']` or `result[:text]` (response uses symbolize_names: true)
 - Validates that transcribed text is not blank (raises `TranscriptionError` if blank)
-- Handles `JSON::ParserError` exceptions
-- Logs request and success messages
+- Handles `JSON::ParserError` exceptions (raises `InvalidResponseError`)
+- Handles timeout errors (`TimeoutError`) and connection errors (`ConnectionError`)
+- Logs specific messages:
+  - Info: "Sending audio IO to ElevenLabs for transcription: #{filename}"
+  - Info: "ElevenLabsSpeechToTextService: POST #{uri.path}" (from execute_request)
+  - Info: "ElevenLabsSpeechToTextService: Response #{response.code} #{response.message}" (from execute_request)
+  - Info: "Successfully transcribed audio: #{transcribed_text[0..50]}..." (truncated to first 50 chars)
+  - Error: "ElevenLabs API error: #{response.code} - Response body: #{response.body[0..500]}" (for non-success responses)
 
 ## Checklist
 
@@ -45,14 +54,25 @@ def transcribe_io(audio_io, filename: 'audio.ogg', language: nil)
   - `language` field (if provided in options)
 - [ ] Send POST request to `https://api.elevenlabs.io/v1/speech-to-text`
 - [ ] Set `xi-api-key` header with API key from instance
-- [ ] Validate HTTP response status (check for success status codes)
+- [ ] Set `Content-Type` header to `multipart/form-data`
+- [ ] Validate HTTP response status (check for success status codes 2xx)
+- [ ] For non-success responses, raise `TranscriptionError` (not just validate)
+- [ ] For error responses, attempt to parse error JSON and extract error message from `detail`, `error`, or `message` fields
+- [ ] Log error details for non-success responses (include response code and first 500 chars of response body)
 - [ ] Parse JSON response body
 - [ ] Extract transcribed text from response (`result.text` or `result['text']`)
-- [ ] Validate that transcribed text is not blank (throw error if blank)
+- [ ] Validate that transcribed text is not blank (throw `TranscriptionError` if blank)
 - [ ] Return transcribed text as string
 - [ ] Handle JSON parsing errors (`InvalidResponseError`)
-- [ ] Handle transcription errors (when no text is returned)
-- [ ] Add appropriate logging (info level for requests and success)
+- [ ] Handle transcription errors (when no text is returned or HTTP response is not successful)
+- [ ] Handle timeout errors (`TimeoutError`) - may be in helper methods
+- [ ] Handle connection errors (`ConnectionError`) - may be in helper methods
+- [ ] Add appropriate logging:
+  - Info: "Sending audio IO to ElevenLabs for transcription: {filename}"
+  - Info: "ElevenLabsSpeechToTextService: POST {uri.path}"
+  - Info: "ElevenLabsSpeechToTextService: Response {code} {message}"
+  - Info: "Successfully transcribed audio: {first 50 chars}..."
+  - Error: "ElevenLabs API error: {code} - Response body: {first 500 chars}" (for non-success responses)
 
 ## Implementation Notes
 
@@ -61,7 +81,11 @@ def transcribe_io(audio_io, filename: 'audio.ogg', language: nil)
 - The method should be part of the `ElevenLabsSpeechToTextService` class
 - In Node.js, IO objects are typically `ReadableStream` or `Buffer` objects
 - Use a multipart form library (e.g., `form-data` or `formidable`) for creating multipart requests
-- The method should use the same error classes as other methods in the service (ConnectionError, TimeoutError, InvalidResponseError, TranscriptionError)
+- The method should use the same error classes as other methods in the service (Error, ConnectionError, TimeoutError, InvalidResponseError, TranscriptionError)
+- The method uses helper methods `build_http`, `execute_request`, and `parse_response` in the Rails implementation - these may be implemented as separate helper methods or inline in TypeScript
+- HTTP timeout and connection error handling may be implemented in helper methods or using HTTP client library features
+- Non-success HTTP responses (non-2xx) should raise `TranscriptionError`, not just validate
+- Error responses from the API should be parsed to extract meaningful error messages from JSON fields (`detail`, `error`, or `message`)
 - Task can be completed independently by a single agent
 
 ## Related Tasks
