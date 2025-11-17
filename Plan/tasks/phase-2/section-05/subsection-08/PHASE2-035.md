@@ -6,22 +6,95 @@
 
 ## Description
 
-Convert implement push_branch method from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/cursor_runner_service.rb`.
+Convert the `push_branch` method from Rails CursorRunnerService to TypeScript/Node.js. This method pushes a Git branch to origin by calling the cursor-runner API's `/git/push` endpoint.
+
+**Rails Reference**: `jarek-va/app/services/cursor_runner_service.rb` (lines 100-110)
+
+## Method Signature
+
+```typescript
+pushBranch(params: {
+  repository: string;
+  branch: string;
+}): Promise<PushBranchResponse>
+```
+
+**Parameters**:
+- `repository` (required): Repository name
+- `branch` (required): Branch name to push
+
+**Return Type**: Promise resolving to a response object with `success`, `message`, etc.
+
+## Implementation Details
+
+### Request Body Structure
+
+The method should POST to `/git/push` with the following JSON body:
+```json
+{
+  "repository": "<repository_name>",
+  "branch": "<branch_name>"
+}
+```
+
+**Important Notes**:
+- The request body uses `repository` and `branch` (both camelCase)
+- Both parameters are required
+
+### Response Parsing
+
+- Parse the JSON response body
+- Return the parsed object with symbol keys (or equivalent TypeScript object)
+- Handle JSON parsing errors appropriately
+- The response should include:
+  - `success`: boolean indicating if the request was successful
+  - `message`: string message (may be included)
+
+### Error Handling
+
+The method should handle and potentially throw the following error types:
+- **ConnectionError**: Failed to connect to cursor-runner (ECONNREFUSED, EHOSTUNREACH, SocketError)
+- **TimeoutError**: Request timed out (OpenTimeout, ReadTimeout)
+- **InvalidResponseError**: Failed to parse JSON response
+- **Error**: HTTP error responses (non-2xx, non-422 status codes)
+  - Note: 422 Unprocessable Entity should be treated as a valid response (operation failed but request was valid)
+
+### HTTP Request Details
+
+- Method: POST
+- Content-Type: `application/json`
+- Accept: `application/json`
+- Use the base URL from configuration (cursor-runner URL)
+- Use timeout from configuration (cursor-runner timeout)
 
 ## Checklist
 
-- [ ] Implement `pushBranch` method
-- [ ] Call `/git/push` endpoint
-- [ ] Handle repository and branch parameters
-- [ ] Parse and return response
-- [ ] Add error handling
+- [ ] Implement `pushBranch` method with correct TypeScript signature
+- [ ] Accept required parameters: `repository` and `branch`
+- [ ] Build request body with `repository` and `branch` (camelCase)
+- [ ] POST to `/git/push` endpoint
+- [ ] Set proper HTTP headers (`Content-Type: application/json`, `Accept: application/json`)
+- [ ] Handle connection errors (ConnectionError)
+- [ ] Handle timeout errors (TimeoutError)
+- [ ] Handle HTTP error responses (non-2xx, except 422)
+- [ ] Treat 422 Unprocessable Entity as valid response (not an error)
+- [ ] Parse JSON response body
+- [ ] Handle JSON parsing errors (InvalidResponseError)
+- [ ] Return parsed response object with success and message
+- [ ] Add appropriate logging (request and response logging)
+- [ ] Write unit tests for the method
+- [ ] Test successful response parsing
+- [ ] Test error handling scenarios (connection errors, timeouts, HTTP errors, JSON parse errors)
+- [ ] Test 422 response handling (should not throw error)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 5. CursorRunnerService Conversion
-- Reference the Rails implementation for behavior
-
+- The method uses a private `post` helper method in Rails - ensure similar helper is available or implement HTTP request directly
+- The method uses a private `parse_response` helper method in Rails - ensure similar helper is available or implement JSON parsing directly
+- Reference the Rails implementation at `jarek-va/app/services/cursor_runner_service.rb` lines 100-110 for exact behavior
+- This method follows the same pattern as `checkout_branch` and `pull_branch` methods
 - Task can be completed independently by a single agent
 
 ## Related Tasks
