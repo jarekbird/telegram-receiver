@@ -13,8 +13,11 @@ Set up SonarQube or a similar comprehensive code quality analysis tool to perfor
 The project currently has:
 - **ESLint** configured with TypeScript rules (PHASE4-001)
 - **Prettier** configured for code formatting (PHASE4-002)
-- **Jest** for testing with coverage reporting
+- **Jest** for testing with coverage reporting (generates `coverage/lcov.info`)
 - Basic linting and formatting scripts in package.json
+- `.gitignore` file excluding `node_modules/`, `dist/`, `coverage/`, and other build artifacts
+- Test directory structure: `tests/unit/`, `tests/integration/`, `tests/e2e/`
+- **Note**: No CI/CD pipeline configuration found (no GitHub Actions workflows in `.github/workflows/`)
 
 **Missing**: A comprehensive code quality analysis tool that provides:
 - Advanced static code analysis beyond ESLint
@@ -70,9 +73,10 @@ Consider the following options:
 - [ ] Create `sonar-project.properties` file (if using SonarQube/SonarCloud)
 - [ ] Configure project key and name
 - [ ] Set source directories (`src/`)
-- [ ] Set test directories (`tests/`)
-- [ ] Configure exclusions (node_modules, dist, coverage, etc.)
+- [ ] Set test directories (`tests/` - includes `tests/unit/`, `tests/integration/`, `tests/e2e/`)
+- [ ] Configure exclusions (node_modules, dist, coverage, etc.) - verify alignment with `.gitignore` patterns
 - [ ] Set TypeScript/JavaScript language settings
+- [ ] Verify coverage report path (`coverage/lcov.info`) matches Jest configuration
 
 ### Quality Gates and Rules
 - [ ] Review default quality gates
@@ -89,9 +93,11 @@ Consider the following options:
 - [ ] Add analysis script to package.json (e.g., `"sonar": "sonar-scanner"`)
 - [ ] Configure environment variables for authentication
 - [ ] Set up CI/CD integration (GitHub Actions, GitLab CI, etc.)
+  - **Note**: No CI/CD configuration currently exists - this step will require creating CI/CD workflows
+  - If using GitHub Actions, create `.github/workflows/` directory and workflow files
 - [ ] Configure analysis to run on pull requests
 - [ ] Set up quality gate enforcement in CI/CD pipeline
-- [ ] Add SonarQube/SonarCloud badge to README (if available)
+- [ ] Add SonarQube/SonarCloud badge to README (if available and README exists)
 
 ### Initial Analysis
 - [ ] Run initial code analysis
@@ -116,10 +122,12 @@ Consider the following options:
 ### Review and Validation
 - [ ] Verify analysis runs successfully
 - [ ] Verify results are accessible via web interface
-- [ ] Test CI/CD integration
+- [ ] Test CI/CD integration (if CI/CD workflows are created)
 - [ ] Verify quality gates work correctly
 - [ ] Review and address any configuration issues
 - [ ] Ensure tool complements existing ESLint/Prettier setup without conflicts
+- [ ] Verify that exclusions match `.gitignore` patterns and project structure
+- [ ] Confirm coverage report integration works correctly (coverage/lcov.info is found and parsed)
 
 ## Configuration Example (SonarQube/SonarCloud)
 
@@ -130,12 +138,18 @@ sonar.projectKey=telegram-receiver
 sonar.projectName=Telegram Receiver
 sonar.sources=src
 sonar.tests=tests
-sonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,**/*.spec.ts
+sonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,**/*.spec.ts,**/*.test.ts
 sonar.test.exclusions=**/node_modules/**,**/dist/**
 sonar.javascript.lcov.reportPaths=coverage/lcov.info
 sonar.sourceEncoding=UTF-8
 sonar.typescript.tsconfigPath=tsconfig.json
 ```
+
+**Notes on Configuration**:
+- Coverage report path (`coverage/lcov.info`) matches Jest configuration in `jest.config.ts`
+- Exclusions align with `.gitignore` patterns (node_modules, dist, coverage)
+- Test exclusions include both `.spec.ts` and `.test.ts` patterns (Jest supports both)
+- TypeScript config path references the root `tsconfig.json` file
 
 ## Notes
 
