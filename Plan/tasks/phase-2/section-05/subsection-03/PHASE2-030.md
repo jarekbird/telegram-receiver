@@ -18,7 +18,7 @@ execute(params: {
   branchName: string;
   prompt: string;
   requestId?: string;
-}): Promise<ExecuteResponse>
+}): Promise<CursorExecuteResponse>
 ```
 
 **Parameters**:
@@ -27,7 +27,7 @@ execute(params: {
 - `prompt` (required): Prompt text for cursor to execute
 - `requestId` (optional): Request ID for tracking. If not provided, should be auto-generated
 
-**Return Type**: Promise resolving to a response object with `success`, `output`, `error`, etc.
+**Return Type**: Promise resolving to `CursorExecuteResponse` (defined in PHASE2-002) with `success`, `output`, `error`, `exitCode`, `requestId`, etc.
 
 ## Implementation Details
 
@@ -76,22 +76,24 @@ The method should handle and potentially throw the following error types:
 
 ## Checklist
 
+- [ ] Import `CursorExecuteResponse` type from `src/types/cursor-runner.ts`
 - [ ] Implement `execute` method with correct TypeScript signature
 - [ ] Accept required parameters: `repository`, `branchName`, `prompt`
 - [ ] Accept optional `requestId` parameter
+- [ ] Create private `generateRequestId` helper method (or inline logic)
 - [ ] Generate `requestId` if not provided (format: `req-{timestamp}-{randomHex}`)
 - [ ] Build request body with correct structure (`repository`, `branchName`, `prompt`, `id`)
 - [ ] Ensure `branchName` is sent as camelCase in request body
-- [ ] POST to `/cursor/execute` endpoint
-- [ ] Set proper HTTP headers (`Content-Type: application/json`, `Accept: application/json`)
-- [ ] Handle connection errors (ConnectionError)
-- [ ] Handle timeout errors (TimeoutError)
-- [ ] Handle HTTP error responses (non-2xx, except 422)
-- [ ] Treat 422 Unprocessable Entity as valid response (not an error)
-- [ ] Parse JSON response body
-- [ ] Handle JSON parsing errors (InvalidResponseError)
-- [ ] Return parsed response object
-- [ ] Add appropriate logging (request and response logging)
+- [ ] Use `post` helper method from PHASE2-029 to POST to `/cursor/execute` endpoint
+- [ ] Note: HTTP headers (`Content-Type: application/json`, `Accept: application/json`) are set by the `post` helper
+- [ ] Handle connection errors (ConnectionError) - these are raised by helper methods
+- [ ] Handle timeout errors (TimeoutError) - these are raised by helper methods
+- [ ] Handle HTTP error responses (non-2xx, except 422) - these are raised by helper methods
+- [ ] Treat 422 Unprocessable Entity as valid response (not an error) - handled by helper methods
+- [ ] Use `parseResponse` helper method from PHASE2-029 to parse JSON response body
+- [ ] Handle JSON parsing errors (InvalidResponseError) - these are raised by `parseResponse` helper
+- [ ] Return parsed response object (typed as `CursorExecuteResponse`)
+- [ ] Note: Request and response logging is handled by the `executeRequest` helper method from PHASE2-029
 - [ ] Write unit tests for the method
 - [ ] Test with all parameters provided
 - [ ] Test with optional `requestId` omitted (should auto-generate)
@@ -102,12 +104,14 @@ The method should handle and potentially throw the following error types:
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 5. CursorRunnerService Conversion
-- The method uses a private `post` helper method in Rails - ensure similar helper is available or implement HTTP request directly
-- The method uses a private `parse_response` helper method in Rails - ensure similar helper is available or implement JSON parsing directly
-- The method uses a private `generate_request_id` helper method in Rails - implement this helper or inline the logic
+- **Helper Methods Available**: The `post` and `parseResponse` helper methods are available from PHASE2-029. Use these helpers rather than implementing HTTP requests directly.
+- **Request ID Generation**: Implement a private `generateRequestId` helper method (matching Rails pattern) that generates IDs in the format `req-{timestamp}-{randomHex}`:
+  - Use `Math.floor(Date.now() / 1000)` for Unix timestamp (equivalent to `Time.now.to_i` in Rails)
+  - Use `crypto.randomBytes(4).toString('hex')` for random hex (equivalent to `SecureRandom.hex(4)` in Rails)
+  - This generates 8 hex characters (4 bytes)
+- **Type Definitions**: Use `CursorExecuteResponse` type from `src/types/cursor-runner.ts` (defined in PHASE2-002)
+- **Logging**: Request and response logging is handled automatically by the `executeRequest` helper method from PHASE2-029 (logs "CursorRunnerService: POST /cursor/execute" and "CursorRunnerService: Response {code} {message}")
 - Reference the Rails implementation at `jarek-va/app/services/cursor_runner_service.rb` lines 27-38 for exact behavior
-- The Rails implementation uses `SecureRandom.hex(4)` for random hex generation
-- The Rails implementation uses `Time.now.to_i` for Unix timestamp
 - Task can be completed independently by a single agent
 
 ## Related Tasks
