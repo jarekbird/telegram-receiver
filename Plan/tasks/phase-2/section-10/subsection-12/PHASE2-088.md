@@ -6,23 +6,203 @@
 
 ## Description
 
-Convert write telegrammessagejob unit tests from Rails to TypeScript/Node.js. Reference `jarek-va/app/jobs/telegram_message_job.rb`.
+Convert TelegramMessageJob unit tests from Rails to TypeScript/Node.js. Create comprehensive unit tests covering all methods and edge cases. Reference the Rails implementation (`jarek-va/app/jobs/telegram_message_job.rb`) and Rails spec (`jarek-va/spec/jobs/telegram_message_job_spec.rb`) for test coverage patterns.
 
 ## Checklist
 
-- [ ] Create `tests/jobs/telegram-message-job.test.ts`
-- [ ] Mock all services
-- [ ] Test process method
-- [ ] Test handleMessage
-- [ ] Test handleCallbackQuery
+### File Structure
+- [ ] Create `tests/unit/jobs/` directory if it doesn't exist
+- [ ] Create `tests/unit/jobs/telegram-message-job.test.ts` file
+- [ ] Follow existing test structure patterns (mirrors `src/` directory)
+
+### Test Setup and Mocking
+- [ ] Mock TelegramService (sendMessage, downloadFile, sendVoice, bot.api.answerCallbackQuery)
+- [ ] Mock CursorRunnerService (iterate method)
+- [ ] Mock CursorRunnerCallbackService (storePendingRequest, removePendingRequest)
+- [ ] Mock ElevenLabsSpeechToTextService (transcribe method)
+- [ ] Mock ElevenLabsTextToSpeechService (synthesize method)
+- [ ] Mock SystemSetting (enabled, disabled methods)
+- [ ] Mock logger/winston for logging verification
+- [ ] Set up test fixtures for Telegram update objects
+
+### Test `perform` Method
+- [ ] Test with valid update data as Hash object
+  - [ ] Processes message update type
+  - [ ] Processes edited_message update type
+  - [ ] Processes callback_query update type
+  - [ ] Logs update processing
+- [ ] Test with valid update data as JSON string
+  - [ ] Parses JSON string correctly
+  - [ ] Processes parsed update
+- [ ] Test with unhandled update types
+  - [ ] Logs unhandled update type
+  - [ ] Does not throw error
+- [ ] Test error handling in perform method
+  - [ ] Logs error with stack trace when processing fails
+  - [ ] Sends error message to Telegram if chat_id is available
+  - [ ] Does not send error message if chat_id is missing
+  - [ ] Handles error when sending error message fails
+  - [ ] Re-raises error to mark job as failed
+
+### Test `handleMessage` Method
+- [ ] Test with text message
+  - [ ] Extracts chat_id, text, and message_id correctly
+  - [ ] Forwards non-command messages to cursor-runner
+  - [ ] Processes local commands if not forwarded
+  - [ ] Sends response back to Telegram
+- [ ] Test with audio/voice message
+  - [ ] Detects audio file ID
+  - [ ] Transcribes audio before processing
+  - [ ] Replaces text with transcribed text
+  - [ ] Handles transcription errors gracefully
+  - [ ] Sends error message if transcription fails
+  - [ ] Sends response as audio if original was audio and audio output enabled
+  - [ ] Sends response as text if audio output disabled
+- [ ] Test with local commands (/start, /help, /status)
+  - [ ] Does not forward to cursor-runner
+  - [ ] Processes locally
+  - [ ] Sends appropriate response
 - [ ] Test error handling
-- [ ] Achieve >80% coverage
+  - [ ] Handles missing chat_id gracefully
+  - [ ] Handles missing message_id gracefully
+  - [ ] Handles transcription errors
+
+### Test `handleCallbackQuery` Method
+- [ ] Test with valid callback query
+  - [ ] Extracts message and data correctly
+  - [ ] Answers callback query with "Processing..." status
+  - [ ] Forwards callback data to cursor-runner as prompt
+  - [ ] Sends simple response if not forwarded
+- [ ] Test error handling
+  - [ ] Handles missing message gracefully
+  - [ ] Handles missing chat gracefully
+  - [ ] Handles error when answering callback query fails
+  - [ ] Logs errors appropriately
+
+### Test `forwardToCursorRunner` Method
+- [ ] Test with valid message
+  - [ ] Generates unique request ID (format: "telegram-{timestamp}-{random}")
+  - [ ] Stores pending request in Redis via CursorRunnerCallbackService
+  - [ ] Stores correct data (chat_id, message_id, prompt, original_was_audio, created_at)
+  - [ ] Sets TTL to 3600 seconds (1 hour)
+  - [ ] Calls CursorRunnerService.iterate() with correct parameters
+  - [ ] Passes blank repository value for Telegram messages
+  - [ ] Returns true to indicate message was forwarded
+- [ ] Test with local commands (/start, /help, /status)
+  - [ ] Skips forwarding for local commands
+  - [ ] Returns false
+  - [ ] Logs skip reason
+- [ ] Test with blank message text
+  - [ ] Returns false
+  - [ ] Does not forward to cursor-runner
+- [ ] Test with blank chat_id
+  - [ ] Returns false
+  - [ ] Does not forward to cursor-runner
+- [ ] Test with CURSOR_DEBUG enabled
+  - [ ] Sends acknowledgment message to user
+- [ ] Test with CURSOR_DEBUG disabled
+  - [ ] Does not send acknowledgment message
+- [ ] Test error handling
+  - [ ] Handles CursorRunnerService errors gracefully
+  - [ ] Cleans up pending request on error
+  - [ ] Sends error message to Telegram on failure
+  - [ ] Returns true even on error to prevent duplicate processing
+  - [ ] Logs errors appropriately
+
+### Test `processLocalMessage` Method
+- [ ] Test with /start command
+  - [ ] Returns welcome message
+  - [ ] Includes help and status commands in response
+- [ ] Test with /help command
+  - [ ] Returns help message
+- [ ] Test with /status command
+  - [ ] Returns status message indicating online
+- [ ] Test with case-insensitive commands
+  - [ ] Handles /START (uppercase)
+  - [ ] Handles /Help (mixed case)
+- [ ] Test with other messages
+  - [ ] Returns placeholder response
+  - [ ] Includes original message text
+  - [ ] Includes "More features coming soon" message
+- [ ] Test with empty message
+  - [ ] Returns valid response
+- [ ] Test with null/undefined message
+  - [ ] Handles gracefully
+- [ ] Test with whitespace
+  - [ ] Strips whitespace from commands
+
+### Test Utility Methods
+- [ ] Test `extractChatInfoFromUpdate` method
+  - [ ] Extracts chat_id and message_id from message updates
+  - [ ] Extracts chat_id and message_id from edited_message updates
+  - [ ] Extracts chat_id and message_id from callback_query updates
+  - [ ] Returns [null, null] for unhandled update types
+- [ ] Test `extractAudioFileId` method
+  - [ ] Extracts file_id from voice messages
+  - [ ] Extracts file_id from audio files
+  - [ ] Extracts file_id from documents with audio mime type
+  - [ ] Returns null for non-audio messages
+- [ ] Test `transcribeAudio` method
+  - [ ] Sends processing message if cursor debug enabled
+  - [ ] Downloads audio file using TelegramService
+  - [ ] Transcribes using ElevenLabsSpeechToTextService
+  - [ ] Cleans up downloaded file in finally block
+  - [ ] Handles download errors gracefully
+  - [ ] Handles transcription errors gracefully
+  - [ ] Handles file cleanup errors gracefully
+- [ ] Test `sendTextAsAudio` method
+  - [ ] Generates audio from text using ElevenLabsTextToSpeechService
+  - [ ] Sends as voice message using TelegramService.sendVoice
+  - [ ] Falls back to text message if audio generation fails
+  - [ ] Cleans up generated audio file in finally block
+  - [ ] Handles errors gracefully
+- [ ] Test `cursorDebugEnabled` method
+  - [ ] Returns true when SystemSetting.enabled('debug') is true
+  - [ ] Returns false when SystemSetting.enabled('debug') is false
+
+### Test Coverage
+- [ ] Achieve >80% code coverage
+- [ ] Cover all public methods
+- [ ] Cover all error paths
+- [ ] Cover edge cases (null, undefined, empty values)
+- [ ] Cover different update types
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 10. TelegramMessageJob Conversion
-- Reference the Rails implementation for behavior
+- Reference the Rails implementation for behavior: `jarek-va/app/jobs/telegram_message_job.rb`
+- Reference the Rails spec for test patterns: `jarek-va/spec/jobs/telegram_message_job_spec.rb`
+
+### Test File Location
+- The test file should be located at `tests/unit/jobs/telegram-message-job.test.ts` to match the directory structure pattern (tests/unit mirrors src/)
+
+### Dependencies to Mock
+All external services should be mocked:
+- TelegramService (for sending messages, downloading files, sending voice messages)
+- CursorRunnerService (for forwarding messages to cursor-runner)
+- CursorRunnerCallbackService (for storing/retrieving pending requests in Redis)
+- ElevenLabsSpeechToTextService (for audio transcription)
+- ElevenLabsTextToSpeechService (for text-to-speech conversion)
+- SystemSetting (for checking debug mode and audio output settings)
+- Logger/Winston (for logging verification)
+
+### Test Patterns from Rails Spec
+The Rails spec (`jarek-va/spec/jobs/telegram_message_job_spec.rb`) provides good patterns for:
+- Testing perform method with different update types
+- Testing processLocalMessage with various commands
+- Testing error handling scenarios
+- Testing edge cases (missing chat_id, sending error message fails)
+
+### Additional Test Scenarios
+Beyond the Rails spec, also test:
+- forwardToCursorRunner method (not directly tested in Rails spec)
+- handleMessage method (not directly tested in Rails spec)
+- handleCallbackQuery method (not directly tested in Rails spec)
+- Utility methods (extractChatInfoFromUpdate, extractAudioFileId, transcribeAudio, sendTextAsAudio)
+- Audio transcription flow
+- Text-to-speech flow
+- File cleanup in error scenarios
 
 - Task can be completed independently by a single agent
 
