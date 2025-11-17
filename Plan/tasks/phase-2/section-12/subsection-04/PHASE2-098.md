@@ -6,21 +6,84 @@
 
 ## Description
 
-Convert apply middleware to routes from Rails to TypeScript/Node.js.
+Apply authentication middleware to Express routes to match Rails `before_action` filters. This task integrates the middleware created in PHASE2-096 and PHASE2-097 with the route definitions created in PHASE2-091 and PHASE2-092.
+
+**Rails Implementation Reference**:
+- `jarek-va/app/controllers/telegram_controller.rb` (line 9): `before_action :authenticate_webhook, only: [:webhook]`
+- `jarek-va/app/controllers/telegram_controller.rb` (lines 52, 74, 92): Admin routes use inline `authenticate_admin` checks
+- `jarek-va/app/controllers/cursor_runner_callback_controller.rb` (line 6): `before_action :authenticate_webhook`
+
+**Rails Implementation Details**:
+1. **Telegram Webhook Route** (`POST /telegram/webhook`):
+   - Uses `before_action :authenticate_webhook, only: [:webhook]`
+   - Only the webhook endpoint requires webhook authentication (not admin routes)
+
+2. **Telegram Admin Routes** (`POST /telegram/set_webhook`, `GET /telegram/webhook_info`, `DELETE /telegram/webhook`):
+   - Each route uses inline `authenticate_admin` check (not `before_action`)
+   - Should be converted to middleware for consistency and reusability
+
+3. **Cursor-Runner Callback Route** (`POST /cursor-runner/callback`):
+   - Uses `before_action :authenticate_webhook` (different implementation than Telegram webhook auth)
+   - Checks `X-Webhook-Secret` OR `X-Cursor-Runner-Secret` headers OR `secret` query/body param
+   - Compares against `webhook_secret` (not `telegram_webhook_secret`)
+
+**Prerequisites**:
+- PHASE2-091: Create telegram routes (must exist: `src/routes/telegram-routes.ts`)
+- PHASE2-092: Create cursor-runner callback routes (must exist: `src/routes/cursor-runner-routes.ts`)
+- PHASE2-096: Create webhook authentication middleware (must exist: `src/middleware/telegram-webhook-auth.middleware.ts`)
+- PHASE2-097: Create admin authentication middleware (must exist: `src/middleware/admin-auth.ts`)
+- Cursor-runner webhook auth middleware (should exist: `src/middleware/cursor-runner-webhook-auth.middleware.ts` - may need to be created if not already done)
 
 ## Checklist
 
-- [ ] Apply webhook auth to telegram webhook route
-- [ ] Apply admin auth to telegram admin routes
-- [ ] Apply webhook auth to callback route
-- [ ] Test middleware application
+- [ ] Open `src/routes/telegram-routes.ts` (created in PHASE2-091)
+- [ ] Import telegram webhook auth middleware from `../middleware/telegram-webhook-auth.middleware`
+- [ ] Import admin auth middleware from `../middleware/admin-auth`
+- [ ] Apply telegram webhook auth middleware to POST `/telegram/webhook` route
+  - Middleware should be applied before the controller handler
+  - Route path: `POST /webhook` (mounted under `/telegram` prefix)
+- [ ] Apply admin auth middleware to POST `/telegram/set_webhook` route
+  - Route path: `POST /set_webhook` (mounted under `/telegram` prefix)
+- [ ] Apply admin auth middleware to GET `/telegram/webhook_info` route
+  - Route path: `GET /webhook_info` (mounted under `/telegram` prefix)
+- [ ] Apply admin auth middleware to DELETE `/telegram/webhook` route
+  - Route path: `DELETE /webhook` (mounted under `/telegram` prefix)
+- [ ] Open `src/routes/cursor-runner-routes.ts` (created in PHASE2-092)
+- [ ] Import cursor-runner webhook auth middleware (create if it doesn't exist: `src/middleware/cursor-runner-webhook-auth.middleware.ts`)
+  - If middleware doesn't exist, create it based on `jarek-va/app/controllers/cursor_runner_callback_controller.rb` (lines 72-91)
+  - Should check `X-Webhook-Secret` OR `X-Cursor-Runner-Secret` headers OR `secret` query/body param
+  - Should compare against `process.env.WEBHOOK_SECRET` (not `TELEGRAM_WEBHOOK_SECRET`)
+  - Should allow requests when secret is blank (development mode)
+- [ ] Apply cursor-runner webhook auth middleware to POST `/cursor-runner/callback` route
+  - Middleware should be applied before the controller handler
+  - Route path: `POST /callback` (mounted under `/cursor-runner` prefix)
+- [ ] Verify middleware order: authentication middleware should be applied before controller handlers
+- [ ] Test middleware application:
+  - [ ] Test telegram webhook route rejects requests without valid `X-Telegram-Bot-Api-Secret-Token` header
+  - [ ] Test telegram webhook route accepts requests with valid `X-Telegram-Bot-Api-Secret-Token` header
+  - [ ] Test telegram admin routes reject requests without valid `X-Admin-Secret` header
+  - [ ] Test telegram admin routes accept requests with valid `X-Admin-Secret` header
+  - [ ] Test cursor-runner callback route rejects requests without valid webhook secret
+  - [ ] Test cursor-runner callback route accepts requests with valid `X-Webhook-Secret` or `X-Cursor-Runner-Secret` header
+
+## Implementation Notes
+
+- Express middleware should be applied using the pattern: `router.post('/path', middleware, handler)`
+- Middleware functions should call `next()` when authentication succeeds
+- Middleware functions should return 401 response and NOT call `next()` when authentication fails
+- The telegram webhook auth middleware (from PHASE2-096) checks `X-Telegram-Bot-Api-Secret-Token` header
+- The admin auth middleware (from PHASE2-097) checks `X-Admin-Secret` header or `admin_secret` query/body param
+- The cursor-runner webhook auth middleware checks `X-Webhook-Secret` OR `X-Cursor-Runner-Secret` headers OR `secret` query/body param
+- All middleware should allow requests when the expected secret is not configured (development mode)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 12. Middleware
-- Reference the Rails implementation for behavior
-
+- Subsection: 12.4
+- Reference the Rails implementation in `jarek-va/app/controllers/telegram_controller.rb` and `jarek-va/app/controllers/cursor_runner_callback_controller.rb` for exact behavior
+- This task assumes route files and middleware files have been created in previous tasks
+- If cursor-runner webhook auth middleware doesn't exist, it should be created as part of this task (or referenced if it exists)
 - Task can be completed independently by a single agent
 
 ## Related Tasks
