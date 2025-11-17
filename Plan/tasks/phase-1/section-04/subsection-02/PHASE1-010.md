@@ -6,7 +6,7 @@
 
 ## Description
 
-Create Express application instance
+Create the Express application instance in `src/app.ts`. This is a foundational step that creates the base Express app object that will be configured with middleware, routes, and other settings in subsequent tasks. The app instance will be imported and started by the entry point (`src/index.ts`) in the next task.
 
 ## Checklist
 
