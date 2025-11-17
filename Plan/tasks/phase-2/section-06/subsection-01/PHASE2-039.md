@@ -17,25 +17,36 @@ Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callb
 - [ ] Define `REDIS_KEY_PREFIX` constant with value `'cursor_runner_callback:'`
 - [ ] Define `DEFAULT_TTL` constant with value `3600` (1 hour in seconds)
 - [ ] Add constructor that accepts optional `redisClient` OR `redisUrl` parameter
-  - If `redisClient` is provided, use it directly
-  - If `redisUrl` is provided, create new Redis client from URL
+  - If `redisClient` is provided, use it directly (for dependency injection/testing)
+  - If `redisUrl` is provided, create new Redis client from URL using `ioredis` package
   - If neither provided, use `REDIS_URL` environment variable (default: `'redis://localhost:6379/0'`)
+  - Create Redis client using `new Redis(url)` from `ioredis` package (matches project standard from PHASE2-009)
   - Store Redis client instance as private property
+  - Note: This service creates its own Redis client instance (matching Rails pattern), rather than using the `getRedisClient()` utility
 - [ ] Add private `redisKey(requestId: string)` helper method that returns `${REDIS_KEY_PREFIX}${requestId}`
 - [ ] Add public `storePendingRequest(requestId: string, data: object, ttl?: number)` method
   - Stores data as JSON in Redis with TTL (defaults to DEFAULT_TTL)
-  - Uses `redis.setex()` with generated key
-  - Logs info message about stored request
+  - Uses `redis.setex(key, ttl, jsonString)` with generated key (ioredis supports setex method)
+  - Logs info message: `"Stored pending cursor-runner request: {requestId}, TTL: {ttl}s"`
+  - Use `console.log()` for logging (or check if logger utility exists in the project)
 - [ ] Add public `getPendingRequest(requestId: string)` method
   - Retrieves data from Redis using generated key
-  - Parses JSON and returns object with symbol keys (or null if not found)
-  - Handles JSON parsing errors gracefully (catches, logs error, returns null)
+  - Parses JSON and returns plain object (or null if not found)
+  - Note: Rails uses `symbolize_names: true` which converts keys to symbols in Ruby, but TypeScript/JavaScript uses plain objects with string keys
+  - Handles JSON parsing errors gracefully (catches, logs error with structured data including request_id and error message, returns null)
 - [ ] Add public `removePendingRequest(requestId: string)` method
-  - Deletes key from Redis using generated key
-  - Logs info message about removed request
+  - Deletes key from Redis using `redis.del(key)` with generated key
+  - Logs info message: `"Removed pending cursor-runner request: {requestId}"`
+  - Use `console.log()` for logging (or check if logger utility exists in the project)
 - [ ] Add proper TypeScript type definitions for all parameters and return types
+  - Import `Redis` type from `ioredis` package for the Redis client property
+  - Define interface for pending request data (e.g., `PendingRequestData` with fields like `chat_id?: number`, `message_id?: number`, etc.)
+  - Return type for `getPendingRequest`: `PendingRequestData | null`
+  - Return type for `storePendingRequest` and `removePendingRequest`: `void`
 - [ ] Add error handling for JSON parsing errors
-- [ ] Add logging (use appropriate Node.js logger - check project's logging setup)
+  - In `getPendingRequest`, catch `SyntaxError` (JSON parsing errors)
+  - Log error with structured data: `console.error('Failed to parse pending request data', { request_id: requestId, error: error.message })`
+  - Return `null` on error
 
 ## Notes
 
@@ -43,10 +54,21 @@ Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callb
 - Section: 6. CursorRunnerCallbackService Conversion
 - Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callback_service.rb` for complete behavior details
 
-- **Redis Client**: The project uses both `redis` and `ioredis` packages. Check which one is used elsewhere in the project and use the same for consistency
-- **Logging**: The Rails version uses `Rails.logger`. Check the project's logging setup (may use console.log, winston, pino, or another logger)
-- **Error Handling**: The `getPendingRequest` method must handle JSON parsing errors gracefully - catch errors, log them, and return null
-- **TypeScript Types**: Define proper interfaces/types for the data parameter (likely includes chat_id, message_id, etc. based on usage)
+- **Redis Client**: Use `ioredis` package (the project standard, as established in PHASE2-009). Import `Redis` from `ioredis` and create client with `new Redis(url)`. The service creates its own Redis client instance (matching Rails pattern) rather than using the `getRedisClient()` utility. Both `redis` and `ioredis` packages are in dependencies, but `ioredis` is the standard for this project.
+- **Redis Methods**: Use `ioredis` API methods:
+  - `redis.setex(key, ttl, value)` - stores value with TTL (matches Rails API)
+  - `redis.get(key)` - retrieves value (returns string or null)
+  - `redis.del(key)` - deletes key
+- **Logging**: The Rails version uses `Rails.logger.info()` and `Rails.logger.error()`. For this task, use `console.log()` for info messages and `console.error()` for errors. If a logger utility exists in the project, use that instead. The Rails implementation logs structured error data: `Rails.logger.error('Failed to parse pending request data', { request_id: request_id, error: e.message })`
+- **Error Handling**: The `getPendingRequest` method must handle JSON parsing errors gracefully:
+  - Catch `SyntaxError` exceptions from `JSON.parse()`
+  - Log error with structured data including `request_id` and `error.message`
+  - Return `null` on error (matching Rails behavior)
+- **TypeScript Types**: Define proper interfaces/types:
+  - Create `PendingRequestData` interface with optional fields like `chat_id?: number`, `message_id?: number`, etc. (based on usage in callback controller)
+  - Import `Redis` type from `ioredis` for the private Redis client property
+  - Return type for `getPendingRequest`: `PendingRequestData | null`
+- **JSON Parsing**: Rails uses `JSON.parse(data, symbolize_names: true)` which converts string keys to symbol keys in Ruby. In TypeScript/JavaScript, `JSON.parse()` returns a plain object with string keys, which is the expected behavior.
 - **Environment Variables**: In Docker, REDIS_URL is set to `redis://redis:6379/0` (shared Redis instance). Local development falls back to `redis://localhost:6379/0`
 - **Method Naming**: Convert Ruby snake_case method names to TypeScript camelCase (e.g., `store_pending_request` → `storePendingRequest`)
 
