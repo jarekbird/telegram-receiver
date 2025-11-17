@@ -6,18 +6,19 @@
 
 ## Description
 
-Initialize Git repository (if not exists)
+Initialize Git repository for the telegram-receiver project if it doesn't already exist, and create or validate the `.gitignore` file with essential entries for a Node.js/TypeScript project. If the Git repository already exists, verify it's properly initialized. If `.gitignore` already exists, validate that it includes the required entries and add any missing ones.
 
 ## Checklist
 
 - [ ] Check if `.git` directory exists
-- [ ] If not, run `git init`
-- [ ] Create `.gitignore` file
-- [ ] Add `node_modules/` to `.gitignore`
-- [ ] Add `dist/` to `.gitignore`
-- [ ] Add `.env` to `.gitignore`
-- [ ] Add `*.log` to `.gitignore`
-- [ ] Add `coverage/` to `.gitignore`
+- [ ] If not, run `git init` to initialize the repository
+- [ ] Create `.gitignore` file (or validate existing file)
+- [ ] Add `node_modules/` to `.gitignore` (dependencies directory)
+- [ ] Add `dist/` to `.gitignore` (TypeScript build output)
+- [ ] Add `.env` to `.gitignore` (environment variables)
+- [ ] Add `*.log` to `.gitignore` (log files)
+- [ ] Add `coverage/` to `.gitignore` (test coverage reports)
+- [ ] Optionally add common additional entries: `.DS_Store` (macOS), `.vscode/` or `.idea/` (IDE), `*.tsbuildinfo` (TypeScript build info)
 
 ## Notes
 
