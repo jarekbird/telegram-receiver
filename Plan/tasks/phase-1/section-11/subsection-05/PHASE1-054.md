@@ -6,20 +6,89 @@
 
 ## Description
 
-Configure CI job - Testing
+Configure CI job for automated testing in GitHub Actions. This task converts the testing workflow from jarek-va (`.github/workflows/test.yml`) to a Node.js/TypeScript equivalent for telegram-receiver.
+
+The workflow should run on push and pull requests to main/master branches, and support manual triggering. It should include code quality checks (linting, formatting, type checking) and comprehensive test execution (unit, integration) with coverage reporting.
+
+**Reference Implementation**: `jarek-va/.github/workflows/test.yml`
 
 ## Checklist
 
-- [ ] Add step to run unit tests
-- [ ] Add step to run integration tests
-- [ ] Add step to generate coverage report
-- [ ] Add step to upload coverage (optional, to codecov or similar)
+### Workflow Setup
+- [ ] Create `.github/workflows/test.yml` file
+- [ ] Configure workflow triggers (push, pull_request, workflow_dispatch)
+- [ ] Set up job to run on ubuntu-latest
+
+### Environment Setup
+- [ ] Add step to checkout code (with full history for diff comparison)
+- [ ] Add step to set up Node.js (version >=18.0.0 as per package.json engines)
+- [ ] Add step to install dependencies (`npm ci` for reproducible builds)
+- [ ] Configure caching for node_modules (optional optimization)
+
+### Code Quality Checks
+- [ ] Add step to run ESLint (`npm run lint`)
+- [ ] Add step to check code formatting (`npm run format:check`)
+- [ ] Add step to run TypeScript type checking (`npm run type-check`)
+
+### Testing
+- [ ] Add step to run unit tests (`npm run test:unit` or `npm run test` with Jest)
+- [ ] Add step to run integration tests (`npm run test:integration` or via Jest test patterns)
+- [ ] Configure test environment variables if needed
+- [ ] Add step to generate coverage report (`npm run test:coverage`)
+
+### Coverage Reporting
+- [ ] Configure coverage report generation (already configured in jest.config.ts)
+- [ ] Add step to upload coverage report (optional: to codecov, coveralls, or GitHub Actions artifacts)
+- [ ] Ensure coverage reports are generated in formats: text, lcov, html (as per jest.config.ts)
+
+### Optional Enhancements
+- [ ] Add changed file detection to run tests only for affected files (similar to Rails implementation)
+- [ ] Add test result summary/annotation in GitHub Actions
+- [ ] Configure test timeout handling
+- [ ] Add step to fail workflow if coverage drops below threshold (optional)
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 11. CI/CD Pipeline Configuration
 - Task can be completed independently by a single agent
+
+### Implementation Guidance
+
+**Rails Reference**: The jarek-va application has a comprehensive test workflow at `.github/workflows/test.yml` that includes:
+- Changed file detection for optimized test runs
+- RuboCop linting
+- RSpec test execution with smart test selection
+- Database setup for tests
+
+**Node.js/TypeScript Adaptation**:
+- Use `actions/setup-node@v4` for Node.js setup
+- Use `npm ci` instead of `npm install` for reproducible builds in CI
+- Jest is already configured in `jest.config.ts` with coverage reporting
+- ESLint, Prettier, and TypeScript are configured in `package.json`
+- Test scripts are available: `test:unit`, `test:integration`, `test:coverage`
+- Coverage is configured to generate text, lcov, and html reports
+
+**Key Differences from Rails**:
+- No database setup needed (telegram-receiver uses Redis, which can be mocked or use a service container)
+- TypeScript type checking is additional step not present in Rails
+- Prettier formatting check is additional step
+- Jest handles both unit and integration tests (no separate test framework)
+
+**Workflow Structure**:
+1. Checkout code
+2. Setup Node.js
+3. Install dependencies
+4. Run linting (ESLint)
+5. Check formatting (Prettier)
+6. Type check (TypeScript)
+7. Run tests with coverage
+8. Upload coverage (optional)
+
+**Coverage Upload Options**:
+- Use `codecov/codecov-action@v3` for Codecov integration
+- Use `actions/upload-artifact` to store coverage reports as artifacts
+- Or use `coverallsapp/github-action` for Coveralls integration
 
 ## Related Tasks
 
