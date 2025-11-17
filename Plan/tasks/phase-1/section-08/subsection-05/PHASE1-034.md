@@ -10,9 +10,10 @@ Integrate logger utility in the request logging middleware (`src/middleware/requ
 
 **Rails Logging Patterns to Replicate:**
 - The jarek-va Rails application uses `config.log_tags = [:request_id]` in production (see `jarek-va/config/environments/production.rb` line 43), which prepends request_id to all log lines
-- Rails' built-in request logging middleware automatically logs incoming requests with method, path, IP, and request_id
+- Rails' built-in request logging middleware (`ActionDispatch::RequestId` and `Rack::Logger`) automatically logs incoming requests with method, path, IP, and request_id
 - Request logging uses `Rails.logger.info()` for normal request/response logging
 - The request_id is included in all log entries for request tracing (see `jarek-va/config/environments/production.rb` line 69: `ActiveSupport::TaggedLogging` wrapper)
+- Rails automatically generates a unique request ID for each request and includes it in all log entries via the `TaggedLogging` wrapper
 
 **Purpose:**
 - Replace console.log with proper logger methods for consistent logging across the application
