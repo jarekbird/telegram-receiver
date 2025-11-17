@@ -26,7 +26,7 @@ forwardToCursorRunner(
 - [ ] Return `false` if message text is blank/empty
 - [ ] Skip local commands: check if message matches `/start`, `/help`, or `/status` (case-insensitive regex) and return `false`
 - [ ] Return `false` if `chatId` is blank/null/undefined
-- [ ] Generate unique `requestId`: format `"telegram-{timestamp}-{randomHex}"` (e.g., `"telegram-1234567890-a1b2c3d4"`)
+- [ ] Generate unique `requestId`: format `"telegram-{unixTimestamp}-{8HexChars}"` where timestamp is Unix seconds and hex is 8 characters from 4 random bytes (e.g., `"telegram-1234567890-a1b2c3d4"`)
 - [ ] Store pending request in Redis using `CursorRunnerCallbackService.storePendingRequest`:
   - Store data object: `{ chatId, messageId, prompt: messageText, originalWasAudio, createdAt: ISO8601 timestamp }`
   - Set TTL to 3600 seconds (1 hour)
