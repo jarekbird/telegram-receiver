@@ -6,15 +6,30 @@
 
 ## Description
 
-Convert implement delete_webhook endpoint from Rails to TypeScript/Node.js. Reference `jarek-va/app/controllers/*_controller.rb` files.
+Convert the `delete_webhook` endpoint from Rails to TypeScript/Node.js. This endpoint allows administrators to delete the Telegram webhook configuration.
+
+**Rails Implementation Reference:**
+- Controller: `jarek-va/app/controllers/telegram_controller.rb` (lines 90-106)
+- Service: `jarek-va/app/services/telegram_service.rb` (lines 53-63)
+- Route: `DELETE /telegram/webhook` (defined in `jarek-va/config/routes.rb` line 35)
+
+**Rails Implementation Details:**
+- The `delete_webhook` controller method requires admin authentication via `authenticate_admin`
+- Returns `401 Unauthorized` if admin authentication fails
+- Calls `TelegramService.delete_webhook` which uses the Telegram Bot API to delete the webhook
+- On success, returns JSON: `{ ok: true, message: 'Webhook deleted successfully' }`
+- On error, catches `StandardError`, logs the error, and returns JSON: `{ ok: false, error: e.message }` with status 500
+- The service method returns early if `telegram_bot_token` is blank
 
 ## Checklist
 
-- [ ] Implement `deleteWebhook` handler method
-- [ ] Require admin authentication
-- [ ] Call TelegramService.deleteWebhook
-- [ ] Return success response
-- [ ] Add error handling
+- [ ] Implement `deleteWebhook` handler method in TelegramController
+- [ ] Add route: `DELETE /telegram/webhook` mapping to the handler
+- [ ] Require admin authentication (return 401 if authentication fails)
+- [ ] Call `TelegramService.deleteWebhook()` method
+- [ ] Return success response: JSON `{ ok: true, message: 'Webhook deleted successfully' }` with status 200
+- [ ] Add error handling: catch errors, log them, and return JSON `{ ok: false, error: error.message }` with status 500
+- [ ] Ensure TelegramService.deleteWebhook handles empty bot token gracefully (returns early if token is blank)
 
 ## Notes
 
