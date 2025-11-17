@@ -61,11 +61,12 @@ Add comprehensive error handling to the ElevenLabsSpeechToTextService class meth
 - Error classes (Error, ConnectionError, TimeoutError, InvalidResponseError, TranscriptionError) should already be defined from PHASE2-045
 - This task adds error handling to methods that should already be implemented (transcribe from PHASE2-046, transcribe_io from PHASE2-047)
 - Error handling should be integrated into existing method implementations, not added as separate methods
+- **Error Propagation**: Connection and timeout errors from `build_http` and `execute_request` will naturally propagate to the public methods (`transcribe` and `transcribe_io`) without needing explicit catch blocks in those methods. Only specific errors (like `Errno::ENOENT` for file operations and `JSON::ParserError` from `parse_response`) need explicit handling in the public methods.
 - In TypeScript/Node.js, equivalent error types:
-  - `ECONNREFUSED`, `EHOSTUNREACH`, `SocketError` → Network connection errors (use appropriate Node.js error types)
-  - `Net::OpenTimeout`, `Net::ReadTimeout` → Request timeout errors (use fetch/axios timeout handling)
+  - `ECONNREFUSED`, `EHOSTUNREACH`, `SocketError` → Network connection errors (use appropriate Node.js error types like `ECONNREFUSED`, `EHOSTUNREACH`, or generic `Error` with appropriate error codes)
+  - `Net::OpenTimeout`, `Net::ReadTimeout` → Request timeout errors (use fetch/axios timeout handling or AbortController with timeout)
   - `JSON::ParserError` → JSON parsing errors (use try-catch around JSON.parse)
-  - `Errno::ENOENT` → File not found errors (use fs.access or fs.stat with error handling)
+  - `Errno::ENOENT` → File not found errors (use fs.access or fs.stat with error handling, or catch `ENOENT` error code)
 - Logging should use the application's logger (similar to Rails.logger)
 - Task can be completed independently by a single agent
 
