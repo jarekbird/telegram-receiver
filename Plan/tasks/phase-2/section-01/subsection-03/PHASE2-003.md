@@ -6,17 +6,42 @@
 
 ## Description
 
-Create TypeScript type definitions for ElevenLabs API. These types will be used for speech-to-text and text-to-speech operations.
+Create TypeScript type definitions for ElevenLabs API. These types will be used for speech-to-text and text-to-speech operations. The types must accurately reflect the API request/response structures used in the Rails services.
 
 ## Checklist
 
 - [ ] Create `src/types/elevenlabs.ts` file
 - [ ] Define `ElevenLabsTranscribeRequest` interface for STT requests
+  - [ ] Include `file` field (File or Buffer for multipart/form-data)
+  - [ ] Include `model_id` field (string, default: 'scribe_v1')
+  - [ ] Include optional `language` field (string, e.g., 'en', 'es', 'fr')
 - [ ] Define `ElevenLabsTranscribeResponse` interface for STT responses
+  - [ ] Include `text` field (string, required - the transcribed text)
 - [ ] Define `ElevenLabsSynthesizeRequest` interface for TTS requests
-- [ ] Define `ElevenLabsSynthesizeResponse` interface for TTS responses
+  - [ ] Include `text` field (string, required)
+  - [ ] Include `model_id` field (string, default: 'eleven_turbo_v2_5')
+  - [ ] Include `output_format` field (string, default: 'mp3_44100_128')
+  - [ ] Include optional `voice_settings` field (ElevenLabsVoiceSettings)
+- [ ] Define `ElevenLabsSynthesizeResponse` type for TTS responses
+  - [ ] Note: TTS returns binary audio data (Buffer), not JSON
+  - [ ] Type should be `Buffer` or `ArrayBuffer` for audio/mpeg content
 - [ ] Define `ElevenLabsVoiceSettings` interface for voice configuration
+  - [ ] Include optional `stability` field (number, typically 0-1)
+  - [ ] Include optional `similarity_boost` field (number, typically 0-1)
+  - [ ] Include other voice settings as needed (style, use_speaker_boost, etc.)
 - [ ] Define `ElevenLabsError` interface for error responses
+  - [ ] Support error responses that can be objects or arrays
+  - [ ] Include `detail` field (string | string[] | Array<{msg?: string}>)
+  - [ ] Include optional `error` field (string)
+  - [ ] Include optional `message` field (string)
+  - [ ] Handle array error responses with `msg` fields
+- [ ] Define error class types matching Rails service errors
+  - [ ] `ElevenLabsError` (base error)
+  - [ ] `ElevenLabsConnectionError`
+  - [ ] `ElevenLabsTimeoutError`
+  - [ ] `ElevenLabsInvalidResponseError`
+  - [ ] `ElevenLabsTranscriptionError` (for STT)
+  - [ ] `ElevenLabsSynthesisError` (for TTS)
 - [ ] Export all types and interfaces
 
 ## Notes
@@ -24,7 +49,40 @@ Create TypeScript type definitions for ElevenLabs API. These types will be used 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 1. TypeScript Type Definitions
 - Reference `jarek-va/app/services/eleven_labs_speech_to_text_service.rb` and `eleven_labs_text_to_speech_service.rb`
-- Types should match the ElevenLabs API structure
+- Types should match the ElevenLabs API structure as implemented in the Rails services
+
+### Implementation Details from Rails Services
+
+**Speech-to-Text (STT) Service:**
+- Uses `multipart/form-data` format (not JSON)
+- Request fields: `file` (audio file), `model_id` (string), `language` (optional string)
+- Response is JSON with `text` field containing transcribed text
+- Default model_id: `'scribe_v1'`
+- Endpoint: `/v1/speech-to-text`
+- Error responses can have `detail`, `error`, or `message` fields
+
+**Text-to-Speech (TTS) Service:**
+- Uses JSON format for request body
+- Request fields: `text` (required), `model_id` (string), `output_format` (string), `voice_settings` (optional object)
+- Response is binary audio data (`audio/mpeg`), NOT JSON
+- Default model_id: `'eleven_turbo_v2_5'`
+- Default output_format: `'mp3_44100_128'`
+- Default voice_id: `'vfaqCOvlrKi4Zp7C2IAm'` (used in URL path, not request body)
+- Endpoint: `/v1/text-to-speech/{voice_id}`
+- Error responses can be arrays or objects:
+  - Array format: `[{msg: string}, ...]`
+  - Object format: `{detail: string | string[] | Array<{msg?: string}>, error?: string, message?: string}`
+  - When detail is an array, extract `msg` fields from each item
+
+**Voice Settings:**
+- Optional hash/object passed to TTS requests
+- Common fields: `stability`, `similarity_boost` (based on service comments)
+- Should be flexible to accommodate other ElevenLabs voice settings
+
+**Error Handling:**
+- Both services define custom error classes inheriting from base Error
+- Connection errors, timeout errors, invalid response errors, and operation-specific errors
+- Error parsing handles both JSON object and array responses
 - Task can be completed independently by a single agent
 
 ## Related Tasks
