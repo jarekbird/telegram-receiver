@@ -25,10 +25,17 @@ Based on previous task reviews and codebase validation, the following type issue
 ### 1. Fix Known Type Issues
 - [ ] Fix `createMockFn` in `tests/helpers/testUtils.ts` (line 15):
   - Replace the generic constraint `<T extends (...args: any[]) => any>` with a better type-safe version
-  - Use TypeScript utility types: `<T extends (...args: unknown[]) => unknown>` or better yet, use `Parameters<T>` and `ReturnType<T>` if possible
-  - Alternative approach: Use `<T extends (...args: never[]) => unknown>` or simply constrain to `Function` type if utility types don't work well with jest.MockedFunction
+  - Use `<T extends (...args: unknown[]) => unknown>` - This is the recommended approach:
+    - `unknown[]` is type-safe (no `any`) and works correctly with function parameter types
+    - `unknown` is type-safe (no `any`) and works correctly with function return types
+    - The generic type `T` will be inferred from usage, and `jest.MockedFunction<T>` will preserve all type information
+    - This approach maintains full type safety while eliminating ESLint warnings
+  - Alternative approaches (if the above doesn't work):
+    - Use `<T extends (...args: never[]) => unknown>` if `unknown[]` causes issues
+    - Use `<T extends Function>` as a last resort (less type-safe but acceptable for test utilities)
   - Ensure the function maintains type safety and all existing tests continue to pass
   - The function signature should remain: `export const createMockFn = <T extends ...>(implementation?: T): jest.MockedFunction<T>`
+  - Verify that `jest.MockedFunction<T>` correctly preserves the function's parameter and return types after the change
 - [ ] Run `npm run lint` and fix all `@typescript-eslint/no-explicit-any` warnings
 - [ ] Verify no ESLint type-related warnings remain (should show 0 warnings after fix)
 
