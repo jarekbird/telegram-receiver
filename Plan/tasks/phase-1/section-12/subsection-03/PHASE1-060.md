@@ -35,20 +35,29 @@ Document API conventions based on the jarek-va Rails application patterns. This 
   - [ ] Global error handler pattern (equivalent to `ApplicationController#handle_error`)
   - [ ] Error response format: `{ ok: false, say: '...', result: { error: ... } }`
   - [ ] HTTP status code conventions:
-    - [ ] `500` for internal server errors
-    - [ ] `502` for bad gateway (service errors)
-    - [ ] `401` for unauthorized
-    - [ ] `400` for bad request
+    - [ ] `500` for internal server errors (unhandled exceptions)
+    - [ ] `502` for bad gateway (external service errors, e.g., CursorRunnerService errors)
+    - [ ] `422` for unprocessable entity (service-level validation failures)
+    - [ ] `401` for unauthorized (authentication failures)
+    - [ ] `400` for bad request (validation errors, missing required parameters)
     - [ ] `200` for successful operations
   - [ ] Specific error type handling (e.g., service-specific errors)
   - [ ] Error logging patterns
 - [ ] Document response format conventions:
-  - [ ] Success response format: `{ ok: true, ... }` or `{ success: true, ... }`
-  - [ ] Error response format: `{ ok: false, say: '...', result: { error: ... } }`
-  - [ ] Health check response format: `{ status: 'healthy', service: ..., version: ... }`
-  - [ ] Simple acknowledgment responses (empty body with status code)
+  - [ ] Success response format variations:
+    - [ ] `{ ok: true, ... }` - Standard success format (TelegramController, AgentToolsController)
+    - [ ] `{ success: true, ... }` - Service response format (CursorRunnerController)
+    - [ ] `{ status: 'healthy', service: ..., version: ... }` - Health check format
+    - [ ] `{ received: true, ... }` - Callback acknowledgment format
+  - [ ] Error response format variations:
+    - [ ] `{ ok: false, say: '...', result: { error: ... } }` - ApplicationController global error handler
+    - [ ] `{ ok: false, error: '...' }` - Controller-level error responses
+    - [ ] `{ success: false, error: '...' }` - Service-level error responses
+    - [ ] `{ error: '...' }` - Simple error responses (unauthorized, bad request)
+  - [ ] Simple acknowledgment responses (empty body with status code, e.g., `head :ok`)
   - [ ] Response status code selection guidelines
   - [ ] JSON response structure consistency
+  - [ ] When to use each response format variation
 
 ## Notes
 
