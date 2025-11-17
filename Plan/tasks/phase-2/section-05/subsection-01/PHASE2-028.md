@@ -6,15 +6,21 @@
 
 ## Description
 
-Convert create cursorrunnerservice class structure from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/cursor_runner_service.rb`.
+Create the CursorRunnerService class structure in TypeScript/Node.js. This service handles HTTP communication with the cursor-runner API for cursor execution and git operations. This task focuses on creating the basic class structure, constructor, and error classes only - method implementations will be added in subsequent tasks.
+
+Reference the Rails implementation at `jarek-va/app/services/cursor_runner_service.rb` for the complete service structure and behavior.
 
 ## Checklist
 
 - [ ] Create `src/services/cursor-runner-service.ts` file
-- [ ] Define class structure
-- [ ] Add constructor with base_url and timeout
-- [ ] Import required types
-- [ ] Add custom error classes
+- [ ] Define `CursorRunnerService` class structure
+- [ ] Add constructor with optional `base_url` and `timeout` parameters that default to application config values
+- [ ] Import required types and dependencies (HTTP client, JSON parsing, etc.)
+- [ ] Add custom error classes matching Rails implementation:
+  - `CursorRunnerService.Error` (base error class)
+  - `CursorRunnerService.ConnectionError` (connection failures)
+  - `CursorRunnerService.TimeoutError` (request timeouts)
+  - `CursorRunnerService.InvalidResponseError` (JSON parsing errors)
 
 ## Notes
 
