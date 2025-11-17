@@ -6,21 +6,74 @@
 
 ## Description
 
-Convert implement html entity escaping utility from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/telegram_service.rb`.
+Convert the HTML entity escaping utility from Rails to TypeScript/Node.js. This utility function escapes HTML special characters to prevent Telegram from trying to parse them as HTML tags when using HTML parse mode. Reference `jarek-va/app/services/telegram_service.rb` lines 176-183.
+
+**Rails Implementation Details:**
+- Private method `escape_html_entities` in `TelegramService` class
+- Used in `send_message` method when `parse_mode == 'HTML'` (line 21)
+- Purpose: Prevents parsing errors with text that looks like HTML tags (e.g., "tcpsocket:(closed)")
 
 ## Checklist
 
-- [ ] Create `escapeHtmlEntities` utility function
-- [ ] Escape &, <, > characters
-- [ ] Handle edge cases
-- [ ] Add unit tests
+- [ ] Create `escapeHtmlEntities` utility function in `src/utils/` directory
+- [ ] Function signature: `escapeHtmlEntities(text: string | number | null | undefined): string`
+- [ ] Convert input to string (handle non-string inputs like numbers, null, undefined)
+- [ ] Escape HTML special characters in correct order:
+  - [ ] Escape `&` first (to avoid double-escaping existing entities) → `&amp;`
+  - [ ] Escape `<` → `&lt;`
+  - [ ] Escape `>` → `&gt;`
+- [ ] Handle edge cases:
+  - [ ] Null/undefined inputs (convert to empty string)
+  - [ ] Number inputs (convert to string)
+  - [ ] Empty strings
+  - [ ] Strings that already contain HTML entities (don't double-escape)
+  - [ ] Strings with mixed content (text that looks like HTML tags)
+- [ ] Export function for use in TelegramService
+- [ ] Add comprehensive unit tests covering:
+  - [ ] Basic escaping of &, <, > characters
+  - [ ] Order of escaping (must escape & first)
+  - [ ] Non-string inputs (null, undefined, numbers)
+  - [ ] Empty strings
+  - [ ] Strings that already contain entities
+  - [ ] Real-world examples (e.g., "tcpsocket:(closed)")
+
+## Implementation Notes
+
+**Rails Implementation (lines 176-183):**
+```ruby
+def escape_html_entities(text)
+  # Escape HTML special characters to prevent Telegram from trying to parse
+  # them as HTML tags. Must escape & first to avoid double-escaping existing entities.
+  text.to_s
+      .gsub('&', '&amp;')
+      .gsub('<', '&lt;')
+      .gsub('>', '&gt;')
+end
+```
+
+**Key Implementation Requirements:**
+1. **Order matters**: Must escape `&` first to prevent double-escaping existing HTML entities
+2. **Type handling**: Convert input to string (equivalent to Ruby's `.to_s`)
+3. **Location**: Place in `src/utils/escapeHtmlEntities.ts` or similar utility file
+4. **Usage**: This utility will be used by `TelegramService.sendMessage()` when `parseMode === 'HTML'` (see PHASE2-019)
+
+**Example Usage:**
+```typescript
+import { escapeHtmlEntities } from '../utils/escapeHtmlEntities';
+
+// In TelegramService.sendMessage()
+const escapedText = parseMode === 'HTML' 
+  ? escapeHtmlEntities(text) 
+  : text;
+```
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 4. TelegramService Conversion
-- Reference the Rails implementation for behavior
-
+- Subsection: 4.8 (Utility Functions)
+- Reference the Rails implementation at `jarek-va/app/services/telegram_service.rb` lines 176-183
+- This utility is referenced by PHASE2-018 and PHASE2-019 (TelegramService conversion tasks)
 - Task can be completed independently by a single agent
 
 ## Related Tasks
