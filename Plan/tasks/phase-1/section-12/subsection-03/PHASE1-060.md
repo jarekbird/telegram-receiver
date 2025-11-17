@@ -6,23 +6,68 @@
 
 ## Description
 
-Document API conventions
+Document API conventions based on the jarek-va Rails application patterns. This documentation will guide developers in maintaining consistency when implementing the Node.js/Express API conversion. The conventions should reflect the patterns found in the Rails codebase while adapting them appropriately for Node.js/Express.
 
 ## Checklist
 
 - [ ] Create `docs/API_CONVENTIONS.md` file
-- [ ] Document route naming conventions
-- [ ] Document controller naming conventions
-- [ ] Document service naming conventions
-- [ ] Document middleware naming conventions
-- [ ] Document error handling conventions
-- [ ] Document response format conventions
+- [ ] Document route naming conventions:
+  - [ ] RESTful route patterns (GET, POST, DELETE, etc.)
+  - [ ] Route scoping and namespacing (e.g., `/cursor-runner/*`, `/telegram/*`)
+  - [ ] snake_case for route paths
+  - [ ] Route organization patterns
+- [ ] Document controller naming conventions:
+  - [ ] Controller suffix pattern (e.g., `*Controller`)
+  - [ ] Controller inheritance from base controller
+  - [ ] Controller method naming (REST actions: show, create, etc.)
+  - [ ] Controller organization and file structure
+- [ ] Document service naming conventions:
+  - [ ] Service suffix pattern (e.g., `*Service`)
+  - [ ] Service class organization
+  - [ ] Service method naming patterns
+  - [ ] Service location and structure
+- [ ] Document middleware naming conventions:
+  - [ ] Express middleware naming patterns (equivalent to Rails `before_action` filters)
+  - [ ] Authentication middleware patterns (e.g., `authenticateWebhook`, `authenticateAdmin`)
+  - [ ] Validation middleware patterns
+  - [ ] Middleware organization and structure
+- [ ] Document error handling conventions:
+  - [ ] Global error handler pattern (equivalent to `ApplicationController#handle_error`)
+  - [ ] Error response format: `{ ok: false, say: '...', result: { error: ... } }`
+  - [ ] HTTP status code conventions:
+    - [ ] `500` for internal server errors
+    - [ ] `502` for bad gateway (service errors)
+    - [ ] `401` for unauthorized
+    - [ ] `400` for bad request
+    - [ ] `200` for successful operations
+  - [ ] Specific error type handling (e.g., service-specific errors)
+  - [ ] Error logging patterns
+- [ ] Document response format conventions:
+  - [ ] Success response format: `{ ok: true, ... }` or `{ success: true, ... }`
+  - [ ] Error response format: `{ ok: false, say: '...', result: { error: ... } }`
+  - [ ] Health check response format: `{ status: 'healthy', service: ..., version: ... }`
+  - [ ] Simple acknowledgment responses (empty body with status code)
+  - [ ] Response status code selection guidelines
+  - [ ] JSON response structure consistency
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 12. API Structure Documentation
 - Task can be completed independently by a single agent
+- Reference the jarek-va Rails application (`/cursor/repositories/jarek-va`) for actual implementation patterns:
+  - Controllers: `app/controllers/*.rb`
+  - Routes: `config/routes.rb`
+  - Services: `app/services/*.rb`
+  - Error handling: `app/controllers/application_controller.rb`
+- Key Rails patterns to document and adapt for Node.js/Express:
+  - Authentication via headers: `X-Admin-Secret`, `X-Telegram-Bot-Api-Secret-Token`, `X-Webhook-Secret`
+  - Webhook authentication patterns
+  - Admin authentication patterns
+  - Request parameter handling (query params, body params, headers)
+  - Response format consistency across endpoints
+- Include examples from actual Rails endpoints to illustrate conventions
+- Document both Rails patterns and their Node.js/Express equivalents
 
 ## Related Tasks
 
