@@ -17,9 +17,18 @@ Code smells may have been identified through:
 - **PHASE4-017**: Manual code review report (`docs/manual-code-review.md`)
 
 **Manual Code Review Findings** (from PHASE4-017):
-- Magic numbers in configuration files (`playwright.config.ts`, `jest.config.ts`)
-- Missing JSDoc comments in test files
-- Test fixture error format inconsistency
+- **Magic numbers in configuration files**:
+  - `playwright.config.ts` line 13: `retries: process.env.CI ? 2 : 0` - magic number `2` should be extracted to named constant
+  - `jest.config.ts` line 24: `testTimeout: 10000` - magic number `10000` should be extracted to named constant
+- **Missing JSDoc comments in test files**:
+  - `tests/fixtures/apiResponses.ts` - exported constants and functions lack detailed JSDoc
+  - `tests/fixtures/telegramMessages.ts` - exported constants and functions lack detailed JSDoc
+  - `tests/mocks/cursorRunnerApi.ts` - exported mock object and reset function lack detailed JSDoc
+  - `tests/mocks/telegramApi.ts` - exported mock object and reset function lack detailed JSDoc
+  - `tests/mocks/redis.ts` - exported mock object and reset function lack detailed JSDoc
+- **Test fixture error format inconsistency**:
+  - `tests/mocks/cursorRunnerApi.ts` uses `{ success: boolean }` format instead of architecture-defined `{ ok: boolean, error?: string, message?: string, details?: {} }` format
+  - Should be updated to match `tests/fixtures/apiResponses.ts` format which correctly uses `{ ok: boolean }`
 
 **Automated Findings** (if PHASE4-007 and PHASE4-009 are completed):
 - Check `docs/code-quality-report.md` for consolidated automated findings
@@ -93,6 +102,9 @@ Code smells may have been identified through:
   - [ ] Add JSDoc comment explaining the constant's purpose
   - [ ] Place constant in appropriate location (file-level, class-level, or module-level)
   - [ ] Update all usages to reference the constant
+- [ ] **Specific manual review findings to address**:
+  - [ ] Extract `playwright.config.ts` line 13 magic number `2` (CI retry count) to named constant (e.g., `CI_TEST_RETRIES`)
+  - [ ] Extract `jest.config.ts` line 24 magic number `10000` (test timeout in ms) to named constant (e.g., `DEFAULT_TEST_TIMEOUT_MS`)
 - [ ] Common locations to check:
   - Configuration files (`playwright.config.ts`, `jest.config.ts`)
   - Service files with timeouts, retries, limits
@@ -107,9 +119,17 @@ Code smells may have been identified through:
   - [ ] **Long Parameter Lists**: Use parameter objects or builder pattern
   - [ ] **Data Clumps**: Extract related data into objects/classes
   - [ ] **Primitive Obsession**: Replace primitives with value objects
-- [ ] Address manual review findings:
-  - [ ] Add missing JSDoc comments to test files
-  - [ ] Fix test fixture error format inconsistency
+- [ ] **Address manual review findings**:
+  - [ ] **Add missing JSDoc comments to test files**:
+    - [ ] Add JSDoc to `tests/fixtures/apiResponses.ts` exported constants (`cursorRunnerSuccessResponse`, `cursorRunnerErrorResponse`) and function (`createCursorRunnerResponse`)
+    - [ ] Add JSDoc to `tests/fixtures/telegramMessages.ts` exported constants (`sampleTextMessage`, `sampleCallbackQuery`, `sampleWebhookUpdate`) and function (`createTelegramMessage`)
+    - [ ] Add JSDoc to `tests/mocks/cursorRunnerApi.ts` exported mock object (`mockCursorRunnerApi`) and reset function (`resetCursorRunnerApiMocks`)
+    - [ ] Add JSDoc to `tests/mocks/telegramApi.ts` exported mock object (`mockTelegramApi`) and reset function (`resetTelegramApiMocks`)
+    - [ ] Add JSDoc to `tests/mocks/redis.ts` exported mock object (`mockRedisClient`) and reset function (`resetRedisMocks`)
+  - [ ] **Fix test fixture error format inconsistency**:
+    - [ ] Update `tests/mocks/cursorRunnerApi.ts` to use `{ ok: boolean, error?: string, message?: string, details?: {} }` format instead of `{ success: boolean }`
+    - [ ] Change `sendMessage`, `iterate`, and `iterateAsync` mock responses to use `ok` property instead of `success`
+    - [ ] Verify format matches `tests/fixtures/apiResponses.ts` and architecture-defined format
 - [ ] Run tests after each code smell fix
 - [ ] Verify functionality is maintained
 
