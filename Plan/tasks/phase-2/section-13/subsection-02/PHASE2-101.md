@@ -6,24 +6,25 @@
 
 ## Description
 
-Create comprehensive API response fixtures for controller tests. These fixtures should match the response structures used in the Rails controller specs (`jarek-va/spec/controllers/`). The fixtures will be used to mock external API responses in controller tests.
+Create comprehensive API response fixtures for controller tests. These fixtures should match the response structures returned by external APIs (Telegram Bot API, Cursor Runner API, ElevenLabs API) as used in the Rails application. The fixtures will be used to mock external API responses in controller tests when testing services that call these APIs.
 
 **Rails References**:
-- `jarek-va/spec/controllers/telegram_controller_spec.rb` - Telegram API responses
-- `jarek-va/spec/controllers/cursor_runner_controller_spec.rb` - Cursor Runner API responses
-- `jarek-va/spec/controllers/cursor_runner_callback_controller_spec.rb` - Callback responses
-- `jarek-va/app/services/eleven_labs_speech_to_text_service.rb` - ElevenLabs STT responses
-- `jarek-va/app/services/eleven_labs_text_to_speech_service.rb` - ElevenLabs TTS responses
+- `jarek-va/spec/services/telegram_service_spec.rb` - Telegram Bot API response structures (lines 42, 224, 269, 307-313)
+- `jarek-va/spec/controllers/telegram_controller_spec.rb` - Telegram API usage in controller tests
+- `jarek-va/spec/controllers/cursor_runner_controller_spec.rb` - Cursor Runner API response structures (lines 20-28, 73-82, 124-129, 155-160, 190-194, 226-230, 251-255)
+- `jarek-va/spec/controllers/cursor_runner_callback_controller_spec.rb` - Callback response structures (lines 17-24, 115-120)
+- `jarek-va/app/services/eleven_labs_speech_to_text_service.rb` - ElevenLabs STT response parsing (lines 57, 133-134)
+- `jarek-va/app/services/eleven_labs_text_to_speech_service.rb` - ElevenLabs TTS response handling (lines 140-156)
 
 ## Checklist
 
 - [ ] Update `tests/fixtures/apiResponses.ts` (file already exists, needs expansion)
-- [ ] Create Telegram API response fixtures:
-  - [ ] `sendMessage` response: `{ ok: true, result: { message_id: number, ... } }`
+- [ ] Create Telegram Bot API response fixtures:
+  - [ ] `sendMessage` response: `{ ok: true, result: { message_id: number, date: number, text: string, chat: { id: number, type: string }, from: { id: number, ... } } }`
   - [ ] `setWebhook` response: `{ ok: true, result: true, description: string }`
   - [ ] `deleteWebhook` response: `{ ok: true, result: true, description: string }`
-  - [ ] `webhookInfo` response: `{ ok: true, result: { url: string, pending_update_count: number } }`
-  - [ ] Error responses: `{ ok: false, description: string }`
+  - [ ] `getWebhookInfo` (webhookInfo) response: `{ ok: true, result: { url: string, pending_update_count: number, ... } }`
+  - [ ] Error responses: `{ ok: false, description: string, error_code?: number }`
 - [ ] Create Cursor Runner API response fixtures:
   - [ ] `execute` response: `{ success: true, requestId: string, repository: string, branchName: string, output: string, exitCode: number }`
   - [ ] `iterate` response: `{ success: true, requestId: string, repository: string, branchName: string, iterations: number, output: string, exitCode: number }`
@@ -47,10 +48,14 @@ Create comprehensive API response fixtures for controller tests. These fixtures 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 13. Testing
 - The file `tests/fixtures/apiResponses.ts` already exists but is minimal - it needs to be expanded with comprehensive fixtures
-- Reference the Rails controller specs to understand exact response structures
-- Fixtures should match the actual API response formats used in the Rails application
+- Reference the Rails service specs (`telegram_service_spec.rb`) and controller specs to understand exact response structures
+- Fixtures should match the actual external API response formats (what services receive from Telegram, Cursor Runner, ElevenLabs APIs)
+- These are NOT controller response formats - they are the raw API responses that services parse
 - Include both success and error response variants
-- Helper functions should allow easy customization of fixtures for specific test cases
+- Helper functions should allow easy customization of fixtures for specific test cases (similar to `createTelegramMessage` pattern in `telegramMessages.ts`)
+- For Telegram API, the `result` object in success responses contains the actual data (message object, webhook info, etc.)
+- For Cursor Runner API, responses use camelCase keys (e.g., `requestId`, `branchName`, `exitCode`)
+- For ElevenLabs TTS, note that it returns binary audio data (Buffer/ArrayBuffer), not JSON - fixtures should represent this appropriately
 
 - Task can be completed independently by a single agent
 
