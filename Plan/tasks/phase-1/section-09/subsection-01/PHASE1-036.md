@@ -12,35 +12,43 @@ Create a production-ready Dockerfile for the Node.js/TypeScript telegram-receive
 
 - [ ] Create `Dockerfile` in project root
 - [ ] Use Node.js base image matching package.json engines requirement (`node:18-alpine` or `node:18-slim`)
-- [ ] Install any required system dependencies (e.g., curl for health checks)
+- [ ] Install any required system dependencies (e.g., curl for health checks, sqlite3 if needed for shared database)
 - [ ] Set WORKDIR to `/app`
 - [ ] Copy `package.json` and `package-lock.json` first (for better layer caching)
-- [ ] Run `npm ci --only=production` to install production dependencies only
-- [ ] Copy source files (`src/`, `tsconfig.json`, etc.)
-- [ ] Run `npm run build` to compile TypeScript to JavaScript
-- [ ] Create necessary directories (e.g., `/app/shared_db` for shared SQLite database if needed)
+- [ ] **If using single-stage build**: Install all dependencies (`npm ci`), build TypeScript (`npm run build`), then prune dev dependencies (`npm prune --production`)
+- [ ] **If using multi-stage build (recommended)**: 
+  - Build stage: Install all dependencies (`npm ci`), copy source files, run `npm run build`
+  - Production stage: Install only production dependencies (`npm ci --only=production`), copy built files from build stage
+- [ ] Copy source files (`src/`, `tsconfig.json`, etc.) - only needed in build stage if using multi-stage
+- [ ] Run `npm run build` to compile TypeScript to JavaScript (in build stage if using multi-stage)
+- [ ] Create `/app/shared_db` directory with proper permissions (required for shared SQLite database at `/app/shared_db/shared.sqlite3`)
 - [ ] Set NODE_ENV environment variable to `production`
 - [ ] Set PORT environment variable (default to 3000, can be overridden)
-- [ ] Expose port using ARG for flexibility (default 3000)
-- [ ] Add HEALTHCHECK directive (check `/health` endpoint using curl)
+- [ ] Use EXPOSE directive to document the port (default 3000)
+- [ ] Add HEALTHCHECK directive (check `/health` endpoint using curl: `curl -f http://localhost:3000/health || exit 1`)
 - [ ] Set CMD to start production server (`npm start` or `node dist/index.js`)
-- [ ] Consider multi-stage build for smaller final image (optional but recommended)
-- [ ] Create `.dockerignore` file to exclude unnecessary files (node_modules, tests, coverage, etc.)
+- [ ] Consider creating `docker-entrypoint.sh` script for initialization (create shared_db directory, set permissions) - reference jarek-va pattern
+- [ ] Create `.dockerignore` file to exclude unnecessary files (node_modules, tests, coverage, .git, etc.)
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 9. Docker Configuration
 - Task can be completed independently by a single agent
-- Reference the jarek-va Dockerfile (`/cursor/repositories/jarek-va/Dockerfile`) for patterns:
-  - Health check implementation
-  - Environment variable configuration
-  - Shared database directory setup (if using shared SQLite database)
-  - Entrypoint script pattern (if needed for initialization)
+- Reference the jarek-va Dockerfile (`/cursor/repositories/jarek-va/Dockerfile`) and `docker-entrypoint.sh` for patterns:
+  - Health check implementation (HEALTHCHECK with curl to `/health` endpoint)
+  - Environment variable configuration (NODE_ENV=production, PORT=3000)
+  - Shared database directory setup: **MUST create `/app/shared_db` directory** (the application uses shared SQLite database at `/app/shared_db/shared.sqlite3` as referenced throughout task files)
+  - Entrypoint script pattern: jarek-va uses `docker-entrypoint.sh` to ensure `/app/shared_db` exists and has proper permissions (`mkdir -p /app/shared_db` and `chmod 777 /app/shared_db`)
+- **Important**: TypeScript compilation requires dev dependencies (TypeScript compiler, ts-node, etc.), so:
+  - **Single-stage approach**: Install all deps → build → prune dev deps (larger final image)
+  - **Multi-stage approach (recommended)**: Build stage with all deps + source, production stage with only runtime deps + built files (smaller final image)
 - The application uses TypeScript, so the build step is required to compile to JavaScript
-- The main entry point is `dist/index.js` (as specified in package.json)
+- The main entry point is `dist/index.js` (as specified in package.json `main` field)
 - Default port is 3000 (from `.env.example`), but should be configurable via PORT environment variable
-- Consider using multi-stage builds to reduce final image size (build stage with dev dependencies, production stage with only runtime dependencies)
+- Health check endpoint: `/health` (implemented in PHASE1-013, PHASE1-014, PHASE1-015)
+- **Shared Database**: The application accesses shared SQLite database at `/app/shared_db/shared.sqlite3` (referenced in all task files). The Dockerfile must ensure this directory exists and is writable, similar to jarek-va's docker-entrypoint.sh pattern
+- **.dockerignore should exclude**: `node_modules`, `dist` (will be built in container), `tests`, `coverage`, `.git`, `.env`, `*.log`, `Plan/`, `docs/`, `playwright-report/`, etc.
 
 ## Related Tasks
 
