@@ -6,25 +6,41 @@
 
 ## Description
 
-Create Dockerfile
+Create a production-ready Dockerfile for the Node.js/TypeScript telegram-receiver application. The Dockerfile should follow best practices for Node.js applications, including proper layer caching, production optimizations, and health checks. Reference the jarek-va Dockerfile (`/cursor/repositories/jarek-va/Dockerfile`) for patterns, but adapt for Node.js/TypeScript instead of Ruby/Rails.
 
 ## Checklist
 
 - [ ] Create `Dockerfile` in project root
-- [ ] Use Node.js base image (e.g., `node:18-alpine`)
+- [ ] Use Node.js base image matching package.json engines requirement (`node:18-alpine` or `node:18-slim`)
+- [ ] Install any required system dependencies (e.g., curl for health checks)
 - [ ] Set WORKDIR to `/app`
-- [ ] Copy `package.json` and `package-lock.json`
-- [ ] Run `npm ci --only=production`
-- [ ] Copy source files
-- [ ] Run `npm run build`
-- [ ] Expose port (use ARG for flexibility)
-- [ ] Set CMD to start production server
+- [ ] Copy `package.json` and `package-lock.json` first (for better layer caching)
+- [ ] Run `npm ci --only=production` to install production dependencies only
+- [ ] Copy source files (`src/`, `tsconfig.json`, etc.)
+- [ ] Run `npm run build` to compile TypeScript to JavaScript
+- [ ] Create necessary directories (e.g., `/app/shared_db` for shared SQLite database if needed)
+- [ ] Set NODE_ENV environment variable to `production`
+- [ ] Set PORT environment variable (default to 3000, can be overridden)
+- [ ] Expose port using ARG for flexibility (default 3000)
+- [ ] Add HEALTHCHECK directive (check `/health` endpoint using curl)
+- [ ] Set CMD to start production server (`npm start` or `node dist/index.js`)
+- [ ] Consider multi-stage build for smaller final image (optional but recommended)
+- [ ] Create `.dockerignore` file to exclude unnecessary files (node_modules, tests, coverage, etc.)
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 9. Docker Configuration
 - Task can be completed independently by a single agent
+- Reference the jarek-va Dockerfile (`/cursor/repositories/jarek-va/Dockerfile`) for patterns:
+  - Health check implementation
+  - Environment variable configuration
+  - Shared database directory setup (if using shared SQLite database)
+  - Entrypoint script pattern (if needed for initialization)
+- The application uses TypeScript, so the build step is required to compile to JavaScript
+- The main entry point is `dist/index.js` (as specified in package.json)
+- Default port is 3000 (from `.env.example`), but should be configurable via PORT environment variable
+- Consider using multi-stage builds to reduce final image size (build stage with dev dependencies, production stage with only runtime dependencies)
 
 ## Related Tasks
 
