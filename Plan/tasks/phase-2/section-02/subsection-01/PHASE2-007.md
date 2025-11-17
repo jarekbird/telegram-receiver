@@ -6,20 +6,42 @@
 
 ## Description
 
-Convert install redis client dependencies from Rails to TypeScript/Node.js.
+Verify and ensure Redis client dependencies are properly installed for TypeScript/Node.js conversion. The Rails application uses Redis for:
+1. **CursorRunnerCallbackService** (`app/services/cursor_runner_callback_service.rb`) - Stores callback state using direct Redis operations (`setex`, `get`, `del`)
+2. **Sidekiq** (`config/initializers/sidekiq.rb`) - Background job processing (will be converted to BullMQ)
+
+**Rails Implementation Reference:**
+- Rails uses `redis` gem version `~> 5.0` (see `jarek-va/Gemfile`)
+- Redis connection configured via `REDIS_URL` environment variable (default: `redis://localhost:6379/0`)
+- In Docker: `REDIS_URL=redis://redis:6379/0` (shared Redis instance)
+
+**Node.js Implementation:**
+- Both `redis` (^4.6.10) and `ioredis` (^5.3.2) are already in `package.json`
+- **ioredis** is the recommended choice for BullMQ integration (used for background jobs)
+- **redis** package can be used for direct Redis operations (matching CursorRunnerCallbackService pattern)
+- Both packages have TypeScript type definitions (`@types/redis` and `@types/ioredis`)
 
 ## Checklist
 
-- [ ] Install `redis` or `ioredis` package
-- [ ] Add to package.json dependencies
-- [ ] Verify installation
+- [ ] Verify `redis` package is installed (check `package.json` and `node_modules`)
+- [ ] Verify `ioredis` package is installed (check `package.json` and `node_modules`)
+- [ ] Verify `@types/redis` is installed in devDependencies
+- [ ] Verify `@types/ioredis` is installed in devDependencies
+- [ ] Run `npm install` to ensure all dependencies are properly installed
+- [ ] Verify Redis connection configuration matches Rails pattern (REDIS_URL environment variable)
+- [ ] Document which Redis client will be used for each component:
+  - [ ] `ioredis` for BullMQ (background jobs - Sidekiq replacement)
+  - [ ] `redis` or `ioredis` for CursorRunnerCallbackService (direct Redis operations)
+- [ ] Test basic Redis connectivity (optional: create simple connection test)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 2. Redis Integration
-- Reference the Rails implementation for behavior
-
+- **Current Status**: Redis dependencies (`redis` and `ioredis`) are already present in `package.json`
+- This task focuses on verification and ensuring proper setup rather than initial installation
+- Reference the Rails implementation in `jarek-va/app/services/cursor_runner_callback_service.rb` for Redis usage patterns
+- Reference `jarek-va/config/initializers/sidekiq.rb` for Sidekiq/Redis configuration
 - Task can be completed independently by a single agent
 
 ## Related Tasks
