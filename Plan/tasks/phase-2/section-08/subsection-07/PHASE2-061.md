@@ -14,29 +14,40 @@ Convert the admin authentication middleware from Rails to TypeScript/Node.js. Th
 - Used in endpoints: `set_webhook` (line 52), `webhook_info` (line 74), `delete_webhook` (line 92)
 
 **Rails Implementation Details:**
-- The `authenticate_admin` method is a protected method in TelegramController
+- The `authenticate_admin` method is a protected method in TelegramController (lines 110-130)
 - Checks for admin secret from multiple sources (in order):
   1. `request.headers['X-Admin-Secret']` (header)
-  2. `request.env['HTTP_X_ADMIN_SECRET']` (Rails converts headers to env vars)
-  3. `params[:admin_secret]` (query parameter)
+  2. `request.env['HTTP_X_ADMIN_SECRET']` (Rails-specific: Rails exposes headers via env vars with HTTP_ prefix)
+  3. `params[:admin_secret]` (query parameter as symbol)
   4. `params['admin_secret']` (query parameter as string)
 - Compares against `Rails.application.config.webhook_secret`
 - Returns boolean (true/false) - the calling code returns `401 Unauthorized` if false
 - Has debug logging in test environment when authentication fails (logs secret values, headers, env vars, and params)
-- The secret is configured in `application.rb` from Rails credentials or ENV variable `WEBHOOK_SECRET` (defaults to 'changeme')
+- The secret is configured in `application.rb` (lines 22-25) from Rails credentials or ENV variable `WEBHOOK_SECRET` (defaults to 'changeme')
+
+**Express/Node.js Implementation Notes:**
+- Express middleware should follow the standard Express middleware pattern: `(req, res, next) => {}`
+- On authentication success: call `next()` to proceed to the next middleware/route handler
+- On authentication failure: send `401 Unauthorized` response using `res.status(401).send()` or `res.status(401).json()`
+- Express headers are accessible via `req.headers['x-admin-secret']` (Express normalizes header names to lowercase)
+- Express does NOT automatically convert headers to environment variables like Rails does - check `req.headers` directly
+- Query parameters are accessible via `req.query.admin_secret`
+- The webhook_secret should be accessed from application configuration (similar to Rails `config.webhook_secret`)
 
 ## Checklist
 
-- [ ] Create `authenticateAdmin` middleware function in `src/middleware/` directory
+- [ ] Create `authenticateAdmin` Express middleware function in `src/middleware/` directory
+- [ ] Implement Express middleware signature: `(req: Request, res: Response, next: NextFunction) => void`
 - [ ] Check for admin secret from multiple sources (in order):
-  - [ ] `X-Admin-Secret` header
-  - [ ] `HTTP_X_ADMIN_SECRET` environment variable (Express converts headers to env vars)
-  - [ ] `admin_secret` query parameter
-- [ ] Get expected secret from application configuration (similar to Rails `webhook_secret`)
-- [ ] Compare provided secret with expected secret
-- [ ] Return 401 Unauthorized if secret doesn't match or is missing
-- [ ] Add debug logging in test/development mode when authentication fails (log secret values, headers, env vars, and query params)
+  - [ ] `req.headers['x-admin-secret']` (Express normalizes headers to lowercase)
+  - [ ] `req.query.admin_secret` (query parameter)
+- [ ] Get expected secret from application configuration (access webhook_secret from config, similar to Rails `Rails.application.config.webhook_secret`)
+- [ ] Compare provided secret with expected secret (use secure comparison if available)
+- [ ] On authentication success: call `next()` to proceed to route handler
+- [ ] On authentication failure: send `401 Unauthorized` response using `res.status(401).send()` or `res.status(401).json()`
+- [ ] Add debug logging in test/development mode when authentication fails (log secret values, headers, and query params)
 - [ ] Export middleware function for use in route handlers
+- [ ] Ensure middleware can be applied to admin routes (set_webhook, webhook_info, delete_webhook)
 
 ## Notes
 
