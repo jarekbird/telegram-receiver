@@ -6,27 +6,30 @@
 
 ## Description
 
-Create source directory structure
+Create source directory structure that aligns with the Rails application structure from jarek-va. This establishes the foundational directory layout for the Node.js/TypeScript conversion.
 
 ## Checklist
 
-- [ ] Create `src/` directory
-- [ ] Create `src/index.ts` file (empty initially)
-- [ ] Create `src/config/` directory
-- [ ] Create `src/controllers/` directory
-- [ ] Create `src/services/` directory
-- [ ] Create `src/models/` directory
-- [ ] Create `src/jobs/` directory
-- [ ] Create `src/middleware/` directory
-- [ ] Create `src/routes/` directory
-- [ ] Create `src/utils/` directory
-- [ ] Create `src/types/` directory
+- [ ] Create `src/` directory (if it doesn't exist)
+- [ ] Create `src/index.ts` file (empty initially, will be the application entry point)
+- [ ] Create `src/config/` directory (for configuration files, equivalent to Rails `config/`)
+- [ ] Create `src/controllers/` directory (for Express route handlers, equivalent to Rails `app/controllers/`)
+- [ ] Create `src/services/` directory (for business logic, equivalent to Rails `app/services/`)
+- [ ] Create `src/models/` directory (for data models/entities, equivalent to Rails `app/models/`)
+- [ ] Create `src/jobs/` directory (for background job processors, equivalent to Rails `app/jobs/`)
+- [ ] Create `src/middleware/` directory (for Express middleware functions)
+- [ ] Create `src/routes/` directory (for route definitions, equivalent to Rails `config/routes.rb`)
+- [ ] Create `src/utils/` directory (for utility functions and helpers)
+- [ ] Create `src/types/` directory (for TypeScript type definitions and interfaces)
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 2. Project Structure Setup
 - Task can be completed independently by a single agent
+- The directory structure mirrors the Rails application structure (`app/controllers/`, `app/services/`, `app/models/`, `app/jobs/`) to maintain consistency and ease conversion
+- Additional directories (`middleware/`, `routes/`, `utils/`, `types/`) are Node.js/TypeScript-specific and will be used throughout the application
+- Subdirectories within these main directories (e.g., `services/tools/`, `services/telegram_message_processors/`) will be created when those specific components are converted in later phases
 
 ## Related Tasks
 
