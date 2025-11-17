@@ -37,6 +37,7 @@ The Rails application uses `before_action` filters in controllers for authentica
    - `authenticate_webhook` (private method) - Authenticates agent tool requests
      - Checks `X-EL-Secret` header or `Authorization: Bearer <token>` header
      - Validates against `Rails.application.config.webhook_secret`
+     - **Note**: Unlike other controllers, does NOT allow blank secrets in development mode (always requires valid secret)
      - Returns 401 Unauthorized with JSON error if secret doesn't match
      - Logs warning: "Unauthorized tool request - invalid secret"
 
@@ -53,7 +54,7 @@ The Rails application uses `before_action` filters in controllers for authentica
   - [ ] Header-based authentication (X-*-Secret headers)
   - [ ] Query parameter fallbacks (where applicable)
   - [ ] Authorization Bearer token support (for agent tools)
-  - [ ] Development mode behavior (allow when secret not configured)
+  - [ ] Development mode behavior (allow when secret not configured) - **Note**: AgentToolsController does NOT allow blank secrets, always requires valid secret
   - [ ] Error response formats (401 Unauthorized with JSON)
 - [ ] Document configuration requirements:
   - [ ] `TELEGRAM_WEBHOOK_SECRET` - For Telegram webhook authentication
