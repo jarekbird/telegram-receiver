@@ -17,6 +17,10 @@ ESLint is already configured with:
 - Custom rules for unused variables, console statements, and TypeScript-specific patterns
 - Proper parser options with `tsconfig.eslint.json` project reference
 - Lint scripts in package.json (`lint` and `lint:fix`)
+- Both `.eslintignore` file and `ignorePatterns` in `.eslintrc.json` (redundant but acceptable)
+
+**Known Issues:**
+- 2 ESLint warnings in `tests/helpers/testUtils.ts` line 15: `@typescript-eslint/no-explicit-any` warnings for `any[]` and `any` types in `createMockFn` function signature
 
 ## Checklist
 
@@ -25,13 +29,20 @@ ESLint is already configured with:
 - [ ] Validate that all recommended TypeScript rules are enabled appropriately
 - [ ] Review custom rules for appropriateness and completeness
 - [ ] Check that Prettier integration is properly configured
-- [ ] Verify ignore patterns are correct (dist, node_modules, coverage, *.js)
-- [ ] Run ESLint on entire codebase and review output
-- [ ] Identify any missing TypeScript-specific rules that should be added
-- [ ] Check for any configuration issues or conflicts
-- [ ] Verify ESLint runs correctly in CI/CD pipeline (if applicable)
-- [ ] Document ESLint configuration and usage guidelines
-- [ ] Fix any ESLint warnings/errors found during review (currently 2 warnings in testUtils.ts)
+- [ ] Verify ignore patterns are correct (dist, node_modules, coverage, *.js) - check both `.eslintignore` and `ignorePatterns` in `.eslintrc.json`
+- [ ] Run ESLint on entire codebase and review output (`npm run lint`)
+- [ ] Identify any missing TypeScript-specific rules that should be added (review TypeScript ESLint plugin documentation)
+- [ ] Check for any configuration issues or conflicts between ESLint and Prettier
+- [ ] Verify ESLint runs correctly in CI/CD pipeline (if applicable) - note: no CI/CD configuration found, skip if none exists
+- [ ] Document ESLint configuration and usage guidelines:
+  - Create or update documentation explaining the ESLint setup
+  - Document all custom rules and their purposes
+  - Include examples of common ESLint errors and how to fix them
+  - Document how to run linting (`npm run lint`, `npm run lint:fix`)
+  - Explain the relationship between ESLint and Prettier
+- [ ] Fix any ESLint warnings/errors found during review:
+  - Fix 2 warnings in `tests/helpers/testUtils.ts` line 15 (`@typescript-eslint/no-explicit-any`)
+  - Consider using proper generic constraints instead of `any` types in `createMockFn` function
 
 ## Notes
 
