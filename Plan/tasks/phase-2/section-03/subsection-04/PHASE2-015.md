@@ -40,6 +40,7 @@ Convert the base job processor class from Rails `ApplicationJob` to TypeScript/N
   - [ ] Configure exponential backoff delay (matching Rails `wait: :exponentially_longer`)
   - [ ] Retry on StandardError/Error (matching Rails `retry_on StandardError`)
   - [ ] Use BullMQ job options for retry configuration
+  - [ ] Provide static method or property that returns default job options (including retry configuration) for use when creating Workers or enqueuing jobs
 - [ ] Add error handling:
   - [ ] Handle deserialization errors (discard, don't retry) - matching Rails `discard_on ActiveJob::DeserializationError`
   - [ ] Implement try-catch wrapper around process method
@@ -80,10 +81,12 @@ Convert the base job processor class from Rails `ApplicationJob` to TypeScript/N
   - Child job processors will extend this base class and implement the `process` method
   - The `process` method will be called by BullMQ Worker with a `Job` object
   - Retry configuration should be set in BullMQ job options (when adding jobs to queue) or Worker options
+  - The base class should provide a static method or property that returns default job options (including retry configuration) that can be used when creating Workers or enqueuing jobs
   - Exponential backoff in BullMQ: Use `backoff` option with exponential strategy
   - Example: `{ attempts: 3, backoff: { type: 'exponential', delay: 2000 } }`
   - For deserialization errors, check for specific error types and discard (don't retry)
   - The base class should provide a consistent interface for all job processors
+  - Note: Sidekiq default job options include `retry: 3, backtrace: true` (from `config/initializers/sidekiq.rb`), but since `ApplicationJob` explicitly sets retry configuration, the base class should match the explicit `ApplicationJob` retry settings (3 attempts with exponential backoff)
 - **Key Differences from Rails:**
   - Rails: `ApplicationJob` extends `ActiveJob::Base` which handles job execution automatically
   - Node.js: BullMQ uses Worker functions, but we can wrap them in a class pattern for consistency
