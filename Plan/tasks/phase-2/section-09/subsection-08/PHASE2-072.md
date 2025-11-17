@@ -6,23 +6,49 @@
 
 ## Description
 
-Convert implement format_error_message utility from Rails to TypeScript/Node.js. Reference `jarek-va/app/controllers/*_controller.rb` files.
+Convert and implement the `format_error_message` utility function from Rails to TypeScript/Node.js. This utility function formats error messages for cursor-runner callback results, including ANSI escape sequence cleaning and conditional debug formatting.
+
+**Rails Reference**: `jarek-va/app/controllers/cursor_runner_callback_controller.rb` (lines 269-272)
 
 ## Checklist
 
-- [ ] Create `formatErrorMessage` utility function
-- [ ] Clean ANSI escape sequences
-- [ ] Add debug info if enabled
-- [ ] Format error message
+- [ ] Create `formatErrorMessage` utility function with signature: `(result: NormalizedResult, cursorDebug: boolean): string`
+- [ ] Extract error message from `result.error` with fallback to `'Unknown error occurred'` if error is missing/empty
+- [ ] Use `cleanAnsiEscapeSequences` utility (PHASE2-073) to clean ANSI escape sequences from the error message
+- [ ] Format error message based on `cursorDebug` flag:
+  - If `cursorDebug` is `true`: return `'❌ Cursor command failed\n\nError: {error_msg}'`
+  - If `cursorDebug` is `false`: return `'❌ {error_msg}'`
 - [ ] Return formatted string
+- [ ] Handle edge cases:
+  - Empty/undefined error should use fallback `'Unknown error occurred'`
+  - Null/undefined result should handle gracefully
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 9. CursorRunnerCallbackController Conversion
-- Reference the Rails implementation for behavior
-
-- Task can be completed independently by a single agent
+- **Rails Implementation**: `jarek-va/app/controllers/cursor_runner_callback_controller.rb` (lines 269-272)
+- The function is called from `sendResponseToTelegram` method (PHASE2-070) when `result.success` is false
+- The `result` parameter is a `NormalizedResult` object (from `normalizeResult` utility - PHASE2-069) with the following structure:
+  - `success: boolean` - indicates if cursor command succeeded
+  - `request_id: string` - request identifier
+  - `repository?: string` - repository name
+  - `branch_name?: string` - branch name
+  - `iterations: number` - number of iterations (defaults to 0)
+  - `max_iterations: number` - max iterations (defaults to 25)
+  - `output?: string` - command output (defaults to empty string)
+  - `error?: string` - error message if failed
+  - `exit_code: number` - exit code (defaults to 0)
+  - `duration?: string` - execution duration
+  - `timestamp?: string` - timestamp
+- The `cursorDebug` parameter determines:
+  - Whether to include additional context ("Cursor command failed" header) in the error message
+  - The format of the error message (with or without debug header)
+- **Dependencies**:
+  - `cleanAnsiEscapeSequences` utility (PHASE2-073) - used to clean ANSI escape codes from error messages
+  - `NormalizedResult` type (from PHASE2-069)
+- The function returns a string that will be sent to Telegram via `TelegramService.sendMessage()`
+- Task can be completed independently by a single agent (after PHASE2-073 is complete for `cleanAnsiEscapeSequences` dependency)
 
 ## Related Tasks
 
