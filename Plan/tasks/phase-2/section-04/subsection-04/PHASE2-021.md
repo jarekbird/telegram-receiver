@@ -6,19 +6,38 @@
 
 ## Description
 
-Convert implement delete_webhook method from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/telegram_service.rb`.
+Convert and implement the `delete_webhook` method from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/telegram_service.rb`.
+
+The method should delete the Telegram webhook by calling the Telegram Bot API's `deleteWebhook` endpoint. This method follows the same pattern as other TelegramService methods: it checks for a blank bot token before proceeding, handles errors with logging, and re-raises exceptions.
 
 ## Checklist
 
-- [ ] Implement `deleteWebhook` method
-- [ ] Call Telegram API delete_webhook endpoint
-- [ ] Add error handling
+- [ ] Implement `deleteWebhook` method in TelegramService
+- [ ] Add early return check if telegram bot token is blank (consistent with other methods)
+- [ ] Call Telegram Bot API `deleteWebhook` endpoint (no parameters required)
+- [ ] Add error handling with try-catch block
+- [ ] Log errors with descriptive error message ("Error deleting Telegram webhook: {error message}")
+- [ ] Log error stack trace for debugging
+- [ ] Re-raise exceptions after logging (to allow callers to handle errors)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 4. TelegramService Conversion
-- Reference the Rails implementation for behavior
+- Reference the Rails implementation in `jarek-va/app/services/telegram_service.rb` (lines 53-63) for exact behavior
+
+### Implementation Details
+
+- The method should be a static/class method (matching the Rails class method pattern)
+- The method takes no parameters (unlike `set_webhook` which takes `url` and optional `secret_token`)
+- The method should check if the telegram bot token is blank before proceeding (early return)
+- Error handling should:
+  - Catch all exceptions (StandardError in Rails, Error in TypeScript)
+  - Log the error message with prefix "Error deleting Telegram webhook: "
+  - Log the full stack trace for debugging
+  - Re-raise the exception to allow callers to handle errors appropriately
+- The method should use the Telegram Bot API client's `deleteWebhook` method (or equivalent HTTP call)
+- Follow the same pattern as `setWebhook` and `webhookInfo` methods for consistency
 
 - Task can be completed independently by a single agent
 
