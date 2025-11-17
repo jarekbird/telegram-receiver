@@ -7,36 +7,41 @@ You are an expert software developer AI assistant. When given any development ta
 You are tasked with implementing software development tasks following industry best practices. You must:
 - Understand requirements completely before implementation
 - Write clean, maintainable, and well-tested code
-- Follow proper version control workflows
 - Ensure all code meets quality standards
 
 ## Task Implementation Workflow
+
+**IMPORTANT: Always work directly on the main branch. Do not create feature branches.**
 
 ### Step 1: Understand the Task
 When given a task, you must:
 - Read and understand all task requirements completely
 - Identify all components that need to be modified or created
 - Consider edge cases and potential impacts on existing functionality
-- Ask clarifying questions if any ambiguities exist before starting implementation
 
 ### Step 2: Plan the Implementation
 Before writing code, you must:
-- Break down the task into smaller, manageable steps
 - Identify dependencies and determine the order of implementation
 - Determine which files need to be created or modified
 - Plan the testing strategy (unit tests, integration tests, etc.)
 
-### Step 3: Implementation Process
+### Step 2.5: Ensure Main Branch is Up to Date
 
-#### 3.1 Create a Feature Branch
-Always work in a feature branch:
+Before starting implementation, ensure you're on the main branch and it's up to date:
+
 ```bash
-git checkout -b feature/your-task-name
-# or
-git checkout -b fix/your-bug-fix-name
+# Ensure you're on main branch
+git checkout main
+
+# Pull latest changes from remote
+git pull origin main
 ```
 
-#### 3.2 Write Code Following Best Practices
+**Note:** Since you're working directly on main, always pull the latest changes before starting work to avoid conflicts.
+
+### Step 3: Implementation Process
+
+#### 3.1 Write Code Following Best Practices
 When writing code, you must:
 - Follow the project's coding standards and style guide
 - Write clean, readable, and maintainable code
@@ -44,7 +49,7 @@ When writing code, you must:
 - Ensure code follows SOLID principles and DRY (Don't Repeat Yourself)
 - Use meaningful variable and function names
 
-#### 3.3 Implement Automated Tests (When Applicable)
+#### 3.2 Implement Automated Tests (When Applicable)
 
 **Testing Requirements:**
 You MUST write tests BEFORE or ALONGSIDE implementation (TDD/BDD approach preferred):
@@ -78,6 +83,8 @@ npm run test:coverage
 - **Service Tests**: Test business logic and service classes
 - **Component Tests**: Test React/Vue components (if using a frontend framework)
 - **E2E Tests**: Test complete user flows (using Playwright, Cypress, or similar)
+- **Other Tests**: Any other tests that you think would be wise
+
 
 **Test Best Practices:**
 - Use descriptive test names that explain what is being tested
@@ -139,26 +146,27 @@ Before committing, ensure:
 - [ ] No sensitive data is committed
 - [ ] Error handling is appropriate
 
-### Step 4: Committing Changes
+### Step 4: Deploy Changes Using Deploy Script
 
-#### 4.1 Stage Changes
+#### 4.1 Use the Deploy Script
+The project includes a deploy script that automates testing, linting, formatting checks, and git operations. You MUST use this script to deploy changes:
+
 ```bash
-git add .
-# or selectively
-git add path/to/specific/files
+# Run the deploy script from the project root
+./deploy.sh
 ```
 
-#### 4.2 Write Meaningful Commit Messages
-You MUST follow conventional commit format:
-```
-type(scope): brief description
+**What the deploy script does:**
+1. Verifies you're in the correct directory
+2. Runs linting checks (`npm run lint`)
+3. Checks code formatting (`npm run format:check`)
+4. Runs all tests (`npm test`)
+5. Generates test coverage (`npm run test:coverage`)
+6. Automatically stages and commits changes with an AI-generated commit message
+7. Pushes changes to the remote repository
 
-Detailed explanation if needed
-- Bullet points for multiple changes
-- Reference issue numbers if applicable
-```
-
-**Commit Types:**
+**Commit Message Format:**
+The deploy script automatically generates commit messages following conventional commit format:
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation changes
@@ -167,86 +175,31 @@ Detailed explanation if needed
 - `test`: Adding or updating tests
 - `chore`: Maintenance tasks
 
-**Examples:**
-```
-feat(api): add user authentication endpoint
-
-- Implement POST /api/auth/login
-- Add JWT token generation
-- Include tests for authentication flow
-
-fix(model): resolve validation error on user creation
-
-- Fix email format validation
-- Add test case for invalid email
-- Closes #123
-```
-
-#### 4.3 Commit Changes
-```bash
-git commit -m "your commit message"
-```
-
-### Step 5: Pushing Changes to Origin
-
-#### 5.1 Ensure Tests Pass Locally
-```bash
-# Run full test suite
-npm test  # For Node.js/TypeScript projects
-# or
-npm run test
-# or appropriate test command for your project
-```
-
-#### 5.2 Push to Remote Repository
-```bash
-# Push your feature branch
-git push origin feature/your-task-name
-
-# If branch doesn't exist remotely yet
-git push -u origin feature/your-task-name
-```
-
-#### 5.3 Create Pull Request (if applicable)
-- Create a pull request on the repository platform (GitHub, GitLab, etc.)
-- Include a clear description of changes
-- Reference related issues
-- Request review from team members
-- Ensure CI/CD pipeline passes
-
-#### 5.4 Merge and Cleanup
-- After PR is approved and merged:
-```bash
-# Switch back to main branch
-git checkout main
-
-# Pull latest changes
-git pull origin main
-
-# Delete local feature branch
-git branch -d feature/your-task-name
-
-# Delete remote branch (if not auto-deleted)
-git push origin --delete feature/your-task-name
-```
+**Important Notes:**
+- The deploy script will fail if any tests, linting, or formatting checks fail
+- All uncommitted changes will be automatically staged and committed
+- The script uses cursor-agent to generate meaningful commit messages (if available)
+- If cursor-agent is not available, it will generate a simple commit message based on file changes
+- The script pushes directly to the main branch - ensure you're on main before running it
 
 ## When Testing is Not Applicable
 
 Some tasks may not require automated tests (e.g., documentation updates, configuration changes, simple refactoring). In these cases:
 - Document why tests are not applicable
 - Ensure manual verification is performed
-- Still follow the git workflow (branch, commit, push)
+- Still use the deploy script (`./deploy.sh`) - it will handle linting, formatting, and git operations even if tests are minimal
 
 ## Common Pitfalls to Avoid
 
 You must avoid these common mistakes:
 1. **Skipping Tests**: Never skip tests to save time. They save more time in the long run.
-2. **Committing Without Testing**: Always run tests before committing
-3. **Poor Commit Messages**: Write clear, descriptive commit messages
-4. **Large Commits**: Break down large changes into smaller, logical commits
-5. **Pushing Directly to Main**: Always use feature branches
-6. **Ignoring Linting Errors**: Fix linting issues before committing
-7. **Leaving Debug Code**: Remove console.log, console.debug, debugger statements, and temporary code
+2. **Not Using the Deploy Script**: Always use `./deploy.sh` instead of manually committing and pushing. The deploy script ensures all checks pass before deployment.
+3. **Committing Without Testing**: The deploy script handles this, but never bypass it by manually committing.
+4. **Poor Commit Messages**: The deploy script generates commit messages automatically, but ensure they're meaningful.
+5. **Large Commits**: Break down large changes into smaller, logical commits before running the deploy script.
+6. **Not Pulling Before Starting**: Always pull the latest changes from main before starting work to avoid conflicts.
+7. **Ignoring Linting Errors**: The deploy script will fail if linting errors exist - fix them before running the script.
+8. **Leaving Debug Code**: Remove console.log, console.debug, debugger statements, and temporary code before running the deploy script.
 
 ## Testing Resources
 
@@ -262,14 +215,15 @@ When implementing tests, refer to:
 ## Completion Checklist
 
 Before marking a task as complete, verify:
+- [ ] You're working on the main branch (`git branch` should show `* main`)
+- [ ] Main branch is up to date with remote (`git pull origin main` before starting)
 - [ ] Code is implemented and working
 - [ ] Automated tests are written and passing (when applicable)
 - [ ] All existing tests still pass
 - [ ] Code follows style guidelines
 - [ ] No linting errors
-- [ ] Changes are committed with meaningful messages
-- [ ] Changes are pushed to origin
-- [ ] Pull request is created (if applicable)
+- [ ] Deploy script has been run successfully (`./deploy.sh`)
+- [ ] Changes are committed and pushed to origin/main (via deploy script)
 - [ ] Documentation is updated (if needed)
 
 ---

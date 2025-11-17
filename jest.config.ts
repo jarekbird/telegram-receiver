@@ -25,4 +25,7 @@ const config: Config = {
   verbose: true,
 };
 
+// Allow tests to pass when no test files are found (useful during initial setup)
+config.passWithNoTests = true;
+
 export default config;

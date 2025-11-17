@@ -22,7 +22,9 @@ export const createMockFn = <T extends (...args: any[]) => any>(
  * Creates a random string for testing
  */
 export const randomString = (length = 10): string => {
-  return Math.random().toString(36).substring(2, length + 2);
+  return Math.random()
+    .toString(36)
+    .substring(2, length + 2);
 };
 
 /**
@@ -43,15 +45,20 @@ export const randomInt = (min = 0, max = 1000): number => {
  * Asserts that a promise rejects with a specific error
  */
 export const expectRejection = async (
-  promise: Promise<any>,
+  promise: Promise<unknown>,
   errorMessage?: string
 ): Promise<void> => {
   try {
     await promise;
     throw new Error('Expected promise to reject, but it resolved');
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (errorMessage) {
-      expect(error.message).toContain(errorMessage);
+      if (error instanceof Error) {
+        expect(error.message).toContain(errorMessage);
+      } else {
+        const errorStr = String(error);
+        expect(errorStr).toContain(errorMessage);
+      }
     }
   }
 };
