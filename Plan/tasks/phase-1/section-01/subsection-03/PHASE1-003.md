@@ -6,15 +6,26 @@
 
 ## Description
 
-Install TypeScript dependencies
+Install TypeScript dependencies and create TypeScript configuration file. This task sets up the essential TypeScript tooling needed for development, including the TypeScript compiler, Node.js type definitions, and development tools for running TypeScript files directly.
 
 ## Checklist
 
-- [ ] Install `typescript` as dev dependency
-- [ ] Install `@types/node` as dev dependency
-- [ ] Install `ts-node` as dev dependency
-- [ ] Install `nodemon` as dev dependency
-- [ ] Verify all packages installed correctly
+- [ ] Install `typescript` as dev dependency (TypeScript compiler)
+- [ ] Install `@types/node` as dev dependency (TypeScript type definitions for Node.js)
+- [ ] Install `ts-node` as dev dependency (TypeScript execution engine for Node.js, allows running .ts files directly)
+- [ ] Install `nodemon` as dev dependency (Development tool that automatically restarts the Node.js application when file changes are detected)
+- [ ] Create `tsconfig.json` file in project root with appropriate TypeScript compiler configuration
+- [ ] Configure `tsconfig.json` with essential settings:
+  - Set `target` to `ES2022` or later
+  - Set `module` to `commonjs`
+  - Set `outDir` to `./dist` (build output directory)
+  - Set `rootDir` to `./src` (source directory)
+  - Enable `strict` mode for type safety
+  - Set `moduleResolution` to `node`
+  - Enable `esModuleInterop` and `skipLibCheck`
+  - Include `src/**/*` in compilation
+  - Exclude `node_modules`, `dist`, and test files
+- [ ] Verify all packages installed correctly by running `npx tsc --version`
 
 ## Notes
 
