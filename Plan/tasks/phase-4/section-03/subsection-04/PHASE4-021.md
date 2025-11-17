@@ -8,13 +8,18 @@
 
 Improve naming conventions throughout the telegram-receiver codebase to enhance code quality, readability, and maintainability. This task involves reviewing all source code files, identifying naming inconsistencies, and ensuring adherence to TypeScript/Node.js naming conventions.
 
+**Note**: At the time of this task, the `src/` directory structure exists but contains minimal implementation code. This task serves a dual purpose:
+1. **Establish naming conventions** for future code development
+2. **Review and refactor existing code** (primarily in `tests/` directory) to ensure consistency
+
 ## Scope
 
 This task covers:
 - All source files in `src/` directory (controllers, services, models, routes, middleware, utils, types, config)
-- All test files in `tests/` directory
+- All test files in `tests/` directory (which currently contain the majority of implementation code)
 - Configuration files (TypeScript config, ESLint config, etc.)
 - Documentation files that reference code elements
+- Ensuring consistency with existing `docs/API_CONVENTIONS.md` naming guidelines
 
 ## TypeScript/Node.js Naming Conventions to Follow
 
@@ -55,8 +60,9 @@ This task covers:
 
 ## Checklist
 
-- [ ] Review all source files in `src/` directory for naming inconsistencies
-- [ ] Review all test files in `tests/` directory for naming consistency
+- [ ] Review existing `docs/API_CONVENTIONS.md` for naming conventions already documented
+- [ ] Review all source files in `src/` directory for naming inconsistencies (note: directory may be mostly empty)
+- [ ] Review all test files in `tests/` directory for naming consistency (use as reference for good practices)
 - [ ] Identify variables that don't follow camelCase convention
 - [ ] Identify functions that don't follow camelCase convention or verb-noun pattern
 - [ ] Identify classes/interfaces that don't follow PascalCase convention
@@ -65,13 +71,18 @@ This task covers:
 - [ ] Check for unclear or ambiguous names
 - [ ] Check for boolean variables missing `is`/`has`/`should` prefixes
 - [ ] Check for event handlers missing `on`/`handle` prefixes
-- [ ] Rename all identified inconsistencies
+- [ ] Ensure consistency between naming conventions and `docs/API_CONVENTIONS.md`
+- [ ] Rename all identified inconsistencies in existing code
 - [ ] Update all references to renamed elements
 - [ ] Verify no broken imports or references
+- [ ] Add ESLint naming convention rules to `.eslintrc.json`:
+  - `@typescript-eslint/naming-convention` rule for variables, functions, classes, interfaces, constants
+  - Enforce camelCase for variables and functions
+  - Enforce PascalCase for classes and interfaces
+  - Enforce UPPER_SNAKE_CASE for constants
 - [ ] Run linter to ensure no naming-related errors
 - [ ] Run tests to ensure all functionality still works
-- [ ] Document naming standards in `docs/naming-conventions.md`
-- [ ] Update ESLint configuration if needed to enforce naming conventions
+- [ ] Document naming standards in `docs/naming-conventions.md` (ensure it complements `API_CONVENTIONS.md`)
 - [ ] Update code style guide documentation
 
 ## Common Issues to Look For
@@ -108,6 +119,8 @@ Create or update `docs/naming-conventions.md` with:
 - Examples of incorrect naming to avoid
 - Guidelines for specific scenarios (event handlers, boolean values, etc.)
 - References to TypeScript/Node.js style guides
+- Cross-reference to `docs/API_CONVENTIONS.md` for API-specific naming patterns
+- Note: This document should complement, not duplicate, the naming conventions in `API_CONVENTIONS.md`
 
 ## Notes
 
@@ -118,6 +131,10 @@ Create or update `docs/naming-conventions.md` with:
 - Ensure all changes maintain backward compatibility where possible
 - Update imports and references when renaming exported elements
 - Run full test suite after making changes to ensure nothing is broken
+- Current codebase state: `src/` directory structure exists but contains minimal implementation code; `tests/` directory contains the majority of existing code with good naming practices already in place
+- Reference existing test files (e.g., `tests/fixtures/apiResponses.ts`, `tests/helpers/testUtils.ts`, `tests/mocks/telegramApi.ts`) as examples of good naming conventions
+- Ensure consistency with `docs/API_CONVENTIONS.md` which already documents some naming patterns for API-related code
+- ESLint configuration (`.eslintrc.json`) currently lacks specific naming convention rules - this task should add them
 
 - Task can be completed independently by a single agent
 
