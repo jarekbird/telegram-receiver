@@ -6,22 +6,26 @@
 
 ## Description
 
-Create test tsconfig.json
+Create a TypeScript configuration file specifically for test files (`tsconfig.test.json`). This configuration extends the base `tsconfig.json` and adds Jest-specific type definitions and test-specific compiler options. This allows TypeScript to properly type-check test files that import from both the `tests/` and `src/` directories while providing Jest and Node.js type definitions.
 
 ## Checklist
 
 - [ ] Create `tsconfig.test.json` file
-- [ ] Extend base `tsconfig.json`
-- [ ] Override `compilerOptions.outDir` to "./dist-test"
-- [ ] Override `compilerOptions.rootDir` to "./tests"
-- [ ] Add `compilerOptions.types` array with ["jest", "node"]
-- [ ] Set `include` array to ["tests/**/*", "src/**/*"]
+- [ ] Extend base `tsconfig.json` using `"extends": "./tsconfig.json"`
+- [ ] Override `compilerOptions.outDir` to "./dist-test" (separate output directory for test compilation)
+- [ ] Override `compilerOptions.rootDir` to "." (project root, since we include both tests/ and src/ directories)
+- [ ] Add `compilerOptions.types` array with ["jest", "node"] (provides Jest and Node.js type definitions)
+- [ ] Set `include` array to ["tests/**/*", "src/**/*"] (include both test files and source files for type-checking)
+- [ ] Set `exclude` array to ["node_modules", "dist", "dist-test", "coverage"] (exclude build outputs and dependencies)
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 3. TypeScript Configuration
 - Task can be completed independently by a single agent
+- The `rootDir` must be "." (project root) rather than "./tests" because the configuration includes files from both `tests/` and `src/` directories. TypeScript requires all included files to be under the `rootDir`.
+- This configuration is used by TypeScript for type-checking test files and can be referenced by IDEs and type-checking tools
+- The separate `outDir` of "./dist-test" ensures test compilation outputs don't mix with production build outputs
 
 ## Related Tasks
 
