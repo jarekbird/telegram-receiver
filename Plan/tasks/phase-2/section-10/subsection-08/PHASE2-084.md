@@ -58,6 +58,7 @@ The method:
 - The return format is always `{ ok: true, say: string }` - the `ok` property is always `true`
 - The `say` property contains the message text to be sent to the user
 - This method is called from `handleMessage` when a message is not forwarded to cursor-runner
+- **Note**: The `chatId` and `messageId` parameters are part of the method signature for consistency with the calling code, but they are not used within the method body in the Rails implementation
 
 ### Related Methods
 
