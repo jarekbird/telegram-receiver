@@ -10,22 +10,27 @@ Review and fix any type-related issues in the codebase to ensure TypeScript best
 
 ## Known Issues to Address
 
-Based on previous task reviews, the following type issues have been identified:
+Based on previous task reviews and codebase validation, the following type issues have been identified:
 
 1. **Test Utilities** (`tests/helpers/testUtils.ts`):
-   - `createMockFn` function uses `any[]` in generic constraint (line 15)
-   - ESLint warnings: 2 warnings for `@typescript-eslint/no-explicit-any` on line 15
-   - Generic constraint `(...args: any[]) => any` could be improved to use `unknown[]` or more specific types
+   - `createMockFn` function uses `any[]` and `any` in generic constraint (line 15)
+   - Current implementation: `<T extends (...args: any[]) => any>`
+   - ESLint warnings: 2 warnings for `@typescript-eslint/no-explicit-any` on line 15 (positions 15:50 and 15:60)
+   - Type-check status: No TypeScript compilation errors (type-check passes)
+   - Generic constraint `(...args: any[]) => any` should be improved to use `unknown[]` and `unknown` or more specific types
+   - The function is currently working correctly but violates ESLint rules for type safety
 
 ## Checklist
 
 ### 1. Fix Known Type Issues
-- [ ] Fix `createMockFn` in `tests/helpers/testUtils.ts`:
-  - Replace `any[]` with `unknown[]` in the generic constraint
-  - Consider using `Parameters<T>` and `ReturnType<T>` utility types
-  - Ensure the function maintains type safety while being more specific
+- [ ] Fix `createMockFn` in `tests/helpers/testUtils.ts` (line 15):
+  - Replace the generic constraint `<T extends (...args: any[]) => any>` with a better type-safe version
+  - Use TypeScript utility types: `<T extends (...args: unknown[]) => unknown>` or better yet, use `Parameters<T>` and `ReturnType<T>` if possible
+  - Alternative approach: Use `<T extends (...args: never[]) => unknown>` or simply constrain to `Function` type if utility types don't work well with jest.MockedFunction
+  - Ensure the function maintains type safety and all existing tests continue to pass
+  - The function signature should remain: `export const createMockFn = <T extends ...>(implementation?: T): jest.MockedFunction<T>`
 - [ ] Run `npm run lint` and fix all `@typescript-eslint/no-explicit-any` warnings
-- [ ] Verify no ESLint type-related warnings remain
+- [ ] Verify no ESLint type-related warnings remain (should show 0 warnings after fix)
 
 ### 2. Review and Fix Additional Type Issues
 - [ ] Run `npm run type-check` to identify any TypeScript compilation errors
