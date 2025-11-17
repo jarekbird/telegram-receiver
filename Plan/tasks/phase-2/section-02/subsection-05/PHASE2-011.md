@@ -11,11 +11,17 @@ Create a comprehensive test script to verify Redis connection functionality, mat
 **Rails Implementation Reference:**
 - `app/services/cursor_runner_callback_service.rb` - Uses Redis operations:
   - `setex(key, ttl, value)` - Store data with expiration (line 30)
+    - Stores JSON-serialized data: `data.to_json`
+    - Uses default TTL of 3600 seconds (1 hour) if not specified
   - `get(key)` - Retrieve data (line 39)
+    - Returns `nil` if key doesn't exist
+    - Parses JSON with `JSON.parse(data, symbolize_names: true)` (line 42)
+    - Handles `JSON::ParserError` exceptions (lines 43-48)
   - `del(key)` - Delete data (line 55)
 - Redis client initialized with `Redis.new(url: redis_url)` (line 20)
 - Default URL: `redis://localhost:6379/0` or from `REDIS_URL` environment variable
 - In Docker: `REDIS_URL=redis://redis:6379/0`
+- Uses key prefix pattern: `cursor_runner_callback:` + request_id (line 62)
 
 **Node.js Implementation:**
 - Create a test script that uses the Redis utility from PHASE2-009 (`src/utils/redis.ts`)
@@ -39,12 +45,22 @@ Create a comprehensive test script to verify Redis connection functionality, mat
   - [ ] Test `ping()` command to verify connection is active
 - [ ] Test basic Redis operations matching CursorRunnerCallbackService:
   - [ ] Test `setex` or `set` with expiration (store key-value with TTL)
+    - [ ] Test with explicit TTL value
+    - [ ] Test with default TTL of 3600 seconds (matching Rails DEFAULT_TTL)
   - [ ] Test `get` to retrieve stored value
+    - [ ] Verify it returns stored JSON data correctly
+    - [ ] Verify it returns null/undefined for non-existent keys (matching Rails nil behavior)
   - [ ] Test `del` to delete a key
-  - [ ] Verify operations work with JSON data (matching callback service pattern)
+  - [ ] Verify operations work with JSON data (matching callback service pattern):
+    - [ ] Store complex objects as JSON (matching `data.to_json` pattern)
+    - [ ] Retrieve and parse JSON data correctly
+    - [ ] Test JSON parsing error handling (matching Rails `JSON::ParserError` rescue)
 - [ ] Test error handling:
   - [ ] Test connection failure scenario (invalid Redis URL)
-  - [ ] Test operation on non-existent key (should return null/undefined)
+  - [ ] Test operation on non-existent key (should return null/undefined, matching Rails nil behavior)
+  - [ ] Test JSON parsing error handling:
+    - [ ] Test retrieving corrupted/invalid JSON data
+    - [ ] Verify error is handled gracefully (matching Rails `JSON::ParserError` rescue pattern)
   - [ ] Test operation with invalid data format
 - [ ] Test connection status monitoring (if PHASE2-010 is complete):
   - [ ] Verify `getConnectionStatus()` returns correct status
@@ -67,7 +83,14 @@ Create a comprehensive test script to verify Redis connection functionality, mat
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 2. Redis Integration
 - **Rails Files to Reference:**
-  - `jarek-va/app/services/cursor_runner_callback_service.rb` - Redis operations pattern (lines 29-30, 38-39, 54-55)
+  - `jarek-va/app/services/cursor_runner_callback_service.rb` - Redis operations pattern:
+    - Line 30: `@redis.setex(key, ttl, data.to_json)` - Store with TTL and JSON serialization
+    - Line 39: `data = @redis.get(key)` - Retrieve data
+    - Line 42: `JSON.parse(data, symbolize_names: true)` - Parse JSON (note: `symbolize_names` is Ruby-specific)
+    - Lines 43-48: `rescue JSON::ParserError` - JSON parsing error handling
+    - Line 55: `@redis.del(key)` - Delete key
+    - Line 10: `DEFAULT_TTL = 3600` - Default TTL constant
+    - Line 62: Key prefix pattern `"#{REDIS_KEY_PREFIX}#{request_id}"`
   - `jarek-va/spec/config/sidekiq_spec.rb` - Example of Redis configuration testing (lines 24-30)
 - **Dependencies:**
   - Requires PHASE2-009 (Redis connection utility) to be completed first
@@ -79,8 +102,12 @@ Create a comprehensive test script to verify Redis connection functionality, mat
   - Use `getRedisClient()` from `src/utils/redis.ts` to get Redis instance
   - Test operations should match those used in CursorRunnerCallbackService: `setex`, `get`, `del`
   - ioredis uses `set(key, value, 'EX', ttl)` instead of `setex(key, ttl, value)` (different parameter order)
-  - Test should verify JSON serialization/deserialization (callback service stores JSON)
+  - Test should verify JSON serialization/deserialization (callback service stores JSON with `data.to_json`)
+  - Test default TTL of 3600 seconds (matching Rails `DEFAULT_TTL` constant)
+  - Test JSON parsing error handling (Rails uses `rescue JSON::ParserError`, Node.js should handle JSON.parse errors)
+  - Note: Rails uses `symbolize_names: true` in JSON.parse (Ruby-specific), Node.js will use plain objects
   - Use unique test keys (e.g., `test:redis:connection:${Date.now()}`) to avoid conflicts
+  - Consider testing key prefix pattern if relevant (Rails uses `cursor_runner_callback:` prefix)
   - Clean up test data after each test to prevent test pollution
   - Test should handle both success and failure scenarios
   - Consider testing with both default Redis URL and custom URL from environment
