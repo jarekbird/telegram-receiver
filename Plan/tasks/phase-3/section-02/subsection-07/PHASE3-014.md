@@ -13,17 +13,17 @@ Review and add missing type annotations throughout the codebase to ensure TypeSc
 Based on codebase review, the following files need type annotation improvements:
 
 1. **Test Mocks** (`tests/mocks/`):
-   - `tests/mocks/telegramApi.ts` - Missing return types for `resetTelegramApiMocks()`, missing type definitions for mock objects
-   - `tests/mocks/cursorRunnerApi.ts` - Missing return types for `resetCursorRunnerApiMocks()`, missing type definitions for mock objects
-   - `tests/mocks/redis.ts` - Missing return types for `resetRedisMocks()`, missing type definitions for mock Redis client
+   - `tests/mocks/telegramApi.ts` - Missing return type `void` for `resetTelegramApiMocks()`, missing type definitions for `mockTelegramApi` object (should define interface/type for Telegram API mock with methods like `sendMessage`, `getUpdates`, `setWebhook`, `deleteWebhook`, `getMe` that return Jest mock functions)
+   - `tests/mocks/cursorRunnerApi.ts` - Missing return type `void` for `resetCursorRunnerApiMocks()`, missing type definitions for `mockCursorRunnerApi` object (should define interface/type for Cursor Runner API mock with methods like `sendMessage`, `iterate`, `iterateAsync` that return Jest mock functions)
+   - `tests/mocks/redis.ts` - Missing return type `void` for `resetRedisMocks()`, missing type definitions for `mockRedisClient` object (should define interface/type for Redis mock client with methods like `get`, `set`, `del`, `exists`, `expire`, `keys`, `hget`, `hset`, `hdel`, `hgetall`, `ping`, `quit` that return Jest mock functions)
 
 2. **Test Fixtures** (`tests/fixtures/`):
-   - `tests/fixtures/apiResponses.ts` - Missing return type for `createCursorRunnerResponse()`, missing type definitions for response objects
-   - `tests/fixtures/telegramMessages.ts` - Missing return type for `createTelegramMessage()`, missing type definitions for Telegram message objects
+   - `tests/fixtures/apiResponses.ts` - Missing return type for `createCursorRunnerResponse()` function (should return a type based on `cursorRunnerSuccessResponse`), missing type definitions for `cursorRunnerSuccessResponse` and `cursorRunnerErrorResponse` objects (should create interfaces/types for success and error response structures)
+   - `tests/fixtures/telegramMessages.ts` - Missing return type for `createTelegramMessage()` function (should return a Telegram Update type), missing type definitions for `sampleTextMessage`, `sampleCallbackQuery`, and `sampleWebhookUpdate` objects (should create interfaces/types matching Telegram Bot API Update structure)
 
 3. **Test Helpers** (`tests/helpers/`):
-   - `tests/helpers/testUtils.ts` - Already reviewed in PHASE3-013, verify all type annotations are complete
-   - `tests/helpers/apiHelpers.ts` - Review for any missing type annotations
+   - `tests/helpers/testUtils.ts` - Already reviewed in PHASE3-013, verify all type annotations are complete (currently has proper return types and parameter types)
+   - `tests/helpers/apiHelpers.ts` - Review for any missing type annotations (currently has proper types, but verify `createAuthHeaders()` and `createJsonHeaders()` return types are explicit if needed)
 
 4. **Configuration Files**:
    - `playwright.config.ts` - Verify all configuration options are properly typed
@@ -45,14 +45,27 @@ Based on codebase review, the following files need type annotation improvements:
 - [ ] Verify all function parameters have explicit types
 - [ ] Review optional parameters and ensure they're properly typed
 - [ ] Check for `any` types in function parameters and replace with proper types
+  - Pay special attention to `createCursorRunnerResponse(overrides = {})` and `createTelegramMessage(overrides = {})` - the `overrides` parameter should be typed (e.g., `Partial<CursorRunnerResponse>`)
 - [ ] Ensure default parameter values are compatible with their types
+- [ ] Check for implicit `any` types that may arise from untyped object literals
 
 ### 3. Add Type Definitions for Objects
 - [ ] Create type definitions for Telegram API mock objects (`tests/mocks/telegramApi.ts`)
+  - Define interface/type for `mockTelegramApi` with typed Jest mock functions for each method
+  - Use `jest.MockedFunction` or similar Jest types for mock function properties
 - [ ] Create type definitions for Cursor Runner API mock objects (`tests/mocks/cursorRunnerApi.ts`)
+  - Define interface/type for `mockCursorRunnerApi` with typed Jest mock functions
+  - Ensure mock return values match expected API response structures
 - [ ] Create type definitions for Redis mock client (`tests/mocks/redis.ts`)
+  - Define interface/type for `mockRedisClient` with typed Jest mock functions
+  - Match Redis client method signatures (e.g., `get(key: string): Promise<string | null>`)
 - [ ] Create type definitions for API response fixtures (`tests/fixtures/apiResponses.ts`)
+  - Create interfaces for `CursorRunnerSuccessResponse` and `CursorRunnerErrorResponse`
+  - Type the return value of `createCursorRunnerResponse()` function
 - [ ] Create type definitions for Telegram message fixtures (`tests/fixtures/telegramMessages.ts`)
+  - Create interfaces/types matching Telegram Bot API Update structure
+  - Type the return value of `createTelegramMessage()` function
+  - Consider using or referencing official Telegram Bot API types if available
 
 ### 4. Review Exported Types and Interfaces
 - [ ] Ensure all exported types and interfaces are properly documented
