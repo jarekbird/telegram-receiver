@@ -29,9 +29,9 @@ Integrate logger utility in the error handler middleware (`src/middleware/error-
   - [ ] Replace error class and message logging with `logger.error()` (matching Rails pattern: `Rails.logger.error("#{exception.class}: #{exception.message}")`)
   - [ ] Replace stack trace logging with `logger.error()` (matching Rails pattern: `Rails.logger.error(exception.backtrace.join("\n"))`)
 - [ ] Ensure error logging matches Rails pattern:
-  - [ ] Log error class name: `err.constructor.name` or `err.name`
+  - [ ] Log error class name: `err.constructor.name` (preferred, matches Rails `exception.class`) or `err.name` as fallback
   - [ ] Log error message: `err.message`
-  - [ ] Log stack trace: `err.stack` (as separate log call, matching Rails pattern)
+  - [ ] Log stack trace: `err.stack` (as separate log call, matching Rails pattern where `exception.backtrace.join("\n")` is logged separately)
 - [ ] Verify all `console.error()` statements are replaced with logger methods
 - [ ] Ensure logging format is consistent with the logger configuration (from PHASE1-031)
 
@@ -54,7 +54,9 @@ Integrate logger utility in the error handler middleware (`src/middleware/error-
   
   // After (this task):
   import logger from '@/utils/logger';
+  // Match Rails pattern: Rails.logger.error("#{exception.class}: #{exception.message}")
   logger.error(`${err.constructor.name}: ${err.message}`);
+  // Match Rails pattern: Rails.logger.error(exception.backtrace.join("\n"))
   logger.error(err.stack);
   ```
 - **Error Object Handling**: The logger utility (from PHASE1-032) should handle Error objects and include stack traces automatically, but the error handler should still log them explicitly to match Rails pattern.
