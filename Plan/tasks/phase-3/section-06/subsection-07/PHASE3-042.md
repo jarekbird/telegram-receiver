@@ -6,26 +6,267 @@
 
 ## Description
 
-Review and improve fix identified security issues in the codebase to ensure best practices.
+Fix all security vulnerabilities and issues identified in the security audit (PHASE3-041). This task focuses on implementing fixes for security vulnerabilities, updating vulnerable dependencies, addressing authentication issues, improving input validation, fixing credential handling, and ensuring all security best practices are implemented.
+
+## Context
+
+This task follows the comprehensive security audit performed in **PHASE3-041** and addresses the security issues identified in that audit. It also builds upon previous security review tasks:
+
+- **PHASE3-036**: Authentication/authorization review (webhook secrets, admin authentication)
+- **PHASE3-037**: Input validation review
+- **PHASE3-038**: Redis injection vulnerability review
+- **PHASE3-039**: Secure credential handling review
+- **PHASE3-040**: CORS and security headers review
+- **PHASE3-041**: Security audit (identifies issues to fix)
+
+This task should fix all identified security vulnerabilities and implement security improvements based on the audit findings.
 
 ## Checklist
 
-- [ ] Fix all security vulnerabilities
-- [ ] Update vulnerable dependencies
-- [ ] Fix authentication issues
-- [ ] Improve input validation
-- [ ] Fix credential handling
-- [ ] Verify fixes
-- [ ] Document security improvements
+### Dependency Vulnerability Fixes
+
+- [ ] **Update Vulnerable Dependencies**
+  - [ ] Review `npm audit` output from PHASE3-041
+  - [ ] Update all high and critical severity vulnerabilities
+  - [ ] Update production dependencies with known vulnerabilities
+  - [ ] Update development dependencies with security issues
+  - [ ] Run `npm audit fix` (if safe) or manually update packages
+  - [ ] Verify application functionality after dependency updates
+  - [ ] Run full test suite to ensure no breaking changes
+  - [ ] Document any breaking changes or workarounds needed
+
+- [ ] **Review Updated Dependencies**
+  - [ ] Verify `express` is updated to latest secure version
+  - [ ] Verify `axios` is updated to latest secure version
+  - [ ] Verify `redis` / `ioredis` is updated to latest secure version
+  - [ ] Verify `bullmq` is updated to latest secure version
+  - [ ] Verify `@elevenlabs/elevenlabs-js` is updated to latest secure version
+  - [ ] Verify `dotenv` is updated to latest secure version
+  - [ ] Check for any transitive dependency vulnerabilities
+
+### Authentication and Authorization Fixes
+
+- [ ] **Fix Authentication Issues** (reference PHASE3-036)
+  - [ ] Fix any authentication bypass vulnerabilities identified
+  - [ ] Implement secure secret comparison (prevent timing attacks)
+  - [ ] Fix development mode authentication bypasses if unsafe
+  - [ ] Remove or secure any hardcoded secrets or credentials
+  - [ ] Fix token/session management issues (if applicable)
+  - [ ] Ensure all webhook endpoints require proper authentication
+  - [ ] Fix admin authentication issues
+  - [ ] Fix cursor-runner callback authentication issues
+  - [ ] Fix agent tools authentication issues
+
+- [ ] **Verify Authentication Fixes**
+  - [ ] Test all authentication mechanisms work correctly
+  - [ ] Verify authentication failures are handled securely
+  - [ ] Verify authentication errors don't leak sensitive information
+  - [ ] Test authentication bypass attempts are properly rejected
+
+### Input Validation Fixes
+
+- [ ] **Fix Input Validation Issues** (reference PHASE3-037)
+  - [ ] Add input validation to all API endpoints missing validation
+  - [ ] Fix SQL injection vulnerabilities (if using raw SQL queries)
+  - [ ] Fix parameter sanitization issues (prevent XSS, command injection)
+  - [ ] Fix file upload handling vulnerabilities (if applicable)
+  - [ ] Fix path traversal vulnerabilities
+  - [ ] Fix JSON parsing DoS vulnerabilities (large payloads)
+  - [ ] Add request size limits to prevent DoS attacks
+  - [ ] Implement proper type checking and validation
+
+- [ ] **Verify Input Validation Fixes**
+  - [ ] Test all endpoints with invalid input
+  - [ ] Test injection attack attempts are properly rejected
+  - [ ] Verify error messages don't leak sensitive information
+  - [ ] Test request size limits work correctly
+
+### Credential Handling Fixes
+
+- [ ] **Fix Credential Handling Issues** (reference PHASE3-039)
+  - [ ] Remove any credentials from code, config files, or logs
+  - [ ] Fix credential exposure in error messages
+  - [ ] Fix credential exposure in API responses
+  - [ ] Fix credential exposure in logs
+  - [ ] Fix credential exposure in stack traces
+  - [ ] Fix credential exposure in debug output
+  - [ ] Ensure all credentials are read from environment variables
+  - [ ] Implement credential masking in logs (show only first/last few chars)
+  - [ ] Fix default secret values (remove 'changeme' defaults)
+  - [ ] Ensure required credentials fail fast if missing
+
+- [ ] **Verify Credential Handling Fixes**
+  - [ ] Verify no credentials are logged
+  - [ ] Verify no credentials are in error messages
+  - [ ] Verify no credentials are in API responses
+  - [ ] Test credential validation at startup
+
+### Security Headers and CORS Fixes
+
+- [ ] **Fix Security Headers Issues** (reference PHASE3-040)
+  - [ ] Install and configure `helmet` middleware if not already installed
+  - [ ] Fix missing security headers
+  - [ ] Configure X-Content-Type-Options header
+  - [ ] Configure X-Frame-Options header
+  - [ ] Configure X-XSS-Protection header
+  - [ ] Configure Strict-Transport-Security (HSTS) header
+  - [ ] Configure Content-Security-Policy (CSP) if applicable
+  - [ ] Fix CORS configuration issues
+  - [ ] Verify security headers are applied to all routes
+  - [ ] Fix middleware ordering (security headers should be early)
+
+- [ ] **Verify Security Headers Fixes**
+  - [ ] Test all endpoints return proper security headers
+  - [ ] Verify CORS configuration works correctly
+  - [ ] Test security headers in different environments
+
+### Redis Injection Vulnerability Fixes
+
+- [ ] **Fix Redis Injection Issues** (reference PHASE3-038)
+  - [ ] Fix any Redis key construction vulnerabilities
+  - [ ] Sanitize all user input used in Redis keys
+  - [ ] Fix request_id handling to prevent injection
+  - [ ] Verify all Redis operations use safe key construction
+  - [ ] Add validation for Redis key patterns
+
+- [ ] **Verify Redis Injection Fixes**
+  - [ ] Test Redis key construction with special characters
+  - [ ] Verify injection attempts are properly handled
+  - [ ] Test Redis operations with various input types
+
+### Error Handling and Information Disclosure Fixes
+
+- [ ] **Fix Error Handling Issues**
+  - [ ] Fix error messages that leak sensitive information
+  - [ ] Ensure stack traces are not exposed in production
+  - [ ] Fix error responses that reveal internal system details
+  - [ ] Remove sensitive information from error logging
+  - [ ] Fix error handling that exposes file paths or system information
+  - [ ] Implement proper error handling middleware
+
+- [ ] **Verify Error Handling Fixes**
+  - [ ] Test error responses don't leak sensitive information
+  - [ ] Verify stack traces are hidden in production
+  - [ ] Test error logging doesn't expose secrets
+
+### API Security Fixes
+
+- [ ] **Fix API Security Issues**
+  - [ ] Implement rate limiting if missing
+  - [ ] Fix API endpoint enumeration vulnerabilities
+  - [ ] Fix request size limits
+  - [ ] Verify HTTPS enforcement in production
+  - [ ] Fix missing security headers on API endpoints
+  - [ ] Review and fix external API call security
+
+- [ ] **Verify API Security Fixes**
+  - [ ] Test rate limiting works correctly
+  - [ ] Verify API endpoints are properly secured
+  - [ ] Test request size limits
+
+### File System Security Fixes
+
+- [ ] **Fix File System Security Issues**
+  - [ ] Fix path traversal vulnerabilities
+  - [ ] Fix file permissions and access controls
+  - [ ] Fix temporary file cleanup issues
+  - [ ] Fix file upload validation (if applicable)
+  - [ ] Verify file operations are secure
+
+- [ ] **Verify File System Security Fixes**
+  - [ ] Test path traversal attempts are blocked
+  - [ ] Verify file permissions are correct
+  - [ ] Test file operations with various inputs
+
+### Network Security Fixes
+
+- [ ] **Fix Network Security Issues**
+  - [ ] Fix SSRF (Server-Side Request Forgery) vulnerabilities
+  - [ ] Fix TLS/SSL certificate validation issues
+  - [ ] Fix timeout configurations for external requests
+  - [ ] Verify external API calls are secure
+
+- [ ] **Verify Network Security Fixes**
+  - [ ] Test SSRF attack attempts are blocked
+  - [ ] Verify TLS/SSL validation works correctly
+  - [ ] Test external API call security
+
+### Logging and Monitoring Security Fixes
+
+- [ ] **Fix Logging Security Issues**
+  - [ ] Remove sensitive data from logs
+  - [ ] Fix log file permissions and access controls
+  - [ ] Ensure authentication tokens or secrets are not logged
+  - [ ] Implement log rotation and retention policies
+  - [ ] Fix logging that exposes sensitive information
+
+- [ ] **Verify Logging Security Fixes**
+  - [ ] Review logs for sensitive information
+  - [ ] Verify log file permissions are secure
+  - [ ] Test logging doesn't expose secrets
+
+### Configuration Security Fixes
+
+- [ ] **Fix Configuration Security Issues**
+  - [ ] Fix insecure default configurations
+  - [ ] Fix environment-specific configuration issues
+  - [ ] Fix Docker configuration security issues
+  - [ ] Fix exposed ports or services
+  - [ ] Verify `.env` files are in `.gitignore`
+  - [ ] Fix configuration that exposes sensitive information
+
+- [ ] **Verify Configuration Security Fixes**
+  - [ ] Review all configuration files for security issues
+  - [ ] Verify Docker configuration is secure
+  - [ ] Test configuration in different environments
+
+### Testing and Verification
+
+- [ ] **Comprehensive Security Testing**
+  - [ ] Run full test suite to verify fixes don't break functionality
+  - [ ] Run security-focused tests
+  - [ ] Test all fixed vulnerabilities to ensure they're resolved
+  - [ ] Perform manual security testing
+  - [ ] Run `npm audit` again to verify vulnerabilities are fixed
+  - [ ] Verify all security improvements are working
+
+- [ ] **Code Review**
+  - [ ] Review all security fixes
+  - [ ] Verify fixes follow security best practices
+  - [ ] Ensure fixes don't introduce new vulnerabilities
+  - [ ] Review error handling improvements
+
+### Documentation
+
+- [ ] **Document Security Fixes**
+  - [ ] Document all security vulnerabilities that were fixed
+  - [ ] Document security improvements made
+  - [ ] Update security documentation with fixes
+  - [ ] Document any security decisions and trade-offs
+  - [ ] Create or update `SECURITY.md` file
+  - [ ] Document security testing procedures
+
+- [ ] **Update Security Documentation**
+  - [ ] Update security configuration documentation
+  - [ ] Document security best practices for developers
+  - [ ] Update security guidelines
+  - [ ] Document dependency update process
 
 ## Notes
 
 - This task is part of Phase 3: Holistic Review and Best Practices
 - Section: 6. Security Review
-- Focus on identifying issues and improvements
-- Document findings and decisions
+- **Prerequisite**: PHASE3-041 (Security Audit) must be completed first to identify issues to fix
+- Focus on fixing identified issues and implementing security improvements
+- Document all fixes and improvements
+- Test thoroughly after each fix to ensure no regressions
 
-- Task can be completed independently by a single agent
+- **Security Fix Priority**: Fix critical and high severity vulnerabilities first, then address medium and low severity issues
+- **Testing**: After fixing each category of issues, run tests to verify fixes work correctly and don't break functionality
+- **Documentation**: All security fixes should be documented for future reference and compliance
+- **Verification**: Use `npm audit` and security testing tools to verify vulnerabilities are fixed
+
+- Task can be completed independently by a single agent, but may require coordination if multiple security issues are identified
 
 ## Related Tasks
 
