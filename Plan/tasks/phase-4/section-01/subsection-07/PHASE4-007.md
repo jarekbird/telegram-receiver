@@ -54,8 +54,8 @@ Consider the following options for code smell detection:
    - Visual reports and dashboards
 
 2. **ESLint plugins** (Recommended for integration)
-   - `eslint-plugin-complexity` - Cyclomatic complexity detection
-   - `eslint-plugin-sonarjs` - SonarJS rules for ESLint
+   - Built-in ESLint rules: `complexity`, `max-depth`, `max-lines-per-function`, `max-params` - Cyclomatic complexity and size detection
+   - `eslint-plugin-sonarjs` - SonarJS rules for ESLint (comprehensive code smell detection)
    - `eslint-plugin-no-magic-numbers` - Magic number detection
    - Integrates with existing ESLint setup
    - Can be configured with thresholds
@@ -131,20 +131,20 @@ Recommended thresholds for code smell detection:
 - [ ] Test tool configuration on codebase
 
 ### ESLint Plugin Configuration (Recommended)
-- [ ] Install eslint-plugin-complexity: `npm install --save-dev eslint-plugin-complexity`
 - [ ] Install eslint-plugin-sonarjs: `npm install --save-dev eslint-plugin-sonarjs`
 - [ ] Install eslint-plugin-no-magic-numbers: `npm install --save-dev eslint-plugin-no-magic-numbers`
 - [ ] Update `.eslintrc.json` to include the plugins
-- [ ] Configure complexity rules:
-  - `complexity: ["warn", 15]` - Warn on complexity > 15
+- [ ] Configure built-in ESLint complexity rules:
+  - `complexity: ["warn", 15]` - Warn on cyclomatic complexity > 15
   - `max-depth: ["warn", 4]` - Warn on nesting depth > 4
-  - `max-lines-per-function: ["warn", 50]` - Warn on functions > 50 lines
+  - `max-lines-per-function: ["warn", { max: 50, skipBlankLines: true, skipComments: true }]` - Warn on functions > 50 lines
+  - `max-params: ["warn", 5]` - Warn on functions with > 5 parameters
 - [ ] Configure SonarJS rules:
   - `sonarjs/cognitive-complexity: ["warn", 15]`
   - `sonarjs/max-switch-cases: ["warn", 30]`
   - `sonarjs/no-small-switch: "warn"`
 - [ ] Configure magic number rules:
-  - `no-magic-numbers: ["warn", { ignore: [0, 1, -1] }]`
+  - `no-magic-numbers: ["warn", { ignore: [0, 1, -1], ignoreArrayIndexes: true, ignoreDefaultValues: true, detectObjects: false }]`
 - [ ] Test ESLint configuration
 
 ### SonarQube Configuration (If available)
@@ -254,7 +254,7 @@ Update `.eslintrc.json`:
 
 ```json
 {
-  "plugins": ["@typescript-eslint", "prettier", "complexity", "sonarjs", "no-magic-numbers"],
+  "plugins": ["@typescript-eslint", "prettier", "sonarjs", "no-magic-numbers"],
   "rules": {
     "complexity": ["warn", 15],
     "max-depth": ["warn", 4],
