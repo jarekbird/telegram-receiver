@@ -38,6 +38,75 @@ Phase 3 performance review tasks (PHASE3-029 through PHASE3-035) identified perf
 
 This task addresses any remaining issues or newly discovered bottlenecks.
 
+## Rails Implementation Reference
+
+For reference, the following Rails files demonstrate expected performance patterns and optimization strategies that should be maintained or improved in the TypeScript implementation:
+
+### Performance-Critical Components
+
+- **TelegramController** (`jarek-va/app/controllers/telegram_controller.rb`):
+  - Webhook endpoint returns `head :ok` immediately after enqueueing job (line 25)
+  - Job enqueueing happens synchronously but quickly (< 50ms expected)
+  - Error handling sends messages asynchronously (fire-and-forget pattern)
+  - Admin endpoints make synchronous Telegram API calls (response time depends on Telegram API latency)
+
+- **TelegramMessageJob** (`jarek-va/app/jobs/telegram_message_job.rb`):
+  - Background job processing (not part of API response time)
+  - Audio transcription happens in background job
+  - File cleanup happens in ensure blocks (lines 342-350, 379-387)
+  - Cursor runner forwarding uses async iterate method (line 209)
+  - Redis state storage happens synchronously but quickly (lines 190-201)
+
+- **CursorRunnerCallbackController** (`jarek-va/app/controllers/cursor_runner_callback_controller.rb`):
+  - Callback processing returns 200 OK quickly (line 42)
+  - Redis state retrieval happens synchronously (line 30)
+  - Telegram message sending happens after response is sent (fire-and-forget pattern, lines 186-212)
+  - Audio file generation and cleanup happens synchronously but in background context (lines 221-254)
+
+- **CursorRunnerCallbackService** (`jarek-va/app/services/cursor_runner_callback_service.rb`):
+  - Redis operations use simple GET/SET/DEL patterns (lines 30, 39, 55)
+  - TTL-based cleanup using `setex` (line 30)
+  - Single Redis connection per service instance (lines 15-22)
+  - JSON serialization/deserialization for stored data (lines 30, 42)
+
+- **TelegramService** (`jarek-va/app/services/telegram_service.rb`):
+  - Uses Telegram::Bot::Client which handles HTTP connection pooling internally (line 11)
+  - File downloads use Faraday with streaming (lines 90-186)
+  - Error handling doesn't block request processing
+  - HTML entity escaping happens synchronously (lines 20-24)
+
+- **CursorRunnerService** (`jarek-va/app/services/cursor_runner_service.rb`):
+  - Uses Net::HTTP with timeout configuration (lines 16-19)
+  - Connection pooling handled by Net::HTTP (reuses connections)
+  - Timeout handling for long-running operations (lines 16-19)
+  - Async iterate method supports callback URLs (lines 51-66)
+
+### Key Performance Patterns from Rails Implementation:
+
+1. **Immediate Webhook Acknowledgment**: Telegram webhook returns 200 OK immediately after enqueueing job, processing happens asynchronously.
+
+2. **Redis Connection Management**: Single Redis connection per service instance, simple GET/SET/DEL operations with TTL-based cleanup.
+
+3. **Background Job Processing**: Heavy operations (audio transcription, message processing) happen in background jobs, not blocking API responses.
+
+4. **Fire-and-Forget Telegram Messages**: Telegram messages sent after callback response is returned, not blocking the callback endpoint.
+
+5. **File Cleanup**: Audio files cleaned up in ensure blocks to prevent memory leaks and disk space issues.
+
+6. **Connection Reuse**: HTTP clients (Telegram::Bot::Client, Net::HTTP) handle connection pooling internally.
+
+7. **Error Handling**: Errors don't block responses - always return appropriate status codes even on errors.
+
+8. **Synchronous Redis Operations**: Redis operations are synchronous but fast (< 50ms expected), acceptable for callback processing.
+
+### Optimization Targets Based on Rails Patterns:
+
+- **Webhook Response Time**: < 200ms (matches Rails pattern of immediate acknowledgment)
+- **Job Enqueueing**: < 50ms (matches Rails Sidekiq enqueueing time)
+- **Redis Operations**: < 50ms per operation (matches Rails Redis operation times)
+- **Callback Response Time**: < 500ms (matches Rails callback processing time)
+- **Health Check**: < 10ms (matches Rails simple health check pattern)
+
 ## Checklist
 
 ### Review Phase 3 Findings
@@ -52,6 +121,20 @@ This task addresses any remaining issues or newly discovered bottlenecks.
 - [ ] Review code complexity metrics for performance-critical sections
 - [ ] Identify inefficient patterns introduced during Phase 2 conversion
 - [ ] Check for performance regressions compared to Rails implementation
+- [ ] Review TypeScript services for performance issues:
+  - [ ] `TelegramService` - Message sending, file downloads, webhook management
+  - [ ] `CursorRunnerService` - API calls, Git operations, execution/iteration
+  - [ ] `CursorRunnerCallbackService` - Redis state management, callback handling
+  - [ ] `ElevenLabsSpeechToTextService` - Audio transcription (if implemented)
+  - [ ] `ElevenLabsTextToSpeechService` - Text-to-speech synthesis (if implemented)
+- [ ] Review TypeScript controllers for performance issues:
+  - [ ] `TelegramController` - Webhook endpoint, admin endpoints
+  - [ ] `CursorRunnerController` - Execution endpoints, Git endpoints
+  - [ ] `CursorRunnerCallbackController` - Callback processing endpoint
+  - [ ] `AgentToolsController` - Tool execution endpoint
+  - [ ] `HealthController` - Health check endpoint
+- [ ] Review background jobs for performance issues:
+  - [ ] `TelegramMessageJob` - Message processing, audio transcription, cursor-runner forwarding
 
 ### Database/Redis Query Optimization
 - [ ] Review and optimize slow Redis queries
@@ -152,6 +235,11 @@ This task addresses any remaining issues or newly discovered bottlenecks.
 - This task builds on Phase 3 performance review findings (PHASE3-029 through PHASE3-035)
 - Document all findings and improvements
 - Verify improvements through performance testing
+- Compare TypeScript implementation performance with Rails implementation patterns (see Rails Implementation Reference section)
+- Ensure optimizations maintain or improve upon Rails performance characteristics
+- Reference PHASE3-035 for comprehensive performance optimization guidance
+- Reference PHASE3-033 for API response time targets and patterns
+- Reference PHASE3-034 for performance benchmark baselines
 
 - Task can be completed independently by a single agent
 
