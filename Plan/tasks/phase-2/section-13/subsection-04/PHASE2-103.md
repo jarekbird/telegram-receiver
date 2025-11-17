@@ -29,15 +29,24 @@ Write integration tests for the Telegram webhook flow. These tests should verify
 - [ ] Test message processing with non-command messages (forwarded to cursor-runner)
 - [ ] Test error handling when job enqueue fails (should return 200 to avoid Telegram retries)
 - [ ] Test error handling when job processing fails (should send error message to user)
-- [ ] Mock TelegramService (send_message, download_file, etc.)
+- [ ] Mock TelegramService (send_message, download_file, send_voice, bot.api.answer_callback_query, etc.)
 - [ ] Mock CursorRunnerService (iterate method)
 - [ ] Mock CursorRunnerCallbackService (store_pending_request, remove_pending_request)
 - [ ] Mock Redis for callback state management
+- [ ] Mock SystemSetting (enabled?, disabled? methods)
+- [ ] Mock ElevenLabs services (speech-to-text, text-to-speech)
 - [ ] Mock BullMQ job queue for job enqueueing verification
 - [ ] Verify job receives correct update data (JSON format)
 - [ ] Test that webhook returns 200 OK immediately (before job processing)
 - [ ] Use fixtures from `tests/fixtures/telegramMessages.ts` for test data
 - [ ] Test with different message types (text, audio/voice, callback queries)
+- [ ] Test callback query answer behavior (job should answer callback query before processing)
+- [ ] Test callback query answer error handling (should handle gracefully if answer fails)
+- [ ] Test CURSOR_DEBUG acknowledgment messages (should send acknowledgment when debug enabled)
+- [ ] Test audio response behavior (should respond with audio if original message was audio and audio output not disabled)
+- [ ] Test SystemSetting checks (debug flag, allow_audio_output flag)
+- [ ] Test audio transcription flow (download, transcribe, cleanup)
+- [ ] Test text-to-speech response flow (synthesize, send voice, cleanup, fallback to text on error)
 - [ ] Verify proper cleanup and isolation between tests
 
 ## Test Scenarios
@@ -57,11 +66,34 @@ Write integration tests for the Telegram webhook flow. These tests should verify
 1. **Command messages** (/start, /help, /status): Should process locally and send response
 2. **Non-command messages**: Should forward to cursor-runner via CursorRunnerService
 3. **Audio/voice messages**: Should transcribe and process (if implemented)
+   - Download audio file from Telegram
+   - Transcribe using ElevenLabs service
+   - Replace message text with transcribed text
+   - Continue processing with transcribed text
+   - Clean up downloaded audio file
+   - Handle transcription errors gracefully
+4. **Audio response**: When original message was audio, should respond with audio (if audio output not disabled)
+   - Convert response text to speech using ElevenLabs
+   - Send as voice message
+   - Fallback to text message if audio generation fails
+   - Clean up generated audio file
+5. **Callback query processing**: Should answer callback query before processing
+   - Answer callback query with "Processing..." text
+   - Handle answer errors gracefully (log but continue)
+   - Process callback data by forwarding to cursor-runner
+6. **CURSOR_DEBUG acknowledgment**: Should send acknowledgment message when debug enabled
+   - Check SystemSetting for 'debug' flag
+   - Send "⏳ Processing your request..." message if enabled
+   - Skip acknowledgment if debug disabled
 
 ### Error Handling Tests
 1. **Job enqueue error**: Should return 200 OK, log error, send error message to user if chat_id available
 2. **Job processing error**: Should log error, send error message to user, re-raise error to mark job as failed
 3. **Missing chat_id in error**: Should not attempt to send error message
+4. **Callback query answer error**: Should log error but continue processing callback
+5. **Audio transcription error**: Should send error message to user and return early
+6. **Audio generation error**: Should fallback to text message if text-to-speech fails
+7. **Error sending error message**: Should log error but not crash (nested error handling)
 
 ### Integration Flow Tests
 1. **Complete flow**: HTTP POST → Controller → Job Queue → Job Processing → External Services
@@ -75,10 +107,14 @@ Write integration tests for the Telegram webhook flow. These tests should verify
 - Mock external services (TelegramService, CursorRunnerService) using Jest mocks
 - Mock BullMQ queue to verify job enqueueing without actually processing jobs
 - Mock Redis for callback state management
+- Mock SystemSetting to control debug and audio output flags
+- Mock ElevenLabs services for audio transcription and text-to-speech
 - Use test fixtures from `tests/fixtures/telegramMessages.ts`
-- Ensure proper test isolation (cleanup between tests)
+- Ensure proper test isolation (cleanup between tests, reset mocks between tests)
 - Reference Rails specs for expected behavior and edge cases
 - Test should verify the complete flow but mock external dependencies
+- Note: The controller passes update as JSON string to job (`update.to_json`), job accepts both Hash and JSON string
+- Note: The controller excludes `:controller`, `:action`, `:format`, `:telegram` from params before passing to job
 
 ## Notes
 
