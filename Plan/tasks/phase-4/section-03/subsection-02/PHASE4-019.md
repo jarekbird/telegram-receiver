@@ -6,27 +6,230 @@
 
 ## Description
 
-simplify complex logic to improve code quality and maintainability.
+Simplify complex logic to improve code quality and maintainability. This task focuses on systematically addressing complex logic identified through complexity analysis (PHASE4-004), complex business logic review (PHASE4-010), automated code quality reports (PHASE4-009), and manual code review findings (PHASE4-017). The goal is to improve code readability, maintainability, and reduce cognitive complexity by breaking down complex functions, simplifying conditional logic, extracting helper functions, and improving algorithm clarity.
+
+## Current State
+
+Complex logic may have been identified through:
+
+- **PHASE4-004**: Complexity analysis (cyclomatic complexity, cognitive complexity metrics)
+- **PHASE4-010**: Complex business logic review (`docs/manual-code-review.md`)
+- **PHASE4-009**: Automated code quality report (consolidated findings from all automated tools)
+- **PHASE4-017**: Manual code review report (`docs/manual-code-review.md`)
+
+**Manual Code Review Findings** (from PHASE4-017):
+- PHASE4-010 found no complex business logic at the time of review (early development stage)
+- Application is in early development - complex logic may emerge after Phase 2 conversion
+- Test utilities reviewed: Low complexity, well-structured
+
+**Complexity Analysis Findings** (if PHASE4-004 is completed):
+- Check complexity analysis reports for functions with:
+  - Cyclomatic complexity > 10 (high complexity)
+  - Cyclomatic complexity > 20 (critical complexity)
+  - Cognitive complexity > 15 (high cognitive load)
+- Check ESLint complexity rule violations: `npm run lint`
+- Review files with highest average complexity scores
+
+**Automated Findings** (if PHASE4-009 is completed):
+- Check `docs/code-quality-report.md` for consolidated complexity findings
+- Review SonarQube reports (if configured) for complexity metrics
+
+**Complex Logic Indicators**:
+1. **High Cyclomatic Complexity**: Functions with many decision points (>10)
+2. **High Cognitive Complexity**: Functions that are difficult to understand (>15)
+3. **Deep Nesting**: Nested conditionals exceeding 4 levels
+4. **Long Functions**: Functions exceeding 50 lines with complex logic
+5. **Complex Conditionals**: Multiple boolean conditions, nested ternaries, complex switch statements
+6. **Complex Algorithms**: Algorithms with multiple steps, state management, or intricate logic flows
+7. **God Functions**: Functions that do too many things
 
 ## Checklist
 
-- [ ] Identify complex logic from reviews
-- [ ] Break down complex functions
-- [ ] Extract helper functions
-- [ ] Simplify conditional logic
-- [ ] Improve algorithm clarity
-- [ ] Add comments for complex parts
-- [ ] Test simplified logic
-- [ ] Document simplifications
+### Preparation and Prioritization
+- [ ] Review complexity analysis results from PHASE4-004 (if available)
+- [ ] Review complex business logic findings from PHASE4-010 (`docs/manual-code-review.md`)
+- [ ] Review automated code quality report (`docs/code-quality-report.md`) if PHASE4-009 is completed
+- [ ] Review manual code review findings (`docs/manual-code-review.md`)
+- [ ] Run ESLint complexity checks: `npm run lint` (check for complexity rule violations)
+- [ ] Review SonarQube reports (if available) for complexity metrics
+- [ ] Compile comprehensive list of all identified complex logic with:
+  - File locations and line numbers
+  - Complexity metrics (cyclomatic, cognitive)
+  - Function/method names
+  - Description of complexity (nested conditionals, long functions, complex algorithms)
+  - Impact on maintainability and readability
+  - Estimated simplification effort
+- [ ] Prioritize complex logic simplification by:
+  - Critical: Cyclomatic complexity > 20, cognitive complexity > 25
+  - High: Cyclomatic complexity 11-20, cognitive complexity 16-25, deeply nested logic (>5 levels)
+  - Medium: Cyclomatic complexity 6-10, cognitive complexity 10-15, moderate nesting (3-4 levels)
+  - Low: Minor complexity improvements, readability enhancements
+- [ ] Create simplification plan with dependencies and order of execution
+- [ ] Ensure test coverage exists before simplification (add tests if needed)
+
+### Identifying Complex Logic
+- [ ] Review all functions with cyclomatic complexity > 10
+- [ ] Review all functions with cognitive complexity > 15
+- [ ] Identify functions with deep nesting (>4 levels)
+- [ ] Identify functions with complex conditional logic:
+  - Multiple boolean conditions in single if statement
+  - Nested ternary operators
+  - Complex switch statements with nested logic
+  - Multiple levels of if-else chains
+- [ ] Identify functions with complex algorithms:
+  - Multi-step algorithms with state management
+  - Algorithms with intricate control flow
+  - Algorithms with multiple responsibilities
+- [ ] Identify functions that are difficult to understand:
+  - Functions requiring extensive comments to explain
+  - Functions with unclear variable names
+  - Functions with magic numbers or unclear constants
+- [ ] Document each identified complex logic section with:
+  - Location (file, function, line numbers)
+  - Complexity type and metrics
+  - Why it's complex
+  - Simplification opportunities
+
+### Breaking Down Complex Functions
+- [ ] For each complex function identified:
+  - [ ] Analyze function responsibilities and identify extraction opportunities
+  - [ ] Identify logical blocks that can be extracted
+  - [ ] Extract logical blocks into well-named helper functions
+  - [ ] Ensure extracted functions have single responsibility
+  - [ ] Maintain function behavior (no functional changes)
+  - [ ] Update function documentation (JSDoc)
+- [ ] For functions with multiple responsibilities:
+  - [ ] Split into multiple focused functions
+  - [ ] Use composition to combine simpler functions
+  - [ ] Ensure each function has clear, single purpose
+- [ ] Run tests after each function simplification
+- [ ] Verify no functionality was broken
+
+### Extracting Helper Functions
+- [ ] Identify repeated logic patterns that can be extracted
+- [ ] Extract complex calculations into named functions
+- [ ] Extract validation logic into separate functions
+- [ ] Extract data transformation logic into separate functions
+- [ ] Extract error handling logic into separate functions
+- [ ] Ensure extracted helper functions:
+  - Have descriptive, purpose-driven names
+  - Have single responsibility
+  - Are reusable where appropriate
+  - Have proper JSDoc documentation
+  - Are properly typed (TypeScript)
+- [ ] Consider creating utility modules for common helper functions
+- [ ] Run tests after each extraction
+- [ ] Verify behavior is unchanged
+
+### Simplifying Conditional Logic
+- [ ] For complex boolean conditions:
+  - [ ] Extract complex conditions into well-named boolean variables
+  - [ ] Break down multiple conditions into separate checks
+  - [ ] Use early returns/guard clauses to reduce nesting
+  - [ ] Consider using lookup tables or maps for complex conditionals
+- [ ] For nested conditionals:
+  - [ ] Use early returns to flatten nesting
+  - [ ] Extract nested logic into separate functions
+  - [ ] Use guard clauses for validation checks
+  - [ ] Consider using strategy pattern for complex conditionals
+- [ ] For complex switch statements:
+  - [ ] Extract switch logic into separate functions
+  - [ ] Consider using object maps or lookup tables
+  - [ ] Simplify case logic
+- [ ] For ternary operators:
+  - [ ] Replace nested ternaries with if-else statements
+  - [ ] Extract complex ternaries into separate functions
+  - [ ] Use ternary only for simple, clear conditions
+- [ ] Run tests after each conditional simplification
+- [ ] Verify logic correctness
+
+### Improving Algorithm Clarity
+- [ ] For complex algorithms:
+  - [ ] Break down algorithm into clear steps
+  - [ ] Extract each step into well-named functions
+  - [ ] Add comments explaining algorithm approach (not implementation details)
+  - [ ] Use descriptive variable names that explain purpose
+  - [ ] Replace magic numbers with named constants
+  - [ ] Simplify control flow where possible
+- [ ] For state management in algorithms:
+  - [ ] Extract state into well-named variables
+  - [ ] Use clear state transitions
+  - [ ] Consider using state machine pattern if appropriate
+- [ ] For iterative algorithms:
+  - [ ] Use descriptive loop variable names
+  - [ ] Extract loop body logic into functions if complex
+  - [ ] Use array methods (map, filter, reduce) where appropriate for clarity
+- [ ] Run tests after each algorithm improvement
+- [ ] Verify algorithm correctness
+
+### Adding Comments for Complex Parts
+- [ ] Identify parts that remain complex after simplification attempts
+- [ ] Add JSDoc comments explaining:
+  - Why the code is complex (business requirements, constraints)
+  - What the code does (high-level approach)
+  - Important edge cases or gotchas
+- [ ] Add inline comments for:
+  - Non-obvious logic decisions
+  - Complex calculations that can't be simplified further
+  - Workarounds or temporary solutions
+- [ ] Ensure comments explain "why" not "what"
+- [ ] Update comments if code changes
+- [ ] Consider if commented complexity can be further simplified
+
+### Testing Simplified Logic
+- [ ] Run full test suite after each simplification: `npm test`
+- [ ] Run type checking: `npm run type-check`
+- [ ] Run linting: `npm run lint`
+- [ ] Verify test coverage hasn't decreased: `npm run test:coverage`
+- [ ] Add tests for edge cases if they weren't covered before
+- [ ] Manually test affected functionality if applicable
+- [ ] Verify complexity metrics improved (re-run complexity analysis)
+- [ ] Ensure no new complexity was introduced
+
+### Documentation
+- [ ] Document each simplification change:
+  - [ ] What was simplified (file, function name, complexity type)
+  - [ ] Why it was simplified (complexity metrics, maintainability impact)
+  - [ ] How it was simplified (extraction, refactoring technique used)
+  - [ ] Before/after complexity metrics (if available)
+  - [ ] Any breaking changes (if applicable)
+- [ ] Update code comments and JSDoc as needed
+- [ ] Create simplification summary document or update code quality report
+- [ ] Update architecture documentation if structural changes were made
+- [ ] Document simplification patterns used for future reference
+
+### Verification
+- [ ] Re-run complexity analysis to verify improvements:
+  - [ ] ESLint complexity rules: `npm run lint`
+  - [ ] Complexity analysis tool (if PHASE4-004 configured)
+  - [ ] SonarQube analysis (if available)
+- [ ] Compare before/after metrics:
+  - [ ] Number of functions with complexity > 10 (should decrease)
+  - [ ] Number of functions with complexity > 20 (should decrease)
+  - [ ] Average cyclomatic complexity (should decrease)
+  - [ ] Average cognitive complexity (should decrease)
+  - [ ] Maximum nesting depth (should decrease)
+- [ ] Verify code quality score improved (if metrics available)
+- [ ] Ensure no regressions were introduced
+- [ ] Verify code readability improved (manual review)
 
 ## Notes
 
 - This task is part of Phase 4: Code Quality Audit
 - Section: 3. Refactoring
-- Focus on identifying and fixing code quality issues
+- Focus on systematically addressing complex logic identified in previous tasks
 - Document all findings and improvements
-
-- Task can be completed independently by a single agent
+- **Important**: Always run tests after each simplification to ensure no functionality is broken
+- **Important**: Simplification should improve code quality without changing behavior
+- **Important**: If complexity analysis (PHASE4-004) is not available, work with manual review findings (PHASE4-017) and run ESLint complexity detection
+- Start with high-impact, low-risk simplifications
+- Consider dependencies between complex logic sections (some may need to be simplified together)
+- Not all complexity is bad - some algorithms are inherently complex. Focus on reducing unnecessary complexity and improving clarity
+- Use descriptive names to reduce cognitive load - a well-named function is better than a comment
+- Extract helper functions even if they're only used once if it improves readability
+- Early returns and guard clauses are powerful tools for reducing nesting
+- Complex conditionals can often be simplified using lookup tables, maps, or strategy patterns
+- Task can be completed independently by a single agent, but may require multiple iterations if many complex logic sections are identified
 
 ## Related Tasks
 
