@@ -6,18 +6,91 @@
 
 ## Description
 
-Configure CI job - Linting
+Configure the linting and type checking steps for the CI test job in the GitHub Actions workflow. This task focuses on adding code quality checks including ESLint linting, Prettier format checking, and TypeScript type checking, mirroring the Rails CI workflow linting step (`jarek-va/.github/workflows/test.yml` lines 60-75) but adapted for Node.js/TypeScript tooling. The linting steps should use changed file detection to only lint changed files when possible, falling back to linting all files when no changes are detected.
+
+## Reference Implementation
+
+The Rails application (`jarek-va`) has a linting step in its CI workflow that includes:
+- Changed file detection (from previous step)
+- Run RuboCop linter on changed source files (excluding spec files)
+- Filter out test files for linting (only lint source files)
+- Fallback to linting all files if no changes detected
+- Conditional execution based on changed files detection
 
 ## Checklist
 
-- [ ] Add step to run linting (if configured)
-- [ ] Add step to run type checking (`npm run type-check` or `tsc --noEmit`)
+### ESLint Linting
+- [ ] Add step to run ESLint linter using `npm run lint`
+- [ ] Use changed file detection from previous step (if available)
+- [ ] For changed files: run ESLint only on changed TypeScript files (filter to `.ts` files)
+- [ ] Filter out test files from linting if only source files should be linted (optional, depends on project preference)
+- [ ] If no changed files detected: run ESLint on all files (`npm run lint`)
+- [ ] Handle case when no source files changed (skip or run on all files)
+
+### Prettier Format Checking
+- [ ] Add step to run Prettier format check using `npm run format:check`
+- [ ] Use changed file detection from previous step (if available)
+- [ ] For changed files: run Prettier check only on changed TypeScript files
+- [ ] If no changed files detected: run Prettier check on all files
+- [ ] Prettier should check both source and test files (as configured in package.json)
+
+### TypeScript Type Checking
+- [ ] Add step to run TypeScript type checking using `npm run type-check` (preferred) or `tsc --noEmit`
+- [ ] Type checking should run on all files (not just changed files) as TypeScript needs full project context
+- [ ] This step validates that the entire codebase has no type errors
+
+## Implementation Details
+
+### NPM Scripts Available
+- `npm run lint` - Run ESLint on src and tests directories (defined in package.json)
+- `npm run lint:fix` - Run ESLint with auto-fix (not used in CI)
+- `npm run format:check` - Check Prettier formatting on src and tests directories
+- `npm run format` - Format files with Prettier (not used in CI)
+- `npm run type-check` - Run TypeScript type checking (tsc --noEmit)
+
+### Changed File Detection
+- The changed file detection step should be added in a previous task (PHASE1-051 or PHASE1-052)
+- Changed files output should be available as `steps.changed-files.outputs.changed_files`
+- Changed files detection should filter for `.ts` files
+- For pull requests: compare against `github.event.pull_request.base.sha`
+- For pushes: compare against `HEAD~1`
+
+### ESLint Configuration
+- ESLint is configured in `.eslintrc.json`
+- ESLint lints both `src/` and `tests/` directories (as per package.json script)
+- ESLint uses TypeScript parser and type-aware rules
+
+### Prettier Configuration
+- Prettier checks formatting on `src/**/*.ts` and `tests/**/*.ts` (as per package.json script)
+- Prettier is integrated with ESLint via `eslint-config-prettier` and `eslint-plugin-prettier`
+
+### TypeScript Type Checking
+- Type checking uses `tsc --noEmit` which compiles without emitting files
+- Type checking validates the entire project (needs full project context)
+- TypeScript configuration is in `tsconfig.json`
+- Type checking should always run on all files, not just changed files
+
+### Expected Workflow Structure
+The linting steps should appear in this order (after setup and changed file detection):
+1. Run ESLint linter (on changed files or all files)
+2. Run Prettier format check (on changed files or all files)
+3. Run TypeScript type checking (on all files)
+
+### Step Naming
+- Use descriptive step names like:
+  - "Run ESLint linter"
+  - "Check Prettier formatting"
+  - "Run TypeScript type check"
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 11. CI/CD Pipeline Configuration
 - Task can be completed independently by a single agent
+- This task adds linting steps to the workflow file created in PHASE1-051 and configured in PHASE1-052
+- The workflow should mirror the Rails CI workflow structure but use Node.js/TypeScript tooling
+- ESLint and Prettier are already configured in the project (see `.eslintrc.json` and `package.json`)
+- Type checking should run on all files as TypeScript requires full project context for accurate type checking
 
 ## Related Tasks
 
