@@ -6,21 +6,43 @@
 
 ## Description
 
-Create .env.example file
+Create a `.env.example` file that serves as a template for environment variable configuration. This file documents all environment variables used by the application and provides placeholder values for developers to copy into their own `.env.development`, `.env.test`, or `.env.production` files.
+
+This task creates the foundational `.env.example` file with the basic environment variables that are implemented in PHASE1-024 (NODE_ENV, PORT, LOG_LEVEL). Additional environment variables (such as TELEGRAM_BOT_TOKEN, CURSOR_RUNNER_URL, REDIS_URL, ELEVENLABS_API_KEY, etc.) will be added in later tasks as the corresponding features are implemented.
+
+**Rails Equivalent**: `.env.example` file (jarek-va/.env.example) - serves as a template for environment variable configuration
+
+**Note**: This task creates the basic `.env.example` file with only the environment variables implemented in PHASE1-024. The file should be structured to allow easy addition of more variables in later tasks.
 
 ## Checklist
 
-- [ ] Create `.env.example` file
-- [ ] Add `NODE_ENV=development` line
-- [ ] Add `PORT=3000` line
-- [ ] Add comment explaining file purpose
-- [ ] Add placeholder for future environment variables
+- [ ] Create `.env.example` file in project root directory
+- [ ] Add header comment explaining the file's purpose (template for environment variables)
+- [ ] Add comment instructing users to copy to `.env.development`, `.env.test`, or `.env.production`
+- [ ] Add "Application Environment" section comment
+- [ ] Add `NODE_ENV=development` line (matches Rails `RAILS_ENV` behavior)
+- [ ] Add `PORT=3000` line (matches Rails `config/puma.rb` port configuration)
+- [ ] Add `LOG_LEVEL=info` line (matches Rails `config/application.rb` LOG_LEVEL configuration)
+- [ ] Add comment sections for future environment variables (Telegram, Cursor Runner, Redis, ElevenLabs, etc.) with placeholder comments indicating they will be added in later tasks
+- [ ] Ensure all placeholder values are safe defaults (no real secrets or tokens)
+- [ ] Format file with clear sections and comments for maintainability
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 7. Environment Variables Management
 - Task can be completed independently by a single agent
+- Rails equivalent: `.env.example` file (jarek-va/.env.example)
+- The Rails application uses environment variables defined in `config/application.rb` (see jarek-va/config/application.rb)
+- This task creates the basic `.env.example` with only NODE_ENV, PORT, and LOG_LEVEL (matching what's implemented in PHASE1-024)
+- Additional environment variables will be added in later tasks as features are implemented:
+  - Telegram configuration (TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET, TELEGRAM_WEBHOOK_BASE_URL, TELEGRAM_API_URL)
+  - Cursor Runner configuration (CURSOR_RUNNER_URL, CURSOR_RUNNER_TIMEOUT)
+  - Redis configuration (REDIS_URL)
+  - ElevenLabs configuration (ELEVENLABS_API_KEY, ELEVENLABS_STT_MODEL_ID, ELEVENLABS_TTS_MODEL_ID, ELEVENLABS_VOICE_ID)
+  - Application metadata (APP_NAME, APP_VERSION)
+- The `.env.example` file should never contain real secrets or production values - only safe placeholder values
+- Developers should copy `.env.example` to `.env.development`, `.env.test`, or `.env.production` and fill in actual values
 
 ## Related Tasks
 
