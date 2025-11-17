@@ -16,19 +16,20 @@ Create TypeScript type definitions for Cursor Runner API. These types will be us
 - [ ] Define `CursorIterateRequest` interface for iterate endpoint
   - Fields: `repository` (string), `branchName` (string), `prompt` (string), `maxIterations` (number, default: 25), `id` (string), `callbackUrl` (string, optional)
 - [ ] Define `CursorExecuteResponse` interface for execute responses
-  - Should include: `success` (boolean), `output` (string), `error` (string, optional), and other fields as returned by cursor-runner
+  - Should include: `success` (boolean), `requestId` (string), `repository` (string), `branchName` (string), `output` (string), `error` (string, optional), `exitCode` (number), and other fields as returned by cursor-runner
 - [ ] Define `CursorIterateResponse` interface for iterate responses
-  - Should include: `success` (boolean), `output` (string), `iterations` (number), `maxIterations` (number), `error` (string, optional), `exitCode` (number), `duration` (string, optional), and other fields as returned by cursor-runner
-  - Note: If `callbackUrl` is provided, response may be immediate acknowledgment
+  - Should include: `success` (boolean), `requestId` (string), `repository` (string), `branchName` (string), `output` (string), `iterations` (number), `maxIterations` (number), `error` (string, optional), `exitCode` (number), `duration` (string, optional), and other fields as returned by cursor-runner
+  - Note: If `callbackUrl` is provided, response may be immediate acknowledgment with minimal fields
 - [ ] Define `CursorCallbackPayload` interface for callback webhooks
   - Fields: `success` (boolean), `requestId` (string), `repository` (string), `branchName` (string), `iterations` (number), `maxIterations` (number), `output` (string), `error` (string, optional), `exitCode` (number), `duration` (string, optional), `timestamp` (string, optional)
   - Note: Callback payload may use either camelCase or snake_case keys (normalize in implementation)
 - [ ] Define `GitCloneRequest` interface for repository cloning
   - Fields: `repositoryUrl` (string), `repositoryName` (string, optional)
 - [ ] Define `GitCloneResponse` interface for clone responses
-  - Should include: `success` (boolean), `repository` (string), and other fields as returned
+  - Should include: `success` (boolean), `repository` (string), `message` (string, optional), and other fields as returned
 - [ ] Define `GitListRepositoriesResponse` interface for list repositories response
-  - Fields: `success` (boolean), `repositories` (GitRepository[]), `count` (number)
+  - Fields: `success` (boolean), `repositories` (string[]), `count` (number)
+  - Note: `repositories` is an array of repository name strings, not objects
 - [ ] Define `GitCheckoutRequest` interface for branch checkout
   - Fields: `repository` (string), `branch` (string)
 - [ ] Define `GitCheckoutResponse` interface for checkout responses
@@ -42,8 +43,6 @@ Create TypeScript type definitions for Cursor Runner API. These types will be us
   - Note: Named `GitPullBranchRequest` to avoid conflict with TypeScript's common `PullRequest` type
 - [ ] Define `GitPullBranchResponse` interface for pull responses
   - Should include: `success` (boolean), `message` (string, optional), and other fields as returned
-- [ ] Define `GitRepository` interface for repository information
-  - Should include fields returned by list repositories endpoint (name, path, etc.)
 - [ ] Define `CursorRunnerError` interface for error responses
   - Fields: `error` (string), and potentially other error details
   - Note: HTTP errors (non-2xx) may include error details in response body
