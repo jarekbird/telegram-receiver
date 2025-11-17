@@ -16,8 +16,9 @@ The application follows a layered architecture with the following layers (from t
 3. **Services Layer** (`src/services/`) - Business logic and integrations
 4. **Models Layer** (`src/models/`) - Data structures and persistence
 5. **Middleware Layer** (`src/middleware/`) - Cross-cutting concerns
-6. **Utils Layer** (`src/utils/`) - Pure utility functions
-7. **Types Layer** (`src/types/`) - TypeScript type definitions
+6. **Jobs Layer** (`src/jobs/`) - Background job processing (BullMQ)
+7. **Utils Layer** (`src/utils/`) - Pure utility functions
+8. **Types Layer** (`src/types/`) - TypeScript type definitions
 
 ## Checklist
 
@@ -124,6 +125,13 @@ Based on the architecture, the following dependencies are allowed:
 - Types
 - Utils
 
+**Jobs Layer** can depend on:
+- Services
+- Models
+- Types
+- Utils
+- External libraries (bullmq, redis, etc.)
+
 **Utils Layer** can depend on:
 - Types (only)
 - Standard library only
@@ -140,6 +148,107 @@ Based on the architecture, the following dependencies are allowed:
 5. **Circular dependencies** - Services depending on Controllers that depend on Services
 6. **Utils depending on Services** - Utils should be pure functions
 7. **Types importing runtime code** - Types should be type-only
+8. **Jobs accessing Controllers or Routes** - Jobs should only depend on Services
+9. **Services depending on Jobs** - Services should not depend on job definitions (jobs depend on services)
+
+## Evaluation Findings
+
+### Current Codebase State
+
+Based on review of the existing codebase:
+
+**Source Files (`src/` directory):**
+- ⚠️ No source files exist yet - directory structure is empty
+- ✅ Directory structure matches architecture: `routes/`, `controllers/`, `services/`, `models/`, `middleware/`, `jobs/`, `utils/`, `types/`
+- 📝 Module boundaries cannot be validated until source files are added
+
+**Test Files (`tests/` directory):**
+- ✅ Test utilities (`testUtils.ts`) are stateless and have no dependencies on other layers
+- ✅ Test mocks (`telegramApi.ts`, `cursorRunnerApi.ts`, `redis.ts`) are properly isolated
+- ✅ Test fixtures (`telegramMessages.ts`, `apiResponses.ts`) contain only data structures
+- ✅ Test helpers (`apiHelpers.ts`) use proper imports (supertest, Express types)
+- 📝 Test files follow proper boundaries - no violations detected
+
+**Architecture Documentation:**
+- ✅ `docs/architecture.md` clearly documents layered architecture
+- ✅ Layer responsibilities are well-defined
+- ✅ Dependency injection pattern is documented
+- ✅ Expected dependencies between layers are documented
+
+### Task Validation
+
+**Task Description:**
+- ✅ Accurately describes the scope of reviewing module boundaries
+- ✅ Correctly references `docs/architecture.md`
+- ✅ Notes that codebase is in early stages
+
+**Checklist Completeness:**
+- ✅ Comprehensive checklist covering all layer boundary aspects
+- ✅ Includes dependency direction validation
+- ✅ Includes module encapsulation checks
+- ✅ Includes cross-layer boundary violation checks
+- ✅ Includes dependency injection boundaries
+- ✅ Includes external dependencies boundaries
+- ✅ Includes documentation requirements
+- ✅ Includes tools and analysis recommendations
+
+**Architecture Alignment:**
+- ✅ Task aligns with architecture documentation
+- ✅ Expected layer dependencies match `docs/architecture.md`
+- ⚠️ Jobs Layer was missing from Architecture Context section (now added)
+- ✅ Common boundary violations are appropriate
+
+### Issues Identified
+
+1. **Missing Jobs Layer in Architecture Context**: The Architecture Context section didn't include the Jobs Layer, but it's mentioned in the External Dependencies Boundaries section and exists in `docs/architecture.md`. **Fixed**: Added Jobs Layer to Architecture Context.
+
+2. **Missing Jobs Layer in Expected Dependencies**: The Expected Layer Dependencies section didn't specify what Jobs Layer can depend on. **Fixed**: Added Jobs Layer dependencies section.
+
+3. **No Current Violations**: Since no source files exist, no boundary violations can be detected yet. The task should focus on establishing guidelines and validation tools.
+
+### Recommendations
+
+1. **Establish Validation Tools**: Since the codebase is empty, focus on:
+   - Creating scripts to detect boundary violations (e.g., using `madge` or `dependency-cruiser`)
+   - Setting up ESLint rules to prevent common violations
+   - Creating TypeScript path mappings to enforce layer boundaries
+
+2. **Document Guidelines**: Add to `docs/architecture.md`:
+   - Specific examples of allowed vs. disallowed imports
+   - How to structure barrel exports (`index.ts` files)
+   - Guidelines for dependency injection patterns
+
+3. **Create Validation Script**: Consider creating a script in `/cursor/scripts` to:
+   - Analyze import statements across all modules
+   - Detect circular dependencies
+   - Validate layer boundaries
+   - Report violations
+
+4. **ESLint Configuration**: Add ESLint rules to enforce:
+   - No imports from higher layers to lower layers
+   - Type-only imports where appropriate
+   - Proper use of `import type` for type-only imports
+
+### Current Boundaries Status
+
+**Validated**: ✅ 2025-01-17
+
+**Validation Summary**:
+- Task description accurately reflects the scope of work
+- Checklist is comprehensive and covers all module boundary aspects
+- Architecture context now includes all layers (Jobs Layer added)
+- Expected dependencies section now includes Jobs Layer
+- Common boundary violations are appropriate
+- No source files exist yet - boundaries will need validation as code is added
+- Test files follow proper boundaries - no violations detected
+- Architecture documentation is clear and comprehensive
+- Task is ready for execution, with focus on establishing guidelines and validation tools
+
+**Files Verified**:
+- `docs/architecture.md` - Architecture is well-documented ✅
+- `src/` directory structure - Matches architecture ✅
+- `tests/` directory - Test files follow proper boundaries ✅
+- No source files exist yet - Cannot validate source boundaries ⚠️
 
 ## Notes
 
