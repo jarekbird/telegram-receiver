@@ -10,6 +10,8 @@ Fix all identified Node.js best practice issues from the previous review tasks (
 
 This task should be executed after the review tasks (PHASE3-015 through PHASE3-020) have been completed and have identified specific issues. The goal is to systematically fix all identified issues across all areas of Node.js best practices.
 
+**Workflow**: To identify issues to fix, review the findings from the previous review tasks. Each review task (PHASE3-015 through PHASE3-020) should have documented specific issues found during their execution. If issues were not documented in the review tasks, re-run the review process for each category to identify specific issues before fixing them. Use the checklist items below as a guide for the types of issues to look for and fix.
+
 ## Context
 
 This task consolidates fixes for issues identified in:
@@ -121,9 +123,11 @@ This task consolidates fixes for issues identified in:
 - This task is part of Phase 3: Holistic Review and Best Practices
 - Section: 3. Node.js Best Practices
 - This task should be executed after PHASE3-015 through PHASE3-020 are completed
-- Focus on fixing identified issues, not discovering new ones
+- **Issue Identification**: Review the findings from PHASE3-015 through PHASE3-020. If specific issues were documented in those tasks, use those findings. If not, re-run the review process for each category (run ESLint, review error handling patterns, etc.) to identify specific issues before fixing them.
+- Focus on fixing identified issues systematically by category (style guide, error handling, callbacks, resource cleanup, logging, security)
 - Document all fixes with specific file locations and line numbers
 - Ensure fixes maintain application functionality while improving code quality
+- Test after each category of fixes to ensure nothing breaks
 - Task can be completed independently by a single agent, but may require multiple passes
 
 ## Related Tasks
