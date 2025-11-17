@@ -6,25 +6,62 @@
 
 ## Description
 
-Convert implement transcribe_io method from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/eleven_labs_*.rb` files.
+Convert the `transcribe_io` method from Rails to TypeScript/Node.js. This method transcribes audio from an IO object (e.g., downloaded file stream) using the ElevenLabs Speech-to-Text API. Reference `jarek-va/app/services/eleven_labs_speech_to_text_service.rb` for the Rails implementation.
+
+## Rails Implementation Reference
+
+The `transcribe_io` method is located in `jarek-va/app/services/eleven_labs_speech_to_text_service.rb` (lines 73-103).
+
+**Method Signature:**
+```ruby
+def transcribe_io(audio_io, filename: 'audio.ogg', language: nil)
+```
+
+**Key Implementation Details:**
+- Accepts an IO object (`audio_io`), optional `filename` (default: 'audio.ogg'), and optional `language` parameter
+- Validates that `audio_io` is not nil
+- Rewinds the IO object if it responds to `rewind` (to ensure reading from the beginning)
+- Reads the IO content into memory
+- Creates multipart form data with:
+  - `file` field containing the audio content and filename
+  - `model_id` field (uses instance variable `@model_id`)
+  - `language` field (if provided)
+- Sends POST request to `https://api.elevenlabs.io/v1/speech-to-text`
+- Sets `xi-api-key` header with API key
+- Parses JSON response and extracts transcribed text from `result['text']` or `result[:text]`
+- Validates that transcribed text is not blank (raises `TranscriptionError` if blank)
+- Handles `JSON::ParserError` exceptions
+- Logs request and success messages
 
 ## Checklist
 
-- [ ] Implement `transcribeIo` method
-- [ ] Handle IO object input
-- [ ] Read IO content
-- [ ] Create multipart form data
-- [ ] Send POST request to API
-- [ ] Parse response
-- [ ] Return transcribed text
-- [ ] Add error handling
+- [ ] Implement `transcribeIo` method with signature: `transcribeIo(audioIo: NodeJS.ReadableStream | Buffer, options?: { filename?: string; language?: string }): Promise<string>`
+- [ ] Validate that `audioIo` is not null/undefined
+- [ ] Handle IO/stream rewinding if the stream supports it (for Node.js streams, may need to handle position reset)
+- [ ] Read IO/stream content into memory (convert stream to Buffer)
+- [ ] Create multipart form data with:
+  - `file` field containing audio content and filename (default: 'audio.ogg')
+  - `model_id` field (use instance `modelId` property)
+  - `language` field (if provided in options)
+- [ ] Send POST request to `https://api.elevenlabs.io/v1/speech-to-text`
+- [ ] Set `xi-api-key` header with API key from instance
+- [ ] Validate HTTP response status (check for success status codes)
+- [ ] Parse JSON response body
+- [ ] Extract transcribed text from response (`result.text` or `result['text']`)
+- [ ] Validate that transcribed text is not blank (throw error if blank)
+- [ ] Return transcribed text as string
+- [ ] Handle JSON parsing errors (`InvalidResponseError`)
+- [ ] Handle transcription errors (when no text is returned)
+- [ ] Add appropriate logging (info level for requests and success)
 
-## Notes
+## Implementation Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 7. ElevenLabs Services Conversion
-- Reference the Rails implementation for behavior
-
+- The method should be part of the `ElevenLabsSpeechToTextService` class
+- In Node.js, IO objects are typically `ReadableStream` or `Buffer` objects
+- Use a multipart form library (e.g., `form-data` or `formidable`) for creating multipart requests
+- The method should use the same error classes as other methods in the service (ConnectionError, TimeoutError, InvalidResponseError, TranscriptionError)
 - Task can be completed independently by a single agent
 
 ## Related Tasks
