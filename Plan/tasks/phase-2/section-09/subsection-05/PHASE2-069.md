@@ -13,8 +13,8 @@ Convert and implement the `normalize_result` utility function from Rails to Type
 ## Checklist
 
 - [ ] Create `normalizeResult` utility function in `src/utils/normalize-result.ts`
-- [ ] Handle both camelCase and snake_case keys (e.g., `requestId`/`request_id`, `branchName`/`branch_name`, `maxIterations`/`max_iterations`, `exitCode`/`exit_code`)
-- [ ] Handle both symbol keys (`:success`) and string keys (`'success'`) from input
+- [ ] Handle both camelCase and snake_case string keys for all fields that have variants (e.g., `requestId`/`request_id`, `branchName`/`branch_name`, `maxIterations`/`max_iterations`, `exitCode`/`exit_code`)
+  - Note: In TypeScript/JavaScript, input will be plain objects with string keys (not symbol keys like Ruby). The Rails implementation handles symbol keys (`:success`) and string keys (`'success'`) because Rails params can come in either format, but in TypeScript we only need to handle string keys in both camelCase and snake_case formats.
 - [ ] Convert `success` field to boolean:
   - Handle `true`, `'true'`, `1`, `'1'` as `true`
   - Handle `false`, `'false'`, `0`, `'0'`, `null`/`undefined` as `false`
@@ -39,7 +39,7 @@ Convert and implement the `normalize_result` utility function from Rails to Type
 - Section: 9. CursorRunnerCallbackController Conversion
 - **Rails Implementation**: `jarek-va/app/controllers/cursor_runner_callback_controller.rb` (lines 142-167)
 - The utility is used in the `process_callback` method (line 99) to normalize callback results before processing
-- The Rails implementation handles both symbol keys (`:success`) and string keys (`'success'`) because Rails params can come in either format
+- The Rails implementation handles both symbol keys (`:success`) and string keys (`'success'`) because Rails params can come in either format. In TypeScript/JavaScript, we only need to handle string keys in both camelCase and snake_case formats, as JavaScript objects use string keys by default.
 - Default values match the Rails implementation:
   - `iterations`: `0`
   - `max_iterations`: `25`
