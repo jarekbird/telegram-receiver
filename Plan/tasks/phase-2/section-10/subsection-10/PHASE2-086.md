@@ -6,23 +6,135 @@
 
 ## Description
 
-Convert add error handling to telegrammessagejob from Rails to TypeScript/Node.js. Reference `jarek-va/app/jobs/telegram_message_job.rb`.
+Add comprehensive error handling to TelegramMessageJob methods in TypeScript/Node.js, ensuring all methods have proper try-catch blocks, error logging, and user-friendly error messages sent to Telegram. Reference `jarek-va/app/jobs/telegram_message_job.rb` for error handling patterns.
+
+The Rails implementation shows error handling patterns in:
+- `perform` method (lines 32-51): Comprehensive error handling with chat info extraction, error messages to Telegram, logging, and re-raising
+- `handle_message` method (lines 90-104): Error handling for audio transcription with user feedback
+- `handle_callback_query` method (lines 142-149): Error handling for answering callback queries
+- `forward_to_cursor_runner` method (lines 234-251): Error handling for CursorRunnerService errors
+- `transcribe_audio` method (lines 325-351): Error handling for status messages and file cleanup
+- `send_text_as_audio` method (lines 368-388): Error handling with fallback to text messages
 
 ## Checklist
 
-- [ ] Add try-catch to all methods
-- [ ] Extract chat info for error messages
-- [ ] Send error message to Telegram user
-- [ ] Log errors appropriately
-- [ ] Re-raise for job failure tracking
+### Main perform Method Error Handling
+- [ ] Ensure `perform` method has comprehensive error handling (already implemented in PHASE2-078, verify completeness)
+  - [ ] Wrap entire method body in try-catch
+  - [ ] Log errors with full stack traces using logger.error()
+  - [ ] Extract chat info using `extractChatInfoFromUpdate()` helper
+  - [ ] Send user-friendly error message to Telegram if chat_id is available
+  - [ ] Wrap TelegramService.send_message() call in try-catch to handle send failures
+  - [ ] Log errors when sending error message fails
+  - [ ] Re-raise error to mark job as failed for job tracking
+  - [ ] Reference Rails implementation: `jarek-va/app/jobs/telegram_message_job.rb` lines 32-51
+
+### handleMessage Method Error Handling
+- [ ] Add overall error handling to `handleMessage` method (if not already present)
+  - [ ] Wrap method body in try-catch
+  - [ ] Log errors with stack traces
+  - [ ] Extract chat_id and message_id for error messages
+  - [ ] Send error message to Telegram user
+  - [ ] Ensure existing transcription error handling (lines 90-104 in Rails) is preserved
+  - [ ] Handle errors when sending responses back to Telegram
+  - [ ] Reference Rails implementation: `jarek-va/app/jobs/telegram_message_job.rb` lines 59-133
+
+### handleCallbackQuery Method Error Handling
+- [ ] Add comprehensive error handling to `handleCallbackQuery` method
+  - [ ] Wrap entire method body in try-catch
+  - [ ] Log errors with stack traces
+  - [ ] Extract chat_id and message_id from callback query message
+  - [ ] Send error message to Telegram user on failure
+  - [ ] Ensure existing error handling for `answer_callback_query` is preserved (lines 142-149 in Rails)
+  - [ ] Add error handling for `forward_to_cursor_runner` call
+  - [ ] Add error handling for `TelegramService.send_message` call (line 167 in Rails)
+  - [ ] Reference Rails implementation: `jarek-va/app/jobs/telegram_message_job.rb` lines 135-171
+
+### processLocalMessage Method Error Handling
+- [ ] Add error handling to `processLocalMessage` method
+  - [ ] Wrap method body in try-catch
+  - [ ] Log errors with stack traces
+  - [ ] Return error response object with `ok: false` and error message
+  - [ ] Handle errors gracefully without crashing the job
+  - [ ] Reference Rails implementation: `jarek-va/app/jobs/telegram_message_job.rb` lines 253-277
+
+### forwardToCursorRunner Method Error Handling
+- [ ] Verify error handling is complete (should already be implemented in PHASE2-083)
+  - [ ] Ensure CursorRunnerService::Error is caught and handled
+  - [ ] Clean up pending request in Redis on error
+  - [ ] Send error message to Telegram user
+  - [ ] Log errors appropriately
+  - [ ] Return true even on error to prevent duplicate processing
+  - [ ] Reference Rails implementation: `jarek-va/app/jobs/telegram_message_job.rb` lines 234-251
+
+### transcribeAudio Method Error Handling
+- [ ] Verify error handling is complete (should already be implemented in PHASE2-082)
+  - [ ] Ensure error handling for sending status message is present
+  - [ ] Ensure file cleanup happens in finally block
+  - [ ] Handle file deletion errors gracefully
+  - [ ] Reference Rails implementation: `jarek-va/app/jobs/telegram_message_job.rb` lines 325-351
+
+### sendTextAsAudio Method Error Handling
+- [ ] Verify error handling is complete (should already be implemented in PHASE2-085)
+  - [ ] Ensure error handling with fallback to text message is present
+  - [ ] Ensure file cleanup happens in finally block
+  - [ ] Handle file deletion errors gracefully
+  - [ ] Reference Rails implementation: `jarek-va/app/jobs/telegram_message_job.rb` lines 368-388
+
+### Error Handling Patterns
+- [ ] Use consistent error handling pattern across all methods:
+  - [ ] Log errors with `logger.error()` including error message
+  - [ ] Log stack traces with `logger.error()` for debugging
+  - [ ] Extract chat info (chat_id, message_id) for user-facing error messages
+  - [ ] Send user-friendly error messages to Telegram when chat_id is available
+  - [ ] Wrap TelegramService calls in try-catch to handle send failures
+  - [ ] Re-raise errors in `perform` method to mark job as failed
+  - [ ] Handle file cleanup errors gracefully (log warnings, don't crash)
+  - [ ] Truncate error messages to fit Telegram's 4096 character limit when needed
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 10. TelegramMessageJob Conversion
-- Reference the Rails implementation for behavior
+- Reference the Rails implementation for behavior: `jarek-va/app/jobs/telegram_message_job.rb`
+
+### Error Handling Requirements
+
+1. **Error Message Format**: Use user-friendly error messages when sending to Telegram users. The Rails implementation uses format: "Sorry, I encountered an error processing your message: {error.message}" (line 42)
+
+2. **Error Message Truncation**: For long error messages (like transcription errors), truncate to fit Telegram's 4096 character limit. Rails implementation uses 4000 characters max, leaving room for prefix text (lines 94-96)
+
+3. **Error Logging**: Always log both error message and full stack trace for debugging:
+   ```typescript
+   logger.error(`Error in method: ${error.message}`);
+   logger.error(error.stack);
+   ```
+
+4. **Chat Info Extraction**: Use the `extractChatInfoFromUpdate()` helper function (implemented in PHASE2-063) to extract chat_id and message_id for error messages
+
+5. **Nested Error Handling**: When sending error messages to Telegram, wrap the send call in try-catch to prevent infinite error loops (Rails lines 39-48)
+
+6. **Job Failure Tracking**: Re-raise errors in the `perform` method to ensure the job system marks the job as failed for retry logic
+
+7. **File Cleanup**: Always use `finally` blocks for file cleanup operations, and handle cleanup errors gracefully (log warnings, don't crash)
+
+### Dependencies
+
+This task depends on:
+- PHASE2-063: `extractChatInfoFromUpdate` utility function
+- PHASE2-078: `perform` method implementation
+- PHASE2-079: `handleMessage` method implementation
+- PHASE2-080: `handleCallbackQuery` method implementation
+- PHASE2-083: `forwardToCursorRunner` method implementation
+- PHASE2-082: `transcribeAudio` method implementation
+- PHASE2-085: `sendTextAsAudio` method implementation
+
+### Task Scope
 
 - Task can be completed independently by a single agent
+- Focus on adding missing error handling to methods that don't have it
+- Verify that existing error handling matches Rails patterns
+- Ensure consistent error handling patterns across all methods
 
 ## Related Tasks
 
