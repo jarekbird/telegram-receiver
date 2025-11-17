@@ -14,35 +14,44 @@ Create a development docker-compose.yml file for the telegram-receiver Node.js/T
 - [ ] Define `app` service:
   - [ ] Set build context to current directory (`.`)
   - [ ] Set dockerfile path to `Dockerfile`
+  - [ ] Set container name to `telegram-receiver-app-dev` (or similar)
   - [ ] Map port `3000:3000` for direct access during development
+  - [ ] Add `env_file` directive pointing to `.env.development` for environment variable loading
   - [ ] Set `NODE_ENV` environment variable to `development`
   - [ ] Set `PORT` environment variable to `3000` (or use from `.env.development`)
-  - [ ] Set `REDIS_URL` to `redis://redis:6379` (using Redis service name)
+  - [ ] Set `REDIS_URL` to `redis://redis:6379` (using Redis service name, optionally add `/0` for database number to match jarek-va pattern)
   - [ ] Set `CURSOR_RUNNER_URL` to `http://cursor-runner:3001` (if cursor-runner is available)
-  - [ ] Set other environment variables from `.env.example` (TELEGRAM_BOT_TOKEN, LOG_LEVEL, etc.)
+  - [ ] Set `CURSOR_RUNNER_TIMEOUT` to `${CURSOR_RUNNER_TIMEOUT:-300}` (matching jarek-va pattern)
+  - [ ] Set other environment variables from `.env.example` (TELEGRAM_BOT_TOKEN, LOG_LEVEL=debug, etc.)
   - [ ] Add volume mount for source code (`./src:/app/src`) for hot reloading
   - [ ] Add volume mount for node_modules (`./node_modules:/app/node_modules`) to persist dependencies
-  - [ ] Add volume mount for shared SQLite database (`shared_sqlite_db:/app/shared_db`) if needed
-  - [ ] Set command to `npm run dev` (or `npm run build:watch && npm start` for TypeScript watch mode)
+  - [ ] Add volume mount for shared SQLite database (`shared_sqlite_db:/app/shared_db`) for cross-service database access
+  - [ ] Set command to `npm run dev` (which runs `nodemon --exec ts-node src/index.ts` for hot reloading)
   - [ ] Set restart policy to `unless-stopped` or `on-failure` for development
   - [ ] Add depends_on for `redis` service
+  - [ ] Add to `virtual-assistant-network` network
+  - [ ] Optionally add healthcheck: `curl -f http://localhost:3000/health` (useful for development debugging)
 - [ ] Define `redis` service:
   - [ ] Use `redis:7-alpine` image (matching jarek-va)
   - [ ] Set container name to `telegram-receiver-redis` (or similar)
+  - [ ] Configure Redis persistence with `--appendonly yes` command (matching jarek-va)
   - [ ] Map port `6379:6379` for direct Redis access during development
   - [ ] Add volume for Redis data persistence (`shared_redis_data:/data`)
   - [ ] Set restart policy to `unless-stopped`
-  - [ ] Add healthcheck using `redis-cli ping`
+  - [ ] Add to `virtual-assistant-network` network
+  - [ ] Add healthcheck using `redis-cli ping` with appropriate intervals and timeouts
 - [ ] Define volumes:
-  - [ ] `shared_redis_data` volume (driver: local, name: shared_redis_data)
-  - [ ] `shared_sqlite_db` volume (driver: local, name: shared_sqlite_db) if using shared SQLite database
+  - [ ] `shared_redis_data` volume (driver: local, name: shared_redis_data) - shared across services
+  - [ ] `shared_sqlite_db` volume (driver: local, name: shared_sqlite_db) - shared across services for cross-service database access
 - [ ] Define networks:
-  - [ ] Create or reference `virtual-assistant-network` (to match jarek-va network for service communication)
-  - [ ] Or create a development-specific network like `telegram-receiver-dev-network`
+  - [ ] Reference `virtual-assistant-network` as external network (matching jarek-va pattern for service communication)
+  - [ ] Network name: `virtual-assistant-network`
+  - [ ] Set `external: true` to use existing network created by jarek-va or other services
 - [ ] Add development-specific configurations:
-  - [ ] Consider adding environment file reference (`.env.development`) using `env_file` directive
-  - [ ] Ensure source code changes trigger hot reload (via nodemon or ts-node watch mode)
-  - [ ] Configure logging to stdout for development visibility
+  - [ ] Use `env_file` directive in app service to load `.env.development` file
+  - [ ] Ensure source code changes trigger hot reload (via nodemon which watches `src/` directory)
+  - [ ] Configure logging to stdout for development visibility (matches jarek-va `RAILS_LOG_TO_STDOUT=true` pattern)
+  - [ ] Ensure all services are connected to the same network for inter-service communication
 
 ## Notes
 
@@ -63,10 +72,13 @@ Create a development docker-compose.yml file for the telegram-receiver Node.js/T
 - Environment variables should match those defined in `.env.example`:
   - `NODE_ENV=development`
   - `PORT=3000`
-  - `REDIS_URL=redis://redis:6379`
+  - `REDIS_URL=redis://redis:6379` (optionally `redis://redis:6379/0` to match jarek-va pattern with database number)
   - `CURSOR_RUNNER_URL=http://cursor-runner:3001`
+  - `CURSOR_RUNNER_TIMEOUT=300` (matching jarek-va default)
   - `TELEGRAM_BOT_TOKEN` (from environment or .env file)
   - `LOG_LEVEL=debug` (for development)
+- The `virtual-assistant-network` should be created externally (by jarek-va or manually) and referenced as `external: true` to enable cross-service communication
+- Shared volumes (`shared_redis_data` and `shared_sqlite_db`) enable data persistence and cross-service access, matching jarek-va patterns
 - The app service should use `npm run dev` command which runs `nodemon --exec ts-node src/index.ts` for hot reloading
 - Volume mounts for `src/` directory enable live code reloading without rebuilding the Docker image
 - The `node_modules` volume mount ensures dependencies persist and don't need to be reinstalled on container restart
