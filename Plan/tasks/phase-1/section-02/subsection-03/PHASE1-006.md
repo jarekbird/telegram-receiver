@@ -6,20 +6,60 @@
 
 ## Description
 
-Create configuration files directory
+Create configuration files directory and environment variable files for the Node.js application. This task sets up the environment variable configuration files that replace Rails environment-specific configuration files (`config/environments/development.rb`, `config/environments/test.rb`, `config/environments/production.rb`) and centralizes environment variables defined in `config/application.rb`.
+
+The `.env` files serve as the Node.js equivalent of Rails environment-specific configs, allowing different configuration values for development, test, and production environments.
+
+## Rails Reference
+
+This task replaces the following Rails configuration files:
+- `jarek-va/config/application.rb` - Defines environment variables using `ENV.fetch()`
+- `jarek-va/config/environments/development.rb` - Development environment config
+- `jarek-va/config/environments/test.rb` - Test environment config
+- `jarek-va/config/environments/production.rb` - Production environment config
+
+Key environment variables from Rails `config/application.rb`:
+- `TELEGRAM_BOT_TOKEN` - Telegram bot API token
+- `TELEGRAM_WEBHOOK_SECRET` - Secret token for webhook authentication
+- `TELEGRAM_WEBHOOK_BASE_URL` - Base URL for Telegram webhook callbacks
+- `CURSOR_RUNNER_URL` - URL of the cursor-runner service
+- `CURSOR_RUNNER_TIMEOUT` - Timeout for cursor-runner requests (seconds)
+- `REDIS_URL` - Redis connection URL
+- `ELEVENLABS_API_KEY` - ElevenLabs API key for audio features
+- `ELEVENLABS_STT_MODEL_ID` - ElevenLabs speech-to-text model ID
+- `ELEVENLABS_TTS_MODEL_ID` - ElevenLabs text-to-speech model ID
+- `ELEVENLABS_VOICE_ID` - ElevenLabs voice ID for TTS
+- `WEBHOOK_SECRET` - Admin webhook secret
+- `APP_NAME` - Application name
+- `APP_VERSION` - Application version
+- `LOG_LEVEL` - Logging level (info, debug, etc.)
+- `DEFAULT_NOTES_REPOSITORY` - Default repository for note operations
+- `PORT` - Server port (default: 3000)
+- `NODE_ENV` - Node.js environment (development, test, production)
 
 ## Checklist
 
-- [ ] Create `config/` directory (if needed for non-TypeScript configs)
-- [ ] Create `.env.example` file
-- [ ] Create `.env.development` file
-- [ ] Create `.env.test` file
+- [ ] Create root-level `config/` directory (for non-TypeScript configuration files, if needed)
+- [ ] Create `.env.example` file with all required environment variables and example values
+- [ ] Create `.env.development` file with development-specific values (localhost URLs, development settings)
+- [ ] Create `.env.test` file with test-specific values (test tokens, shorter timeouts, test database)
+- [ ] Ensure all environment variables from Rails `config/application.rb` are included in `.env.example`
+- [ ] Document each environment variable with comments explaining its purpose
+- [ ] Use appropriate default values matching Rails defaults where applicable
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 2. Project Structure Setup
 - Task can be completed independently by a single agent
+- The `.env` files replace Rails environment-specific configuration files
+- Root-level `.env` files are used for environment variables (standard Node.js practice)
+- The `src/config/` directory (created in PHASE1-004) is for TypeScript configuration modules, not environment files
+- Environment variables should match the names and purposes defined in Rails `config/application.rb`
+- `.env.example` should contain all variables with example/placeholder values (no real secrets)
+- `.env.development` should use localhost URLs and development-friendly settings
+- `.env.test` should use test values, shorter timeouts, and test database URLs
+- Production environment variables are typically set via deployment configuration (Docker, Kubernetes, etc.) rather than a `.env.production` file for security reasons
 
 ## Related Tasks
 
