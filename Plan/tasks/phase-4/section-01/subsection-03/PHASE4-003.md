@@ -6,17 +6,136 @@
 
 ## Description
 
-set up sonarqube or similar code quality tool to improve code quality and maintainability.
+Set up SonarQube or a similar comprehensive code quality analysis tool to perform deep code quality analysis, detect code smells, measure technical debt, and track code quality metrics over time. This tool will complement the existing ESLint and Prettier setup by providing advanced static analysis, complexity metrics, code duplication detection, security vulnerability scanning, and maintainability ratings.
+
+## Current State
+
+The project currently has:
+- **ESLint** configured with TypeScript rules (PHASE4-001)
+- **Prettier** configured for code formatting (PHASE4-002)
+- **Jest** for testing with coverage reporting
+- Basic linting and formatting scripts in package.json
+
+**Missing**: A comprehensive code quality analysis tool that provides:
+- Advanced static code analysis beyond ESLint
+- Code complexity metrics (cyclomatic complexity, cognitive complexity)
+- Code duplication detection
+- Security vulnerability scanning
+- Technical debt measurement
+- Code quality ratings and trends
+- Integration with CI/CD pipeline
+
+## Tool Options
+
+Consider the following options:
+
+1. **SonarQube** (Recommended)
+   - Comprehensive static analysis platform
+   - Supports TypeScript/JavaScript
+   - Provides code smells, bugs, vulnerabilities, security hotspots
+   - Technical debt calculation
+   - Quality gates and project badges
+   - Can be self-hosted or cloud (SonarCloud)
+   - Free tier available for open source projects
+
+2. **SonarCloud**
+   - Cloud-hosted version of SonarQube
+   - No infrastructure setup required
+   - Free for open source projects
+   - Easy GitHub/GitLab integration
+
+3. **CodeClimate**
+   - Cloud-based code quality platform
+   - Provides maintainability ratings
+   - Integrates with GitHub
+   - Free tier available
+
+4. **CodeQL** (GitHub Advanced Security)
+   - Security-focused analysis
+   - Free for public repositories
+   - Good for vulnerability detection
 
 ## Checklist
 
-- [ ] Choose code quality tool (SonarQube, CodeClimate, etc.)
-- [ ] Install and configure tool
-- [ ] Set up project in tool
-- [ ] Configure quality gates
-- [ ] Run initial analysis
-- [ ] Review tool configuration
-- [ ] Document tool setup and usage
+### Tool Selection and Setup
+- [ ] Research and compare code quality tool options (SonarQube, SonarCloud, CodeClimate, etc.)
+- [ ] Choose appropriate tool based on project needs, budget, and infrastructure
+- [ ] Install tool (self-hosted) or set up cloud account (SonarCloud/CodeClimate)
+- [ ] Install SonarQube scanner CLI tool (if using SonarQube/SonarCloud)
+- [ ] Add scanner as dev dependency or install globally
+
+### Project Configuration
+- [ ] Create project in chosen tool platform
+- [ ] Generate authentication token (if required)
+- [ ] Create `sonar-project.properties` file (if using SonarQube/SonarCloud)
+- [ ] Configure project key and name
+- [ ] Set source directories (`src/`)
+- [ ] Set test directories (`tests/`)
+- [ ] Configure exclusions (node_modules, dist, coverage, etc.)
+- [ ] Set TypeScript/JavaScript language settings
+
+### Quality Gates and Rules
+- [ ] Review default quality gates
+- [ ] Configure quality gate thresholds:
+  - Code coverage percentage
+  - Duplicated lines threshold
+  - Maintainability rating
+  - Reliability rating (bugs)
+  - Security rating (vulnerabilities)
+- [ ] Customize rules if needed (disable false positives, adjust severity)
+- [ ] Set up quality gate conditions for CI/CD
+
+### Integration
+- [ ] Add analysis script to package.json (e.g., `"sonar": "sonar-scanner"`)
+- [ ] Configure environment variables for authentication
+- [ ] Set up CI/CD integration (GitHub Actions, GitLab CI, etc.)
+- [ ] Configure analysis to run on pull requests
+- [ ] Set up quality gate enforcement in CI/CD pipeline
+- [ ] Add SonarQube/SonarCloud badge to README (if available)
+
+### Initial Analysis
+- [ ] Run initial code analysis
+- [ ] Review analysis results and metrics
+- [ ] Identify baseline code quality metrics:
+  - Code coverage percentage
+  - Number of code smells
+  - Technical debt estimate
+  - Security vulnerabilities
+  - Code duplication percentage
+- [ ] Document baseline metrics
+
+### Documentation
+- [ ] Document tool setup process
+- [ ] Document configuration choices and rationale
+- [ ] Create guide for running analysis locally
+- [ ] Document CI/CD integration steps
+- [ ] Document how to interpret quality metrics
+- [ ] Add tool usage instructions to project README or docs
+- [ ] Document quality gate thresholds and their meaning
+
+### Review and Validation
+- [ ] Verify analysis runs successfully
+- [ ] Verify results are accessible via web interface
+- [ ] Test CI/CD integration
+- [ ] Verify quality gates work correctly
+- [ ] Review and address any configuration issues
+- [ ] Ensure tool complements existing ESLint/Prettier setup without conflicts
+
+## Configuration Example (SonarQube/SonarCloud)
+
+If using SonarQube or SonarCloud, create `sonar-project.properties`:
+
+```properties
+sonar.projectKey=telegram-receiver
+sonar.projectName=Telegram Receiver
+sonar.sources=src
+sonar.tests=tests
+sonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,**/*.spec.ts
+sonar.test.exclusions=**/node_modules/**,**/dist/**
+sonar.javascript.lcov.reportPaths=coverage/lcov.info
+sonar.sourceEncoding=UTF-8
+sonar.typescript.tsconfigPath=tsconfig.json
+```
 
 ## Notes
 
@@ -24,7 +143,10 @@ set up sonarqube or similar code quality tool to improve code quality and mainta
 - Section: 1. Automated Code Smell Detection
 - Focus on identifying and fixing code quality issues
 - Document all findings and improvements
-
+- The chosen tool should complement, not replace, ESLint and Prettier
+- Consider free/open-source options first (SonarCloud free tier, CodeQL)
+- Quality gates should be set to reasonable thresholds initially, then tightened over time
+- Integration with CI/CD is important for continuous quality monitoring
 - Task can be completed independently by a single agent
 
 ## Related Tasks
