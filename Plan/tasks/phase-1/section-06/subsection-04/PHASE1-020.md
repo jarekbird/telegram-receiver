@@ -6,23 +6,42 @@
 
 ## Description
 
-Create request logging middleware
+Create request logging middleware that logs incoming HTTP requests and their responses. This middleware should provide comprehensive request/response logging similar to Rails' built-in request logging with request_id tagging (see `jarek-va/config/environments/production.rb` line 43: `config.log_tags = [:request_id]`).
+
+The middleware should log:
+- Request method (GET, POST, etc.)
+- Request URL/path
+- Client IP address
+- Request timestamp
+- Unique request ID (for request tracing)
+- Response status code
+- Response time/duration
 
 ## Checklist
 
 - [ ] Create `src/middleware/request-logger.middleware.ts` file
-- [ ] Create middleware function that logs request method
-- [ ] Log request URL
-- [ ] Log request timestamp
-- [ ] Call `next()` to continue request chain
+- [ ] Create Express middleware function with signature `(req, res, next) => void`
+- [ ] Generate or extract unique request ID (use `req.id` if available from request-id middleware, or generate UUID)
+- [ ] Store request start time using `Date.now()` or `process.hrtime()`
+- [ ] Log incoming request with: method, URL, IP address, request ID, and timestamp
+- [ ] Attach request ID to `req` object for use in other middleware/handlers
+- [ ] Use `res.on('finish', ...)` to log response when request completes
+- [ ] Log response with: status code, response time/duration, and request ID
+- [ ] Use application logger (if available) or `console.log` with structured format
+- [ ] Handle errors appropriately and ensure `next()` is always called
 - [ ] Export middleware function
-- [ ] Import and apply in `src/app.ts`
+- [ ] Import and apply in `src/app.ts` (before route handlers, after other middleware like CORS)
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 6. Request/Response Middleware
 - Task can be completed independently by a single agent
+- **Rails Reference**: The jarek-va Rails application uses `config.log_tags = [:request_id]` in production (see `jarek-va/config/environments/production.rb`), which prepends request_id to all log lines. This middleware should provide similar request tracing capability.
+- **Logging Format**: Consider logging in a structured format (JSON) for easier parsing and analysis. Example format: `{ "timestamp": "...", "requestId": "...", "method": "GET", "url": "/health", "ip": "127.0.0.1", "statusCode": 200, "duration": 15 }`
+- **Request ID**: If a request-id middleware is already in place, use `req.id`. Otherwise, generate a UUID using `crypto.randomUUID()` or the `uuid` package.
+- **Response Time**: Calculate duration as the difference between request start time and response finish time. Express `res.on('finish')` event fires when the response has been sent.
+- **IP Address**: Extract client IP from `req.ip` (if Express trust proxy is configured) or `req.connection.remoteAddress`. Consider `req.headers['x-forwarded-for']` for proxied requests.
 
 ## Related Tasks
 
