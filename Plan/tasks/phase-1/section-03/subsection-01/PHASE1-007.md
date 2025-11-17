@@ -11,9 +11,9 @@ Create base tsconfig.json
 ## Checklist
 
 - [ ] Create `tsconfig.json` file
-- [ ] Set `compilerOptions.target` to "ES2020"
+- [ ] Set `compilerOptions.target` to "ES2022"
 - [ ] Set `compilerOptions.module` to "commonjs"
-- [ ] Set `compilerOptions.lib` to ["ES2020"]
+- [ ] Set `compilerOptions.lib` to ["ES2022"]
 - [ ] Set `compilerOptions.outDir` to "./dist"
 - [ ] Set `compilerOptions.rootDir` to "./src"
 - [ ] Set `compilerOptions.strict` to true
@@ -30,8 +30,10 @@ Create base tsconfig.json
 - [ ] Set `compilerOptions.noImplicitReturns` to true
 - [ ] Set `compilerOptions.noFallthroughCasesInSwitch` to true
 - [ ] Set `compilerOptions.allowSyntheticDefaultImports` to true
+- [ ] Set `compilerOptions.experimentalDecorators` to true (needed for decorator-based libraries like TypeORM)
+- [ ] Set `compilerOptions.emitDecoratorMetadata` to true (needed for decorator-based libraries like TypeORM)
 - [ ] Set `include` array to ["src/**/*"]
-- [ ] Set `exclude` array to ["node_modules", "dist", "tests"]
+- [ ] Set `exclude` array to ["node_modules", "dist", "tests", "**/*.test.ts", "**/*.spec.ts"]
 
 ## Notes
 
