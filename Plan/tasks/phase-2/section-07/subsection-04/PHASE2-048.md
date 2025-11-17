@@ -6,22 +6,67 @@
 
 ## Description
 
-Convert add error handling to speechtotextservice from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/eleven_labs_*.rb` files.
+Add comprehensive error handling to the ElevenLabsSpeechToTextService class methods, matching the error handling patterns from the Rails implementation. This task ensures all methods properly handle network errors, timeouts, invalid responses, and transcription failures with appropriate error classes and logging. Reference `jarek-va/app/services/eleven_labs_speech_to_text_service.rb` for the complete error handling implementation.
+
+**Rails Reference**: `jarek-va/app/services/eleven_labs_speech_to_text_service.rb`
 
 ## Checklist
 
-- [ ] Add ConnectionError handling
-- [ ] Add TimeoutError handling
-- [ ] Add TranscriptionError handling
-- [ ] Add InvalidResponseError handling
-- [ ] Log errors appropriately
+### Error Handling in `build_http` method (private)
+- [ ] Catch `ECONNREFUSED`, `EHOSTUNREACH`, and `SocketError` exceptions
+- [ ] Raise `ConnectionError` with message "Failed to connect to ElevenLabs: {error message}"
+- [ ] Catch `Net::OpenTimeout` and `Net::ReadTimeout` exceptions
+- [ ] Raise `TimeoutError` with message "Request to ElevenLabs timed out: {error message}"
+
+### Error Handling in `execute_request` method (private)
+- [ ] Log request info: "ElevenLabsSpeechToTextService: POST {uri.path}"
+- [ ] Log response info: "ElevenLabsSpeechToTextService: Response {code} {message}"
+- [ ] Check if response is not successful (non-2xx status)
+- [ ] Extract error message from response body (try JSON parsing)
+- [ ] Log error: "ElevenLabs API error: {code} - Response body: {body[0..500]}"
+- [ ] Parse error response JSON to extract detail/error/message fields
+- [ ] Log JSON parse failure if error response cannot be parsed: "Failed to parse error response as JSON"
+- [ ] Raise `TranscriptionError` with extracted error message for non-2xx responses
+- [ ] Catch `Net::OpenTimeout` and `Net::ReadTimeout` exceptions
+- [ ] Raise `TimeoutError` with message "Request to ElevenLabs timed out: {error message}"
+- [ ] Catch `ECONNREFUSED`, `EHOSTUNREACH`, and `SocketError` exceptions
+- [ ] Raise `ConnectionError` with message "Failed to connect to ElevenLabs: {error message}"
+
+### Error Handling in `parse_response` method (private)
+- [ ] Catch `JSON::ParserError` exceptions
+- [ ] Raise `InvalidResponseError` with message "Failed to parse response: {error message}"
+
+### Error Handling in `transcribe` method (public)
+- [ ] Catch `Errno::ENOENT` (file not found) exceptions
+- [ ] Raise base `Error` with message "Audio file not found: {error message}"
+- [ ] Catch `JSON::ParserError` exceptions
+- [ ] Raise `InvalidResponseError` with message "Failed to parse response: {error message}"
+
+### Error Handling in `transcribe_io` method (public)
+- [ ] Catch `JSON::ParserError` exceptions
+- [ ] Raise `InvalidResponseError` with message "Failed to parse response: {error message}"
+
+### Logging Requirements
+- [ ] Log info when sending audio file: "Sending audio file to ElevenLabs for transcription: {file_path}"
+- [ ] Log info when sending audio IO: "Sending audio IO to ElevenLabs for transcription: {filename}"
+- [ ] Log info on successful transcription: "Successfully transcribed audio: {text[0..50]}..."
+- [ ] Log error for API errors with response code and body preview
+- [ ] Log error when JSON parsing fails for error responses
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 7. ElevenLabs Services Conversion
-- Reference the Rails implementation for behavior
-
+- **Rails Implementation**: `jarek-va/app/services/eleven_labs_speech_to_text_service.rb` (lines 109-155 for private methods, lines 32-66 and 73-103 for public methods)
+- Error classes (Error, ConnectionError, TimeoutError, InvalidResponseError, TranscriptionError) should already be defined from PHASE2-045
+- This task adds error handling to methods that should already be implemented (transcribe from PHASE2-046, transcribe_io from PHASE2-047)
+- Error handling should be integrated into existing method implementations, not added as separate methods
+- In TypeScript/Node.js, equivalent error types:
+  - `ECONNREFUSED`, `EHOSTUNREACH`, `SocketError` → Network connection errors (use appropriate Node.js error types)
+  - `Net::OpenTimeout`, `Net::ReadTimeout` → Request timeout errors (use fetch/axios timeout handling)
+  - `JSON::ParserError` → JSON parsing errors (use try-catch around JSON.parse)
+  - `Errno::ENOENT` → File not found errors (use fs.access or fs.stat with error handling)
+- Logging should use the application's logger (similar to Rails.logger)
 - Task can be completed independently by a single agent
 
 ## Related Tasks
