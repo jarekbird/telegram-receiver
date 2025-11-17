@@ -13,12 +13,12 @@ Convert the `list_repositories` method from Rails CursorRunnerService to TypeScr
 ## Method Signature
 
 ```typescript
-listRepositories(): Promise<ListRepositoriesResponse>
+listRepositories(): Promise<GitListRepositoriesResponse>
 ```
 
 **Parameters**: None
 
-**Return Type**: Promise resolving to a response object with `success`, `repositories` array, `count`, etc.
+**Return Type**: Promise resolving to a `GitListRepositoriesResponse` object with `success` (boolean), `repositories` (string[] - array of repository name strings), and `count` (number).
 
 ## Implementation Details
 
@@ -29,11 +29,11 @@ The method should make a GET request to `/git/repositories` endpoint with no req
 ### Response Parsing
 
 - Parse the JSON response body
-- Return the parsed object with symbol keys (or equivalent TypeScript object)
+- Return the parsed object matching the `GitListRepositoriesResponse` interface (defined in PHASE2-002)
 - Handle JSON parsing errors appropriately
 - The response should include:
   - `success`: boolean indicating if the request was successful
-  - `repositories`: array of repository objects
+  - `repositories`: array of repository name strings (string[]), not objects
   - `count`: number of repositories (may be included)
 
 ### Error Handling
@@ -66,7 +66,7 @@ The method should handle and potentially throw the following error types:
 - [ ] Treat 422 Unprocessable Entity as valid response (not an error)
 - [ ] Parse JSON response body
 - [ ] Handle JSON parsing errors (InvalidResponseError)
-- [ ] Return parsed response object with success, repositories array, and count
+- [ ] Return parsed response object matching `GitListRepositoriesResponse` type (success, repositories string array, and count)
 - [ ] Add appropriate logging (request and response logging)
 - [ ] Write unit tests for the method
 - [ ] Test successful response parsing
@@ -77,10 +77,13 @@ The method should handle and potentially throw the following error types:
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 5. CursorRunnerService Conversion
+- The `GitListRepositoriesResponse` type is defined in PHASE2-002 (`src/types/cursor-runner.ts`)
+- Import the type from the cursor-runner types module: `import { GitListRepositoriesResponse } from '../types/cursor-runner'`
 - The method uses a private `get` helper method in Rails - ensure similar helper is available or implement HTTP request directly
 - The method uses a private `parse_response` helper method in Rails - ensure similar helper is available or implement JSON parsing directly
 - Reference the Rails implementation at `jarek-va/app/services/cursor_runner_service.rb` lines 81-86 for exact behavior
 - This is a GET request (no request body), unlike other methods that use POST
+- The `repositories` field is an array of strings (repository names), not an array of objects
 - Task can be completed independently by a single agent
 
 ## Related Tasks
