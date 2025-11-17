@@ -36,16 +36,20 @@ PHASE4-011 identified the following documentation status:
 ### High Priority (Immediate Actions)
 
 - [ ] Create comprehensive root README.md file with:
-  - [ ] Project overview and purpose
+  - [ ] Project overview and purpose (reference `Plan/app-description.md` for context)
   - [ ] Quick start guide
-  - [ ] Installation instructions
+  - [ ] Installation instructions (Node.js version requirements from package.json engines)
   - [ ] Development setup instructions
-  - [ ] Testing instructions (unit, integration, e2e)
+  - [ ] Testing instructions (unit, integration, e2e) - reference existing test README files
   - [ ] Architecture overview (link to `docs/architecture.md`)
-  - [ ] Available npm scripts and their purposes
-  - [ ] Environment variables documentation
+  - [ ] Available npm scripts and their purposes (document all scripts from package.json)
+  - [ ] Environment variables documentation (reference `.env.example` for all required variables)
   - [ ] Contributing guidelines (or link to CONTRIBUTING.md if created)
-  - [ ] Links to relevant documentation (architecture, test docs, etc.)
+  - [ ] Links to relevant documentation:
+    - [ ] Architecture docs (`docs/architecture.md`)
+    - [ ] API documentation (`docs/API.md` and `docs/API_CONVENTIONS.md`)
+    - [ ] Test documentation (`tests/README.md` and subdirectory READMEs)
+    - [ ] Conversion plan documentation (`Plan/` directory)
 
 ### Medium Priority (As Code is Implemented)
 
@@ -62,11 +66,13 @@ PHASE4-011 identified the following documentation status:
 
 ### Documentation Standards to Follow
 
-- **JSDoc Format**: Use standard JSDoc format (`/** ... */`)
+- **JSDoc Format**: Use standard JSDoc format (`/** ... */`) - follow patterns from `tests/helpers/testUtils.ts` as reference
 - **Function Documentation**: Include `@param` and `@returns` tags for all public functions
 - **Class Documentation**: Include class-level JSDoc describing purpose and usage
 - **Inline Comments**: Explain "why" not "what" - code should be self-documenting
 - **README Structure**: Follow common README patterns with clear sections
+- **Environment Variables**: Document all variables from `.env.example` with descriptions and whether they're required or optional
+- **Scripts Documentation**: Document all npm scripts from `package.json` with their purposes and when to use them
 
 ### Verification
 
@@ -85,6 +91,13 @@ PHASE4-011 identified the following documentation status:
 - This task builds on the findings from PHASE4-011
 - Root README.md is the highest priority item as it provides entry point for developers
 - Source code documentation will be an ongoing effort as code is implemented in Phase 2
+- Reference existing documentation:
+  - Test utilities (`tests/helpers/testUtils.ts`) have excellent JSDoc examples to follow
+  - Test documentation (`tests/README.md`) provides good structure examples
+  - Architecture docs (`docs/architecture.md`) provide comprehensive technical context
+  - App description (`Plan/app-description.md`) provides project context
+- Environment variables are documented in `.env.example` - README should reference and explain each variable
+- All npm scripts from `package.json` should be documented with clear descriptions
 
 - Task can be completed independently by a single agent
 
