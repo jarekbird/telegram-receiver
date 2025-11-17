@@ -12,16 +12,41 @@ Create TypeScript type definitions for Cursor Runner API. These types will be us
 
 - [ ] Create `src/types/cursor-runner.ts` file
 - [ ] Define `CursorExecuteRequest` interface for execute endpoint
+  - Fields: `repository` (string), `branchName` (string), `prompt` (string), `id` (string)
 - [ ] Define `CursorIterateRequest` interface for iterate endpoint
+  - Fields: `repository` (string), `branchName` (string), `prompt` (string), `maxIterations` (number, default: 25), `id` (string), `callbackUrl` (string, optional)
 - [ ] Define `CursorExecuteResponse` interface for execute responses
+  - Should include: `success` (boolean), `output` (string), `error` (string, optional), and other fields as returned by cursor-runner
 - [ ] Define `CursorIterateResponse` interface for iterate responses
+  - Should include: `success` (boolean), `output` (string), `iterations` (number), `maxIterations` (number), `error` (string, optional), `exitCode` (number), `duration` (string, optional), and other fields as returned by cursor-runner
+  - Note: If `callbackUrl` is provided, response may be immediate acknowledgment
 - [ ] Define `CursorCallbackPayload` interface for callback webhooks
+  - Fields: `success` (boolean), `requestId` (string), `repository` (string), `branchName` (string), `iterations` (number), `maxIterations` (number), `output` (string), `error` (string, optional), `exitCode` (number), `duration` (string, optional), `timestamp` (string, optional)
+  - Note: Callback payload may use either camelCase or snake_case keys (normalize in implementation)
 - [ ] Define `GitCloneRequest` interface for repository cloning
+  - Fields: `repositoryUrl` (string), `repositoryName` (string, optional)
+- [ ] Define `GitCloneResponse` interface for clone responses
+  - Should include: `success` (boolean), `repository` (string), and other fields as returned
+- [ ] Define `GitListRepositoriesResponse` interface for list repositories response
+  - Fields: `success` (boolean), `repositories` (GitRepository[]), `count` (number)
 - [ ] Define `GitCheckoutRequest` interface for branch checkout
+  - Fields: `repository` (string), `branch` (string)
+- [ ] Define `GitCheckoutResponse` interface for checkout responses
+  - Should include: `success` (boolean), `message` (string, optional), and other fields as returned
 - [ ] Define `GitPushRequest` interface for pushing branches
-- [ ] Define `GitPullRequest` interface for pulling branches
+  - Fields: `repository` (string), `branch` (string)
+- [ ] Define `GitPushResponse` interface for push responses
+  - Should include: `success` (boolean), `message` (string, optional), and other fields as returned
+- [ ] Define `GitPullBranchRequest` interface for pulling branches
+  - Fields: `repository` (string), `branch` (string)
+  - Note: Named `GitPullBranchRequest` to avoid conflict with TypeScript's common `PullRequest` type
+- [ ] Define `GitPullBranchResponse` interface for pull responses
+  - Should include: `success` (boolean), `message` (string, optional), and other fields as returned
 - [ ] Define `GitRepository` interface for repository information
+  - Should include fields returned by list repositories endpoint (name, path, etc.)
 - [ ] Define `CursorRunnerError` interface for error responses
+  - Fields: `error` (string), and potentially other error details
+  - Note: HTTP errors (non-2xx) may include error details in response body
 - [ ] Export all types and interfaces
 
 ## Notes
@@ -29,7 +54,13 @@ Create TypeScript type definitions for Cursor Runner API. These types will be us
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 1. TypeScript Type Definitions
 - Reference `jarek-va/app/services/cursor_runner_service.rb` for request/response structures
+- Reference `jarek-va/app/controllers/cursor_runner_callback_controller.rb` for callback payload structure
 - Types should match the API structure used by cursor-runner service
+- Request field names use camelCase (e.g., `branchName`, `maxIterations`, `repositoryUrl`, `callbackUrl`)
+- Response structures are JSON objects parsed with symbol keys in Rails (use camelCase in TypeScript)
+- Callback payloads may use either camelCase or snake_case keys - implementation should normalize these
+- Error responses may include an `error` field in the response body (see error handling in `cursor_runner_service.rb`)
+- HTTP 422 (Unprocessable Entity) is treated as a valid response with error details in body
 - Task can be completed independently by a single agent
 
 ## Related Tasks
