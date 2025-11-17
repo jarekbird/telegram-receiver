@@ -6,22 +6,42 @@
 
 ## Description
 
-Convert create elevenlabsspeechtotextservice class structure from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/eleven_labs_*.rb` files.
+Create the ElevenLabsSpeechToTextService class structure from Rails to TypeScript/Node.js. This task focuses on setting up the class skeleton including error classes, constants, constructor, and private properties. Reference `jarek-va/app/services/eleven_labs_speech_to_text_service.rb` for the complete implementation.
 
 ## Checklist
 
 - [ ] Create `src/services/elevenlabs-speech-to-text-service.ts` file
-- [ ] Define class structure
-- [ ] Add constructor with api_key, timeout, model_id
-- [ ] Define API constants
-- [ ] Add custom error classes
+- [ ] Define `ElevenLabsSpeechToTextService` class structure
+- [ ] Add custom error classes (5 total):
+  - [ ] `Error` (base error class extending Error)
+  - [ ] `ConnectionError` (extends Error)
+  - [ ] `TimeoutError` (extends Error)
+  - [ ] `InvalidResponseError` (extends Error)
+  - [ ] `TranscriptionError` (extends Error)
+- [ ] Define API constants (4 total):
+  - [ ] `API_BASE_URL = 'https://api.elevenlabs.io'`
+  - [ ] `TRANSCRIPTION_ENDPOINT = '/v1/speech-to-text'`
+  - [ ] `DEFAULT_TIMEOUT = 60` (seconds)
+  - [ ] `DEFAULT_MODEL_ID = 'scribe_v1'`
+- [ ] Add constructor with parameters:
+  - [ ] `api_key?: string` (optional, should read from config if not provided)
+  - [ ] `timeout?: number` (optional, defaults to DEFAULT_TIMEOUT)
+  - [ ] `model_id?: string` (optional, should read from config or default to DEFAULT_MODEL_ID)
+  - [ ] Validate that `api_key` is not blank/empty (throw Error if missing)
+- [ ] Add private properties:
+  - [ ] `private readonly apiKey: string`
+  - [ ] `private readonly timeout: number`
+  - [ ] `private readonly modelId: string`
+- [ ] Add getter methods or accessors for private properties (if needed)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 7. ElevenLabs Services Conversion
-- Reference the Rails implementation for behavior
-
+- Reference the Rails implementation at `jarek-va/app/services/eleven_labs_speech_to_text_service.rb` for behavior
+- The constructor should read configuration values from the application config (similar to `Rails.application.config.elevenlabs_api_key` in Rails)
+- In TypeScript/Node.js, use environment variables or a config service for API key and model ID
+- This task only creates the class structure - method implementations will be added in subsequent tasks (PHASE2-046, PHASE2-047, etc.)
 - Task can be completed independently by a single agent
 
 ## Related Tasks
