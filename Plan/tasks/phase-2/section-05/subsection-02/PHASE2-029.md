@@ -6,22 +6,86 @@
 
 ## Description
 
-Convert implement http client utilities from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/cursor_runner_service.rb`.
+Convert and implement HTTP client utilities from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/cursor_runner_service.rb`.
+
+These utilities provide the low-level HTTP communication layer for the CursorRunnerService, handling GET and POST requests, error handling, timeouts, and response parsing.
 
 ## Checklist
 
 - [ ] Create private `get` method
+  - Builds URI from base_url + path
+  - Sets Content-Type and Accept headers to 'application/json'
+  - Uses `buildHttp` to create HTTP client
+  - Uses `executeRequest` to perform the request
+  - Returns HTTP response
+
 - [ ] Create private `post` method
-- [ ] Create `buildHttp` utility
-- [ ] Create `executeRequest` utility
+  - Builds URI from base_url + path
+  - Sets Content-Type and Accept headers to 'application/json'
+  - Converts body to JSON string
+  - Uses `buildHttp` to create HTTP client
+  - Uses `executeRequest` to perform the request
+  - Returns HTTP response
+
+- [ ] Create `buildHttp` utility method
+  - Creates HTTP client instance (using Node.js http/https modules)
+  - Configures SSL/TLS based on URI scheme (http vs https)
+  - Sets read_timeout and open_timeout from service configuration
+  - Handles connection errors (ECONNREFUSED, EHOSTUNREACH, SocketError) and raises ConnectionError
+  - Handles timeout errors (OpenTimeout, ReadTimeout) and raises TimeoutError
+  - Returns configured HTTP client
+
+- [ ] Create `executeRequest` utility method
+  - Logs request method and path (e.g., "CursorRunnerService: GET /cursor/execute")
+  - Executes the HTTP request
+  - Logs response status code and message
+  - Handles 422 Unprocessable Entity as a valid response (allows caller to receive error details)
+  - Raises Error for non-success HTTP status codes (except 422)
+  - Extracts error message from response body JSON if available
+  - Handles timeout errors (OpenTimeout, ReadTimeout) and raises TimeoutError
+  - Handles connection errors (ECONNREFUSED, EHOSTUNREACH, SocketError) and raises ConnectionError
+  - Returns HTTP response
+
+- [ ] Create `parseResponse` utility method
+  - Parses JSON response body
+  - Handles JSON parsing errors and raises InvalidResponseError
+  - Returns parsed object
+
+- [ ] Implement custom error classes
+  - `CursorRunnerServiceError` (base error class)
+  - `ConnectionError` (extends base error)
+  - `TimeoutError` (extends base error)
+  - `InvalidResponseError` (extends base error)
+
 - [ ] Add timeout handling
+  - Configure read_timeout and open_timeout on HTTP client
+  - Catch and handle timeout exceptions
+  - Raise TimeoutError with descriptive message
+
 - [ ] Add connection error handling
+  - Catch connection refused errors
+  - Catch host unreachable errors
+  - Catch socket errors
+  - Raise ConnectionError with descriptive message
+
+- [ ] Add HTTP status code handling
+  - Treat 422 Unprocessable Entity as valid response
+  - Raise Error for other non-success status codes
+  - Extract error message from response body if available
+
+- [ ] Add request logging
+  - Log request method and path before execution
+  - Log response status code and message after execution
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 5. CursorRunnerService Conversion
-- Reference the Rails implementation for behavior
+- Reference the Rails implementation in `jarek-va/app/services/cursor_runner_service.rb` for exact behavior
+- These are private utility methods used by the public API methods (execute, iterate, etc.)
+- Use Node.js built-in `http` and `https` modules or a library like `axios` or `node-fetch`
+- Ensure error messages match the Rails implementation for consistency
+- The 422 status code handling is important - it allows the caller to receive error details in the response body
 
 - Task can be completed independently by a single agent
 
