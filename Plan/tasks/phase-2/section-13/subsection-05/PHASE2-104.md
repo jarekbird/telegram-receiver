@@ -6,23 +6,125 @@
 
 ## Description
 
-Convert write integration tests for callback flow from Rails to TypeScript/Node.js.
+Write integration tests for the cursor-runner callback flow. These tests should verify the complete end-to-end flow from callback reception through Redis retrieval to Telegram response sending. While Rails has controller specs (`cursor_runner_callback_controller_spec.rb`) as unit tests, this task creates integration tests that test multiple components working together.
+
+**Rails Reference Files:**
+- `jarek-va/app/controllers/cursor_runner_callback_controller.rb` - Callback endpoint implementation
+- `jarek-va/app/services/cursor_runner_callback_service.rb` - Redis state management service
+- `jarek-va/spec/controllers/cursor_runner_callback_controller_spec.rb` - Controller unit tests (reference for behavior)
 
 ## Checklist
 
-- [ ] Create `tests/integration/callback-flow.test.ts`
-- [ ] Test callback reception
-- [ ] Test Redis retrieval
-- [ ] Test Telegram response
-- [ ] Mock external services
-- [ ] Verify end-to-end flow
+- [ ] Create `tests/integration/api/callback-flow.test.ts` using Supertest
+- [ ] Test callback reception with authentication (X-Webhook-Secret or X-Cursor-Runner-Secret header)
+- [ ] Test callback reception without authentication (should return 401 when secret is configured)
+- [ ] Test callback reception when secret is not configured (should accept request)
+- [ ] Test callback reception with secret in query parameter
+- [ ] Test callback reception with missing request_id (should return 400 Bad Request)
+- [ ] Test callback reception with unknown request_id (should return 200 OK but log warning)
+- [ ] Test Redis retrieval of pending request data
+- [ ] Test successful callback processing with valid pending data
+- [ ] Test Telegram response sending for successful results
+- [ ] Test Telegram response sending for failed results
+- [ ] Test response formatting with CURSOR_DEBUG disabled (default) - should send raw output only
+- [ ] Test response formatting with CURSOR_DEBUG enabled - should include metadata and formatted output
+- [ ] Test ANSI escape sequence cleaning from output
+- [ ] Test output truncation for long outputs (max 4000 chars without debug, 3500 with debug)
+- [ ] Test Markdown parse mode fallback to HTML when Markdown parsing fails
+- [ ] Test HTML parse mode fallback to plain text when HTML parsing fails
+- [ ] Test error handling when callback processing raises an error (should return 200 OK, send error message to user)
+- [ ] Test error handling when Telegram send fails (should send fallback error message)
+- [ ] Test cleanup of pending request after successful processing
+- [ ] Test callback with camelCase parameters (requestId, branchName, maxIterations, exitCode)
+- [ ] Test callback with snake_case parameters (request_id, branch_name, max_iterations, exit_code)
+- [ ] Test callback with mixed case parameters (should normalize correctly)
+- [ ] Test success boolean normalization (handle string "true"/"false", numbers 1/0, boolean true/false)
+- [ ] Test audio response when original message was audio and audio output is enabled
+- [ ] Test text fallback when audio generation fails
+- [ ] Test audio file cleanup after sending
+- [ ] Mock CursorRunnerCallbackService (get_pending_request, remove_pending_request)
+- [ ] Mock TelegramService (send_message, send_voice)
+- [ ] Mock ElevenLabsTextToSpeechService (synthesize method)
+- [ ] Mock SystemSetting (enabled? method for debug and allow_audio_output checks)
+- [ ] Mock Redis for callback state management
+- [ ] Verify proper cleanup and isolation between tests
+- [ ] Test that callback returns 200 OK immediately (to prevent cursor-runner retries)
+
+## Test Scenarios
+
+### Authentication Tests
+1. **Without authentication when secret is configured**: Should return 401 Unauthorized
+2. **Without authentication when secret is not configured**: Should accept request (return 200)
+3. **With valid authentication (header)**: Should accept request and process
+4. **With valid authentication (query param)**: Should accept request and process
+
+### Callback Reception Tests
+1. **Valid callback with request_id**: Should process callback successfully
+2. **Missing request_id**: Should return 400 Bad Request
+3. **Unknown request_id**: Should return 200 OK but log warning (to prevent retries)
+
+### Redis Retrieval Tests
+1. **Pending request found**: Should retrieve and use pending data (chat_id, message_id, etc.)
+2. **Pending request not found**: Should handle gracefully and return 200 OK
+
+### Telegram Response Tests
+
+#### Success Response Tests
+1. **With CURSOR_DEBUG disabled**: Should send only raw output (no metadata)
+2. **With CURSOR_DEBUG enabled**: Should send formatted response with metadata (iterations, duration, output in HTML code blocks)
+3. **With long output**: Should truncate output appropriately (4000 chars without debug, 3500 with debug)
+4. **With ANSI escape sequences**: Should clean ANSI codes from output
+
+#### Failure Response Tests
+1. **With CURSOR_DEBUG disabled**: Should send simple error message (❌ error text)
+2. **With CURSOR_DEBUG enabled**: Should send detailed error message (❌ Cursor command failed\n\nError: ...)
+
+#### Parse Mode Fallback Tests
+1. **Markdown parsing fails**: Should fallback to HTML parse mode
+2. **HTML parsing fails**: Should fallback to plain text (no parse_mode)
+3. **Both parsing fail**: Should send as plain text
+
+#### Audio Response Tests
+1. **Original was audio and audio output enabled**: Should convert text to speech and send as voice message
+2. **Audio generation fails**: Should fallback to text message
+3. **Audio file cleanup**: Should delete generated audio file after sending
+
+### Error Handling Tests
+1. **Callback processing error**: Should return 200 OK, log error, send error message to user
+2. **Telegram send error**: Should send fallback error message
+3. **Missing chat_id in error**: Should not attempt to send error message
+
+### Parameter Normalization Tests
+1. **camelCase parameters**: Should normalize to snake_case internally
+2. **snake_case parameters**: Should handle correctly
+3. **Mixed case parameters**: Should normalize correctly
+4. **Success boolean**: Should handle string "true"/"false", numbers 1/0, boolean true/false
+
+### Cleanup Tests
+1. **After successful processing**: Should remove pending request from Redis
+2. **After error**: Should still attempt cleanup if possible
+
+## Implementation Notes
+
+- Use Supertest for HTTP endpoint testing
+- Use Jest for test framework
+- Mock external services (TelegramService, CursorRunnerCallbackService, ElevenLabsTextToSpeechService) using Jest mocks
+- Mock SystemSetting for debug and audio output checks
+- Mock Redis for callback state management
+- Ensure proper test isolation (cleanup between tests)
+- Reference Rails specs for expected behavior and edge cases
+- Test should verify the complete flow but mock external dependencies
+- Callback endpoint should always return 200 OK to prevent cursor-runner from retrying (even on errors)
+- Test file should be placed in `tests/integration/api/` directory (not `tests/integration/` root)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 13. Testing
-- Reference the Rails implementation for behavior
-
+- Subsection: 13.5 Integration Tests
+- Rails has unit tests (controller specs) but no integration tests - this task creates new integration tests based on the Rails unit test behavior
+- Integration tests should test multiple components together (controller + callback service + Telegram service)
+- External services should be mocked to ensure test isolation and speed
 - Task can be completed independently by a single agent
 
 ## Related Tasks
