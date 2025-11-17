@@ -10,28 +10,33 @@ Convert and implement the `sendMessage` method from Rails to TypeScript/Node.js.
 
 The Rails implementation:
 - Takes `chat_id`, `text`, `parse_mode` (defaults to 'HTML'), and optional `reply_to_message_id`
-- Returns early if bot token is blank (similar to other methods in the service)
-- Escapes HTML entities when `parse_mode === 'HTML'` to prevent parsing errors with text that looks like HTML tags
-- Calls Telegram Bot API `sendMessage` endpoint
-- Logs errors and re-raises exceptions
+- Returns `nil` (undefined in TypeScript) early if bot token is blank (similar to other methods in the service)
+- Escapes HTML entities when `parse_mode == 'HTML'` to prevent parsing errors with text that looks like HTML tags
+- Calls Telegram Bot API `sendMessage` endpoint via `bot.api.send_message(...)`
+- Logs errors with full stack trace and re-raises exceptions (using `raise` in Rails, `throw` in TypeScript)
 
 ## Checklist
 
 - [ ] Implement `sendMessage` method with proper TypeScript signature:
   - Parameters: `chatId: number | string`, `text: string`, `parseMode?: string` (default: 'HTML'), `replyToMessageId?: number`
-  - Return type: `Promise<TelegramApiResponse>` (or appropriate Telegram API response type)
-- [ ] Add early return check if bot token is blank (use the validation method from PHASE2-018)
+  - Return type: `Promise<TelegramApiResponse<Message> | undefined>` (returns `undefined` on early return when bot token is blank, otherwise returns Telegram API response)
+- [ ] Add early return check if bot token is blank (use the validation method from PHASE2-018 - typically a private method like `isBotTokenValid()` or `validateBotToken()` that returns boolean)
+  - If bot token is blank/invalid, return `undefined` immediately (matching Rails `return` behavior which returns `nil`)
 - [ ] Add HTML entity escaping logic:
   - Only escape HTML entities when `parseMode === 'HTML'`
   - Use `escapeHtmlEntities()` helper method (will be implemented in PHASE2-025, but can create a stub or inline implementation for now)
   - Escape order: `&` first (to avoid double-escaping), then `<`, then `>`
 - [ ] Handle `parse_mode` parameter with default value 'HTML'
 - [ ] Add `replyToMessageId` optional parameter support
-- [ ] Make HTTP request to Telegram Bot API `sendMessage` endpoint using axios
+- [ ] Make HTTP request to Telegram Bot API `sendMessage` endpoint using axios:
+  - Endpoint URL: `https://api.telegram.org/bot{token}/sendMessage`
+  - Method: POST
+  - Request body: JSON with `chat_id`, `text`, `parse_mode`, and optionally `reply_to_message_id`
+  - Response: Telegram API response object with `ok` boolean and `result` field
 - [ ] Add comprehensive error handling:
   - Wrap in try-catch block
   - Log errors with descriptive messages (include error message and stack trace)
-  - Re-raise exceptions after logging (maintain Rails behavior)
+  - Re-throw exceptions after logging using `throw` (maintains Rails `raise` behavior - allows callers to handle errors)
 - [ ] Reference `jarek-va/app/services/telegram_service.rb` lines 14-37 for exact behavior
 
 ## Notes
