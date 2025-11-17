@@ -6,22 +6,78 @@
 
 ## Description
 
-Convert add redis connection error handling from Rails to TypeScript/Node.js.
+Add comprehensive Redis connection error handling, reconnection logic, and connection status monitoring to the Redis utility created in PHASE2-009. While the Rails implementation (`jarek-va/app/services/cursor_runner_callback_service.rb`) relies on the Ruby `redis` gem's automatic reconnection, Node.js/ioredis requires explicit error handling and event listeners for production-ready applications.
+
+**Rails Implementation Reference:**
+- `app/services/cursor_runner_callback_service.rb` - Creates Redis client with `Redis.new(url: redis_url)` but relies on gem's built-in reconnection
+- The Ruby `redis` gem handles reconnection automatically without explicit error handling
+- No explicit error event listeners or connection status monitoring in Rails code
+
+**Node.js Implementation:**
+- Enhance `src/utils/redis.ts` (created in PHASE2-009) with error handling
+- Use ioredis event system (`error`, `connect`, `ready`, `close`, `reconnecting`, `end` events)
+- Implement connection status tracking
+- Add comprehensive logging for connection events
+- Configure ioredis reconnection options (max retries, retry delay, etc.)
+- Handle connection failures gracefully
 
 ## Checklist
 
-- [ ] Add error event listeners
-- [ ] Implement reconnection logic
-- [ ] Add connection status monitoring
-- [ ] Log connection events
+- [ ] Update `src/utils/redis.ts` to add error handling:
+  - [ ] Import logger utility (from `src/utils/logger.ts` or similar)
+  - [ ] Add connection status tracking (enum: `connecting`, `connected`, `disconnected`, `reconnecting`, `error`)
+  - [ ] Create `getConnectionStatus()` function to return current status
+- [ ] Add ioredis event listeners:
+  - [ ] `error` event listener - Log errors and update connection status
+  - [ ] `connect` event listener - Log connection established, update status to `connected`
+  - [ ] `ready` event listener - Log Redis ready, update status to `connected`
+  - [ ] `close` event listener - Log connection closed, update status to `disconnected`
+  - [ ] `reconnecting` event listener - Log reconnection attempts, update status to `reconnecting`
+  - [ ] `end` event listener - Log connection ended, update status to `disconnected`
+- [ ] Configure ioredis reconnection options:
+  - [ ] Set `maxRetriesPerRequest` (recommended: `null` for pub/sub, `3` for commands)
+  - [ ] Set `retryStrategy` function to control retry delays
+  - [ ] Set `enableReadyCheck` to `true` (verify Redis is ready before accepting commands)
+  - [ ] Set `enableOfflineQueue` to `true` (queue commands when offline)
+- [ ] Add connection status monitoring:
+  - [ ] Track connection state in private variable
+  - [ ] Update state on each event
+  - [ ] Export `getConnectionStatus()` function for external monitoring
+- [ ] Add comprehensive logging:
+  - [ ] Log all connection events with appropriate log levels (info for normal events, error for failures)
+  - [ ] Include Redis URL (masked if contains credentials) in logs
+  - [ ] Log reconnection attempts with attempt count
+  - [ ] Log connection errors with error details
+- [ ] Handle edge cases:
+  - [ ] Prevent multiple event listener registrations (check if already registered)
+  - [ ] Clean up event listeners if client is replaced (dependency injection scenario)
+  - [ ] Handle errors during client initialization
+- [ ] Update JSDoc comments:
+  - [ ] Document event listeners and their behavior
+  - [ ] Document connection status values
+  - [ ] Document reconnection configuration
+  - [ ] Add usage examples for monitoring connection status
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 2. Redis Integration
-- Reference the Rails implementation for behavior
-
-- Task can be completed independently by a single agent
+- **Rails Files to Reference:**
+  - `jarek-va/app/services/cursor_runner_callback_service.rb` - Note that Rails relies on gem's automatic reconnection (lines 15-21)
+- **Dependencies:**
+  - Requires PHASE2-009 (Redis connection utility) to be completed first
+  - Uses `ioredis` package (already in package.json dependencies)
+- **Implementation Details:**
+  - ioredis provides built-in reconnection, but explicit event handling improves observability
+  - Connection status monitoring enables health checks and better error reporting
+  - Event listeners should be registered when client is first created (in `getRedisClient()`)
+  - Reconnection options should balance reliability with performance
+  - Logging should use application logger (not console.log) for consistency
+- **Key Differences from Rails:**
+  - Rails: Ruby `redis` gem handles reconnection automatically, no explicit handling needed
+  - Node.js: ioredis has reconnection but requires explicit event listeners for production monitoring
+  - This task adds observability and control that Rails doesn't explicitly implement
+- Task can be completed independently by a single agent (after PHASE2-009 is complete)
 
 ## Related Tasks
 
