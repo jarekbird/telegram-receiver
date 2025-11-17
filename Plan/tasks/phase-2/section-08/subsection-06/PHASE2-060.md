@@ -17,8 +17,8 @@ Convert the `delete_webhook` endpoint from Rails to TypeScript/Node.js. This end
 - The `delete_webhook` controller method requires admin authentication via `authenticate_admin`
 - Returns `401 Unauthorized` if admin authentication fails
 - Calls `TelegramService.delete_webhook` which uses the Telegram Bot API to delete the webhook
-- On success, returns JSON: `{ ok: true, message: 'Webhook deleted successfully' }`
-- On error, catches `StandardError`, logs the error, and returns JSON: `{ ok: false, error: e.message }` with status 500
+- On success, returns JSON: `{ ok: true, message: 'Webhook deleted successfully' }` with HTTP status 200
+- On error, catches `StandardError`, logs the error, and returns JSON: `{ ok: false, error: e.message }` with HTTP status 500
 - The service method returns early if `telegram_bot_token` is blank
 
 ## Checklist
