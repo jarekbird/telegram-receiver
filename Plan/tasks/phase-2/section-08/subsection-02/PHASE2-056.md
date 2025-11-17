@@ -13,17 +13,28 @@ Reference the Rails implementation in `jarek-va/app/controllers/telegram_control
 ## Checklist
 
 - [ ] Implement `webhook` handler method with signature `webhook(req: Request, res: Response): Promise<void>`
-- [ ] Parse request body as TelegramUpdate (handle both JSON Content-Type and form-encoded)
-- [ ] Remove framework-specific parameters (if any) from the parsed update object
-- [ ] Log the received Telegram update for debugging (using logger)
-- [ ] Convert update object to JSON string before enqueueing
+- [ ] Parse request body as TelegramUpdate:
+  - [ ] Check Content-Type header for `application/json`
+  - [ ] If JSON, parse from request body directly
+  - [ ] If form-encoded, parse from request body/form data
+  - [ ] Handle both content types appropriately (similar to Rails `request.parameters` vs `params`)
+- [ ] Remove framework-specific parameters from parsed update:
+  - [ ] Remove `controller`, `action`, `format`, `telegram` parameters (if present)
+  - [ ] Ensure only Telegram update data remains
+- [ ] Log the received Telegram update for debugging (using logger with `update.inspect` equivalent)
+- [ ] Convert update object to JSON string before enqueueing (using `JSON.stringify` or equivalent)
 - [ ] Enqueue job to process update asynchronously (call `TelegramMessageJob` equivalent with JSON string)
 - [ ] Return 200 OK immediately after enqueueing (before job processing completes)
 - [ ] Implement comprehensive error handling:
-  - [ ] Catch all errors (StandardError equivalent)
-  - [ ] Log error message and stack trace
+  - [ ] Catch all errors (StandardError equivalent - catch all exceptions)
+  - [ ] Log error message and stack trace (full backtrace)
+  - [ ] Convert update to plain object/hash if needed (handle both Hash and object types)
   - [ ] Extract chat info from update using `extractChatInfoFromUpdate` helper method (if available)
-  - [ ] Attempt to send error message to user via TelegramService if chat_id is available
+  - [ ] If chat_id is available, attempt to send error message to user via TelegramService:
+    - [ ] Use `parse_mode: 'HTML'` when sending error message
+    - [ ] Include `reply_to_message_id` if message_id is available
+    - [ ] Wrap error message sending in try-catch to handle send failures gracefully
+    - [ ] Log any errors from sending error message (but don't re-raise)
   - [ ] Always return 200 OK even on error (to prevent Telegram from retrying)
 - [ ] Reference `jarek-va/app/controllers/telegram_controller.rb` lines 12-48 for implementation details
 
@@ -34,12 +45,17 @@ Reference the Rails implementation in `jarek-va/app/controllers/telegram_control
 - Reference the Rails implementation (`jarek-va/app/controllers/telegram_controller.rb` lines 12-48) for complete behavior
 - **Important**: The webhook authentication is handled by middleware (implemented in PHASE2-057), so this method assumes authentication has already passed
 - The Rails implementation:
-  - Handles both JSON (`application/json`) and form-encoded requests
-  - Removes Rails-specific params (`controller`, `action`, `format`, `telegram`) before processing
-  - Logs the received update for debugging
+  - Checks Content-Type: if `application/json`, uses `request.parameters`; otherwise uses `params` (handles form-encoded)
+  - Removes Rails-specific params (`controller`, `action`, `format`, `telegram`) using `update.except(...)` before processing
+  - Logs the received update using `Rails.logger.info("Received Telegram update: #{update.inspect}")`
   - Converts update to JSON string using `update.to_json` before passing to job
   - Always returns 200 OK to Telegram, even on errors, to prevent retries
-  - Attempts to send error messages to users when chat info is available
+  - Error handling:
+    - Converts update to hash if needed: `update_hash = update.is_a?(Hash) ? update : update.to_h`
+    - Extracts chat info using `extract_chat_info_from_update(update_hash)` private method
+    - Sends error message with `parse_mode: 'HTML'` and `reply_to_message_id` if available
+    - Wraps error message sending in nested try-catch to handle send failures gracefully
+    - Logs send errors but doesn't re-raise them
 - The `extractChatInfoFromUpdate` helper method may be implemented in a later task (PHASE2-063), but should be used here if available
 - Error handling must be robust: log errors, attempt user notification, but always return 200 OK
 - Task can be completed independently by a single agent
