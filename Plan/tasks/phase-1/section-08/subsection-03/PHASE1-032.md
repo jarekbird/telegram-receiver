@@ -6,21 +6,57 @@
 
 ## Description
 
-Create logger utility wrapper
+Create logger utility wrapper that provides a consistent logging interface matching Rails.logger patterns from jarek-va. The wrapper should import the configured logger from `src/config/logger.ts` (created in PHASE1-031) and expose a simple interface with `info()`, `error()`, `warn()`, and `debug()` methods that match Rails.logger usage patterns.
+
+**Rails Logging Patterns to Replicate:**
+- The jarek-va Rails application uses `Rails.logger.info()`, `Rails.logger.error()`, `Rails.logger.warn()`, and `Rails.logger.debug()` throughout controllers, services, jobs, and tools
+- Error logging includes full stack traces (see `jarek-va/app/controllers/application_controller.rb` lines 10-11 and `jarek-va/app/services/telegram_service.rb` lines 33-34)
+- Logging methods accept string messages and can include additional context/metadata
+- The logger is used extensively for debugging, error tracking, and operational logging
+
+**Purpose of Wrapper:**
+- Provides a consistent interface similar to `Rails.logger` for easy migration from Rails code
+- Centralizes logger access point (similar to how Rails.logger is accessed globally)
+- Ensures all application code uses the same configured logger instance
+- Simplifies imports throughout the application (import from `src/utils/logger.ts` instead of config)
 
 ## Checklist
 
 - [ ] Create `src/utils/logger.ts` file
-- [ ] Import logger from config
-- [ ] Create wrapper functions: `logger.info()`, `logger.error()`, `logger.warn()`, `logger.debug()`
-- [ ] Export wrapper functions
-- [ ] Ensure consistent logging interface
+- [ ] Import the configured logger from `src/config/logger.ts` (created in PHASE1-031)
+- [ ] Create wrapper object with methods matching Rails.logger interface:
+  - [ ] `logger.info(message: string, ...args: any[])` - Log informational messages
+  - [ ] `logger.error(message: string, ...args: any[])` - Log error messages (should include stack traces for Error objects)
+  - [ ] `logger.warn(message: string, ...args: any[])` - Log warning messages
+  - [ ] `logger.debug(message: string, ...args: any[])` - Log debug messages
+- [ ] Ensure error logging handles Error objects and includes stack traces (matching Rails error logging pattern where `Rails.logger.error(e.backtrace.join("\n"))` is used)
+- [ ] Export the logger wrapper as default export
+- [ ] Ensure TypeScript types are properly defined for all methods
+- [ ] Ensure consistent logging interface that matches Rails.logger usage patterns
+- [ ] Verify wrapper properly forwards all arguments to underlying logger instance
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 8. Logging Infrastructure
 - Task can be completed independently by a single agent
+- **Prerequisite**: PHASE1-031 must be completed first to create the logger configuration module
+- **Rails Reference**: The jarek-va Rails application uses `Rails.logger` extensively:
+  - `jarek-va/app/controllers/application_controller.rb` (lines 10-11) - Error logging with full backtraces
+  - `jarek-va/app/services/telegram_service.rb` (lines 33-34, 47-48, etc.) - Error logging with messages and backtraces
+  - `jarek-va/app/jobs/telegram_message_job.rb` (lines 33-34) - Error logging pattern
+  - Various service files use `Rails.logger.info()`, `Rails.logger.error()`, `Rails.logger.warn()`, `Rails.logger.debug()`
+- **Error Handling**: When logging errors, the wrapper should detect Error objects and automatically include stack traces (similar to how Rails logs both the error message and `e.backtrace.join("\n")`). This ensures error logging matches Rails patterns.
+- **Usage Pattern**: The wrapper should allow usage like:
+  ```typescript
+  import logger from '@/utils/logger';
+  
+  logger.info('Processing message');
+  logger.error('Error occurred', error);
+  logger.warn('Warning message');
+  logger.debug('Debug information');
+  ```
+- **Type Safety**: Ensure proper TypeScript types are defined for all logger methods to provide type safety and IntelliSense support.
 
 ## Related Tasks
 
