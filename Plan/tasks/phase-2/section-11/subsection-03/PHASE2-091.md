@@ -6,23 +6,56 @@
 
 ## Description
 
-Convert create telegram routes from Rails to TypeScript/Node.js. Reference `jarek-va/config/routes.rb`.
+Convert telegram routes from Rails to TypeScript/Node.js. Reference `jarek-va/config/routes.rb` and `jarek-va/app/controllers/telegram_controller.rb`.
+
+This task creates the Express route definitions for Telegram webhook endpoints. The routes should be scoped under `/telegram` path and include appropriate authentication middleware.
 
 ## Checklist
 
 - [ ] Create `src/routes/telegram-routes.ts`
 - [ ] Define POST /telegram/webhook route
+  - Apply webhook authentication middleware (checks X-Telegram-Bot-Api-Secret-Token header)
+  - Route should delegate to telegram controller webhook handler
 - [ ] Define POST /telegram/set_webhook route
+  - Apply admin authentication middleware (checks X-Admin-Secret header)
+  - Route should delegate to telegram controller set_webhook handler
 - [ ] Define GET /telegram/webhook_info route
+  - Apply admin authentication middleware (checks X-Admin-Secret header)
+  - Route should delegate to telegram controller webhook_info handler
 - [ ] Define DELETE /telegram/webhook route
-- [ ] Apply authentication middleware
-- [ ] Export router
+  - Apply admin authentication middleware (checks X-Admin-Secret header)
+  - Route should delegate to telegram controller delete_webhook handler
+- [ ] Export router for use in main application
+
+## Authentication Requirements
+
+Based on `jarek-va/app/controllers/telegram_controller.rb`:
+
+1. **Webhook Authentication** (for POST /telegram/webhook):
+   - Checks `X-Telegram-Bot-Api-Secret-Token` header
+   - Compares against `telegram_webhook_secret` configuration value
+   - Returns 401 Unauthorized if secret token doesn't match (or if expected secret is blank, allows request)
+
+2. **Admin Authentication** (for set_webhook, webhook_info, delete_webhook):
+   - Checks `X-Admin-Secret` header (or `HTTP_X_ADMIN_SECRET` env var, or `admin_secret` query/body param)
+   - Compares against `webhook_secret` configuration value
+   - Returns 401 Unauthorized if secret doesn't match
+
+## Implementation Notes
+
+- Routes are scoped under `/telegram` path prefix (as defined in Rails routes.rb)
+- Reference `jarek-va/app/controllers/telegram_controller.rb` for controller implementation details
+- The webhook endpoint should return 200 OK immediately and process updates asynchronously
+- Admin endpoints should return JSON responses with `ok` field and appropriate data/error fields
+- Error handling should follow the pattern in ApplicationController (returns JSON with ok: false, error message)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 11. Routes Configuration
 - Reference the Rails implementation for behavior
+- Controller implementation will be handled in a separate task
+- Authentication middleware should be created/referenced as needed
 
 - Task can be completed independently by a single agent
 
