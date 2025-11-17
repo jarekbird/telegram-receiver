@@ -6,27 +6,37 @@
 
 ## Description
 
-Create CD workflow file (basic)
+Create a basic CD (Continuous Deployment) workflow file for GitHub Actions. This workflow should handle building and deploying the Node.js/TypeScript application. 
+
+**Reference**: The jarek-va Rails application has a deployment workflow at `.github/workflows/deploy.yml` that uses SSH deployment and Docker Compose. This task creates a basic version that can be extended later with actual deployment logic.
+
+**Context**: This is a foundational CD workflow for Phase 1. The deployment step will be a placeholder for now, as the full deployment strategy (SSH, Docker registry, etc.) will be configured in later phases.
 
 ## Checklist
 
 - [ ] Create `.github/workflows/cd.yml` file
 - [ ] Set workflow name to "CD"
 - [ ] Configure trigger on push to main branch (or tags)
-- [ ] Define `deploy` job
-- [ ] Add step to checkout code
-- [ ] Add step to setup Node.js
-- [ ] Add step to install dependencies
-- [ ] Add step to build project
-- [ ] Add step to build Docker image
-- [ ] Add step to push Docker image (if registry configured)
-- [ ] Add step to deploy (placeholder for now)
+- [ ] Add `workflow_dispatch` trigger for manual deployments
+- [ ] Define `deploy` job running on `ubuntu-latest`
+- [ ] Add step to checkout code using `actions/checkout@v4`
+- [ ] Add step to setup Node.js (use version >=18.0.0 as specified in package.json engines)
+- [ ] Add step to install dependencies using `npm ci` (for reproducible builds)
+- [ ] Add step to build project using `npm run build` (runs TypeScript compiler)
+- [ ] Add step to build Docker image (use docker build command)
+- [ ] Add step to push Docker image (conditional, only if registry is configured via secrets)
+- [ ] Add step to deploy (placeholder comment/echo statement for now)
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 11. CI/CD Pipeline Configuration
 - Task can be completed independently by a single agent
+- **Reference Implementation**: See `jarek-va/.github/workflows/deploy.yml` for the Rails deployment workflow (uses SSH deployment and Docker Compose)
+- **Build Command**: Use `npm run build` which runs `tsc` to compile TypeScript to JavaScript
+- **Node.js Version**: Use Node.js 18.x or higher (as specified in package.json engines field)
+- **Docker**: The workflow should build a Docker image, but actual deployment will be added in later phases
+- **Manual Trigger**: Include `workflow_dispatch` to allow manual workflow execution from GitHub UI
 
 ## Related Tasks
 
