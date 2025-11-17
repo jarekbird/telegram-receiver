@@ -10,11 +10,11 @@ Create logger configuration module that replicates Rails logging patterns from j
 
 **Rails Logging Patterns to Replicate:**
 - Production: Log level `:info` (see `jarek-va/config/environments/production.rb` line 40)
-- Production: Log formatter using `Logger::Formatter.new` (see `jarek-va/config/environments/production.rb` line 60)
-- Production: Request ID tagging via `ActiveSupport::TaggedLogging` wrapper (see `jarek-va/config/environments/production.rb` line 43 and line 69)
-- Production: Stdout logging with `RAILS_LOG_TO_STDOUT` environment variable (see `jarek-va/config/environments/production.rb` lines 66-69)
-- Application: `LOG_LEVEL` environment variable support (defaults to 'info', applies to all environments, see `jarek-va/config/application.rb` line 28)
-- Error logging: Full stack traces (see `jarek-va/app/controllers/application_controller.rb` lines 10-11)
+- Production: Log formatter using `Logger::Formatter.new` (includes timestamp and log level, see `jarek-va/config/environments/production.rb` line 60)
+- Production: Request ID tagging via `config.log_tags = [:request_id]` and `ActiveSupport::TaggedLogging` wrapper (see `jarek-va/config/environments/production.rb` line 43 and line 69)
+- Production: Conditional stdout logging when `RAILS_LOG_TO_STDOUT` environment variable is set (wraps stdout logger with `ActiveSupport::TaggedLogging`, see `jarek-va/config/environments/production.rb` lines 66-69). Note: In Docker/production deployments, `RAILS_LOG_TO_STDOUT=true` is typically always set (see `jarek-va/docker-compose.yml` and `jarek-va/Dockerfile`)
+- Application: `LOG_LEVEL` environment variable support (defaults to 'info', applies to all environments unless overridden, see `jarek-va/config/application.rb` line 28)
+- Error logging: Full stack traces - logs exception class/message and full backtrace as separate log entries (see `jarek-va/app/controllers/application_controller.rb` lines 10-11)
 - Sidekiq: Logger::INFO level (see `jarek-va/config/initializers/sidekiq.rb` line 31)
 
 ## Checklist
@@ -60,7 +60,7 @@ Create logger configuration module that replicates Rails logging patterns from j
   - `NODE_ENV`: Determines environment (production, development, test)
   - `LOG_LEVEL`: Overrides default log level for the current environment (info, debug, warn, error)
   - **Note**: Rails uses a single `LOG_LEVEL` that applies to all environments (defaults to 'info'). This Node.js implementation uses environment-specific defaults (debug for dev, error for test, info for production) which is more conventional for Node.js applications, while still allowing `LOG_LEVEL` to override.
-- **Production Requirements**: Must support stdout logging for Docker/containerized environments (matches Rails `RAILS_LOG_TO_STDOUT` behavior). The logger should always output to stdout in production, similar to how Rails wraps the logger with `ActiveSupport::TaggedLogging` when `RAILS_LOG_TO_STDOUT` is present.
+- **Production Requirements**: Must support stdout logging for Docker/containerized environments (matches Rails `RAILS_LOG_TO_STDOUT` behavior). In production, the logger should output to stdout (similar to how Rails wraps the logger with `ActiveSupport::TaggedLogging` when `RAILS_LOG_TO_STDOUT` is present). Since this is a Node.js application typically deployed in containers, stdout logging should be the default for production to match the Rails Docker deployment pattern.
 - **Request ID Support**: The logger should support adding request IDs to log entries (via child loggers or context) to match Rails' `config.log_tags = [:request_id]` and `ActiveSupport::TaggedLogging` wrapper behavior. This will be used by PHASE1-020 (request logging middleware). The implementation should allow creating child loggers with request ID context that automatically includes the request ID in all log entries.
 - **Log Formatter**: The logger formatter should include timestamp and log level information, matching Rails' `Logger::Formatter.new` behavior. In production, this should be structured JSON format for log aggregation tools.
 
