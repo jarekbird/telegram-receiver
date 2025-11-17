@@ -8,6 +8,8 @@
 
 Run comprehensive dependency analysis to identify circular dependencies, unused dependencies, outdated packages, security vulnerabilities, and dependency version conflicts. This task focuses on analyzing the project's dependency graph and ensuring optimal dependency management for improved code quality, maintainability, and security.
 
+**Note**: While PHASE4-006 (unused code detection) also uses `depcheck` to identify unused npm packages, this task (PHASE4-008) provides a more comprehensive dependency analysis that includes circular dependencies between source modules, security vulnerability scanning, dependency version conflicts, license compliance, and dependency graph visualization. PHASE4-006 focuses on unused code (exports, imports, files), while PHASE4-008 focuses on the complete dependency ecosystem including npm packages, module relationships, and security/compliance aspects.
+
 ## Current State
 
 The project currently has:
@@ -95,7 +97,12 @@ Consider the following options for dependency analysis:
     - Built into npm
     - Shows dependency tree
     - Identifies version conflicts
-    - Command: `npm ls` or `npm ls --depth=0`
+    - Commands:
+      - `npm ls` - Shows full dependency tree (may be very long)
+      - `npm ls --depth=0` - Shows only top-level dependencies
+      - `npm ls --depth=1` - Shows top-level and direct dependencies
+      - `npm ls --all` - Shows all dependencies including extraneous ones
+      - `npm ls --json` - Outputs JSON format for programmatic processing
 
 ## Checklist
 
@@ -177,12 +184,14 @@ Consider the following options for dependency analysis:
 - [ ] Document security audit results
 
 ### Dependency Version Conflicts
-- [ ] Run `npm ls` to check for version conflicts
+- [ ] Run `npm ls` to check for version conflicts (use `npm ls --depth=0` for top-level only, or `npm ls --all` for complete tree)
+- [ ] Run `npm ls --json` to get structured output for analysis
 - [ ] Identify packages with conflicting version requirements
-- [ ] Review peer dependency warnings
+- [ ] Review peer dependency warnings (check `npm ls` output for "UNMET PEER DEPENDENCY" warnings)
+- [ ] Check for duplicate packages (same package installed at different versions)
 - [ ] Resolve version conflicts:
   - Update conflicting packages to compatible versions
-  - Use npm overrides/resolutions if necessary
+  - Use npm overrides/resolutions if necessary (in package.json)
   - Document intentional version conflicts
 - [ ] Verify application works with resolved conflicts
 
@@ -254,8 +263,38 @@ Add dependency analysis scripts:
     "deps:security": "snyk test",
     "deps:licenses": "license-checker --summary",
     "deps:tree": "npm ls --depth=0",
+    "deps:tree:all": "npm ls --all",
+    "deps:tree:json": "npm ls --json",
     "deps:analyze": "npm run deps:check && npm run deps:circular && npm run deps:outdated && npm run deps:audit"
   }
+}
+```
+
+## Configuration Example (depcheck)
+
+Create `.depcheckrc.json` (see also PHASE4-006 for more detailed depcheck configuration):
+
+```json
+{
+  "ignoreMatches": [
+    "@types/*",
+    "eslint-*",
+    "prettier",
+    "typescript",
+    "ts-node",
+    "nodemon",
+    "husky",
+    "lint-staged",
+    "cross-env",
+    "concurrently"
+  ],
+  "ignorePatterns": [
+    "dist",
+    "coverage",
+    "*.test.ts",
+    "*.spec.ts",
+    "node_modules"
+  ]
 }
 ```
 
@@ -302,6 +341,7 @@ module.exports = {
 - Section: 1. Automated Code Smell Detection
 - Focus on identifying and fixing code quality issues
 - Document all findings and improvements
+- **Relationship to PHASE4-006**: PHASE4-006 focuses on unused code (exports, imports, files) and also uses depcheck for unused npm packages. PHASE4-008 provides comprehensive dependency analysis including circular dependencies, security vulnerabilities, version conflicts, and license compliance. Both tasks complement each other but serve different purposes.
 - Dependency analysis should be performed regularly to maintain code quality
 - Start with built-in npm tools (audit, outdated, ls) before adding external tools
 - Circular dependencies can cause runtime issues and make code harder to maintain
@@ -313,12 +353,15 @@ module.exports = {
 - Dependency graph visualization helps understand application architecture
 - Some circular dependencies may be acceptable in specific contexts (e.g., type definitions)
 - Always test the application after removing or updating dependencies
+- Use `npm ls --depth=0` for quick top-level dependency overview, `npm ls --all` for complete tree including extraneous packages
+- Peer dependency warnings in `npm ls` output indicate potential compatibility issues
 - Task can be completed independently by a single agent
 
 ## Related Tasks
 
 - Previous: PHASE4-007
 - Next: PHASE4-009
+- Related: PHASE4-006 (unused code detection) - PHASE4-006 also uses depcheck for unused dependencies but focuses on unused code. PHASE4-008 provides comprehensive dependency ecosystem analysis.
 
 ---
 
