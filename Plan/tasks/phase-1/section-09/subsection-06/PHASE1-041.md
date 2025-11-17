@@ -1,4 +1,4 @@
-# PHASE1-041: Test docker-compose
+# PHASE1-041: Test docker-compose.prod.yml
 
 **Section**: 9. Docker Configuration
 **Subsection**: 9.6
@@ -6,20 +6,99 @@
 
 ## Description
 
-Test docker-compose
+Test the docker-compose.prod.yml configuration for the telegram-receiver Node.js/TypeScript application. This task verifies that all services defined in docker-compose.prod.yml (created in PHASE1-039) start correctly, communicate properly, and function as expected. This includes testing Traefik reverse proxy, Redis service, application service, worker service, shared volumes, network connectivity, health checks, and proper service shutdown. This ensures the docker-compose configuration is correct and ready for production deployment.
+
+## Prerequisites
+
+- PHASE1-039 (Create docker-compose.prod.yml) must be completed
+- PHASE1-040 (Test Docker build) must be completed
+- docker-compose.prod.yml must exist in the project root
+- Dockerfile must exist and build successfully
+- `.dockerignore` file should exist (from PHASE1-037)
+- `virtual-assistant-network` Docker network must exist (create with `docker network create virtual-assistant-network` if needed)
 
 ## Checklist
 
-- [ ] Run `docker-compose up --build`
-- [ ] Verify container starts
-- [ ] Test health endpoint
-- [ ] Run `docker-compose down`
+- [ ] Verify `docker-compose.prod.yml` exists in project root
+- [ ] Verify `Dockerfile` exists (from PHASE1-036)
+- [ ] Verify `.dockerignore` file exists (from PHASE1-037)
+- [ ] Verify `virtual-assistant-network` exists: `docker network ls | grep virtual-assistant-network`
+  - [ ] If missing, create it: `docker network create virtual-assistant-network`
+- [ ] Set up required environment variables (create `.env` file or export):
+  - [ ] `DOMAIN_NAME` (e.g., `localhost` for testing)
+  - [ ] `ACME_EMAIL` (for Let's Encrypt, e.g., `admin@example.com`)
+  - [ ] `TELEGRAM_BOT_TOKEN` (if needed for app startup)
+  - [ ] `CURSOR_RUNNER_TIMEOUT` (optional, defaults to 300)
+  - [ ] `RAILS_MASTER_KEY` (not needed for Node.js, but verify no conflicts)
+- [ ] Run `docker-compose -f docker-compose.prod.yml up --build -d` (detached mode)
+- [ ] Wait for all services to start (check logs: `docker-compose -f docker-compose.prod.yml logs`)
+- [ ] Verify all containers are running: `docker-compose -f docker-compose.prod.yml ps`
+  - [ ] `telegram-receiver-traefik` container should be running
+  - [ ] `telegram-receiver-redis` container should be running
+  - [ ] `telegram-receiver-app` container should be running
+  - [ ] `telegram-receiver-worker` container should be running
+- [ ] Check Traefik service:
+  - [ ] Verify Traefik container logs show no errors: `docker logs telegram-receiver-traefik`
+  - [ ] Verify Traefik dashboard is accessible (if enabled): `curl http://localhost:8080` (optional)
+- [ ] Check Redis service:
+  - [ ] Verify Redis container logs show no errors: `docker logs telegram-receiver-redis`
+  - [ ] Test Redis connectivity: `docker exec telegram-receiver-redis redis-cli ping` (should return `PONG`)
+  - [ ] Verify Redis healthcheck passed: `docker inspect telegram-receiver-redis | grep -A 5 Health`
+- [ ] Check application service:
+  - [ ] Verify app container logs show no errors: `docker logs telegram-receiver-app`
+  - [ ] Verify app container logs show application started successfully
+  - [ ] Test health endpoint via Traefik: `curl -k https://localhost/health` (or `curl http://localhost/health` if HTTP redirect works)
+  - [ ] Test health endpoint directly (if port exposed for testing): `curl http://localhost:3000/health` (should return 200 OK)
+  - [ ] Verify health endpoint response contains expected JSON structure
+  - [ ] Verify app healthcheck passed: `docker inspect telegram-receiver-app | grep -A 5 Health`
+- [ ] Check worker service:
+  - [ ] Verify worker container logs show no errors: `docker logs telegram-receiver-worker`
+  - [ ] Verify worker container logs show worker started successfully
+  - [ ] Verify worker can connect to Redis (check logs for connection success)
+- [ ] Verify network connectivity:
+  - [ ] Verify all containers are on `virtual-assistant-network`: `docker network inspect virtual-assistant-network`
+  - [ ] Test app can reach Redis: `docker exec telegram-receiver-app ping -c 1 redis` (or test Redis connection from app)
+  - [ ] Test app can reach cursor-runner (if available): Verify `CURSOR_RUNNER_URL` is set correctly
+- [ ] Verify volumes:
+  - [ ] Verify `shared_redis_data` volume exists: `docker volume ls | grep shared_redis_data`
+  - [ ] Verify `shared_sqlite_db` volume exists: `docker volume ls | grep shared_sqlite_db`
+  - [ ] Verify volumes are mounted correctly in containers: `docker inspect telegram-receiver-redis | grep -A 10 Mounts`
+- [ ] Test service dependencies:
+  - [ ] Verify app service waits for Redis (check startup logs for connection retries if Redis was slow)
+  - [ ] Verify worker service waits for Redis and app (check startup order)
+- [ ] Test graceful shutdown:
+  - [ ] Run `docker-compose -f docker-compose.prod.yml stop` (graceful stop)
+  - [ ] Verify all containers stop gracefully: `docker-compose -f docker-compose.prod.yml ps` (should show exited)
+  - [ ] Run `docker-compose -f docker-compose.prod.yml down` (remove containers)
+  - [ ] Verify containers are removed: `docker ps -a | grep telegram-receiver` (should show no containers)
+  - [ ] (Optional) Remove volumes: `docker-compose -f docker-compose.prod.yml down -v` (if testing cleanup)
+  - [ ] (Optional) Remove images: `docker-compose -f docker-compose.prod.yml down --rmi all` (if testing full cleanup)
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 9. Docker Configuration
 - Task can be completed independently by a single agent
+- **Prerequisites**: This task requires PHASE1-039 (Create docker-compose.prod.yml) and PHASE1-040 (Test Docker build) to be completed first
+- Use `docker-compose -f docker-compose.prod.yml` to specify the production compose file
+- The `virtual-assistant-network` must exist before starting services (create with `docker network create virtual-assistant-network` if needed)
+- For local testing, you may need to:
+  - Set `DOMAIN_NAME=localhost` in environment
+  - Use self-signed certificates or disable SSL verification for testing (`curl -k`)
+  - Access services directly via exposed ports if Traefik routing doesn't work in local environment
+- Health checks may take time to pass - wait at least 30 seconds after starting services before checking health status
+- If services fail to start, check:
+  - Network exists and is accessible
+  - Environment variables are set correctly
+  - Ports are not already in use (especially 80, 443, 3000, 6379, 8080)
+  - Docker has sufficient resources (memory, disk space)
+  - Dockerfile builds successfully (tested in PHASE1-040)
+- Traefik may require domain name configuration for SSL - for local testing, you may need to adjust Traefik labels or use HTTP only
+- Redis must be accessible from both app and worker services
+- Shared volumes enable data persistence across container restarts
+- After testing, clean up containers, networks, and optionally volumes to avoid cluttering Docker
+- The worker service should start successfully even if no jobs are queued
+- All services should have proper restart policies (`unless-stopped`) for production reliability
 
 ## Related Tasks
 
