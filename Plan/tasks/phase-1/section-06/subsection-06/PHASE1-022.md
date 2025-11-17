@@ -6,21 +6,49 @@
 
 ## Description
 
-Create 404 handler middleware
+Create 404 handler middleware that catches all requests that don't match any registered routes and returns a standardized 404 Not Found response matching the Rails error response format. In Rails, unmatched routes automatically return 404 responses. Express requires explicit middleware to handle unmatched routes and return consistent error responses.
+
+The middleware should:
+- Catch all requests that don't match any registered routes
+- Return a standardized JSON error response matching the Rails format
+- Set HTTP status code to 404 (Not Found)
+
+**Rails Reference**: Rails automatically handles unmatched routes by returning a 404 response. Express requires explicit middleware registered after all routes to catch unmatched requests. This middleware should return the same error format as the error handler (PHASE1-021) for consistency.
 
 ## Checklist
 
 - [ ] Create `src/middleware/not-found.middleware.ts` file
-- [ ] Create middleware function with 3 parameters (req, res, next)
-- [ ] Return 404 status with error message
+- [ ] Import Express types: `import { Request, Response, NextFunction } from 'express'`
+- [ ] Create middleware function with 3 parameters `(req: Request, res: Response, next: NextFunction)`
+- [ ] Return JSON error response matching Rails format:
+  ```json
+  {
+    "ok": false,
+    "say": "Sorry, I couldn't find that resource.",
+    "result": {
+      "error": "Not Found"
+    }
+  }
+  ```
+- [ ] Set HTTP status code to 404 (Not Found)
+- [ ] Handle case where response has already been sent (check `res.headersSent`)
 - [ ] Export middleware function
-- [ ] Import and apply in `src/app.ts` (after all routes, before error handler)
+- [ ] Import and apply in `src/app.ts` (after all routes, before error handler middleware)
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 6. Request/Response Middleware
 - Task can be completed independently by a single agent
+- **Rails Reference**: Rails automatically handles unmatched routes by returning 404 responses. Express requires explicit middleware registered after all routes to catch unmatched requests. The jarek-va Rails application doesn't have explicit 404 handling in controllers - Rails handles this automatically via routing.
+- **Middleware Ordering**: The 404 handler middleware must be registered after all route handlers but before the error handler middleware (PHASE1-021). Express processes middleware in order, so unmatched requests will fall through to this middleware only if no route matches.
+- **Error Response Format**: Must match the Rails error format exactly to maintain API consistency:
+  - `ok: false` - indicates request failure
+  - `say: "Sorry, I couldn't find that resource."` - user-friendly message
+  - `result: { error: "Not Found" }` - error details
+- **Express Middleware**: Express middleware functions have 3 parameters `(req, res, next)`. This is different from error handlers which have 4 parameters `(err, req, res, next)`.
+- **Response Already Sent**: Check `res.headersSent` before attempting to send a response to avoid "Cannot set headers after they are sent" errors
+- **Route Matching**: This middleware will only be called if no route matches the request. Express processes routes in order, and if no route matches, the request falls through to this middleware.
 
 ## Related Tasks
 
