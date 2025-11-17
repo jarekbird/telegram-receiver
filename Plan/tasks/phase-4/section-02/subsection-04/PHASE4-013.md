@@ -27,13 +27,42 @@ The application should use:
 - **Logger utility wrapper** (`src/utils/logger.ts`) - Provides consistent `logger.info()`, `logger.error()`, `logger.warn()`, `logger.debug()` interface
 - **Structured logging** - JSON format for production, human-readable for development
 - **Log levels** - debug, info, warn, error matching Rails.logger patterns
-- **Error logging** - Full stack traces for errors (matching Rails `Rails.logger.error(e.backtrace.join("\n"))` pattern)
+- **Error logging** - Full stack traces for errors (matching Rails two-line pattern: error message first, then backtrace)
 
 Reference files:
 - `src/utils/logger.ts` - Logger utility wrapper (should exist after PHASE1-032)
 - `src/config/logger.ts` - Logger configuration (should exist after PHASE1-031)
 - `docs/architecture.md` - Architecture documentation with logging patterns
 - `Plan/tasks/phase-3/section-03/subsection-05/PHASE3-019.md` - Logging practices review
+
+## Rails Logging Patterns to Match
+
+The jarek-va Rails application uses consistent logging patterns that should be matched:
+
+### Error Logging Pattern (Two-Line Format)
+Rails uses a two-line error logging pattern:
+1. Error message: `Rails.logger.error("#{exception.class}: #{exception.message}")` or `Rails.logger.error("Error description: #{e.message}")`
+2. Stack trace: `Rails.logger.error(exception.backtrace.join("\n"))`
+
+**Rails Examples:**
+- `jarek-va/app/controllers/application_controller.rb` (lines 10-11) - Standard error handler pattern
+- `jarek-va/app/services/telegram_service.rb` (lines 33-34, 47-48, 59-60, 71-72, 113-114, 147-148) - Service error logging
+- `jarek-va/app/services/tool_router.rb` (lines 41-42) - Tool execution error logging
+- `jarek-va/app/jobs/telegram_message_job.rb` (lines 33-34, 91-92, 369-370) - Job error logging
+
+### Info Logging Pattern
+- `Rails.logger.info("Operation description: #{details}")` - For normal operations
+- `jarek-va/app/services/tool_router.rb` (lines 9, 28, 38) - Tool registration and execution logging
+- `jarek-va/app/jobs/telegram_message_job.rb` (lines 20, 64, 72, 80, 218) - Job processing logging
+
+### Warn Logging Pattern
+- `Rails.logger.warn("Warning description")` - For warnings and deprecations
+- `jarek-va/app/services/tool_router.rb` (line 16) - Unknown tool warnings
+- `jarek-va/app/controllers/cursor_runner_callback_controller.rb` (lines 85, 193, 203) - Callback processing warnings
+
+### Debug Logging Pattern
+- `Rails.logger.debug { "Debug information" }` - For debug information (block form for performance)
+- `jarek-va/app/jobs/telegram_message_job.rb` (line 180) - Debug logging example
 
 ## Checklist
 
@@ -90,11 +119,12 @@ Reference files:
   - [ ] Check for under-logging (missing important log statements)
 
 - [ ] Review error logging practices
-  - [ ] Verify all error logging includes error messages
-  - [ ] Verify all error logging includes stack traces (matching Rails pattern)
-  - [ ] Check error logging in try-catch blocks includes full error context
-  - [ ] Review error logging in middleware, services, and controllers
-  - [ ] Verify error objects are properly logged (not just error messages)
+  - [ ] Verify all error logging includes error messages (matching Rails pattern: `"#{exception.class}: #{exception.message}"` or descriptive error message)
+  - [ ] Verify all error logging includes stack traces (matching Rails two-line pattern: error message first, then full stack trace)
+  - [ ] Check error logging in try-catch blocks includes full error context (both error message and stack trace)
+  - [ ] Review error logging in middleware, services, and controllers matches Rails patterns
+  - [ ] Verify error objects are properly logged (not just error messages) - should log both error message and stack trace
+  - [ ] Compare error logging patterns with Rails examples (see Rails Logging Patterns section above)
 
 - [ ] Review console.log usage
   - [ ] Search for all `console.log()` calls (should be replaced with logger.info())
