@@ -6,25 +6,41 @@
 
 ## Description
 
-Create TypeScript error classes and types for service error handling. These will replace the Ruby exception classes with TypeScript error classes.
+Create TypeScript error classes and types for service error handling. These will replace the Ruby exception classes with TypeScript error classes. In Rails, each service defines its own error hierarchy (e.g., `CursorRunnerService::Error`, `ElevenLabsSpeechToTextService::Error`), but in TypeScript we'll create a unified error hierarchy that can be used across all services.
 
 ## Checklist
 
 - [ ] Create `src/types/errors.ts` file
 - [ ] Create base `ServiceError` class extending Error
-- [ ] Create `ConnectionError` class for connection failures
-- [ ] Create `TimeoutError` class for timeout errors
-- [ ] Create `InvalidResponseError` class for invalid API responses
-- [ ] Create `TranscriptionError` class for ElevenLabs STT errors
-- [ ] Create `SynthesisError` class for ElevenLabs TTS errors
+  - Should maintain error message and stack trace
+  - Should be the base class for all service-specific errors
+- [ ] Create `ConnectionError` class extending ServiceError
+  - Used for connection failures (ECONNREFUSED, EHOSTUNREACH, SocketError)
+  - Used in CursorRunnerService, ElevenLabsSpeechToTextService, and ElevenLabsTextToSpeechService
+- [ ] Create `TimeoutError` class extending ServiceError
+  - Used for timeout errors (Net::OpenTimeout, Net::ReadTimeout)
+  - Used in CursorRunnerService, ElevenLabsSpeechToTextService, and ElevenLabsTextToSpeechService
+- [ ] Create `InvalidResponseError` class extending ServiceError
+  - Used for JSON parsing errors (JSON::ParserError)
+  - Used in CursorRunnerService, ElevenLabsSpeechToTextService, and ElevenLabsTextToSpeechService
+- [ ] Create `TranscriptionError` class extending ServiceError
+  - Used for ElevenLabs STT-specific errors (no text returned, API errors)
+  - Used only in ElevenLabsSpeechToTextService
+- [ ] Create `SynthesisError` class extending ServiceError
+  - Used for ElevenLabs TTS-specific errors (API errors during synthesis)
+  - Used only in ElevenLabsTextToSpeechService
 - [ ] Export all error classes
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 1. TypeScript Type Definitions
-- Reference error classes in Rails services (e.g., `CursorRunnerService::Error`, `ElevenLabsSpeechToTextService::Error`)
+- Reference error classes in Rails services:
+  - `CursorRunnerService::Error`, `ConnectionError`, `TimeoutError`, `InvalidResponseError`
+  - `ElevenLabsSpeechToTextService::Error`, `ConnectionError`, `TimeoutError`, `InvalidResponseError`, `TranscriptionError`
+  - `ElevenLabsTextToSpeechService::Error`, `ConnectionError`, `TimeoutError`, `InvalidResponseError`, `SynthesisError`
 - Error classes should extend Error and maintain error message and stack trace
+- The unified `ServiceError` base class replaces the service-specific base error classes from Rails
 - Task can be completed independently by a single agent
 
 ## Related Tasks
