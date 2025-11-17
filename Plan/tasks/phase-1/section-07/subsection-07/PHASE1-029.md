@@ -6,22 +6,39 @@
 
 ## Description
 
-Add environment validation
+Create an environment validation module that validates required environment variables on application startup. This ensures the application fails fast with clear error messages if critical configuration is missing, preventing runtime errors later.
+
+While the Rails application (`jarek-va/config/application.rb`) uses `ENV.fetch()` with default values and doesn't explicitly validate environment variables, this is a Node.js best practice that improves developer experience and prevents configuration-related runtime errors. The validation should check that required variables are present and have valid values before the server starts.
+
+**Rails Equivalent**: The Rails application doesn't have explicit environment validation. Rails uses `ENV.fetch()` with defaults throughout `config/application.rb`, but doesn't validate required variables on startup. This task adds explicit validation as a Node.js best practice.
+
+**Note**: At this stage (Phase 1), only basic environment variables are validated. Additional environment variables (like `TELEGRAM_BOT_TOKEN`, `CURSOR_RUNNER_URL`, etc.) will be added to validation in later tasks as those features are implemented. For now, we validate that `NODE_ENV` is set (or defaults to "development") and that `PORT` is a valid number if provided.
 
 ## Checklist
 
-- [ ] Create `src/config/validate-env.ts` file
-- [ ] Create function to validate required environment variables
-- [ ] Check for required variables (PORT, NODE_ENV)
-- [ ] Throw error if required variables missing
-- [ ] Export validation function
-- [ ] Call validation function in `src/index.ts` before starting server
+- [ ] Create `src/config/validateEnv.ts` file (using camelCase naming convention)
+- [ ] Create `validateEnv()` function that validates environment variables
+- [ ] Validate `NODE_ENV` is one of: "development", "test", "production" (or default to "development" if not set)
+- [ ] Validate `PORT` is a valid positive integer if provided (or allow default from environment config)
+- [ ] Throw descriptive error with missing/invalid variable names if validation fails
+- [ ] Export `validateEnv` function as default export
+- [ ] Add JSDoc comments documenting the validation function and its behavior
+- [ ] Import and call `validateEnv()` in `src/index.ts` before importing/starting the server
+- [ ] Ensure validation runs before any other application initialization
+- [ ] Add error handling to log validation errors clearly before process exit
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 7. Environment Variables Management
 - Task can be completed independently by a single agent
+- **Rails Comparison**: The Rails application (`jarek-va/config/application.rb`) doesn't explicitly validate environment variables. It uses `ENV.fetch()` with defaults throughout, allowing the application to start even if variables are missing. This Node.js implementation adds explicit validation as a best practice to fail fast with clear error messages.
+- **Validation Scope**: At this stage, only basic variables are validated (`NODE_ENV` and `PORT`). As more features are implemented in later phases, additional environment variables will be added to the validation function (e.g., `TELEGRAM_BOT_TOKEN`, `CURSOR_RUNNER_URL`, `REDIS_URL`, etc.).
+- **Error Handling**: The validation function should throw an error with a descriptive message listing all missing or invalid variables. The error should be caught in `src/index.ts` and logged before the process exits with a non-zero exit code.
+- **NODE_ENV Validation**: `NODE_ENV` should be validated to ensure it's one of the standard values: "development", "test", or "production". If not set, it can default to "development" (handled by the environment config module from PHASE1-024).
+- **PORT Validation**: If `PORT` is provided, it should be validated as a positive integer. If not provided, the default from the environment config module (3000) should be used.
+- **File Naming**: Use camelCase naming (`validateEnv.ts`) to match TypeScript/Node.js conventions, rather than kebab-case (`validate-env.ts`).
+- **Dependencies**: This task assumes `src/config/environment.ts` exists (created in PHASE1-024) and `src/index.ts` exists (updated in PHASE1-028).
 
 ## Related Tasks
 
