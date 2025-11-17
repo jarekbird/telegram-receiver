@@ -6,21 +6,43 @@
 
 ## Description
 
-Convert create redis client configuration from Rails to TypeScript/Node.js.
+Create Redis client configuration module that exports Redis connection settings. This configuration will be used by the Redis connection utility (PHASE2-009) and other services that need Redis connectivity.
+
+**Rails Implementation Reference:**
+- `config/initializers/sidekiq.rb` - Sidekiq Redis configuration uses `ENV.fetch('REDIS_URL', 'redis://localhost:6379/0')`
+- `app/services/cursor_runner_callback_service.rb` - Direct Redis client initialization uses `ENV.fetch('REDIS_URL', 'redis://localhost:6379/0')`
+- Default Redis URL: `redis://localhost:6379/0`
+- In Docker: `REDIS_URL=redis://redis:6379/0` (shared Redis instance)
+
+**Node.js Implementation:**
+- This task creates a configuration module that exports Redis connection settings
+- The actual Redis client creation will be done in PHASE2-009 (Redis connection utility)
+- Configuration should support both `redis` and `ioredis` packages (both are available in package.json)
+- Use TypeScript types for type safety
 
 ## Checklist
 
 - [ ] Create `src/config/redis.ts` file
-- [ ] Configure Redis connection URL from environment
-- [ ] Set default connection options
-- [ ] Export configuration
+- [ ] Import `process.env` for environment variable access
+- [ ] Define `REDIS_URL` constant using `process.env.REDIS_URL` with default fallback to `'redis://localhost:6379/0'`
+- [ ] Export Redis connection configuration object with:
+  - [ ] `url` property (the Redis connection URL)
+  - [ ] Optional connection options object (for future extensibility)
+- [ ] Add TypeScript type definitions for the configuration object
+- [ ] Export configuration as named export (e.g., `redisConfig`)
+- [ ] Add JSDoc comments documenting the configuration structure
+- [ ] Ensure configuration matches Rails pattern (environment variable with default)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 2. Redis Integration
-- Reference the Rails implementation for behavior
-
+- **Rails Files to Reference:**
+  - `jarek-va/config/initializers/sidekiq.rb` - Sidekiq Redis configuration pattern
+  - `jarek-va/app/services/cursor_runner_callback_service.rb` - Direct Redis client initialization pattern
+- This task creates configuration only - actual Redis client creation is handled in PHASE2-009
+- The configuration should be environment-aware (supports Docker and local development)
+- Default URL matches Rails default: `redis://localhost:6379/0`
 - Task can be completed independently by a single agent
 
 ## Related Tasks
