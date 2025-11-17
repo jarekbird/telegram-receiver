@@ -6,16 +6,65 @@
 
 ## Description
 
-Review and improve review overall application architecture in the codebase to ensure best practices.
+Review and improve overall application architecture in the codebase to ensure best practices. This review should evaluate the current implementation against the planned architecture, identify architectural patterns in use, verify proper layer separation, and document any improvements needed.
+
+## Architecture Reference
+
+Reference the planned architecture from:
+- `Plan/app-description.md` - Application overview and component descriptions
+- `Plan/CONVERSION_STEPS.md` - Conversion plan and architecture considerations
+- `src/` directory structure - Current implementation structure
+
+The application follows a layered architecture with:
+- **Controllers** (`src/controllers/`) - HTTP request handling and routing
+- **Services** (`src/services/`) - Business logic and external API integration
+- **Models** (`src/models/`) - Data models and database interactions
+- **Routes** (`src/routes/`) - Route definitions and middleware
+- **Middleware** (`src/middleware/`) - Request processing middleware
+- **Jobs** - Background job processing (BullMQ)
+- **Utils** (`src/utils/`) - Utility functions and helpers
+- **Types** (`src/types/`) - TypeScript type definitions
 
 ## Checklist
 
-- [ ] Review application structure
+- [ ] Review application structure and directory organization
+  - [ ] Verify proper separation of concerns across layers
+  - [ ] Check that files are organized logically
+  - [ ] Ensure consistent naming conventions
 - [ ] Identify architectural patterns used
-- [ ] Review layer separation (controllers, services, jobs)
+  - [ ] Service layer pattern (business logic separation)
+  - [ ] Repository pattern (if used for data access)
+  - [ ] Dependency injection patterns
+  - [ ] Middleware pattern usage
+  - [ ] Job queue pattern (BullMQ)
+- [ ] Review layer separation (controllers, services, jobs, models)
+  - [ ] Controllers should only handle HTTP concerns (request/response)
+  - [ ] Services should contain business logic
+  - [ ] Models should handle data access and validation
+  - [ ] Jobs should handle async/background processing
+  - [ ] Verify no business logic in controllers
+  - [ ] Verify no HTTP concerns in services
 - [ ] Check for architectural anti-patterns
+  - [ ] God objects (classes/modules doing too much)
+  - [ ] Circular dependencies
+  - [ ] Tight coupling between layers
+  - [ ] Business logic in controllers
+  - [ ] Database queries in controllers
+  - [ ] Missing error handling layers
+- [ ] Review dependency management
+  - [ ] Check for proper dependency injection
+  - [ ] Verify services are testable (can be mocked)
+  - [ ] Review module boundaries and imports
 - [ ] Document current architecture
+  - [ ] Create architecture diagram or documentation
+  - [ ] Document layer responsibilities
+  - [ ] Document data flow between layers
+  - [ ] Document external dependencies
 - [ ] Identify improvement opportunities
+  - [ ] Areas where separation of concerns can be improved
+  - [ ] Opportunities for better abstraction
+  - [ ] Missing architectural patterns that would benefit the codebase
+  - [ ] Performance optimization opportunities at architectural level
 
 ## Notes
 
@@ -23,7 +72,8 @@ Review and improve review overall application architecture in the codebase to en
 - Section: 1. Architecture Review
 - Focus on identifying issues and improvements
 - Document findings and decisions
-
+- Compare implemented architecture with planned architecture from `Plan/app-description.md`
+- Review both existing code and planned structure to ensure consistency
 - Task can be completed independently by a single agent
 
 ## Related Tasks
