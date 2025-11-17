@@ -22,64 +22,76 @@ Reference: `jarek-va/app/jobs/telegram_message_job.rb`
 ### Core Functionality
 - [ ] Implement `perform(update)` method - main entry point
   - [ ] Parse JSON string if update is a string
+  - [ ] Convert update to allow string or number key access (equivalent to Rails `with_indifferent_access`)
   - [ ] Handle different update types (message, edited_message, callback_query)
   - [ ] Route to appropriate handler method
+  - [ ] Log unhandled update types (log update keys if no handler matches)
   - [ ] Implement comprehensive error handling with try-catch
   - [ ] Extract chat info from update for error messages
-  - [ ] Send error message to Telegram if chat_id is available
+  - [ ] Send error message to Telegram if chat_id is available (use parse_mode: 'HTML')
   - [ ] Log all errors with stack traces
+  - [ ] Re-raise errors after handling to mark job as failed
 
 ### Message Handling
 - [ ] Implement `handleMessage(message)` method
-  - [ ] Extract chat_id, text, and message_id from message
-  - [ ] Track if original message was audio/voice
+  - [ ] Extract chat_id, text, and message_id from message (use safe navigation/optional chaining)
+  - [ ] Track if original message was audio/voice (before transcription)
   - [ ] Check for audio/voice messages and transcribe if present
   - [ ] Replace text with transcribed text if transcription succeeds
+  - [ ] Update message object with transcribed text (create copy of message object, set text property)
   - [ ] Handle transcription errors gracefully with user feedback
+  - [ ] Truncate transcription error messages to 4000 characters (leave room for prefix text)
+  - [ ] Return early if transcription fails (after sending error message)
   - [ ] Forward message to cursor-runner (returns true if forwarded)
   - [ ] Process local commands if not forwarded
-  - [ ] Send response back to Telegram
+  - [ ] Send response back to Telegram (only if result.say is present and chat_id is present)
   - [ ] Send response as audio if original was audio and audio output is enabled
-  - [ ] Send response as text otherwise
+  - [ ] Send response as text otherwise (use parse_mode: 'HTML')
 
 ### Callback Query Handling
 - [ ] Implement `handleCallbackQuery(callbackQuery)` method
   - [ ] Extract message and data from callback query
-  - [ ] Answer callback query with "Processing..." status
+  - [ ] Answer callback query with "Processing..." status using TelegramService.bot.api.answer_callback_query()
+  - [ ] Handle errors when answering callback query gracefully (log but don't fail)
+  - [ ] Return early if message or message.chat is missing
   - [ ] Extract chat_id and message_id from callback message
-  - [ ] Forward callback data to cursor-runner as a prompt
-  - [ ] Send simple response if not forwarded
+  - [ ] Forward callback data to cursor-runner as a prompt (create message-like object with text=data)
+  - [ ] Send simple response if not forwarded ("You selected: {data}")
 
 ### Cursor Runner Integration
 - [ ] Implement `forwardToCursorRunner(message, chatId, messageId, originalWasAudio?)` method
   - [ ] Extract message text, return false if blank
-  - [ ] Skip local commands (/start, /help, /status)
+  - [ ] Skip local commands using regex pattern matching (/start, /help, /status) - case insensitive
   - [ ] Return false if chat_id is blank
-  - [ ] Generate unique request ID (format: "telegram-{timestamp}-{random}")
+  - [ ] Generate unique request ID (format: "telegram-{timestamp}-{random-hex-4-chars}")
   - [ ] Store pending request in Redis via CursorRunnerCallbackService
-  - [ ] Store chat_id, message_id, prompt, original_was_audio, created_at
+  - [ ] Store chat_id, message_id, prompt, original_was_audio, created_at (ISO8601 format)
   - [ ] Set TTL to 3600 seconds (1 hour)
-  - [ ] Pass blank repository value for Telegram messages
-  - [ ] Call CursorRunnerService.iterate() with repository, branch_name, prompt, max_iterations, request_id
-  - [ ] Send immediate acknowledgment if cursor debug is enabled
-  - [ ] Handle CursorRunnerService errors gracefully
-  - [ ] Clean up pending request on error
-  - [ ] Send error message to Telegram on failure
+  - [ ] Pass blank repository value ('') for Telegram messages
+  - [ ] Call CursorRunnerService.iterate() with repository, branch_name='main', prompt, max_iterations=25, request_id
+  - [ ] Log successful forwarding with request_id and truncated prompt (first 50 chars)
+  - [ ] Send immediate acknowledgment if cursor debug is enabled (parse_mode: 'HTML')
+  - [ ] Handle CursorRunnerService::Error exceptions specifically
+  - [ ] Clean up pending request on error (remove from Redis)
+  - [ ] Send error message to Telegram on failure (parse_mode: 'HTML')
   - [ ] Return true to indicate message was forwarded (even on error to prevent duplicate processing)
 
 ### Local Message Processing
 - [ ] Implement `processLocalMessage(text, chatId, messageId)` method
-  - [ ] Handle `/start` and `/help` commands
-  - [ ] Handle `/status` command
+  - [ ] Normalize text (downcase, strip whitespace) before matching
+  - [ ] Handle `/start` and `/help` commands using regex pattern matching (case insensitive)
+  - [ ] Handle `/status` command using regex pattern matching (case insensitive)
   - [ ] Return default response for other messages
-  - [ ] Return object with `ok` and `say` properties
+  - [ ] Return object with `ok: true` and `say` properties (string message)
+  - [ ] Help message should include available commands (/help, /status)
 
 ### Utility Methods
 - [ ] Implement `extractChatInfoFromUpdate(update)` method
-  - [ ] Extract chat_id and message_id from message updates
-  - [ ] Extract chat_id and message_id from edited_message updates
-  - [ ] Extract chat_id and message_id from callback_query updates
-  - [ ] Return [chatId, messageId] tuple or [null, null]
+  - [ ] Extract chat_id and message_id from message updates (use safe navigation/optional chaining)
+  - [ ] Extract chat_id and message_id from edited_message updates (use safe navigation)
+  - [ ] Extract chat_id and message_id from callback_query updates (nested: callback_query.message.chat.id)
+  - [ ] Return [chatId, messageId] tuple or [null, null] if not found
+  - [ ] Handle missing chat or message objects gracefully
 
 - [ ] Implement `extractAudioFileId(message)` method
   - [ ] Check for voice message (most common)
@@ -88,20 +100,25 @@ Reference: `jarek-va/app/jobs/telegram_message_job.rb`
   - [ ] Return file_id or null
 
 - [ ] Implement `transcribeAudio(fileId, chatId, messageId)` method
-  - [ ] Send processing message if cursor debug is enabled
+  - [ ] Send processing message if cursor debug is enabled (parse_mode: 'HTML')
+  - [ ] Handle errors when sending processing message (log warning, don't fail)
   - [ ] Download audio file using TelegramService.downloadFile()
+  - [ ] Log downloaded file path
   - [ ] Transcribe using ElevenLabsSpeechToTextService
-  - [ ] Clean up downloaded file in finally block
-  - [ ] Return transcribed text
+  - [ ] Clean up downloaded file in finally block (check if file exists before deleting)
+  - [ ] Handle file deletion errors gracefully (log warning)
+  - [ ] Return transcribed text (or null/undefined if transcription fails)
 
 - [ ] Implement `sendTextAsAudio(chatId, text, messageId)` method
   - [ ] Generate audio from text using ElevenLabsTextToSpeechService
-  - [ ] Send as voice message using TelegramService.sendVoice()
-  - [ ] Fallback to text message if audio generation fails
-  - [ ] Clean up generated audio file in finally block
+  - [ ] Send as voice message using TelegramService.sendVoice() with reply_to_message_id
+  - [ ] Fallback to text message if audio generation fails (parse_mode: 'HTML')
+  - [ ] Log errors with stack traces when audio generation fails
+  - [ ] Clean up generated audio file in finally block (check if file exists before deleting)
+  - [ ] Handle file deletion errors gracefully (log warning)
 
 - [ ] Implement `cursorDebugEnabled()` method
-  - [ ] Check SystemSetting.enabled('debug')
+  - [ ] Check SystemSetting.enabled?('debug') (note: method name has question mark)
   - [ ] Return boolean
 
 ### Dependencies and Imports
@@ -119,10 +136,13 @@ Reference: `jarek-va/app/jobs/telegram_message_job.rb`
 ### Error Handling
 - [ ] Wrap perform method in try-catch
 - [ ] Log errors with full stack traces
-- [ ] Send user-friendly error messages to Telegram
-- [ ] Handle file cleanup errors gracefully
-- [ ] Handle service errors (CursorRunnerService, TelegramService, etc.)
-- [ ] Re-raise errors to mark job as failed
+- [ ] Send user-friendly error messages to Telegram (format: "Sorry, I encountered an error processing your message: {error.message}")
+- [ ] Use parse_mode: 'HTML' for all Telegram error messages
+- [ ] Handle errors when sending error messages (log but don't fail)
+- [ ] Handle file cleanup errors gracefully (log warnings)
+- [ ] Handle service errors (CursorRunnerService::Error, TelegramService errors, etc.)
+- [ ] Truncate error messages if needed (e.g., transcription errors to 4000 chars)
+- [ ] Re-raise errors to mark job as failed (after handling)
 
 ### Testing Considerations
 - [ ] Test perform method with different update types
@@ -153,18 +173,28 @@ This job depends on the following services (which should be converted in earlier
 
 ### Key Implementation Details
 - The job processes updates asynchronously to allow webhook to return 200 OK immediately
+- Updates can be passed as JSON strings or objects (parse if string)
+- Use safe navigation/optional chaining when accessing nested properties (equivalent to Rails `&.` operator)
 - Audio messages are transcribed before processing
-- Messages are forwarded to cursor-runner unless they are local commands (/start, /help, /status)
-- If original message was audio and audio output is enabled, responses are sent as voice messages
-- Request IDs are generated in format: "telegram-{timestamp}-{random-hex}"
-- Pending requests are stored in Redis with 1 hour TTL
-- Error handling includes sending user-friendly messages to Telegram
-- File cleanup is critical - downloaded and generated audio files must be deleted
+- When audio is transcribed, the message object is updated with the transcribed text (create copy, don't mutate original)
+- Messages are forwarded to cursor-runner unless they are local commands (/start, /help, /status) - use regex matching, case insensitive
+- If original message was audio and audio output is NOT disabled, responses are sent as voice messages
+- Request IDs are generated in format: "telegram-{timestamp}-{random-hex-4-chars}"
+- Pending requests are stored in Redis with 1 hour TTL (3600 seconds)
+- Error handling includes sending user-friendly messages to Telegram with parse_mode: 'HTML'
+- File cleanup is critical - downloaded and generated audio files must be deleted in finally blocks
+- Transcription error messages are truncated to 4000 characters (leaving room for prefix text)
+- forwardToCursorRunner returns true even on error to prevent duplicate processing
+- Callback queries are answered using TelegramService.bot.api.answer_callback_query()
+- All Telegram messages use parse_mode: 'HTML' (including error messages and responses)
+- CursorRunnerService.iterate() is called with max_iterations=25 and branch_name='main'
 
 ### Queue Configuration
 - Queue name: "default"
 - Should extend base job processor class (equivalent to ApplicationJob in Rails)
-- May need retry logic similar to Rails implementation (exponential backoff, 3 attempts)
+- Retry configuration: exponential backoff, 3 attempts (matches Rails ApplicationJob)
+- Job should be retried on StandardError exceptions
+- Job should be discarded on deserialization errors (if applicable)
 
 ### Task Scope
 - Task can be completed independently by a single agent
