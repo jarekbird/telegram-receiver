@@ -6,16 +6,24 @@
 
 ## Description
 
-Create health endpoint integration test
+Create health endpoint integration test using Supertest to verify the health endpoint returns the correct response format matching the Rails implementation. This task creates an automated integration test that validates the health endpoint implementation from PHASE1-013, PHASE1-014, and PHASE1-015.
+
+**Rails Reference**: `jarek-va/app/controllers/health_controller.rb` (for expected response format)
 
 ## Checklist
 
-- [ ] Create `tests/integration/health.integration.test.ts` file
-- [ ] Import app from `../../src/app`
+- [ ] Create `tests/integration/api/health.integration.test.ts` file
+- [ ] Import app from `../../../src/index` (or appropriate app export path)
 - [ ] Import `request` from `supertest`
+- [ ] Write test suite using `describe('Health Endpoint', ...)`
 - [ ] Write test for GET `/health` endpoint
 - [ ] Verify response status is 200
-- [ ] Verify response body has `status: "ok"`
+- [ ] Verify response body is JSON with:
+  - `status: "healthy"` (must match Rails implementation, not "ok")
+  - `service: string` (should be `'Virtual Assistant API'` or value from `APP_NAME` env var)
+  - `version: string` (should be `'1.0.0'` or value from `APP_VERSION` env var)
+- [ ] Write test for GET `/` (root route) endpoint
+- [ ] Verify root route returns same health response as `/health`
 - [ ] Run test and verify it passes
 
 ## Notes
@@ -23,6 +31,20 @@ Create health endpoint integration test
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 10. Test Suite Setup
 - Task can be completed independently by a single agent
+- **Rails Reference**: `jarek-va/app/controllers/health_controller.rb` (for expected response format)
+- **Previous Tasks**: This task tests the implementation from PHASE1-013 (controller), PHASE1-014 (route), and PHASE1-015 (route registration)
+- **Expected Response Format**: The health endpoint should return:
+  ```json
+  {
+    "status": "healthy",
+    "service": "Virtual Assistant API",
+    "version": "1.0.0"
+  }
+  ```
+  - Note: Status must be `"healthy"` (not `"ok"`) to match Rails implementation
+  - `service` and `version` may come from `APP_NAME` and `APP_VERSION` environment variables
+- **Routes to Test**: Both `/health` and `/` (root) routes should be tested, as Rails has both routes pointing to the same controller
+- **Test Location**: Integration tests for API endpoints should be placed in `tests/integration/api/` directory
 
 ## Related Tasks
 
