@@ -6,25 +6,91 @@
 
 ## Description
 
-Convert implement forward_to_cursor_runner method from Rails to TypeScript/Node.js. Reference `jarek-va/app/jobs/telegram_message_job.rb`.
+Convert the `forward_to_cursor_runner` method from Rails to TypeScript/Node.js. This method forwards Telegram messages to cursor-runner for processing, skipping local commands and managing callback state in Redis. Reference `jarek-va/app/jobs/telegram_message_job.rb` (lines 173-251).
+
+## Method Signature
+
+```typescript
+forwardToCursorRunner(
+  message: TelegramMessage,
+  chatId: number,
+  messageId: number,
+  originalWasAudio?: boolean
+): boolean
+```
 
 ## Checklist
 
-- [ ] Create `forwardToCursorRunner` method
-- [ ] Skip local commands
-- [ ] Generate request_id
-- [ ] Store pending request in Redis
-- [ ] Call CursorRunnerService.iterate
-- [ ] Log operation
-- [ ] Return true if forwarded
-- [ ] Add error handling
+- [ ] Create `forwardToCursorRunner` method with correct signature
+- [ ] Extract message text from `message.text`
+- [ ] Return `false` if message text is blank/empty
+- [ ] Skip local commands: check if message matches `/start`, `/help`, or `/status` (case-insensitive regex) and return `false`
+- [ ] Return `false` if `chatId` is blank/null/undefined
+- [ ] Generate unique `requestId`: format `"telegram-{timestamp}-{randomHex}"` (e.g., `"telegram-1234567890-a1b2c3d4"`)
+- [ ] Store pending request in Redis using `CursorRunnerCallbackService.storePendingRequest`:
+  - Store data object: `{ chatId, messageId, prompt: messageText, originalWasAudio, createdAt: ISO8601 timestamp }`
+  - Set TTL to 3600 seconds (1 hour)
+- [ ] Set `repository` to empty string `''`
+- [ ] Call `CursorRunnerService.iterate` with parameters:
+  - `repository`: `''` (empty string)
+  - `branchName`: `'main'`
+  - `prompt`: `messageText`
+  - `maxIterations`: `25`
+  - `requestId`: generated request ID
+  - (callbackUrl is optional and auto-constructed by cursor-runner)
+- [ ] Log operation: log info message with `requestId`, `repository`, and truncated prompt (first 50 chars)
+- [ ] Send acknowledgment message to Telegram ONLY if debug mode is enabled (`cursorDebugEnabled()`):
+  - Message: `"⏳ Processing your request... I'll send the results when complete."`
+  - Use `replyToMessageId: messageId`
+  - Use `parseMode: 'HTML'`
+- [ ] Return `true` to indicate message was forwarded successfully
+- [ ] Add error handling:
+  - Catch `CursorRunnerService.Error` exceptions
+  - Log warning with error message
+  - Remove pending request from Redis using `CursorRunnerCallbackService.removePendingRequest(requestId)` if request was created
+  - Send error message to Telegram if `chatId` is present:
+    - Message: `"❌ Error: Failed to execute cursor command. {errorMessage}"`
+    - Use `replyToMessageId: messageId`
+    - Use `parseMode: 'HTML'`
+  - Return `true` even on error (to prevent duplicate processing)
+
+## Implementation Details
+
+### Method Behavior
+
+1. **Early Returns**: The method returns `false` immediately if:
+   - Message text is blank/empty
+   - Message matches local commands (`/start`, `/help`, `/status`)
+   - `chatId` is blank/null/undefined
+
+2. **Request ID Generation**: Format is `"telegram-{unixTimestamp}-{4ByteHex}"` (e.g., `"telegram-1704067200-a1b2c3d4"`)
+
+3. **Redis Storage**: Stores callback state with 1-hour TTL for later retrieval when cursor-runner sends callback
+
+4. **Cursor Runner Call**: Uses empty repository string and fixed branch `'main'` for Telegram messages
+
+5. **Debug Mode**: Acknowledgment message is only sent if system setting `debug` is enabled
+
+6. **Error Handling**: On `CursorRunnerService.Error`:
+   - Cleans up Redis entry if created
+   - Notifies user via Telegram
+   - Returns `true` to prevent duplicate processing
+
+### Dependencies
+
+- `CursorRunnerService` - for calling cursor-runner API
+- `CursorRunnerCallbackService` - for managing Redis callback state
+- `TelegramService` - for sending messages to Telegram
+- `SystemSetting` - for checking debug mode status
+- `SecureRandom` or crypto library - for generating request ID
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 10. TelegramMessageJob Conversion
-- Reference the Rails implementation for behavior
-
+- Reference the Rails implementation at `jarek-va/app/jobs/telegram_message_job.rb` lines 173-251 for exact behavior
+- The method is called from `handleMessage` and `handleCallbackQuery` methods
+- The `originalWasAudio` parameter is used to determine response format in callbacks
 - Task can be completed independently by a single agent
 
 ## Related Tasks
