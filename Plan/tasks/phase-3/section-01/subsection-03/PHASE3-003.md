@@ -1,4 +1,4 @@
-# PHASE3-003: Verify dependency injection patterns
+# PHASE3-003: Review and verify dependency injection patterns
 
 **Section**: 1. Architecture Review
 **Subsection**: 1.3
@@ -6,16 +6,72 @@
 
 ## Description
 
-Review and improve verify dependency injection patterns in the codebase to ensure best practices.
+Review and verify dependency injection patterns in the codebase to ensure best practices. This review should evaluate how services, controllers, and jobs handle dependencies, identify hard-coded dependencies or singletons, verify proper constructor injection usage, and ensure the codebase follows Node.js/TypeScript dependency injection best practices for testability and maintainability.
+
+## Architecture Reference
+
+Reference the planned architecture from:
+- `Plan/app-description.md` - Application overview and component descriptions
+- `Plan/CONVERSION_STEPS.md` - Conversion plan and architecture considerations
+- `src/` directory structure - Current implementation structure
+
+**Note on Rails vs Node.js patterns**: The Rails application uses class methods and direct service access (e.g., `TelegramService.send_message`). The Node.js/TypeScript conversion should use dependency injection to make services testable and maintainable.
+
+## Dependency Injection Best Practices
+
+In Node.js/TypeScript applications, dependency injection should follow these patterns:
+
+1. **Constructor Injection**: Dependencies should be passed via constructor parameters
+2. **Interface-based Design**: Services should depend on interfaces/abstract types, not concrete implementations
+3. **Factory Functions**: Use factory functions or DI containers for complex dependency graphs
+4. **Avoid Singletons**: Prefer dependency injection over singleton patterns
+5. **Testability**: Services should be easily mockable for unit testing
 
 ## Checklist
 
 - [ ] Review service instantiation patterns
+  - [ ] Check how services are created (direct instantiation vs factory vs DI container)
+  - [ ] Verify services accept dependencies via constructor
+  - [ ] Identify any singleton patterns that should be converted to DI
+  - [ ] Check for services that instantiate dependencies internally (violation of DI)
 - [ ] Check for hard-coded dependencies
+  - [ ] Identify direct imports of concrete implementations where interfaces should be used
+  - [ ] Check for hard-coded configuration values in service constructors
+  - [ ] Verify external API clients are injected, not created internally
+  - [ ] Check for direct database access without repository pattern
+  - [ ] Identify any `new` keyword usage for dependencies (should be injected)
 - [ ] Review constructor injection usage
+  - [ ] Verify all services use constructor injection for dependencies
+  - [ ] Check that controllers inject services via constructor
+  - [ ] Verify jobs inject services via constructor
+  - [ ] Ensure dependencies are typed (use interfaces/types, not concrete classes)
+  - [ ] Check for optional dependencies (should be clearly marked)
 - [ ] Check for proper dependency management
+  - [ ] Verify dependency graph is acyclic (no circular dependencies)
+  - [ ] Check that dependencies are organized logically
+  - [ ] Verify shared dependencies (Redis, HTTP clients) are injected consistently
+  - [ ] Check for dependency injection container or factory pattern usage
+  - [ ] Verify environment-specific dependencies are handled properly
+- [ ] Review testability of dependencies
+  - [ ] Verify all services can be easily mocked in tests
+  - [ ] Check that tests use dependency injection to provide mocks
+  - [ ] Verify no global state or singletons that prevent testing
+  - [ ] Ensure test fixtures can inject test doubles
 - [ ] Identify opportunities for better DI
+  - [ ] Find services that could benefit from interface abstraction
+  - [ ] Identify opportunities to reduce coupling through DI
+  - [ ] Check for missing abstractions (services depending on concrete implementations)
+  - [ ] Find places where a DI container would simplify dependency management
+- [ ] Check for anti-patterns
+  - [ ] Identify singleton patterns that should be converted to DI
+  - [ ] Find services that create dependencies internally (service locator anti-pattern)
+  - [ ] Check for global state or module-level singletons
+  - [ ] Identify tight coupling that could be reduced with DI
 - [ ] Document current patterns
+  - [ ] Document the DI pattern used (constructor injection, factory functions, DI container)
+  - [ ] Create examples of proper dependency injection usage
+  - [ ] Document any deviations from best practices and reasoning
+  - [ ] Create guidelines for adding new services with proper DI
 
 ## Notes
 
@@ -23,7 +79,8 @@ Review and improve verify dependency injection patterns in the codebase to ensur
 - Section: 1. Architecture Review
 - Focus on identifying issues and improvements
 - Document findings and decisions
-
+- Compare implemented patterns with Node.js/TypeScript best practices
+- Review both existing code and planned structure to ensure proper DI patterns
 - Task can be completed independently by a single agent
 
 ## Related Tasks
