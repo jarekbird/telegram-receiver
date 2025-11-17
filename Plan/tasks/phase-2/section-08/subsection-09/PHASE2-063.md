@@ -6,23 +6,51 @@
 
 ## Description
 
-Convert create extract_chat_info utility function from Rails to TypeScript/Node.js. Reference `jarek-va/app/controllers/*_controller.rb` files.
+Create the `extractChatInfoFromUpdate` utility function in TypeScript/Node.js. This function extracts chat ID and message ID from Telegram update objects for error handling purposes. The function is used in both the TelegramController and TelegramMessageJob to extract chat information when sending error messages to users.
+
+**Rails Implementation References**:
+- `jarek-va/app/controllers/telegram_controller.rb` (lines 151-169)
+- `jarek-va/app/jobs/telegram_message_job.rb` (lines 279-295)
+
+Both implementations are identical and handle three types of Telegram updates: `message`, `edited_message`, and `callback_query`.
 
 ## Checklist
 
-- [ ] Create `extractChatInfoFromUpdate` utility function
-- [ ] Handle message updates
-- [ ] Handle edited_message updates
-- [ ] Handle callback_query updates
-- [ ] Return [chat_id, message_id] tuple
-- [ ] Handle missing data gracefully
+- [ ] Create `extractChatInfoFromUpdate` utility function in `src/utils/` directory
+- [ ] Function signature: `extractChatInfoFromUpdate(update: TelegramUpdate): [number | null, number | null]`
+- [ ] Handle type conversion: ensure update is treated as a plain object (handle Hash/object conversion)
+- [ ] Handle `message` updates:
+  - [ ] Extract `chat.id` from `update.message.chat.id`
+  - [ ] Extract `message_id` from `update.message.message_id`
+- [ ] Handle `edited_message` updates:
+  - [ ] Extract `chat.id` from `update.edited_message.chat.id`
+  - [ ] Extract `message_id` from `update.edited_message.message_id`
+- [ ] Handle `callback_query` updates:
+  - [ ] Check that `update.callback_query.message` exists
+  - [ ] Extract `chat.id` from `update.callback_query.message.chat.id`
+  - [ ] Extract `message_id` from `update.callback_query.message.message_id`
+- [ ] Return `[chat_id, message_id]` tuple (both can be `null` if not found)
+- [ ] Use optional chaining (`?.`) for safe nested property access
+- [ ] Return `[null, null]` if none of the update types match
+- [ ] Export function as named export from utility file
+- [ ] Add TypeScript type definitions for TelegramUpdate (if not already defined)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 8. TelegramController Conversion
-- Reference the Rails implementation for behavior
-
+- **Purpose**: This utility function is primarily used for error handling - extracting chat information from Telegram updates so error messages can be sent to users
+- **Rails Implementation Details**:
+  - The function converts the update to a hash if needed: `update_hash = update.is_a?(Hash) ? update : update.to_h`
+  - Uses safe navigation operator (`&.[]`) for nested property access
+  - Returns `[nil, nil]` if no matching update type is found
+  - The function is identical in both `telegram_controller.rb` and `telegram_message_job.rb`
+- **TypeScript Conversion**:
+  - Use optional chaining (`?.`) instead of Ruby's safe navigation (`&.[]`)
+  - Return `[null, null]` instead of `[nil, nil]`
+  - Ensure the function handles plain objects (TypeScript doesn't have Hash types)
+  - The function should be placed in `src/utils/` as a reusable utility
+- **Usage**: This function will be used by TelegramController (PHASE2-062) and TelegramMessageJob (future task) for error handling
 - Task can be completed independently by a single agent
 
 ## Related Tasks
