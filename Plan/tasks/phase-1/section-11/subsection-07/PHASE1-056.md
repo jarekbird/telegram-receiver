@@ -6,19 +6,145 @@
 
 ## Description
 
-Test CI workflow locally (optional)
+Test the CI workflow locally using the `act` tool to verify that the GitHub Actions workflow (`.github/workflows/ci.yml`) works correctly before pushing changes. This optional task allows developers to catch workflow issues early and iterate faster without waiting for GitHub Actions to run. The `act` tool runs GitHub Actions workflows locally using Docker, simulating the GitHub Actions environment.
+
+**Prerequisites**: This task requires:
+- The CI workflow file (`.github/workflows/ci.yml`) must exist (created in PHASE1-051)
+- Docker must be installed and running (required by `act`)
+- Node.js environment must be available locally
+
+**Reference Implementation**: While the Rails application (`jarek-va`) doesn't have specific documentation for local workflow testing, this task adds a valuable development workflow improvement for faster iteration.
 
 ## Checklist
 
-- [ ] Install `act` tool for local GitHub Actions testing (optional)
-- [ ] Run workflow locally to verify it works
-- [ ] Fix any issues found
+### Prerequisites
+- [ ] Verify that `.github/workflows/ci.yml` exists (created in PHASE1-051)
+- [ ] Verify Docker is installed and running (`docker --version` and `docker ps`)
+- [ ] Verify Node.js is installed locally (`node --version`)
+
+### Install act Tool
+- [ ] Install `act` tool for local GitHub Actions testing
+  - **macOS**: `brew install act` or download from GitHub releases
+  - **Linux**: Download from GitHub releases or use package manager
+  - **Windows**: Download from GitHub releases or use WSL
+- [ ] Verify installation: `act --version`
+
+### Test Workflow Locally
+- [ ] List available workflows: `act -l` (should show the CI workflow)
+- [ ] Run workflow with `push` event simulation: `act push`
+- [ ] Run workflow with `pull_request` event simulation: `act pull_request`
+- [ ] Run workflow with `workflow_dispatch` (manual trigger): `act workflow_dispatch`
+- [ ] Verify all workflow steps execute successfully:
+  - Checkout code
+  - Set up Node.js
+  - Install dependencies (`npm ci`)
+  - Detect changed files
+  - Run linting (ESLint)
+  - Run formatting check (Prettier)
+  - Run type checking (TypeScript)
+  - Build project (`npm run build`)
+  - Run tests (Jest)
+
+### Verify Workflow Output
+- [ ] Verify workflow completes without errors
+- [ ] Verify all steps show expected output
+- [ ] Verify build artifacts are created (`dist/` directory)
+- [ ] Verify tests run and pass
+- [ ] Verify linting and type checking pass
+
+### Fix Issues (if any)
+- [ ] Document any issues encountered
+- [ ] Fix workflow file issues (update `.github/workflows/ci.yml` if needed)
+- [ ] Fix environment/Docker issues (if any)
+- [ ] Re-run workflow to verify fixes
+- [ ] Update workflow file if changes are needed
+
+## Implementation Details
+
+### Workflow File Location
+- **CI Workflow**: `.github/workflows/ci.yml` (created in PHASE1-051)
+- The workflow should be named "CI" or "Run Automated Tests"
+
+### act Tool Usage
+
+#### Basic Commands
+- List workflows: `act -l`
+- Run push event: `act push`
+- Run pull request event: `act pull_request`
+- Run specific workflow: `act -W .github/workflows/ci.yml push`
+- Run specific job: `act -j test push`
+- Dry run (list steps): `act -n push`
+
+#### Common Options
+- `-v` or `--verbose`: Verbose output
+- `-W` or `--workflows`: Specify workflow file path
+- `-j` or `--job`: Run specific job
+- `-e` or `--eventpath`: Path to event JSON file
+- `--secret`: Pass secrets (e.g., `--secret GITHUB_TOKEN=your-token`)
+- `--env`: Pass environment variables
+
+#### Event Simulation
+- **Push event**: `act push` (simulates push to main branch)
+- **Pull request**: `act pull_request` (simulates PR event)
+- **Manual trigger**: `act workflow_dispatch`
+
+### Expected Workflow Steps
+When running `act push`, the workflow should execute these steps in order:
+1. Checkout code
+2. Set up Node.js (version >=18.0.0)
+3. Install dependencies (`npm ci`)
+4. Detect changed files
+5. Run ESLint linter
+6. Run Prettier format check
+7. Run TypeScript type checking
+8. Build TypeScript project (`npm run build`)
+9. Verify build artifacts
+10. Run Jest tests
+
+### Common Issues and Solutions
+
+#### Docker Not Running
+- **Issue**: `act` fails with Docker connection error
+- **Solution**: Start Docker daemon (`sudo systemctl start docker` on Linux, or start Docker Desktop)
+
+#### Missing Secrets
+- **Issue**: Workflow fails due to missing secrets
+- **Solution**: Use `--secret` flag: `act push --secret GITHUB_TOKEN=your-token`
+
+#### Large Docker Images
+- **Issue**: First run is slow due to downloading Docker images
+- **Solution**: This is normal; subsequent runs will be faster
+
+#### Workflow File Not Found
+- **Issue**: `act -l` shows no workflows
+- **Solution**: Verify `.github/workflows/ci.yml` exists and is valid YAML
+
+#### Node.js Version Mismatch
+- **Issue**: Workflow uses different Node.js version than local
+- **Solution**: `act` uses Docker images, so version should match workflow configuration
+
+### Verification Checklist
+After running `act push`, verify:
+- [ ] All steps execute without errors
+- [ ] Dependencies install successfully (`npm ci` completes)
+- [ ] Linting passes (ESLint)
+- [ ] Formatting check passes (Prettier)
+- [ ] Type checking passes (TypeScript)
+- [ ] Build succeeds (`dist/` directory created)
+- [ ] Tests run and pass (Jest)
+- [ ] Workflow completes with success status
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 11. CI/CD Pipeline Configuration
 - Task can be completed independently by a single agent
+- This is an **optional** task but highly recommended for faster development iteration
+- Testing locally with `act` helps catch workflow issues before pushing to GitHub
+- `act` requires Docker to run, as it uses Docker containers to simulate GitHub Actions runners
+- The workflow file (`.github/workflows/ci.yml`) must exist before this task can be completed (created in PHASE1-051)
+- This task validates that the CI workflow works correctly locally before relying on GitHub Actions
+- If workflow issues are found, update `.github/workflows/ci.yml` and re-test
 
 ## Related Tasks
 
