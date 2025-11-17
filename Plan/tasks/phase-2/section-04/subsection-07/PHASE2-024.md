@@ -6,22 +6,54 @@
 
 ## Description
 
-Convert implement download_file method from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/telegram_service.rb`.
+Convert and implement the `downloadFile` method from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/telegram_service.rb`.
+
+The Rails implementation (`download_file`) downloads files from Telegram by:
+1. Getting file information from Telegram Bot API using `get_file` endpoint
+2. Extracting the file path from the API response
+3. Constructing the download URL using the bot token and file path
+4. Downloading the file from Telegram's file server
+5. Saving to a specified destination path or temporary directory if not provided
+6. Returning the path to the downloaded file
 
 ## Checklist
 
-- [ ] Implement `downloadFile` method
-- [ ] Get file info from Telegram API
-- [ ] Download file from Telegram CDN
-- [ ] Save to destination path or temp directory
-- [ ] Add error handling
+- [ ] Implement `downloadFile(fileId: string, destinationPath?: string): Promise<string>` method
+- [ ] Add early return if bot token is blank (similar to other methods in TelegramService)
+- [ ] Call Telegram Bot API `getFile` endpoint with the file_id
+- [ ] Extract `file_path` from the API response (`result.file_path`)
+- [ ] Construct download URL: `https://api.telegram.org/file/bot${botToken}/${file_path}`
+- [ ] Handle optional `destinationPath` parameter:
+  - If provided, use it as-is
+  - If not provided (undefined), create temp path using Node.js `os.tmpdir()` with format: `telegram_${fileId}_${filename}` where filename is extracted from `file_path`
+- [ ] Implement private helper method `downloadFileFromUrl(url: string, destinationPath: string): Promise<void>`
+  - Use `axios` or `node:https`/`node:http` to download the file
+  - Ensure directory exists using `fs.mkdir` with `recursive: true` option
+  - Write file using `fs.writeFile` or `fs.writeFileSync` with binary mode
+  - Log success message with file size (similar to Rails: "Downloaded file to {path} ({size} bytes)")
+  - Raise/throw error if HTTP request fails (check status code, similar to Rails `Net::HTTPSuccess`)
+- [ ] Call `downloadFileFromUrl` helper method to perform the actual download
+- [ ] Return the `destinationPath` string
+- [ ] Add comprehensive error handling:
+  - Wrap in try-catch block
+  - Log errors with context (file_id, error message)
+  - Log error stack trace
+  - Re-throw errors after logging
+- [ ] Add logging for download start: "Downloading Telegram file {fileId} to {destinationPath}"
+- [ ] Ensure method signature matches TypeScript conventions (camelCase, Promise return type)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 4. TelegramService Conversion
-- Reference the Rails implementation for behavior
-
+- Reference the Rails implementation (`jarek-va/app/services/telegram_service.rb`) for behavior
+- The Rails implementation uses a private helper method `download_file_from_url` - this should be implemented as `downloadFileFromUrl` in TypeScript
+- Rails uses `Net::HTTP` for downloading - in TypeScript, use `axios` (already in dependencies) or Node.js built-in `https`/`http` modules
+- Rails uses `File.binwrite` for binary file writing - use `fs.writeFile` or `fs.promises.writeFile` in Node.js
+- Rails uses `Dir.tmpdir` for temp directory - use `os.tmpdir()` in Node.js
+- Rails uses `FileUtils.mkdir_p` for directory creation - use `fs.mkdir` with `{ recursive: true }` in Node.js
+- The method should return the destination path string (same as Rails)
+- Error handling pattern should match other TelegramService methods (early return if token blank, try-catch with logging, re-throw)
 - Task can be completed independently by a single agent
 
 ## Related Tasks
