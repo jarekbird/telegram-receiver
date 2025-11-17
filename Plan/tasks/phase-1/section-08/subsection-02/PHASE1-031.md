@@ -10,9 +10,10 @@ Create logger configuration module that replicates Rails logging patterns from j
 
 **Rails Logging Patterns to Replicate:**
 - Production: Log level `:info` (see `jarek-va/config/environments/production.rb` line 40)
-- Production: Request ID tagging (see `jarek-va/config/environments/production.rb` line 43)
-- Production: Stdout logging (see `jarek-va/config/environments/production.rb` lines 66-69)
-- Application: `LOG_LEVEL` environment variable support (defaults to 'info', see `jarek-va/config/application.rb` line 28)
+- Production: Log formatter using `Logger::Formatter.new` (see `jarek-va/config/environments/production.rb` line 60)
+- Production: Request ID tagging via `ActiveSupport::TaggedLogging` wrapper (see `jarek-va/config/environments/production.rb` line 43 and line 69)
+- Production: Stdout logging with `RAILS_LOG_TO_STDOUT` environment variable (see `jarek-va/config/environments/production.rb` lines 66-69)
+- Application: `LOG_LEVEL` environment variable support (defaults to 'info', applies to all environments, see `jarek-va/config/application.rb` line 28)
 - Error logging: Full stack traces (see `jarek-va/app/controllers/application_controller.rb` lines 10-11)
 - Sidekiq: Logger::INFO level (see `jarek-va/config/initializers/sidekiq.rb` line 31)
 
@@ -27,14 +28,17 @@ Create logger configuration module that replicates Rails logging patterns from j
   - [ ] Test: 'error' level (or value from LOG_LEVEL env var)
   - [ ] Default: 'info' if LOG_LEVEL not set
 - [ ] Configure log format:
-  - [ ] Production: JSON format (structured logging for log aggregation)
+  - [ ] Production: JSON format (structured logging for log aggregation, matches Rails `Logger::Formatter.new` behavior)
   - [ ] Development: Pretty/human-readable format
   - [ ] Test: JSON format (for test consistency)
+  - [ ] Ensure formatter includes timestamp and log level (matching Rails Logger::Formatter behavior)
 - [ ] Configure log transports:
   - [ ] Console transport (stdout for production, supports Docker logging)
   - [ ] Ensure stdout logging for production (matches Rails `RAILS_LOG_TO_STDOUT` behavior)
   - [ ] File transport optional (only if needed for local development)
-- [ ] Configure request ID support (for production request tracing, matches Rails `config.log_tags = [:request_id]`)
+- [ ] Configure request ID support (for production request tracing, matches Rails `config.log_tags = [:request_id]` and `ActiveSupport::TaggedLogging` wrapper behavior)
+  - [ ] Support creating child loggers with request ID context (similar to Rails TaggedLogging)
+  - [ ] Ensure request IDs are included in log output when available
 - [ ] Ensure error logging includes stack traces (matches Rails error logging pattern)
 - [ ] Export configured logger instance
 
@@ -45,15 +49,20 @@ Create logger configuration module that replicates Rails logging patterns from j
 - Task can be completed independently by a single agent
 - **Prerequisite**: PHASE1-030 must be completed first to determine which logging library (winston or pino) to use
 - **Rails Reference**: The jarek-va Rails application logging configuration:
-  - `jarek-va/config/application.rb` (line 28) - LOG_LEVEL environment variable support
-  - `jarek-va/config/environments/production.rb` (lines 40, 43, 60, 66-69) - Production logging configuration
-  - `jarek-va/app/controllers/application_controller.rb` (lines 10-11) - Error logging with backtraces
-  - `jarek-va/config/initializers/sidekiq.rb` (line 31) - Sidekiq logging level
+  - `jarek-va/config/application.rb` (line 28) - LOG_LEVEL environment variable support (applies to all environments, defaults to 'info')
+  - `jarek-va/config/environments/production.rb` (line 40) - Production log level set to `:info`
+  - `jarek-va/config/environments/production.rb` (line 43) - Request ID tagging via `config.log_tags = [:request_id]`
+  - `jarek-va/config/environments/production.rb` (line 60) - Log formatter using `Logger::Formatter.new` (includes timestamp and log level)
+  - `jarek-va/config/environments/production.rb` (lines 66-69) - Stdout logging with `ActiveSupport::TaggedLogging` wrapper when `RAILS_LOG_TO_STDOUT` is set
+  - `jarek-va/app/controllers/application_controller.rb` (lines 10-11) - Error logging with full backtraces
+  - `jarek-va/config/initializers/sidekiq.rb` (line 31) - Sidekiq logging level set to `Logger::INFO`
 - **Environment Variables**:
   - `NODE_ENV`: Determines environment (production, development, test)
-  - `LOG_LEVEL`: Overrides default log level (info, debug, warn, error)
-- **Production Requirements**: Must support stdout logging for Docker/containerized environments (matches Rails `RAILS_LOG_TO_STDOUT` behavior)
-- **Request ID Support**: The logger should support adding request IDs to log entries (via child loggers or context) to match Rails' `config.log_tags = [:request_id]` behavior. This will be used by PHASE1-020 (request logging middleware).
+  - `LOG_LEVEL`: Overrides default log level for the current environment (info, debug, warn, error)
+  - **Note**: Rails uses a single `LOG_LEVEL` that applies to all environments (defaults to 'info'). This Node.js implementation uses environment-specific defaults (debug for dev, error for test, info for production) which is more conventional for Node.js applications, while still allowing `LOG_LEVEL` to override.
+- **Production Requirements**: Must support stdout logging for Docker/containerized environments (matches Rails `RAILS_LOG_TO_STDOUT` behavior). The logger should always output to stdout in production, similar to how Rails wraps the logger with `ActiveSupport::TaggedLogging` when `RAILS_LOG_TO_STDOUT` is present.
+- **Request ID Support**: The logger should support adding request IDs to log entries (via child loggers or context) to match Rails' `config.log_tags = [:request_id]` and `ActiveSupport::TaggedLogging` wrapper behavior. This will be used by PHASE1-020 (request logging middleware). The implementation should allow creating child loggers with request ID context that automatically includes the request ID in all log entries.
+- **Log Formatter**: The logger formatter should include timestamp and log level information, matching Rails' `Logger::Formatter.new` behavior. In production, this should be structured JSON format for log aggregation tools.
 
 ## Related Tasks
 
