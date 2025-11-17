@@ -11,8 +11,10 @@ Create TypeScript type definitions for BullMQ job payloads. These types define t
 ## Checklist
 
 - [ ] Create `src/types/jobs.ts` file
+- [ ] Import `TelegramUpdate` type from `src/types/telegram.ts` (created in PHASE2-001)
 - [ ] Define `TelegramMessageJobPayload` interface for message job data
-- [ ] Include `update` property with TelegramUpdate type
+  - Include `update` property with type `TelegramUpdate`
+  - This interface represents the payload structure for BullMQ job processors
 - [ ] Export the interface
 
 ## Notes
@@ -20,8 +22,12 @@ Create TypeScript type definitions for BullMQ job payloads. These types define t
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 1. TypeScript Type Definitions
 - Reference `jarek-va/app/jobs/telegram_message_job.rb` for job payload structure
-- The payload will contain the Telegram update object
+  - The `perform` method accepts `update` parameter (Hash or JSON string)
+  - In TypeScript/BullMQ, the payload will be an object containing the Telegram update
+- The payload will contain the Telegram update object (as defined in PHASE2-001)
+- This type will be used when enqueueing jobs with BullMQ: `queue.add('telegram-message', { update: telegramUpdate })`
 - Task can be completed independently by a single agent
+- **Dependency**: PHASE2-001 must be completed first (creates TelegramUpdate type)
 
 ## Related Tasks
 
