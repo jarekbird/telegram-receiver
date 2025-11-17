@@ -38,6 +38,27 @@ PHASE4-006 identified unused code in:
 
 This task addresses the removal of these findings following a safe, prioritized approach.
 
+## Prerequisites
+
+Before starting this task, ensure that PHASE4-006 has been completed:
+
+- [ ] Verify PHASE4-006 (Identify unused code/dead code) has been completed
+- [ ] Verify unused code detection tools are installed (ts-prune, unimported, depcheck, eslint-plugin-unused-imports)
+- [ ] Verify unused code detection scripts are available in package.json:
+  - `npm run unused:exports` (ts-prune) - if configured
+  - `npm run unused:all` (unimported) - if configured
+  - `npm run unused:imports` (ESLint with unused-imports plugin) - if configured
+  - `npm run unused:deps` (depcheck) - if configured
+- [ ] Locate unused code reports from PHASE4-006:
+  - Check for reports in `reports/` directory or similar location
+  - Check for ts-prune output (unused exports)
+  - Check for unimported output (unused files and dependencies)
+  - Check for ESLint output (unused imports)
+  - Check for depcheck output (unused dependencies)
+- [ ] If PHASE4-006 has not been completed or reports are not available:
+  - Complete PHASE4-006 first, OR
+  - Run unused code detection tools manually to generate reports before proceeding
+
 ## Checklist
 
 ### Review PHASE4-006 Findings
@@ -59,6 +80,8 @@ This task addresses the removal of these findings following a safe, prioritized 
 
 ### Remove Unused Imports
 - [ ] Run ESLint with unused-imports plugin: `npm run unused:imports` (if configured)
+  - If script doesn't exist, run: `npm run lint` and review ESLint output for unused imports
+  - Alternatively, use TypeScript compiler: `npm run type-check` to identify unused imports
 - [ ] Review each unused import finding
 - [ ] Verify imports are truly unused (check for dynamic imports, string references)
 - [ ] Remove unused imports from source files
@@ -70,6 +93,8 @@ This task addresses the removal of these findings following a safe, prioritized 
 
 ### Remove Unused Exports
 - [ ] Review unused exports from ts-prune report
+  - If report doesn't exist, run ts-prune manually: `npx ts-prune` or `npm run unused:exports` (if configured)
+  - Review output for unused exports
 - [ ] Verify exports are truly unused (check for external usage, dynamic imports)
 - [ ] Remove unused exported functions
 - [ ] Remove unused exported types/interfaces
@@ -103,6 +128,8 @@ This task addresses the removal of these findings following a safe, prioritized 
 
 ### Remove Unused Files
 - [ ] Review unused files from unimported report
+  - If report doesn't exist, run unimported manually: `npx unimported` or `npm run unused:all` (if configured)
+  - Review output for unused files
 - [ ] Verify files are truly unused (check for dynamic imports, config references)
 - [ ] Check if files are entry points or used by build tools
 - [ ] Remove unused source files
@@ -114,6 +141,8 @@ This task addresses the removal of these findings following a safe, prioritized 
 
 ### Remove Unused Dependencies
 - [ ] Review unused dependencies from depcheck report
+  - If report doesn't exist, run depcheck manually: `npx depcheck` or `npm run unused:deps` (if configured)
+  - Review output for unused dependencies
 - [ ] Verify dependencies are truly unused:
   - Check for dynamic imports
   - Check for usage in config files
