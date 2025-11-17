@@ -6,20 +6,36 @@
 
 ## Description
 
-Use environment config in application
+Integrate the environment configuration module into the main application entry point (`src/index.ts`) to use environment variables for server port and environment logging. This task imports the Express app from `src/app.ts`, starts the Express server using the port from the environment configuration, and logs the environment when the server starts.
+
+In Rails, the server port is configured in `config/puma.rb` using `ENV.fetch("PORT") { 3000 }`, and the environment is accessed via `ENV.fetch("RAILS_ENV") { "development" }`. The Rails application logs the environment when starting. This task replicates that behavior in the Node.js application by using the centralized environment configuration module created in PHASE1-024.
+
+**Rails Equivalent**: `jarek-va/config/puma.rb` (lines 18, 22) - Rails uses `ENV.fetch("PORT") { 3000 }` for port configuration and `ENV.fetch("RAILS_ENV") { "development" }` for environment. The Rails application logs the environment when starting.
+
+**Note**: This task assumes that `src/app.ts` exists (created in PHASE1-015) and exports the Express app instance. The task also assumes that `src/config/environment.ts` exists (created in PHASE1-024) and exports a `config` object with `port` and `env` properties.
 
 ## Checklist
 
-- [ ] Open `src/index.ts`
-- [ ] Import config from `./config/environment`
-- [ ] Use `config.port` for server port
-- [ ] Use `config.env` for environment logging
+- [ ] Open `src/index.ts` (create if it doesn't exist)
+- [ ] Import the Express app from `./app` (default export from `src/app.ts` created in PHASE1-015)
+- [ ] Import config from `./config/environment` (default export from `src/config/environment.ts` created in PHASE1-024)
+- [ ] Start the Express server using `app.listen(config.port, ...)` with the port from config
+- [ ] Log the environment when server starts (e.g., `console.log(`Server running in ${config.env} mode on port ${config.port}`)`)
+- [ ] Add error handling for server startup (handle port binding errors, etc.)
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 7. Environment Variables Management
 - Task can be completed independently by a single agent
+- **Rails Equivalent**: `jarek-va/config/puma.rb` (lines 18, 22) - Rails uses `ENV.fetch("PORT") { 3000 }` for port configuration and `ENV.fetch("RAILS_ENV") { "development" }` for environment
+- **Dependencies**: 
+  - Requires `src/app.ts` to exist (created in PHASE1-015) and export the Express app instance
+  - Requires `src/config/environment.ts` to exist (created in PHASE1-024) and export a `config` object with `port` and `env` properties
+- **Server Startup**: The `src/index.ts` file is the main entry point that starts the Express server. It should import the app from `src/app.ts` and start listening on the configured port
+- **Environment Logging**: Logging the environment when the server starts helps with debugging and confirms which environment the application is running in, similar to how Rails logs the environment on startup
+- **Port Configuration**: The port comes from the environment configuration module, which reads from `process.env.PORT` or defaults to 3000 (matching Rails default port)
+- **Error Handling**: The server startup should handle errors such as port already in use, permission denied, etc., and log appropriate error messages
 
 ## Related Tasks
 
