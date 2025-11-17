@@ -6,25 +6,186 @@
 
 ## Description
 
-remove dead code to improve code quality and maintainability.
+Remove dead code identified during Phase 4 unused code detection (PHASE4-006) to improve code quality and maintainability. This task focuses on systematically removing unused imports, functions, variables, types, files, and dependencies that were identified in PHASE4-006, following a prioritized approach to minimize risk and ensure no breaking changes.
+
+This task builds on the unused code detection work completed in PHASE4-006 and addresses the removal of dead code as part of the Phase 4 code quality audit refactoring efforts.
+
+## Scope
+
+This task covers:
+- Reviewing unused code findings from PHASE4-006
+- Removing unused imports across the codebase
+- Removing unused functions and exports
+- Removing unused variables and parameters
+- Removing unused types, interfaces, and type definitions
+- Removing unused files and modules
+- Removing unused dependencies from package.json
+- Removing commented-out code
+- Verifying no breaking changes after removals
+- Documenting all removed code and the impact
+
+**Note**: This task focuses on removing dead code identified in PHASE4-006. For comprehensive unused code detection, refer to PHASE4-006 (Identify unused code/dead code).
+
+## Context from PHASE4-006
+
+PHASE4-006 identified unused code in:
+- Unused exports (functions, types, constants)
+- Unused imports
+- Unused files and modules
+- Unused dependencies in package.json
+- Unused types/interfaces
+- Dead code paths (unreachable code)
+
+This task addresses the removal of these findings following a safe, prioritized approach.
 
 ## Checklist
 
-- [ ] Review unused code findings
-- [ ] Remove unused imports
-- [ ] Remove unused functions
-- [ ] Remove unused variables
-- [ ] Remove unused types
-- [ ] Remove commented-out code
+### Review PHASE4-006 Findings
+- [ ] Review unused code report from PHASE4-006
+- [ ] Review unused exports findings (ts-prune output)
+- [ ] Review unused files findings (unimported output)
+- [ ] Review unused imports findings (ESLint output)
+- [ ] Review unused dependencies findings (depcheck output)
+- [ ] Review unused types/interfaces findings
+- [ ] Categorize findings by removal priority:
+  - Safe removals (unused imports, unused local variables)
+  - Medium-risk removals (unused exports, unused types)
+  - High-risk removals (unused files, unused dependencies)
+- [ ] Identify false positives that should not be removed:
+  - Public API exports that may be used externally
+  - Test utilities that are intentionally kept
+  - Code used via dynamic imports or reflection
+  - Framework-specific usage patterns
+
+### Remove Unused Imports
+- [ ] Run ESLint with unused-imports plugin: `npm run unused:imports` (if configured)
+- [ ] Review each unused import finding
+- [ ] Verify imports are truly unused (check for dynamic imports, string references)
+- [ ] Remove unused imports from source files
+- [ ] Remove unused default imports
+- [ ] Remove unused namespace imports
+- [ ] Remove unused named imports
+- [ ] Verify no breaking changes after import removal
+- [ ] Run tests to ensure functionality is preserved
+
+### Remove Unused Exports
+- [ ] Review unused exports from ts-prune report
+- [ ] Verify exports are truly unused (check for external usage, dynamic imports)
+- [ ] Remove unused exported functions
+- [ ] Remove unused exported types/interfaces
+- [ ] Remove unused exported constants
+- [ ] Remove unused exported classes
+- [ ] Verify no breaking changes (check if exports are used externally)
+- [ ] Run tests to ensure functionality is preserved
+- [ ] Update documentation if public API changes
+
+### Remove Unused Variables and Parameters
+- [ ] Review unused variables flagged by TypeScript compiler
+- [ ] Review unused parameters flagged by ESLint
+- [ ] Remove unused local variables
+- [ ] Remove or prefix unused function parameters with `_` (if intentionally unused)
+- [ ] Remove unused class properties
+- [ ] Remove unused enum values (if safe)
 - [ ] Verify no breaking changes
-- [ ] Document removed code
+- [ ] Run tests to ensure functionality is preserved
+
+### Remove Unused Types and Interfaces
+- [ ] Review unused type definitions
+- [ ] Review unused interfaces
+- [ ] Review unused type aliases
+- [ ] Verify types are truly unused (check for type-only imports, generics)
+- [ ] Remove unused type definitions
+- [ ] Remove unused interfaces
+- [ ] Remove unused type aliases
+- [ ] Remove unused generic type parameters (if safe)
+- [ ] Verify no breaking changes
+- [ ] Run tests to ensure functionality is preserved
+
+### Remove Unused Files
+- [ ] Review unused files from unimported report
+- [ ] Verify files are truly unused (check for dynamic imports, config references)
+- [ ] Check if files are entry points or used by build tools
+- [ ] Remove unused source files
+- [ ] Remove unused test files (if they test non-existent code)
+- [ ] Remove unused configuration files (if truly unused)
+- [ ] Verify no breaking changes (check build process, imports)
+- [ ] Run tests to ensure functionality is preserved
+- [ ] Update documentation if files are removed
+
+### Remove Unused Dependencies
+- [ ] Review unused dependencies from depcheck report
+- [ ] Verify dependencies are truly unused:
+  - Check for dynamic imports
+  - Check for usage in config files
+  - Check for usage in scripts
+  - Check for peer dependencies
+- [ ] Remove unused dependencies from package.json
+- [ ] Remove unused devDependencies from package.json
+- [ ] Run `npm install` to update package-lock.json
+- [ ] Verify application still builds and runs
+- [ ] Run tests to ensure functionality is preserved
+- [ ] Verify no runtime errors from missing dependencies
+
+### Remove Commented-Out Code
+- [ ] Search for commented-out code blocks
+- [ ] Review commented-out code for relevance
+- [ ] Remove commented-out code that is no longer needed
+- [ ] Preserve commented-out code if it documents important decisions
+- [ ] Replace commented-out code with proper documentation if needed
+- [ ] Verify no breaking changes
+
+### Remove Dead Code Paths
+- [ ] Review unreachable code after return statements
+- [ ] Review unreachable code after throw statements
+- [ ] Review unreachable code in conditionals
+- [ ] Remove unreachable code blocks
+- [ ] Verify no breaking changes
+- [ ] Run tests to ensure functionality is preserved
+
+### Verification and Testing
+- [ ] Run TypeScript compiler: `npm run type-check`
+- [ ] Run ESLint: `npm run lint`
+- [ ] Run all unit tests: `npm run test:unit`
+- [ ] Run all integration tests: `npm run test:integration`
+- [ ] Run all tests: `npm run test`
+- [ ] Run end-to-end tests: `npm run test:e2e` (if applicable)
+- [ ] Verify application builds successfully: `npm run build`
+- [ ] Verify application starts successfully: `npm start` (test run)
+- [ ] Check for any runtime errors or warnings
+- [ ] Verify no breaking changes in functionality
+
+### Documentation
+- [ ] Document all removed code:
+  - List removed unused imports
+  - List removed unused exports
+  - List removed unused variables
+  - List removed unused types/interfaces
+  - List removed unused files
+  - List removed unused dependencies
+  - List removed commented-out code
+- [ ] Document removal rationale for significant removals
+- [ ] Document any breaking changes (if any)
+- [ ] Update code quality metrics:
+  - Count of removed unused imports
+  - Count of removed unused exports
+  - Count of removed unused files
+  - Count of removed unused dependencies
+  - Total lines of code removed
+- [ ] Update CHANGELOG or similar documentation (if applicable)
 
 ## Notes
 
 - This task is part of Phase 4: Code Quality Audit
 - Section: 3. Refactoring
-- Focus on identifying and fixing code quality issues
-- Document all findings and improvements
+- Focus on removing dead code identified in PHASE4-006 to improve code quality
+- This task builds on PHASE4-006 unused code detection findings
+- Follow a prioritized approach: start with safe removals, then medium-risk, then high-risk
+- Always verify no breaking changes after each category of removals
+- Some "unused" code may be intentionally kept (e.g., public API exports, test utilities)
+- Be careful with false positives - verify that code is truly unused before removal
+- Consider the impact of removing unused exports (may break external consumers)
+- Document all removals for traceability
+- Verify improvements through testing
 
 - Task can be completed independently by a single agent
 
@@ -32,6 +193,7 @@ remove dead code to improve code quality and maintainability.
 
 - Previous: PHASE4-023
 - Next: PHASE4-025
+- Depends on: PHASE4-006 (Identify unused code/dead code)
 
 ---
 
