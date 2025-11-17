@@ -36,11 +36,18 @@ Create TypeScript error classes and types for service error handling. These will
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 1. TypeScript Type Definitions
 - Reference error classes in Rails services:
-  - `CursorRunnerService::Error`, `ConnectionError`, `TimeoutError`, `InvalidResponseError`
-  - `ElevenLabsSpeechToTextService::Error`, `ConnectionError`, `TimeoutError`, `InvalidResponseError`, `TranscriptionError`
-  - `ElevenLabsTextToSpeechService::Error`, `ConnectionError`, `TimeoutError`, `InvalidResponseError`, `SynthesisError`
+  - `jarek-va/app/services/cursor_runner_service.rb` (lines 11-14): `Error`, `ConnectionError`, `TimeoutError`, `InvalidResponseError`
+  - `jarek-va/app/services/eleven_labs_speech_to_text_service.rb` (lines 9-13): `Error`, `ConnectionError`, `TimeoutError`, `InvalidResponseError`, `TranscriptionError`
+  - `jarek-va/app/services/eleven_labs_text_to_speech_service.rb` (lines 10-14): `Error`, `ConnectionError`, `TimeoutError`, `InvalidResponseError`, `SynthesisError`
 - Error classes should extend Error and maintain error message and stack trace
-- The unified `ServiceError` base class replaces the service-specific base error classes from Rails
+- The unified `ServiceError` base class replaces the service-specific base error classes from Rails (e.g., `CursorRunnerService::Error`, `ElevenLabsSpeechToTextService::Error`, `ElevenLabsTextToSpeechService::Error`)
+- Error usage patterns in Rails:
+  - `ConnectionError`: Raised for `Errno::ECONNREFUSED`, `Errno::EHOSTUNREACH`, `SocketError` (connection failures)
+  - `TimeoutError`: Raised for `Net::OpenTimeout`, `Net::ReadTimeout` (timeout errors)
+  - `InvalidResponseError`: Raised for `JSON::ParserError` (JSON parsing failures)
+  - `TranscriptionError`: Raised for ElevenLabs STT API errors and when no text is returned from transcription
+  - `SynthesisError`: Raised for ElevenLabs TTS API errors during text-to-speech synthesis
+- All error classes should be exported from the module for use in service implementations
 - Task can be completed independently by a single agent
 
 ## Related Tasks
