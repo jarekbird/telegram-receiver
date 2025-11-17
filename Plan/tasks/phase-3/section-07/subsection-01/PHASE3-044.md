@@ -6,17 +6,20 @@
 
 ## Description
 
-Review and improve review test coverage in the codebase to ensure best practices.
+Review and improve test coverage in the codebase to ensure best practices. This task involves analyzing the current test coverage, identifying gaps, setting appropriate coverage targets, and documenting the coverage status.
 
 ## Checklist
 
-- [ ] Run test coverage report
-- [ ] Review coverage percentages
-- [ ] Identify uncovered code
-- [ ] Review critical path coverage
-- [ ] Check for coverage gaps
-- [ ] Set coverage targets
-- [ ] Document coverage status
+- [ ] Run test coverage report using `npm run test:coverage`
+- [ ] Review coverage percentages for statements, branches, functions, and lines
+- [ ] Review coverage configuration in `jest.config.ts` (collectCoverageFrom, coverageReporters, etc.)
+- [ ] Identify uncovered code areas and files with low coverage
+- [ ] Review critical path coverage (core business logic, API endpoints, services)
+- [ ] Check for coverage gaps across different test types (unit, integration, e2e)
+- [ ] Review coverage for each source directory (controllers, services, models, middleware, utils)
+- [ ] Set coverage targets/thresholds in jest.config.ts if needed
+- [ ] Document coverage status and findings in this task file or a coverage report
+- [ ] Identify priority areas that need additional test coverage
 
 ## Notes
 
@@ -24,6 +27,13 @@ Review and improve review test coverage in the codebase to ensure best practices
 - Section: 7. Testing Review
 - Focus on identifying issues and improvements
 - Document findings and decisions
+
+- **Test Coverage Command**: Use `npm run test:coverage` to generate coverage reports
+- **Coverage Reports**: Generated in `coverage/` directory (HTML, LCOV, text formats)
+- **Coverage Configuration**: Review `jest.config.ts` for coverage settings
+- **Current State**: Codebase is in early development - coverage may be minimal initially
+- **Coverage Metrics**: Focus on statements, branches, functions, and lines coverage
+- **Priority Areas**: Controllers, services, and core business logic should have higher coverage targets
 
 - Task can be completed independently by a single agent
 
