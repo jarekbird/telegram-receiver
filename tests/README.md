@@ -47,11 +47,16 @@ tests/
 
 ## Test Naming Conventions
 
-- Unit tests: `*.test.ts` or `*.spec.ts`
-- Integration tests: `*.test.ts` or `*.spec.ts`
-- E2E tests: `*.spec.ts` (Playwright convention)
+- **Unit tests**: Use `*.test.ts` suffix (e.g., `userService.test.ts`)
+- **Integration tests**: Use `*.test.ts` suffix (e.g., `apiRoutes.test.ts`)
+- **E2E tests**: Use `*.spec.ts` suffix (e.g., `userFlow.spec.ts`) - Playwright convention
 
-Example: `userService.test.ts`, `authController.spec.ts`
+**Standard**: Jest-based tests (unit and integration) use `.test.ts`, Playwright E2E tests use `.spec.ts`
+
+Examples:
+- Unit: `tests/unit/services/userService.test.ts`
+- Integration: `tests/integration/api/webhook.test.ts`
+- E2E: `tests/e2e/userRegistration.spec.ts`
 
 ## Running Tests
 
