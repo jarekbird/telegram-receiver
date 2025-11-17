@@ -8,28 +8,57 @@
 
 Review and improve integration test coverage in the codebase to ensure best practices. Integration tests verify that multiple components work together correctly, testing API endpoints and service interactions with proper test isolation.
 
+**Note**: If integration tests do not exist yet, this task should create them based on the Rails implementation patterns. Reference the Rails controller specs in `jarek-va/spec/controllers/` as examples of comprehensive integration test coverage.
+
 ## Checklist
 
 ### Current State Review
-- [ ] Review existing integration tests in `tests/integration/` directory
+- [ ] Review existing integration tests in `tests/integration/` directory (create if missing)
 - [ ] Check integration test structure and organization
 - [ ] Review test setup and teardown procedures
 - [ ] Verify test isolation and cleanup mechanisms
+- [ ] Compare with Rails controller specs in `jarek-va/spec/controllers/` to identify test scenarios
 
 ### API Endpoint Integration Tests (`tests/integration/api/`)
-- [ ] Review Telegram webhook endpoint integration tests (`POST /telegram/webhook`)
-  - Test webhook authentication with `X-Telegram-Bot-Api-Secret-Token` header
-  - Test processing of different update types (message, edited_message, callback_query)
-  - Test async processing and immediate 200 OK response
+- [ ] Review/create Telegram webhook endpoint integration tests (`POST /telegram/webhook`)
+  - Test webhook authentication with `X-Telegram-Bot-Api-Secret-Token` header (unauthorized without token, authorized with token)
+  - Test processing of different update types:
+    - Regular messages (`message`)
+    - Edited messages (`edited_message`)
+    - Callback queries (`callback_query`)
+    - Unhandled update types
+  - Test async processing and immediate 200 OK response (to prevent Telegram retries)
+  - Test job enqueueing for message processing
   - Test error handling and invalid payloads
-- [ ] Review admin endpoint integration tests (if implemented)
+  - Test error scenarios (job enqueue failures, service errors)
+  - Reference: `jarek-va/spec/controllers/telegram_controller_spec.rb` for comprehensive test scenarios
+- [ ] Review/create admin endpoint integration tests (if implemented)
   - `POST /telegram/set_webhook` (admin only)
+    - Test admin authentication (`X-Admin-Secret` header)
+    - Test unauthorized access without admin secret
+    - Test webhook URL setting with default and custom URLs
+    - Test error handling for Telegram API failures
   - `GET /telegram/webhook_info` (admin only)
+    - Test admin authentication
+    - Test webhook info retrieval
+    - Test error handling
   - `DELETE /telegram/webhook` (admin only)
-- [ ] Review Cursor Runner callback endpoint integration tests (`POST /cursor-runner/callback`)
+    - Test admin authentication
+    - Test webhook deletion
+    - Test error handling
+  - Reference: `jarek-va/spec/controllers/telegram_controller_spec.rb` for admin endpoint tests
+- [ ] Review/create Cursor Runner callback endpoint integration tests (`POST /cursor-runner/callback`)
+  - Test callback authentication (`X-Webhook-Secret` header or query parameter)
   - Test callback processing and response forwarding to Telegram
   - Test Redis state retrieval and cleanup
-  - Test error handling for invalid callbacks
+  - Test error handling for invalid callbacks (missing request_id, unknown request_id)
+  - Test success and failure result handling
+  - Test debug mode vs normal mode output formatting
+  - Test ANSI escape sequence removal
+  - Test long output truncation
+  - Test Markdown/HTML parsing fallback logic
+  - Test error scenarios (processing errors, parsing failures)
+  - Reference: `jarek-va/spec/controllers/cursor_runner_callback_controller_spec.rb` for comprehensive test scenarios
 
 ### Service Integration Tests (`tests/integration/services/`)
 - [ ] Review TelegramService + CursorRunnerService integration tests
@@ -47,8 +76,10 @@ Review and improve integration test coverage in the codebase to ensure best prac
 ### Critical Path Coverage
 - [ ] Verify end-to-end flow coverage: Telegram webhook → message processing → Cursor Runner → callback → Telegram response
 - [ ] Test local command processing (`/start`, `/help`, `/status`) without Cursor Runner forwarding
+- [ ] Test non-command message forwarding to Cursor Runner
 - [ ] Test audio message transcription flow (if implemented)
 - [ ] Test error scenarios and graceful degradation
+- [ ] Test that webhook always returns 200 OK even on errors (to prevent Telegram retries)
 
 ### Test Quality and Best Practices
 - [ ] Review test scenarios for completeness
@@ -61,8 +92,10 @@ Review and improve integration test coverage in the codebase to ensure best prac
 
 ### Missing Tests Identification
 - [ ] Identify missing integration tests for implemented features
+- [ ] Compare with Rails controller specs to identify missing test scenarios
 - [ ] Document gaps in integration test coverage
 - [ ] Prioritize missing tests by criticality
+- [ ] Create missing integration tests if they don't exist
 
 ### Documentation
 - [ ] Review and update `tests/integration/README.md` with current practices
@@ -79,9 +112,13 @@ Review and improve integration test coverage in the codebase to ensure best prac
 - Document findings and decisions for future reference
 - Reference `Plan/app-description.md` for application functionality that should be tested
 - Reference `tests/README.md` and `tests/integration/README.md` for test structure and guidelines
+- Reference Rails controller specs in `jarek-va/spec/controllers/` for comprehensive test scenario examples:
+  - `telegram_controller_spec.rb` - Webhook endpoint tests, admin endpoint tests, authentication tests
+  - `cursor_runner_callback_controller_spec.rb` - Callback processing tests, error handling, output formatting
 - Integration tests should use Supertest for API endpoint testing
 - External APIs (Telegram Bot API, Cursor Runner API) should be mocked using nock or similar
 - Integration tests may use real Redis connections but should use test databases/instances
+- If integration tests don't exist, create them following the patterns from Rails controller specs
 - Task can be completed independently by a single agent
 
 ## Related Tasks
