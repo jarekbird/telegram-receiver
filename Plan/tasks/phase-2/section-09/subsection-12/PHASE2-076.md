@@ -6,25 +6,110 @@
 
 ## Description
 
-Convert write callbackcontroller integration tests from Rails to TypeScript/Node.js. Reference `jarek-va/app/controllers/*_controller.rb` files.
+Write comprehensive integration tests for the CursorRunnerCallbackController to match the Rails test suite. These tests should verify the callback endpoint handles all scenarios including authentication, success/failure cases, error handling, parsing fallbacks, and edge cases.
+
+**Rails Reference**: 
+- `jarek-va/app/controllers/cursor_runner_callback_controller.rb` (implementation)
+- `jarek-va/spec/controllers/cursor_runner_callback_controller_spec.rb` (test suite)
 
 ## Checklist
 
-- [ ] Create `tests/controllers/cursor-runner-callback-controller.test.ts`
-- [ ] Mock TelegramService
-- [ ] Mock CallbackService
-- [ ] Mock ElevenLabs services
-- [ ] Test callback endpoint
-- [ ] Test authentication
-- [ ] Test error handling
+### Test File Setup:
+- [ ] Create `tests/integration/api/cursor-runner-callback-controller.test.ts`
+- [ ] Use Supertest for HTTP endpoint testing
+- [ ] Set up proper test fixtures and mocks
+- [ ] Mock TelegramService (all methods: sendMessage, sendVoice)
+- [ ] Mock CallbackService (getPendingRequest, removePendingRequest)
+- [ ] Mock ElevenLabsTextToSpeechService (synthesize method)
+- [ ] Mock SystemSetting (enabled? and disabled? methods)
+- [ ] Set up webhook secret configuration for tests
+
+### Authentication Tests:
+- [ ] Test POST /cursor-runner/callback without authentication returns 401 Unauthorized
+- [ ] Test POST /cursor-runner/callback with X-Webhook-Secret header authenticates successfully
+- [ ] Test POST /cursor-runner/callback with X-Cursor-Runner-Secret header authenticates successfully
+- [ ] Test POST /cursor-runner/callback with secret in query parameter authenticates successfully
+- [ ] Test POST /cursor-runner/callback with invalid secret returns 401 Unauthorized
+- [ ] Test POST /cursor-runner/callback without secret when webhook_secret is not configured (development mode) accepts request
+
+### Valid Callback Result Tests (Success):
+- [ ] Test successful callback with valid request_id retrieves pending request from CallbackService
+- [ ] Test successful callback sends response to Telegram via TelegramService
+- [ ] Test successful callback cleans up pending request (calls removePendingRequest)
+- [ ] Test successful callback returns 200 OK with JSON response `{ received: true, request_id: ... }`
+- [ ] Test with CURSOR_DEBUG disabled (default) sends only raw output to Telegram (no metadata)
+- [ ] Test with CURSOR_DEBUG enabled sends formatted response with metadata (✅ Cursor command completed successfully, 📊 Iterations, ⏱ Duration)
+- [ ] Test with CURSOR_DEBUG enabled uses HTML code blocks for output formatting (`<pre><code>...</code></pre>`)
+
+### Valid Callback Result Tests (Failure):
+- [ ] Test failed callback (success: false) with CURSOR_DEBUG disabled sends simple error message (❌ {error})
+- [ ] Test failed callback (success: false) with CURSOR_DEBUG enabled sends detailed error message (❌ Cursor command failed\n\nError: {error})
+- [ ] Test failed callback still cleans up pending request
+
+### Edge Cases:
+- [ ] Test callback with missing request_id returns 400 Bad Request with error message
+- [ ] Test callback with unknown request_id (not in Redis) returns 200 OK but logs warning
+- [ ] Test callback with unknown request_id returns JSON `{ received: true, message: 'Request not found' }`
+- [ ] Test callback with ANSI escape sequences in output removes them before sending to Telegram
+- [ ] Test callback with long output (>4000 chars without debug, >3500 with debug) truncates output and appends "..."
+- [ ] Test callback with long output and CURSOR_DEBUG enabled includes "truncated" in message and uses HTML code blocks
+
+### Parse Mode Fallback Tests:
+- [ ] Test when Markdown parsing fails, falls back to HTML parse_mode
+- [ ] Test when Markdown parsing fails, logs warning about Markdown failure
+- [ ] Test when both Markdown and HTML parsing fail, falls back to plain text (no parse_mode)
+- [ ] Test when both Markdown and HTML parsing fail, logs warnings about both failures
+- [ ] Test parse mode fallback still sends message successfully
+
+### Error Handling Tests:
+- [ ] Test when processCallback raises an error, returns 200 OK (to prevent cursor-runner retries)
+- [ ] Test when processCallback raises an error, logs the error
+- [ ] Test when processCallback raises an error, sends error message to user via TelegramService
+- [ ] Test error message format: "❌ Error processing cursor command result: {error.message}"
+- [ ] Test error message uses HTML parse_mode
+- [ ] Test when sending error notification fails, logs error but doesn't throw
+
+### Audio Output Tests (if original_was_audio flag):
+- [ ] Test when original_was_audio is true and allow_audio_output is enabled, sends response as voice message
+- [ ] Test when original_was_audio is true, calls ElevenLabsTextToSpeechService.synthesize
+- [ ] Test when original_was_audio is true, calls TelegramService.sendVoice with audio file
+- [ ] Test when original_was_audio is true and audio generation fails, falls back to text message
+- [ ] Test when original_was_audio is true, cleans up generated audio file after sending
+- [ ] Test when original_was_audio is true but allow_audio_output is disabled, sends text message instead
+- [ ] Test audio cleanup errors are logged but don't throw
+
+### Result Normalization Tests:
+- [ ] Test callback handles both camelCase (requestId, branchName, maxIterations, exitCode) and snake_case (request_id, branch_name, max_iterations, exit_code) parameter formats
+- [ ] Test success boolean normalization (handles string "true"/"false", number 1/0, boolean true/false)
+- [ ] Test default values (max_iterations defaults to 25, exit_code defaults to 0, iterations defaults to 0)
+
+### Integration Test Structure:
+- [ ] Use describe blocks to organize tests by scenario (authentication, success cases, failure cases, edge cases, etc.)
+- [ ] Use beforeEach/afterEach for test setup and cleanup
+- [ ] Ensure tests are independent and can run in any order
+- [ ] Use descriptive test names that clearly indicate what is being tested
+- [ ] Verify all mocked services are called with correct parameters
+- [ ] Test both happy paths and error scenarios
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 9. CursorRunnerCallbackController Conversion
-- Reference the Rails implementation for behavior
-
-- Task can be completed independently by a single agent
+- **Rails Test Reference**: The Rails spec file (`cursor_runner_callback_controller_spec.rb`) contains comprehensive tests covering all scenarios. Use it as a reference for test structure and coverage.
+- **Test Location**: Integration tests should be placed in `tests/integration/api/` directory, not `tests/controllers/`
+- **Testing Framework**: Use Jest with Supertest for HTTP endpoint testing
+- **Mocking**: All external services (TelegramService, CallbackService, ElevenLabs services, SystemSetting) should be mocked
+- **Test Coverage**: Aim for 100% coverage of the callback controller's main code paths
+- **Key Test Scenarios**:
+  - Authentication with various methods (header, query param, no secret in dev)
+  - Success and failure callback processing
+  - CURSOR_DEBUG enabled/disabled behavior differences
+  - Parse mode fallbacks (Markdown → HTML → plain text)
+  - Error handling and user notifications
+  - Edge cases (missing request_id, unknown request_id, long output, ANSI sequences)
+  - Audio output when original_was_audio flag is set
+  - Result normalization (camelCase vs snake_case, boolean handling)
+- Task can be completed independently by a single agent (after CallbackController implementation is complete)
 
 ## Related Tasks
 
