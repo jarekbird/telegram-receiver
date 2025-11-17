@@ -60,7 +60,7 @@ The application should follow TypeScript/JavaScript commenting standards:
 Reference files:
 - `tests/helpers/testUtils.ts` - Example of good JSDoc comments
 - `tests/helpers/apiHelpers.ts` - Example of good JSDoc comments
-- `docs/architecture.md` - Architecture documentation (if exists)
+- `docs/architecture.md` - Architecture documentation
 
 ## Checklist
 
@@ -169,6 +169,12 @@ Reference files:
 - Document all findings and improvements
 
 - Task can be completed independently by a single agent
+
+- **Current Codebase State**: As of evaluation, the codebase is in early development with minimal source code implemented. The `src/` directory is mostly empty (only `.gitkeep` files), and the primary code exists in test files (`tests/`). When reviewing comments:
+  - Focus on test files, configuration files, and any existing source files
+  - Some checklist items may have limited applicability until Phase 2 conversion is complete
+  - Document findings and recommendations for future code that will be added during Phase 2
+  - Establish commenting standards that will apply to all future code
 
 ## Related Tasks
 
