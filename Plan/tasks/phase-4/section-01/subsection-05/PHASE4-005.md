@@ -6,17 +6,187 @@
 
 ## Description
 
-detect code duplication to improve code quality and maintainability.
+Run comprehensive code duplication detection to identify duplicate code blocks, patterns, and structures that impact code quality and maintainability. This task focuses on detecting copy-paste code, similar code blocks, and opportunities for code consolidation through refactoring.
+
+## Current State
+
+The project currently has:
+- **ESLint** configured with TypeScript rules (PHASE4-001)
+- **Prettier** configured for code formatting (PHASE4-002)
+- **SonarQube or similar tool** may be set up (PHASE4-003)
+- **Complexity analysis** may be completed (PHASE4-004)
+- Basic linting and formatting scripts in package.json
+
+**Missing**: Comprehensive code duplication detection that provides:
+- Identification of duplicate code blocks across the codebase
+- Measurement of duplication percentage
+- Detection of similar (not identical) code patterns
+- Prioritization of duplication issues by severity
+- Integration with existing tooling (ESLint, SonarQube)
+- Automated duplication reporting
+
+## Tool Options
+
+Consider the following options for code duplication detection:
+
+1. **jscpd** (JavaScript Copy/Paste Detector) (Recommended)
+   - TypeScript and JavaScript support
+   - Configurable similarity threshold
+   - Multiple output formats (console, JSON, HTML)
+   - Can be integrated into npm scripts
+   - Free and actively maintained
+   - Supports ignoring patterns (node_modules, dist, tests)
+
+2. **SonarQube/SonarCloud** (If PHASE4-003 is completed)
+   - Built-in duplication detection
+   - Visual duplication reports
+   - Integration with existing SonarQube setup
+   - Provides duplication percentage metrics
+   - Historical tracking of duplication trends
+
+3. **PMD Copy/Paste Detector (CPD)**
+   - Supports TypeScript/JavaScript
+   - Command-line tool
+   - Configurable minimum token count
+   - XML and text report formats
+   - Can be integrated into CI/CD
+
+4. **ESLint plugin: eslint-plugin-no-secrets**
+   - While primarily for secrets detection, can help identify patterns
+   - Can be combined with other tools
+
+5. **TypeScript-specific analyzers**
+   - Some TypeScript-aware tools can detect structural duplication
+   - Better at identifying semantically similar code
+
+## Duplication Thresholds
+
+Recommended duplication detection thresholds:
+- **Minimum tokens**: 50-100 tokens (default: 50)
+  - Lower values detect smaller duplicates (may have false positives)
+  - Higher values detect larger duplicates (more significant issues)
+- **Similarity threshold**: 80-100% (default: 80%)
+  - 100% = exact duplicates
+  - 80-99% = near-duplicates (similar code with minor variations)
+- **Duplication percentage targets**:
+  - Excellent: < 3% duplication
+  - Good: 3-5% duplication
+  - Acceptable: 5-10% duplication
+  - Needs improvement: > 10% duplication
 
 ## Checklist
 
-- [ ] Run code duplication detection tool
-- [ ] Identify duplicate code blocks
-- [ ] Review duplication patterns
-- [ ] Document duplicate code locations
-- [ ] Measure duplication percentage
-- [ ] Prioritize duplication issues
-- [ ] Create duplication report
+### Tool Selection and Setup
+- [ ] Research and compare code duplication detection tool options
+- [ ] Choose appropriate tool(s) based on project needs and existing setup
+- [ ] Install chosen tool(s) as dev dependencies (if npm packages)
+- [ ] Configure tool with appropriate thresholds and ignore patterns
+- [ ] Add duplication detection script to package.json
+- [ ] Configure ignore patterns (node_modules, dist, coverage, tests if desired)
+
+### jscpd Configuration (Recommended)
+- [ ] Install jscpd: `npm install --save-dev jscpd`
+- [ ] Create `.jscpdrc.json` configuration file
+- [ ] Configure minimum tokens threshold (recommended: 50)
+- [ ] Configure similarity threshold (recommended: 80%)
+- [ ] Set ignore patterns:
+  - `node_modules/**`
+  - `dist/**`
+  - `coverage/**`
+  - `*.test.ts` (optional, depending on whether test duplication matters)
+- [ ] Configure report formats (console, JSON, HTML)
+- [ ] Test jscpd configuration on codebase
+
+### Running Duplication Detection
+- [ ] Run initial duplication detection on entire codebase
+- [ ] Generate duplication report (JSON, HTML, or console output)
+- [ ] Identify all duplicate code blocks:
+  - Exact duplicates (100% similarity)
+  - Near-duplicates (80-99% similarity)
+- [ ] Calculate overall duplication percentage
+- [ ] Identify files with highest duplication
+- [ ] Identify most duplicated code patterns
+- [ ] Count number of duplicate blocks found
+
+### Analysis and Documentation
+- [ ] Review duplication findings and identify patterns:
+  - Common duplication patterns (e.g., error handling, validation logic)
+  - Files with most duplication
+  - Functions/methods that appear duplicated
+- [ ] Document all significant duplicate code blocks:
+  - File locations and line numbers
+  - Similarity percentage
+  - Size of duplicate block (lines/tokens)
+  - Reason for duplication (if apparent)
+  - Suggested refactoring approach
+- [ ] Create prioritized list of duplication issues:
+  - Critical: Large exact duplicates (>100 lines, 100% similarity)
+  - High: Medium exact duplicates (50-100 lines, 100% similarity)
+  - Medium: Large near-duplicates (>100 lines, 80-99% similarity)
+  - Low: Small duplicates (<50 lines)
+- [ ] Document duplication baseline metrics:
+  - Total duplication percentage
+  - Number of duplicate blocks found
+  - Average size of duplicate blocks
+  - Most duplicated files (top 10)
+  - Most common duplication patterns
+- [ ] Create duplication report document (markdown or HTML)
+
+### Integration
+- [ ] Integrate duplication checks into CI/CD pipeline (if applicable)
+- [ ] Add duplication detection to pre-commit hooks (optional)
+- [ ] Configure duplication gates (warn/fail build if duplication exceeds threshold)
+- [ ] Set up automated duplication reporting
+- [ ] Document how to run duplication detection locally
+
+### Review and Validation
+- [ ] Verify duplication detection runs successfully
+- [ ] Verify reports are generated correctly
+- [ ] Review duplication findings for accuracy
+- [ ] Validate that all significant duplicates are identified
+- [ ] Ensure duplication metrics align with code review findings
+- [ ] Test CI/CD integration (if configured)
+- [ ] Verify ignore patterns work correctly
+
+## Configuration Example (jscpd)
+
+Create `.jscpdrc.json`:
+
+```json
+{
+  "threshold": 80,
+  "minTokens": 50,
+  "ignore": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/coverage/**",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
+  "reporters": ["console", "json", "html"],
+  "reportersOptions": {
+    "json": {
+      "output": "reports/jscpd-report.json"
+    },
+    "html": {
+      "output": "reports/jscpd-report.html"
+    }
+  }
+}
+```
+
+## Configuration Example (package.json script)
+
+Add duplication detection script:
+
+```json
+{
+  "scripts": {
+    "duplication": "jscpd src --threshold 80 --min-tokens 50",
+    "duplication:report": "jscpd src --threshold 80 --min-tokens 50 --reporters html --reporters json --output reports/jscpd"
+  }
+}
+```
 
 ## Notes
 
@@ -24,7 +194,12 @@ detect code duplication to improve code quality and maintainability.
 - Section: 1. Automated Code Smell Detection
 - Focus on identifying and fixing code quality issues
 - Document all findings and improvements
-
+- Code duplication detection should complement, not replace, code reviews
+- Start with reasonable thresholds and adjust based on baseline results
+- Some duplication may be acceptable (e.g., test fixtures, configuration patterns)
+- Focus on functional duplication that impacts maintainability
+- Integration with SonarQube (if set up in PHASE4-003) provides the most comprehensive analysis
+- Consider both exact duplicates and near-duplicates (similar patterns)
 - Task can be completed independently by a single agent
 
 ## Related Tasks
