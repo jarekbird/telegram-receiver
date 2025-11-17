@@ -40,6 +40,7 @@ Based on the jarek-va Rails implementation, the following authentication mechani
 5. **Sidekiq Web UI** (mounted at `/sidekiq`)
    - Currently has no visible authentication protection
    - Comment in routes.rb mentions "protect in production" but no implementation found
+   - **Note**: Sidekiq is Ruby-specific and won't be converted. If a Node.js equivalent (e.g., BullMQ dashboard) is implemented, it should be protected with authentication.
 
 ## Checklist
 
@@ -51,10 +52,18 @@ Based on the jarek-va Rails implementation, the following authentication mechani
 - [ ] Check for authentication bypasses (development mode blank secret checks)
 - [ ] Review secret token handling (header vs query param vs body param)
 - [ ] Review secret configuration (default values, environment variable handling)
+  - [ ] Verify default 'changeme' values are not used in production (require explicit configuration)
+  - [ ] Verify environment variable precedence matches Rails (credentials → ENV → default)
+  - [ ] Check that blank secrets are handled appropriately (development bypass vs production requirement)
 - [ ] Check for proper authorization (role-based access, endpoint-specific permissions)
 - [ ] Verify consistent secret naming and usage across endpoints
 - [ ] Check for timing attack vulnerabilities in secret comparison
+  - [ ] Verify Node.js implementation uses `crypto.timingSafeEqual()` instead of simple `==` comparison
+  - [ ] Ensure all secret comparisons are constant-time (Rails uses vulnerable `==` comparison)
 - [ ] Review error handling and logging (avoid leaking secret information)
+  - [ ] Verify error messages are generic (e.g., "Unauthorized" not "Invalid secret")
+  - [ ] Verify logs indicate secret presence (`[present]`/`[missing]`) but not actual secret values
+  - [ ] Verify IP addresses are logged for security monitoring (as in Rails implementation)
 - [ ] Identify security gaps (unprotected endpoints, weak secrets, etc.)
 - [ ] Document authentication flow for each endpoint
 - [ ] Review and document secret management best practices
@@ -75,7 +84,10 @@ Reference the following Rails files in jarek-va for authentication implementatio
 
 1. **Development Mode Bypasses**: Some authentication methods allow blank secrets in development mode. Review if this is appropriate or if stricter validation is needed.
 
-2. **Default Secrets**: Default secret values ('changeme') are used when secrets are not configured. This is a security risk in production.
+2. **Default Secrets**: 
+   - Default secret values ('changeme') are used when secrets are not configured in Rails (`config/application.rb` lines 24-25, 44-45)
+   - This is a security risk in production - verify Node.js implementation requires explicit secret configuration or fails securely
+   - Check that environment variable handling matches Rails pattern (credentials first, then ENV, then default)
 
 3. **Multiple Secret Sources**: Secrets can be passed via headers, query params, or body params. Review if this flexibility is necessary or if it creates security vulnerabilities.
 
@@ -83,11 +95,20 @@ Reference the following Rails files in jarek-va for authentication implementatio
 
 5. **Unprotected Sidekiq Web UI**: The Sidekiq Web UI is mounted without authentication. This should be protected in production environments.
 
-6. **Secret Comparison**: Review if secret comparison uses constant-time comparison to prevent timing attacks.
+6. **Secret Comparison**: 
+   - Rails uses simple `==` comparison which is vulnerable to timing attacks
+   - Node.js implementation should use `crypto.timingSafeEqual()` for constant-time comparison
+   - Verify that all secret comparisons use timing-safe methods
 
-7. **Error Messages**: Ensure error messages don't leak information about secret validation failures.
+7. **Error Messages**: 
+   - Ensure error messages don't leak information about secret validation failures
+   - Rails logs warnings like "Unauthorized Telegram webhook request - invalid secret token" without exposing the actual secret
+   - Verify Node.js implementation follows same pattern (generic error messages, no secret exposure)
 
-8. **Logging**: Review if authentication failures are logged appropriately without exposing sensitive information.
+8. **Logging**: 
+   - Review if authentication failures are logged appropriately without exposing sensitive information
+   - Rails logs include IP addresses and secret presence status (`[present]` or `[missing]`) but not the actual secret value
+   - Verify Node.js implementation logs authentication failures with similar detail level (no secret values)
 
 ## Notes
 
