@@ -31,7 +31,7 @@ The Rails implementation uses consistent error handling patterns:
 - [ ] Verify all methods re-throw exceptions after logging (maintain Rails behavior of propagating errors)
 - [ ] Verify specific error validations are implemented:
   - [ ] `sendVoice()` validates file exists before reading (throw error: "Voice file does not exist" if file missing)
-  - [ ] `downloadFileFromUrl()` validates HTTP response is successful (throw error: "Failed to download file: HTTP {code} {message}" if not successful)
+  - [ ] `downloadFileFromUrl()` (private helper method) validates HTTP response is successful (throw error: "Failed to download file: HTTP {code} {message}" if not successful)
 - [ ] Verify all methods have early return checks for blank bot token (consistent with Rails `return if Rails.application.config.telegram_bot_token.blank?` pattern)
 - [ ] Ensure error handling is consistent across all methods (same pattern: try-catch, log, re-throw)
 
