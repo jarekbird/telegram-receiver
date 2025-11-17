@@ -8,19 +8,32 @@
 
 Review and improve Redis query patterns in the codebase to ensure best practices. This task focuses on analyzing Redis usage patterns, identifying performance bottlenecks, and ensuring efficient Redis operations throughout the application.
 
-Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callback_service.rb` to understand the original Redis usage patterns and ensure the TypeScript implementation follows best practices.
+**Redis Usage in the Application:**
+- **Callback State Management**: `CursorRunnerCallbackService` uses Redis to store pending cursor-runner callback requests (similar to Rails `cursor_runner_callback_service.rb`)
+- **Background Job Queue**: BullMQ uses Redis for job queue management (similar to Rails Sidekiq which uses Redis)
+
+Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callback_service.rb` to understand the original Redis usage patterns:
+- Uses key prefix `cursor_runner_callback:` for callback state
+- Uses `setex` for atomic storage with TTL (default 3600 seconds = 1 hour)
+- Methods: `store_pending_request`, `get_pending_request`, `remove_pending_request`
+- Supports dependency injection for Redis client (allows testing)
+- Uses `JSON.parse` with `symbolize_names: true` for data serialization
+
+Also reference `jarek-va/config/initializers/sidekiq.rb` to understand how Sidekiq (Rails job queue) uses Redis, which is equivalent to how BullMQ uses Redis in the TypeScript implementation.
 
 ## Checklist
 
 ### Query Frequency and Patterns
 - [ ] Review Redis query frequency across all services
-  - Identify high-frequency Redis operations (e.g., callback state lookups)
+  - Identify high-frequency Redis operations (e.g., callback state lookups in `CursorRunnerCallbackService`)
+  - Review BullMQ Redis operations (job enqueueing, processing, completion)
   - Check for unnecessary Redis calls in hot paths
   - Review if operations can be batched or cached
 - [ ] Analyze Redis operation patterns
   - Count total Redis operations per request/operation
   - Identify operations that could be combined (pipelining)
   - Check for redundant Redis calls
+  - Review BullMQ's internal Redis operations (ensure they're efficient)
 
 ### Query Efficiency
 - [ ] Check for inefficient queries
@@ -37,10 +50,11 @@ Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callb
 ### Key Naming Patterns
 - [ ] Review key naming patterns
   - Verify consistent key prefix usage (e.g., `cursor_runner_callback:` from Rails implementation)
+  - Review BullMQ key naming patterns (BullMQ uses its own key prefixes like `bull:queue:`, `bull:job:`, etc.)
   - Check that keys follow a clear namespace pattern
   - Ensure keys are descriptive and follow naming conventions
-  - Verify no key collisions or conflicts
-  - Check that keys are properly scoped (e.g., per-request IDs)
+  - Verify no key collisions or conflicts between application keys and BullMQ keys
+  - Check that keys are properly scoped (e.g., per-request IDs for callback state)
 
 ### TTL (Time To Live) Usage
 - [ ] Check for proper TTL usage
@@ -55,12 +69,14 @@ Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callb
   - Verify Redis client uses connection pooling (not creating new clients per request)
   - Check if multiple Redis client instances are created unnecessarily
   - Review singleton pattern or shared Redis client usage
-  - Verify connection reuse across service instances
-  - Check for proper connection cleanup on shutdown
+  - Verify connection reuse across service instances (CursorRunnerCallbackService and BullMQ should share Redis connection when possible)
+  - Review BullMQ Redis connection configuration (BullMQ creates its own Redis connections)
+  - Check for proper connection cleanup on shutdown (both application Redis client and BullMQ connections)
 - [ ] Review Redis client initialization
   - Verify Redis URL configuration matches Rails pattern (`REDIS_URL` env var, default `redis://localhost:6379/0`)
-  - Check Docker environment support (`redis://redis:6379/0`)
-  - Review if dependency injection pattern is used for Redis client (allows testing)
+  - Check Docker environment support (`redis://redis:6379/0` for Docker, `redis://localhost:6379/0` for local)
+  - Review if dependency injection pattern is used for Redis client (allows testing) - Rails pattern supports this via constructor parameter
+  - Verify BullMQ uses the same Redis URL configuration
 
 ### Error Handling and Resilience
 - [ ] Review Redis error handling
@@ -74,21 +90,25 @@ Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callb
 - [ ] Identify optimization opportunities
   - Check if pipelining can reduce round trips for multiple operations
   - Review if caching can reduce Redis calls
-  - Check if operations can be made atomic
+  - Check if operations can be made atomic (Rails uses `setex` which is atomic)
   - Verify no unnecessary serialization/deserialization overhead
-  - Review JSON parsing patterns (Rails uses `JSON.parse` with `symbolize_names: true`)
+  - Review JSON parsing patterns (Rails uses `JSON.parse` with `symbolize_names: true` - TypeScript should handle this appropriately)
+  - Review BullMQ job operations for optimization opportunities
 - [ ] Review data structures
   - Verify appropriate Redis data types are used (strings vs hashes vs sets)
+  - Rails implementation uses simple string values with JSON serialization (verify if this is optimal)
   - Check if hash operations could replace multiple string operations
   - Review if sorted sets or other structures could improve performance
+  - Review BullMQ's use of Redis data structures (it uses various structures for job management)
 
 ### Documentation and Patterns
 - [ ] Document Redis usage patterns
-  - Document key naming conventions
-  - Document TTL policies and defaults
-  - Document connection management approach
+  - Document key naming conventions (application keys vs BullMQ keys)
+  - Document TTL policies and defaults (Rails uses 3600 seconds for callback state)
+  - Document connection management approach (shared client vs BullMQ connections)
   - Create guidelines for future Redis usage
   - Document error handling patterns
+  - Document how application Redis usage interacts with BullMQ Redis usage
 
 ## Notes
 
