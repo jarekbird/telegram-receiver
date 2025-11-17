@@ -56,8 +56,11 @@ The jarek-va Rails application uses:
 
 Reference files:
 - `jarek-va/app/controllers/application_controller.rb` (lines 10-11) - Error logging pattern
-- `jarek-va/app/services/telegram_service.rb` (lines 33-34, 47-48) - Error logging with backtraces
-- `jarek-va/app/services/tool_router.rb` - Info, warn, and error logging examples
+- `jarek-va/app/services/telegram_service.rb` (lines 33-34, 47-48, 59-60, 71-72, 113-114, 147-148) - Error logging with backtraces
+- `jarek-va/app/services/tool_router.rb` (lines 9, 16, 28, 38, 41-42) - Info, warn, and error logging examples
+- `jarek-va/app/jobs/telegram_message_job.rb` (lines 20, 30, 33-34, 64, 72, 80, 91-92, 139, 148, 180, 218, 236, 326, 334, 346, 348, 369-370, 383, 385) - Extensive logging examples including info, error, warn, and debug
+- `jarek-va/app/services/cursor_runner_service.rb` (lines 165, 170) - Request/response logging examples
+- `jarek-va/app/services/eleven_labs_speech_to_text_service.rb` (lines 52, 60, 91, 99, 122, 131, 137) - Service logging examples
 
 ## Checklist
 
