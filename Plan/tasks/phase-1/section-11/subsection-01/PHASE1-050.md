@@ -6,7 +6,7 @@
 
 ## Description
 
-Create GitHub Actions directory
+Create the GitHub Actions directory structure. This directory will hold workflow files (`.yml` files) that define CI/CD pipelines for automated testing, linting, and deployment. The `.github/workflows/` directory is the standard location where GitHub Actions looks for workflow definitions.
 
 ## Checklist
 
