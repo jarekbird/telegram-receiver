@@ -130,7 +130,15 @@ In Express/TypeScript, we verify routes by making actual HTTP requests and verif
 
 ### Missing Routes in Rails Tests
 
-Note: The Rails `cursor_runner_routes_spec.rb` only tests callback, iterate, and execute routes. It does NOT test the git routes (clone, repositories, checkout, push, pull). This task should include tests for ALL routes defined in `routes.rb`, including the git routes.
+Note: The Rails route test suite (`jarek-va/spec/routes/`) is incomplete:
+
+1. **Health routes**: No route test file exists. Health routes are only tested via controller tests (`health_controller_spec.rb`). This task should create route tests for `GET /health` and `GET /` (root).
+
+2. **Agent tools routes**: No route test file exists. Agent tools routes are only tested via controller tests. This task should create route tests for `POST /agent-tools`.
+
+3. **Cursor runner git routes**: The Rails `cursor_runner_routes_spec.rb` only tests callback, iterate, and execute routes. It does NOT test the git routes (clone, repositories, checkout, push, pull). This task should include tests for ALL routes defined in `routes.rb`, including the git routes.
+
+This task should create comprehensive route tests for ALL routes defined in `routes.rb`, including those that don't have Rails route tests.
 
 ## Notes
 
