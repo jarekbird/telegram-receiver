@@ -16,7 +16,7 @@ Reference: `jarek-va/app/jobs/telegram_message_job.rb` (lines 15-51)
   - [ ] Accept update parameter (can be object or JSON string)
   - [ ] Parse JSON string if update is a string type
   - [ ] Normalize update object (TypeScript equivalent of Rails' `with_indifferent_access`)
-  - [ ] Log the update with full inspection for debugging
+  - [ ] Log the update with full inspection for debugging (format: "TelegramMessageJob processing update: {update.inspect or JSON.stringify}")
   - [ ] Route to appropriate handler based on update type:
     - [ ] If `update.message` exists → call `handleMessage(update.message)`
     - [ ] Else if `update.edited_message` exists → call `handleMessage(update.edited_message)` (note: uses same handler as message)
@@ -24,14 +24,17 @@ Reference: `jarek-va/app/jobs/telegram_message_job.rb` (lines 15-51)
     - [ ] Else → log unhandled update types with available keys
   - [ ] Wrap entire method in try-catch for error handling
   - [ ] On error:
-    - [ ] Log error message and full stack trace
-    - [ ] Extract chat info from update using `extractChatInfoFromUpdate(update)`
+    - [ ] Log error message and full stack trace (include "Error in TelegramMessageJob:" prefix in log message)
+    - [ ] Extract chat info from update using `extractChatInfoFromUpdate(update)` (returns [chatId, messageId] tuple)
+    - [ ] Check if chat_id is truthy (not null, not undefined, not empty string) before sending error message
     - [ ] If chat_id is available, send user-friendly error message to Telegram
-    - [ ] Use TelegramService.sendMessage() with error details
-    - [ ] Include reply_to_message_id if available
-    - [ ] Use parse_mode: 'HTML'
-    - [ ] Handle errors when sending error message (don't fail if Telegram send fails)
-    - [ ] Re-throw error to mark job as failed (for job queue retry logic)
+    - [ ] Use TelegramService.sendMessage() with error details:
+      - [ ] chat_id: extracted chat_id
+      - [ ] text: "Sorry, I encountered an error processing your message: {error.message}"
+      - [ ] reply_to_message_id: extracted message_id (can be null/undefined, Telegram API accepts optional)
+      - [ ] parse_mode: 'HTML'
+    - [ ] Wrap TelegramService.sendMessage() call in try-catch to handle errors when sending error message (log error but don't fail)
+    - [ ] Re-throw original error to mark job as failed (for job queue retry logic)
 
 ## Notes
 
@@ -42,15 +45,18 @@ Reference: `jarek-va/app/jobs/telegram_message_job.rb` (lines 15-51)
 ### Key Implementation Details
 
 - **Method Name**: In Rails, this is called `perform`, but in TypeScript/Node.js it should be named `process` to match the task naming convention
-- **Update Parsing**: The update can come as either a JSON string or an object. Must parse if string, then normalize the object structure
+- **Update Parsing**: The update can come as either a JSON string or an object. Must parse if string using `JSON.parse()`, then normalize the object structure to allow both string and number key access (equivalent to Rails' `with_indifferent_access`)
 - **Handler Routing**: 
   - Both `message` and `edited_message` use the same `handleMessage()` handler
   - `callback_query` uses `handleCallbackQuery()` handler
   - Unhandled update types are logged but don't cause errors
 - **Error Handling**: 
   - Comprehensive error handling is critical - errors should be logged, user should be notified via Telegram if possible
-  - Error message format: "Sorry, I encountered an error processing your message: {error.message}"
-  - Must re-throw error after handling to mark job as failed for retry logic
+  - Error log format: "Error in TelegramMessageJob: {error.message}" followed by full stack trace
+  - Error message format sent to Telegram: "Sorry, I encountered an error processing your message: {error.message}"
+  - chat_id check: Use truthy check (not null, not undefined, not empty string) equivalent to Rails' `.present?` method
+  - reply_to_message_id is optional and can be null/undefined (Telegram API accepts optional reply_to_message_id)
+  - Must re-throw original error after handling to mark job as failed for retry logic
 - **Dependencies**: 
   - Requires `extractChatInfoFromUpdate()` method (should be implemented in PHASE2-077 or as a utility)
   - Requires `TelegramService.sendMessage()` method
