@@ -6,21 +6,59 @@
 
 ## Description
 
-Convert install bullmq dependencies from Rails to TypeScript/Node.js.
+Install BullMQ dependencies for the TypeScript/Node.js application. BullMQ is the Node.js equivalent of Sidekiq used in the Rails application (`jarek-va`) for background job processing. This task ensures BullMQ and its required dependencies are properly installed and configured.
+
+**Rails Implementation Reference:**
+- `jarek-va/Gemfile` - Uses `sidekiq` gem (~> 7.0) for background job processing (line 25)
+- `jarek-va/config/sidekiq.yml` - Sidekiq configuration with queue definitions and concurrency settings
+- `jarek-va/config/initializers/sidekiq.rb` - Sidekiq initialization with Redis connection and default job options
+- `jarek-va/app/jobs/application_job.rb` - Base job class using Sidekiq adapter
+- `jarek-va/app/jobs/telegram_message_job.rb` - Example job using Sidekiq for async processing
+
+**Node.js Implementation:**
+- BullMQ (`bullmq`) is the TypeScript/Node.js equivalent of Sidekiq
+- BullMQ requires Redis connection (uses `ioredis` client)
+- Both `bullmq` and `ioredis` should be in package.json dependencies
+- Verify installation works correctly before proceeding to queue configuration
 
 ## Checklist
 
-- [ ] Install `bullmq` package
-- [ ] Add to package.json dependencies
-- [ ] Verify installation
+- [ ] Verify `bullmq` package is in package.json dependencies
+- [ ] Verify `ioredis` package is in package.json dependencies (required by BullMQ)
+- [ ] Check package versions are compatible:
+  - [ ] `bullmq` version should be recent stable version (e.g., ^5.0.0 or higher)
+  - [ ] `ioredis` version should be compatible with BullMQ requirements
+- [ ] Run `npm install` to ensure packages are installed
+- [ ] Verify installation by importing BullMQ in a test file:
+  - [ ] `import { Queue, Worker } from 'bullmq'` should work without errors
+  - [ ] `import Redis from 'ioredis'` should work without errors
+- [ ] Check that TypeScript types are available (should be included with bullmq package)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 3. Queue System Setup (BullMQ)
-- Reference the Rails implementation for behavior
-
-- Task can be completed independently by a single agent
+- **Rails Files to Reference:**
+  - `jarek-va/Gemfile` - Sidekiq gem dependency (line 25)
+  - `jarek-va/config/sidekiq.yml` - Sidekiq queue configuration
+  - `jarek-va/config/initializers/sidekiq.rb` - Sidekiq initialization and Redis connection
+  - `jarek-va/app/jobs/application_job.rb` - Base job class using Sidekiq
+- **Dependencies:**
+  - Requires Redis to be set up (completed in Section 2: Redis Integration)
+  - Uses `ioredis` for Redis connection (should already be in package.json from Redis setup)
+  - BullMQ is built on top of Redis, similar to how Sidekiq uses Redis
+- **Implementation Details:**
+  - BullMQ replaces Sidekiq functionality in the Node.js conversion
+  - Both use Redis as the backing store for job queues
+  - BullMQ provides similar features: queues, workers, job processing, retries, etc.
+  - Check `telegram-receiver/package.json` to verify current dependencies
+  - If packages are already installed, verify they work correctly
+  - If packages need to be added, use: `npm install bullmq ioredis`
+- **Key Differences from Rails:**
+  - Rails: Uses Sidekiq gem with Redis
+  - Node.js: Uses BullMQ library with ioredis
+  - Both use Redis, but the API and configuration differ
+- Task can be completed independently by a single agent (after Redis setup is complete)
 
 ## Related Tasks
 
