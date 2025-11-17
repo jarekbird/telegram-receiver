@@ -22,8 +22,13 @@ The Rails application has minimal security header configuration:
    - This would enable HSTS (HTTP Strict Transport Security) if enabled
 
 3. **Security Headers**:
-   - No explicit security headers configured in Rails
+   - No explicit security headers configured in Rails application code
    - Rails provides some default headers but not comprehensive security headers
+   - Security headers are configured at the infrastructure level (Traefik reverse proxy in `docker-compose.yml`):
+     - HSTS (Strict-Transport-Security) with 1-year max-age
+     - SSL redirect enabled
+     - Include subdomains and preload configured
+   - This demonstrates that security headers can be handled at the reverse proxy level, but application-level headers provide defense in depth
 
 ## Checklist
 
@@ -143,9 +148,14 @@ The Rails application has minimal security header configuration:
 - **Security Headers**: The `helmet` package is the standard Express middleware for setting security headers. It provides sensible defaults but should be configured appropriately for the application's needs.
 
 - **HTTPS Enforcement**: In production, HTTPS should be enforced. This can be done through:
-  - Reverse proxy (nginx, Apache) configuration
+  - Reverse proxy (nginx, Apache, Traefik) configuration
   - Application-level redirects
   - HSTS header configuration
+
+- **Infrastructure vs Application-Level Security**: The Rails application uses Traefik reverse proxy to set security headers at the infrastructure level. While this is a valid approach, implementing security headers at the application level (using helmet.js) provides defense in depth and ensures headers are set even if the application is deployed without a reverse proxy. Consider both approaches:
+  - Application-level headers (helmet.js): Provides defense in depth, works without reverse proxy
+  - Infrastructure-level headers (reverse proxy): Can be more performant, centralized configuration
+  - Best practice: Use both layers for maximum security
 
 - Task can be completed independently by a single agent
 
