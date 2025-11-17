@@ -6,22 +6,153 @@
 
 ## Description
 
-Convert test queue system from Rails to TypeScript/Node.js.
+Create comprehensive tests for the BullMQ queue system, converting the queue system tests from Rails Sidekiq to TypeScript/Node.js. This includes testing queue configuration, job enqueueing, job processing, retry behavior, error handling, and queue operations.
+
+**Rails Implementation Reference:**
+- `jarek-va/spec/config/sidekiq_spec.rb` - Sidekiq configuration tests:
+  - Tests Sidekiq module loading and configuration methods
+  - Tests default job options (retry: 3, backtrace: true)
+  - Tests Redis URL configuration from environment
+  - Tests ActiveJob adapter configuration
+  - Tests Sidekiq YAML configuration file existence and environment-specific settings
+- `jarek-va/spec/jobs/application_job_spec.rb` - Base job tests:
+  - Tests job configuration (inheritance from ActiveJob::Base, default queue name)
+  - Tests retry configuration (retry_on, discard_on)
+  - Tests job enqueueing (perform_later, with arguments, to different queues)
+  - Tests job retry behavior
+- `jarek-va/spec/routes/sidekiq_routes_spec.rb` - Sidekiq routes tests:
+  - Tests Sidekiq Web UI mounting at /sidekiq
+  - Tests Sidekiq::Web application availability
+- `jarek-va/spec/support/sidekiq.rb` - Sidekiq test helpers:
+  - Clears ActiveJob test queue before each test
+  - Includes ActiveJob testing helpers
+
+**Node.js Implementation:**
+- Create `tests/unit/jobs/queue.test.ts` to test queue configuration and operations
+- Create `tests/unit/jobs/application-job.test.ts` to test base job class functionality
+- Test BullMQ queue configuration (connection, default options, environment-specific settings)
+- Test job enqueueing with various arguments and queue names
+- Test job processing and completion
+- Test retry behavior and error handling
+- Test queue error handlers (from PHASE2-016)
+- Use BullMQ test utilities and mocks for isolated testing
 
 ## Checklist
 
-- [ ] Create test script
-- [ ] Test job enqueueing
-- [ ] Test job processing
-- [ ] Verify error handling
+- [ ] Create `tests/unit/jobs/queue.test.ts` file
+  - [ ] Test queue configuration:
+    - [ ] Test BullMQ Connection instance creation
+    - [ ] Test queue connection utility (`getQueueConnection()`)
+    - [ ] Test default job options (retry: 3, exponential backoff)
+    - [ ] Test environment-specific queue configuration (development, test, production)
+    - [ ] Test Redis URL configuration from environment
+  - [ ] Test queue operations:
+    - [ ] Test Queue instance creation with connection
+    - [ ] Test queue name configuration
+    - [ ] Test adding jobs to queue with `add()` method
+    - [ ] Test job options (retry, delay, priority)
+    - [ ] Test queue error event listeners (from PHASE2-016)
+- [ ] Create `tests/unit/jobs/application-job.test.ts` file
+  - [ ] Test base job class:
+    - [ ] Test job class structure (abstract base class pattern)
+    - [ ] Test default queue name ("default")
+    - [ ] Test queue name override capability
+    - [ ] Test job processor function signature
+  - [ ] Test job enqueueing:
+    - [ ] Test enqueueing jobs with arguments
+    - [ ] Test storing job arguments correctly
+    - [ ] Test enqueueing jobs to different queues
+    - [ ] Test job options when enqueueing (retry, delay, priority)
+  - [ ] Test job processing:
+    - [ ] Test job processor execution with valid data
+    - [ ] Test job processor with different argument types
+    - [ ] Test job completion and result handling
+  - [ ] Test retry behavior:
+    - [ ] Test retry configuration (3 attempts, exponential backoff)
+    - [ ] Test retry on StandardError
+    - [ ] Test discard on specific errors (DeserializationError equivalent)
+    - [ ] Test retry delay calculation (exponential backoff)
+- [ ] Create `tests/unit/jobs/queue-error-handler.test.ts` file
+  - [ ] Test queue error handlers (from PHASE2-016):
+    - [ ] Test Queue error event listener attachment
+    - [ ] Test Worker error event listener attachment
+    - [ ] Test failed event handler for exhausted retries
+    - [ ] Test completed event handler for successful jobs
+    - [ ] Test active event handler for job start
+    - [ ] Test stalled event handler
+  - [ ] Test error logging:
+    - [ ] Test error logs include job ID, queue name, error message, stack trace
+    - [ ] Test failed job logs include full context (attempts, error details, job data)
+    - [ ] Test logging uses application logger utility
+- [ ] Create integration test `tests/integration/jobs/queue-integration.test.ts`:
+  - [ ] Test end-to-end job flow (enqueue → process → complete)
+  - [ ] Test job retry flow (enqueue → fail → retry → complete)
+  - [ ] Test multiple jobs processing concurrently
+  - [ ] Test queue error handling in real scenarios
+- [ ] Add test utilities and helpers:
+  - [ ] Create `tests/helpers/queueHelpers.ts` for queue test utilities
+  - [ ] Create mock Queue and Worker instances for testing
+  - [ ] Create helper functions to create test jobs
+  - [ ] Create helper functions to wait for job completion
+  - [ ] Create helper functions to clear queues between tests
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 3. Queue System Setup (BullMQ)
-- Reference the Rails implementation for behavior
-
-- Task can be completed independently by a single agent
+- **Rails Files to Reference:**
+  - `jarek-va/spec/config/sidekiq_spec.rb` - Sidekiq configuration tests:
+    - Lines 6-12: Sidekiq module loading and configuration methods
+    - Lines 14-22: Default job options (retry: 3, backtrace: true)
+    - Lines 24-30: Redis URL configuration from environment
+    - Lines 33-50: ActiveJob adapter configuration
+    - Lines 53-68: Sidekiq YAML configuration file tests
+  - `jarek-va/spec/jobs/application_job_spec.rb` - Base job tests:
+    - Lines 16-24: Job configuration (inheritance, default queue name)
+    - Lines 26-52: Retry and discard configuration
+    - Lines 54-76: Job enqueueing tests (with arguments, different queues)
+    - Lines 78-93: Job retry behavior tests
+  - `jarek-va/spec/routes/sidekiq_routes_spec.rb` - Sidekiq routes tests:
+    - Lines 6-20: Sidekiq Web UI mounting and availability tests
+  - `jarek-va/spec/support/sidekiq.rb` - Sidekiq test helpers:
+    - Lines 4-9: Clear ActiveJob test queue before each test
+    - Line 12: Include ActiveJob testing helpers
+- **Dependencies:**
+  - Requires BullMQ to be installed (completed in PHASE2-012)
+  - Requires queue connection utility (completed in PHASE2-014)
+  - Requires queue configuration (completed in PHASE2-013)
+  - Requires base job processor (completed in PHASE2-015)
+  - Requires queue error handling (completed in PHASE2-016)
+- **Implementation Details:**
+  - Use Jest as the test framework (already configured in telegram-receiver)
+  - Use BullMQ's test utilities for isolated testing (can use Redis mock or test Redis instance)
+  - BullMQ provides `Queue` and `Worker` classes that can be tested
+  - For unit tests, mock Redis connection or use test Redis instance
+  - For integration tests, use actual Redis connection (test instance)
+  - Test helpers should clean up queues and jobs between tests
+  - Use `waitForJobs` or similar patterns to wait for async job completion
+  - Test error scenarios: connection errors, job processing errors, retry exhaustion
+  - Test success scenarios: job enqueueing, processing, completion
+  - Test configuration: default options, environment-specific settings, queue names
+- **Key Differences from Rails:**
+  - Rails: Uses ActiveJob::TestHelper for testing (clears queues automatically)
+  - Node.js: Must manually clear queues or use test utilities
+  - Rails: Sidekiq tests use ActiveJob test adapter in test environment
+  - Node.js: BullMQ requires explicit Queue/Worker instances for testing
+  - Rails: Tests can use `have_enqueued_job` matchers
+  - Node.js: Must check queue state directly or use BullMQ's job inspection methods
+- **Testing Patterns:**
+  - Unit tests: Mock Queue/Worker instances, test configuration and options
+  - Integration tests: Use real Queue/Worker instances with test Redis
+  - Test helpers: Create reusable functions for common test operations
+  - Cleanup: Always clean up queues and jobs after tests to prevent test pollution
+- **Test Coverage Goals:**
+  - Queue configuration: 100% coverage
+  - Job enqueueing: 100% coverage
+  - Job processing: 100% coverage
+  - Error handling: 100% coverage
+  - Retry behavior: 100% coverage
+- Task can be completed independently by a single agent (after PHASE2-012, PHASE2-013, PHASE2-014, PHASE2-015, and PHASE2-016 are complete)
 
 ## Related Tasks
 
