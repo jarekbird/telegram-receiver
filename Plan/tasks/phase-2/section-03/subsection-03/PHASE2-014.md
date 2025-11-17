@@ -6,22 +6,81 @@
 
 ## Description
 
-Convert create queue connection utility from Rails to TypeScript/Node.js.
+Create a queue connection utility that provides a singleton Redis connection instance for BullMQ. This utility creates a reusable `Connection` instance that can be shared across all queue operations (creating queues, workers, etc.), matching the Redis connection pattern used by Sidekiq in the Rails application.
+
+**Rails Implementation Reference:**
+- `jarek-va/config/initializers/sidekiq.rb` - Sidekiq Redis connection configuration (lines 7-10 for server, lines 24-27 for client)
+  - Both server and client configurations use the same Redis URL from `REDIS_URL` environment variable
+  - Defaults to `redis://localhost:6379/0` if `REDIS_URL` is not set
+  - In Docker: `REDIS_URL` is set to `redis://redis:6379/0` (shared Redis instance)
+
+**Node.js Implementation:**
+- Create `src/utils/queue.ts` to provide a singleton BullMQ `Connection` instance
+- Initialize connection with Redis URL from environment variable
+- Export the connection for reuse across the application
+- This utility complements `src/config/queue.ts` (created in PHASE2-013) by providing the actual connection instance
 
 ## Checklist
 
 - [ ] Create `src/utils/queue.ts` file
-- [ ] Implement queue connection singleton
-- [ ] Add connection initialization
-- [ ] Export queue connection
+- [ ] Import `Connection` from `bullmq` package
+- [ ] Implement singleton pattern for connection instance:
+  - [ ] Create a module-level variable to store the connection instance
+  - [ ] Create `getQueueConnection()` function that returns singleton instance
+  - [ ] Initialize connection only once (lazy initialization)
+- [ ] Configure Redis connection:
+  - [ ] Use `REDIS_URL` environment variable (defaults to `redis://localhost:6379/0`)
+  - [ ] Create `Connection` instance with Redis URL
+  - [ ] Support both Docker (`redis://redis:6379/0`) and local development (`redis://localhost:6379/0`)
+- [ ] Export connection:
+  - [ ] Export `getQueueConnection()` function for use by queues and workers
+  - [ ] Export the connection instance directly (optional, for advanced use cases)
+- [ ] Add TypeScript types:
+  - [ ] Import `Connection` type from `bullmq`
+  - [ ] Type the return value of `getQueueConnection()`
+- [ ] Add error handling:
+  - [ ] Handle connection initialization errors
+  - [ ] Log connection status appropriately
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 3. Queue System Setup (BullMQ)
-- Reference the Rails implementation for behavior
-
-- Task can be completed independently by a single agent
+- **Rails Files to Reference:**
+  - `jarek-va/config/initializers/sidekiq.rb` - Sidekiq Redis connection:
+    - Server configuration (lines 7-10): `config.redis = { url: ENV.fetch('REDIS_URL', 'redis://localhost:6379/0') }`
+    - Client configuration (lines 24-27): Same Redis URL configuration
+    - Both use the same Redis instance (shared connection pattern)
+    - Environment variable: `REDIS_URL` (defaults to `redis://localhost:6379/0`)
+    - In Docker: `REDIS_URL=redis://redis:6379/0` (shared Redis instance)
+- **Dependencies:**
+  - Requires BullMQ to be installed (completed in PHASE2-012)
+  - Requires queue configuration to exist (completed in PHASE2-013)
+  - Uses `REDIS_URL` environment variable (should be set in Docker: `redis://redis:6379/0`)
+- **Implementation Details:**
+  - BullMQ's `Connection` class wraps the Redis connection and can be shared across multiple `Queue` and `Worker` instances
+  - The connection utility should provide a singleton pattern to ensure all queues and workers use the same Redis connection
+  - The `Connection` constructor accepts a connection options object with `host`, `port`, `password`, or a `url` property
+  - For simplicity, use the `url` option: `new Connection({ url: redisUrl })`
+  - The connection should be initialized lazily (only when first accessed) to avoid connection issues during module loading
+  - This utility is separate from `src/config/queue.ts` (PHASE2-013):
+    - `src/config/queue.ts`: Configuration settings (default job options, environment-specific settings)
+    - `src/utils/queue.ts`: Connection instance (singleton Redis connection)
+- **Key Differences from Rails:**
+  - Rails: Sidekiq manages Redis connection internally via `config.redis` in configure blocks
+  - Node.js: BullMQ requires explicit `Connection` instance that must be passed to `Queue` and `Worker` constructors
+  - Rails: Connection is configured globally in initializer
+  - Node.js: Connection instance must be created and passed to each queue/worker
+- **Usage Pattern:**
+  - Other modules will import: `import { getQueueConnection } from '@/utils/queue'`
+  - When creating queues: `new Queue('queue-name', { connection: getQueueConnection() })`
+  - When creating workers: `new Worker('queue-name', processor, { connection: getQueueConnection() })`
+- **Testing Considerations:**
+  - Test that connection is created correctly with Redis URL
+  - Test that singleton pattern works (same instance returned on multiple calls)
+  - Test that connection uses environment variable correctly
+  - Test default Redis URL fallback
+- Task can be completed independently by a single agent (after PHASE2-012 and PHASE2-013 are complete)
 
 ## Related Tasks
 
