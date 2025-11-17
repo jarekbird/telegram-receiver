@@ -20,11 +20,11 @@ Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callb
   - Consider whether to throw errors or handle gracefully (recommend throwing for critical operations)
   - Ensure error messages are descriptive and include context (request ID, TTL value)
 - [ ] Add error handling to `getPendingRequest` method
-  - The Rails implementation already handles JSON parsing errors (lines 43-48), ensure this is preserved
+  - The Rails implementation handles JSON parsing errors (lines 43-48), and this was already implemented in PHASE2-041 - ensure this is preserved
   - Add Redis connection error handling (wrap `get()` operation in try/catch)
   - Add Redis operation error handling
   - Log Redis errors with error level, including request ID
-  - JSON parsing errors should return null (as per Rails implementation)
+  - JSON parsing errors should return null (as per Rails implementation and PHASE2-041)
   - Redis errors should also return null (to match graceful degradation pattern)
 - [ ] Add error handling to `removePendingRequest` method
   - Wrap Redis `del()` operation in try/catch block
@@ -91,6 +91,7 @@ Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callb
 - Include request ID in all error logs for traceability
 - Use appropriate log levels (error for errors, warn for warnings, info for info)
 - Check project's logging setup (may use console.log, winston, pino, or another logger)
+- Note: Based on PHASE2-039, PHASE2-040, PHASE2-041, and PHASE2-042, the project currently uses `console.log()` for info messages and `console.error()` for error messages (no logger utility exists yet)
 
 **Dependencies:**
 - Assumes `CursorRunnerCallbackService` class structure exists (from PHASE2-039)
