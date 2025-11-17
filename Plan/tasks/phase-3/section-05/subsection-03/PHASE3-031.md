@@ -6,17 +6,112 @@
 
 ## Description
 
-Review and improve review caching strategies in the codebase to ensure best practices.
+Review and improve caching strategies in the codebase to ensure best practices. This task focuses on analyzing existing caching implementations, identifying caching opportunities, and ensuring efficient cache usage throughout the application.
+
+Reference the Rails implementation at `jarek-va/app/services/telegram_service.rb` to understand the original bot client caching pattern (bot clients cached per token using `@bot ||=` singleton pattern) and ensure the TypeScript implementation follows best practices.
 
 ## Checklist
 
-- [ ] Review caching implementation
-- [ ] Check cache hit/miss rates
-- [ ] Review cache invalidation
-- [ ] Check for cache opportunities
-- [ ] Review cache TTLs
-- [ ] Identify improvements
-- [ ] Document strategy
+### Existing Caching Implementation
+- [ ] Review bot client caching implementation
+  - Check if Telegram bot clients are cached per token (matching Rails `@bot ||=` pattern)
+  - Verify singleton pattern or in-memory cache is used for bot clients
+  - Review cache key strategy (should be per bot token)
+  - Check if cache invalidation is needed when bot tokens change
+  - Verify cache is thread-safe/concurrent-safe for Node.js
+- [ ] Review Redis usage for caching vs. state storage
+  - Distinguish between Redis as cache (temporary, can be evicted) vs. state storage (required for operation)
+  - Check callback state storage (currently uses Redis with TTL, but is state storage, not cache)
+  - Identify if any Redis data should be treated as cache vs. required state
+  - Review if Redis is used appropriately for caching vs. other purposes
+
+### Cache Opportunities
+- [ ] Identify external API response caching opportunities
+  - Check Telegram Bot API responses that could be cached (e.g., `get_webhook_info`, `get_file` metadata)
+  - Review Cursor Runner API responses that might benefit from caching
+  - Check ElevenLabs API responses for caching opportunities
+  - Identify frequently accessed data that doesn't change often
+- [ ] Review in-memory caching opportunities
+  - Check for repeated calculations that could be cached
+  - Identify configuration data that could be cached (e.g., system settings)
+  - Review parsed data structures that could be cached
+  - Check for repeated validation results that could be cached
+- [ ] Review database query caching opportunities
+  - Check MCP database queries (SystemSetting lookups, task queries) that could be cached
+  - Identify frequently accessed data from shared SQLite database
+  - Review if query results could be cached with appropriate TTLs
+  - Check for patterns where same data is queried multiple times
+
+### Cache Implementation Patterns
+- [ ] Review cache key naming conventions
+  - Verify consistent cache key patterns (e.g., `telegram:bot:{token}`, `config:{key}`)
+  - Check that cache keys are descriptive and namespaced
+  - Ensure no cache key collisions
+  - Verify cache keys include versioning or invalidation strategy
+- [ ] Review cache storage mechanisms
+  - Check if in-memory cache (Map/Object) is appropriate for bot clients
+  - Review if Redis should be used for distributed caching
+  - Verify cache storage choice matches use case (single instance vs. multi-instance)
+  - Check if cache size limits are needed (LRU eviction, max size)
+- [ ] Review cache TTL (Time To Live) strategies
+  - Verify TTL values are appropriate for cached data
+  - Check if different TTLs are needed for different data types
+  - Review if TTL should be configurable via environment variables
+  - Verify TTL is set correctly (matches Rails 1-hour default for callback state if applicable)
+
+### Cache Invalidation
+- [ ] Review cache invalidation strategies
+  - Check if cache invalidation is needed when data changes (e.g., bot token updates)
+  - Review if TTL-based expiration is sufficient
+  - Identify if manual cache invalidation is needed (e.g., admin endpoints)
+  - Verify cache invalidation is implemented where needed
+- [ ] Review cache invalidation patterns
+  - Check for cache invalidation on updates (e.g., SystemSetting updates should invalidate config cache)
+  - Review if cache invalidation is atomic (no race conditions)
+  - Verify cache invalidation handles errors gracefully
+  - Check if cache invalidation is logged for debugging
+
+### Cache Performance and Monitoring
+- [ ] Review cache hit/miss tracking
+  - Check if cache hit/miss rates are tracked (metrics/logging)
+  - Review if cache performance is monitored
+  - Verify cache effectiveness can be measured
+  - Check if cache statistics are available for debugging
+- [ ] Review cache performance impact
+  - Verify caching reduces external API calls
+  - Check if caching reduces database queries
+  - Review if caching improves response times
+  - Verify caching doesn't introduce memory issues
+
+### Cache Best Practices
+- [ ] Review cache consistency
+  - Check if cached data can become stale (is staleness acceptable?)
+  - Verify cache consistency requirements for different data types
+  - Review if cache warming is needed on application startup
+  - Check if cache should be cleared on deployment
+- [ ] Review cache error handling
+  - Verify cache failures don't break application functionality
+  - Check if graceful degradation is implemented (fallback to non-cached path)
+  - Review error handling for cache operations
+  - Verify cache errors are logged appropriately
+- [ ] Review cache security
+  - Check if cached data contains sensitive information
+  - Verify cache keys don't expose sensitive data
+  - Review if cache should be encrypted (if storing sensitive data)
+  - Check if cache access is properly scoped
+
+### Documentation and Strategy
+- [ ] Document caching strategy
+  - Document what is cached and why
+  - Document cache key naming conventions
+  - Document TTL policies for different data types
+  - Document cache invalidation strategies
+  - Create guidelines for future caching decisions
+- [ ] Document cache implementation details
+  - Document cache storage mechanisms used
+  - Document cache size limits and eviction policies
+  - Document cache monitoring and metrics
+  - Document cache troubleshooting procedures
 
 ## Notes
 
