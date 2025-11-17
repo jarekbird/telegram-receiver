@@ -25,6 +25,46 @@ The application follows a layered architecture with:
 - **Utils** (`src/utils/`) - Utility functions and helpers
 - **Types** (`src/types/`) - TypeScript type definitions
 
+## Rails Async Patterns (Reference)
+
+The jarek-va Rails application uses synchronous operations that need to be converted to async/await in Node.js/TypeScript:
+
+### Background Jobs (Sidekiq → BullMQ)
+- **TelegramMessageJob** (`jarek-va/app/jobs/telegram_message_job.rb`): Processes updates asynchronously via Sidekiq
+  - Rails: `TelegramMessageJob.perform_later(update)` - enqueues job
+  - Node.js: Should use BullMQ job queue with async processors
+  - Job methods should be async functions
+  - Sequential operations (download → transcribe → send) should use async/await
+
+### Service Operations
+- **TelegramService** (`jarek-va/app/services/telegram_service.rb`): Synchronous HTTP calls
+  - Rails: Uses `bot.api.send_message()` synchronously
+  - Node.js: Should use async/await for HTTP requests
+  - File downloads (`download_file`) should be async with proper cleanup
+  - Multiple API calls should be parallelized where possible
+
+- **CursorRunnerService** (`jarek-va/app/services/cursor_runner_service.rb`): Synchronous HTTP calls
+  - Rails: Uses `Net::HTTP` synchronously with timeouts
+  - Node.js: Should use async HTTP client (axios/fetch) with async/await
+  - Timeout handling should use Promise.race() or AbortController
+  - Error handling should propagate async errors properly
+
+### Sequential Operations
+- **TelegramMessageJob.transcribe_audio**: Sequential operations (download → transcribe → cleanup)
+  - Rails: Uses `ensure` blocks for cleanup
+  - Node.js: Should use `try/finally` with async cleanup
+  - File operations should be async (fs.promises)
+
+- **TelegramMessageJob.send_text_as_audio**: Sequential operations (synthesize → send → cleanup)
+  - Rails: Uses `ensure` blocks for cleanup
+  - Node.js: Should use `try/finally` with async cleanup
+  - Error handling should handle cleanup errors gracefully
+
+### Resource Cleanup
+- Rails uses `ensure` blocks for cleanup (file deletion, connection closing)
+- Node.js should use `try/finally` with async cleanup operations
+- Cleanup errors should be logged but not fail the operation
+
 ## Async/Await Best Practices
 
 In Node.js/TypeScript applications, async/await patterns should follow these best practices:
@@ -36,7 +76,9 @@ In Node.js/TypeScript applications, async/await patterns should follow these bes
 5. **Sequential Execution**: Use await in loops only when operations depend on each other
 6. **Error Propagation**: Let errors bubble up appropriately, don't swallow them
 7. **Type Safety**: Properly type async functions and their return values
-8. **Resource Cleanup**: Ensure proper cleanup in async operations (e.g., file handles, connections)
+8. **Resource Cleanup**: Ensure proper cleanup in async operations (e.g., file handles, connections) using try/finally
+9. **Background Jobs**: Use async job processors (BullMQ) with proper async/await patterns
+10. **HTTP Requests**: Convert synchronous HTTP calls to async/await with proper timeout handling
 
 ## Checklist
 
@@ -55,6 +97,9 @@ In Node.js/TypeScript applications, async/await patterns should follow these bes
   - [ ] Verify error handling doesn't swallow important errors
   - [ ] Check for proper error context in async error handling
   - [ ] Verify async error handling in controllers, services, and jobs
+  - [ ] Check that cleanup operations in finally blocks handle errors gracefully (log warning, don't fail)
+  - [ ] Verify async error handling matches Rails patterns (errors propagate, cleanup always runs)
+  - [ ] Check that nested async operations handle errors properly (e.g., error sending error message)
 - [ ] Review parallel vs sequential execution
   - [ ] Identify operations that could run in parallel using Promise.all()
   - [ ] Check for unnecessary sequential await operations
@@ -63,6 +108,9 @@ In Node.js/TypeScript applications, async/await patterns should follow these bes
   - [ ] Verify sequential operations are only used when dependencies exist
   - [ ] Review for opportunities to parallelize independent API calls
   - [ ] Check for race conditions in parallel operations
+  - [ ] Verify sequential operations match Rails patterns (e.g., download → transcribe → send should be sequential)
+  - [ ] Check that independent operations (e.g., multiple Telegram API calls) are parallelized
+  - [ ] Verify file operations that don't depend on each other can run in parallel
 - [ ] Review Promise handling patterns
   - [ ] Check for Promise constructor anti-patterns
   - [ ] Verify proper use of Promise.resolve() and Promise.reject()
@@ -80,15 +128,26 @@ In Node.js/TypeScript applications, async/await patterns should follow these bes
   - [ ] Verify services use async/await consistently
   - [ ] Check for proper error handling in service methods
   - [ ] Verify external API calls use async/await properly
-  - [ ] Check for proper timeout handling in async service calls
+  - [ ] Check for proper timeout handling in async service calls (use Promise.race() or AbortController)
   - [ ] Verify services don't mix callback and Promise patterns
   - [ ] Check for proper resource cleanup in async service operations
+  - [ ] Verify HTTP requests use async HTTP client (axios/fetch) instead of synchronous calls
+  - [ ] Check that CursorRunnerService uses async/await for HTTP requests (converting from Rails Net::HTTP)
+  - [ ] Verify TelegramService uses async/await for API calls (converting from Rails bot.api calls)
+  - [ ] Check that file download operations use async file APIs
+  - [ ] Verify timeout errors are properly typed and handled (TimeoutError vs ConnectionError)
+  - [ ] Check that multiple independent API calls are parallelized using Promise.all()
 - [ ] Review async patterns in jobs
   - [ ] Verify job processors handle async operations correctly
   - [ ] Check for proper error handling in async job operations
   - [ ] Verify jobs don't have unhandled promise rejections
   - [ ] Check for proper async/await usage in job processing
   - [ ] Verify jobs handle async operations without blocking
+  - [ ] Verify sequential operations (download → process → cleanup) use async/await properly
+  - [ ] Check that file operations (download, transcribe, send) use async file APIs (fs.promises)
+  - [ ] Verify resource cleanup (file deletion) uses try/finally with async cleanup
+  - [ ] Check that cleanup errors are handled gracefully (log warning, don't fail operation)
+  - [ ] Verify jobs match Rails patterns: TelegramMessageJob should use async/await for sequential operations
 - [ ] Review async patterns in middleware
   - [ ] Verify middleware properly handles async operations
   - [ ] Check for proper error handling in async middleware
@@ -123,7 +182,18 @@ In Node.js/TypeScript applications, async/await patterns should follow these bes
 - Compare implemented async/await patterns with Node.js/TypeScript best practices
 - Review both existing code and planned structure to ensure consistent async/await usage
 - Reference Rails async patterns from jarek-va but adapt to Node.js/TypeScript conventions
+- **Important**: Even if the codebase is not fully implemented, this review should establish async/await patterns and guidelines for future implementation
+- Review should validate that planned async/await patterns align with Rails sequential patterns (where applicable) and Node.js/TypeScript best practices
 - Task can be completed independently by a single agent
+- Key Rails files to reference:
+  - `jarek-va/app/jobs/telegram_message_job.rb` - Sequential operations (download → transcribe → send) that should use async/await
+  - `jarek-va/app/services/telegram_service.rb` - Synchronous HTTP calls that should be async
+  - `jarek-va/app/services/cursor_runner_service.rb` - Synchronous HTTP calls with timeout handling that should use async/await
+- Conversion patterns:
+  - Rails `ensure` blocks → Node.js `try/finally` with async cleanup
+  - Rails synchronous HTTP → Node.js async HTTP with async/await
+  - Rails Sidekiq jobs → Node.js BullMQ jobs with async processors
+  - Rails sequential operations → Node.js async/await (or Promise.all() for parallel)
 
 ## Related Tasks
 
