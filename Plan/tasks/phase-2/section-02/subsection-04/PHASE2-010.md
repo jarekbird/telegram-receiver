@@ -24,7 +24,7 @@ Add comprehensive Redis connection error handling, reconnection logic, and conne
 ## Checklist
 
 - [ ] Update `src/utils/redis.ts` to add error handling:
-  - [ ] Import logger utility (from `src/utils/logger.ts` or similar)
+  - [ ] Import logger utility from `src/utils/logger.ts` (created in PHASE1-032). If PHASE1-032 is not yet complete, use `console.log`/`console.error` temporarily and note that proper logger integration should be added once PHASE1-032 is complete
   - [ ] Add connection status tracking (enum: `connecting`, `connected`, `disconnected`, `reconnecting`, `error`)
   - [ ] Create `getConnectionStatus()` function to return current status
 - [ ] Add ioredis event listeners:
@@ -67,12 +67,13 @@ Add comprehensive Redis connection error handling, reconnection logic, and conne
 - **Dependencies:**
   - Requires PHASE2-009 (Redis connection utility) to be completed first
   - Uses `ioredis` package (already in package.json dependencies)
+  - Logger dependency: Ideally requires PHASE1-032 (logger utility wrapper) to be completed for proper logging. If PHASE1-032 is not yet complete, use `console.log`/`console.error` temporarily and document that proper logger integration should be added once PHASE1-032 is complete
 - **Implementation Details:**
   - ioredis provides built-in reconnection, but explicit event handling improves observability
   - Connection status monitoring enables health checks and better error reporting
   - Event listeners should be registered when client is first created (in `getRedisClient()`)
   - Reconnection options should balance reliability with performance
-  - Logging should use application logger (not console.log) for consistency
+  - Logging should use application logger from `src/utils/logger.ts` (created in PHASE1-032) for consistency. If logger is not yet available, use `console.log`/`console.error` temporarily and note that proper logger integration should be added once PHASE1-032 is complete
 - **Key Differences from Rails:**
   - Rails: Ruby `redis` gem handles reconnection automatically, no explicit handling needed
   - Node.js: ioredis has reconnection but requires explicit event listeners for production monitoring
