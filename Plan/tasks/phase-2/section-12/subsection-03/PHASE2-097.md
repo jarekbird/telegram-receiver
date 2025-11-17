@@ -6,16 +6,46 @@
 
 ## Description
 
-Convert create admin authentication middleware from Rails to TypeScript/Node.js.
+Convert the admin authentication middleware from Rails to TypeScript/Node.js. This middleware protects admin endpoints (set_webhook, webhook_info, delete_webhook) by validating the admin secret.
+
+**Rails Implementation Reference:**
+- Controller: `jarek-va/app/controllers/telegram_controller.rb` (lines 110-130)
+- Configuration: `jarek-va/config/application.rb` (lines 22-25)
+- Used in endpoints: `set_webhook` (line 52), `webhook_info` (line 74), `delete_webhook` (line 92)
+
+**Rails Implementation Details:**
+- The `authenticate_admin` method is a protected method in TelegramController
+- Checks for admin secret from multiple sources (in order):
+  1. `request.headers['X-Admin-Secret']` (header)
+  2. `request.env['HTTP_X_ADMIN_SECRET']` (Rails converts headers to env vars - Express equivalent is checking headers directly)
+  3. `params[:admin_secret]` (query/body parameter)
+  4. `params['admin_secret']` (query/body parameter as string)
+- Compares against `Rails.application.config.webhook_secret`
+- Returns boolean (true/false) - the calling code returns `401 Unauthorized` if false
+- Has debug logging in test environment when authentication fails (logs secret values, headers, env vars, and params)
+- The secret is configured in `application.rb` from Rails credentials or ENV variable `WEBHOOK_SECRET` (defaults to 'changeme')
+
+**Express/TypeScript Implementation Notes:**
+- Express middleware should check headers via `req.headers['x-admin-secret']` (Express normalizes headers to lowercase)
+- Express should check query parameters via `req.query.admin_secret`
+- Express should check body parameters via `req.body.admin_secret` (if using body-parser middleware)
+- Middleware should return `401 Unauthorized` response directly if authentication fails, or call `next()` if valid
+- Configuration should read from `process.env.WEBHOOK_SECRET` (defaults to 'changeme')
 
 ## Checklist
 
 - [ ] Create `src/middleware/admin-auth.ts`
 - [ ] Implement Express middleware function
-- [ ] Check X-Admin-Secret header
-- [ ] Validate against configured secret
-- [ ] Return 401 if invalid
-- [ ] Call next() if valid
+- [ ] Check for admin secret from multiple sources (in order):
+  - [ ] `X-Admin-Secret` header (via `req.headers['x-admin-secret']` - Express normalizes headers to lowercase)
+  - [ ] `admin_secret` query parameter (via `req.query.admin_secret`)
+  - [ ] `admin_secret` body parameter (via `req.body.admin_secret`, if body-parser middleware is used)
+- [ ] Get expected secret from application configuration (environment variable `WEBHOOK_SECRET`, defaults to 'changeme')
+- [ ] Compare provided secret with expected secret
+- [ ] Return 401 Unauthorized if secret doesn't match or is missing
+- [ ] Call `next()` if valid
+- [ ] Add debug logging in test/development mode when authentication fails (log secret values, headers, env vars, and query params)
+- [ ] Export middleware function for use in route handlers
 
 ## Notes
 
