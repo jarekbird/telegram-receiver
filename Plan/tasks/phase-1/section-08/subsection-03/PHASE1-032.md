@@ -29,7 +29,7 @@ Create logger utility wrapper that provides a consistent logging interface match
   - [ ] `logger.error(message: string, ...args: any[])` - Log error messages (should include stack traces for Error objects)
   - [ ] `logger.warn(message: string, ...args: any[])` - Log warning messages
   - [ ] `logger.debug(message: string, ...args: any[])` - Log debug messages
-- [ ] Ensure error logging handles Error objects and includes stack traces (matching Rails error logging pattern where `Rails.logger.error(e.backtrace.join("\n"))` is used)
+- [ ] Ensure error logging handles Error objects and includes stack traces (matching Rails error logging pattern where errors are logged in two separate calls: first the error message with class name `Rails.logger.error("#{exception.class}: #{exception.message}")`, then the full backtrace `Rails.logger.error(exception.backtrace.join("\n"))`. The wrapper should detect Error objects and automatically log both the error message and stack trace)
 - [ ] Export the logger wrapper as default export
 - [ ] Ensure TypeScript types are properly defined for all methods
 - [ ] Ensure consistent logging interface that matches Rails.logger usage patterns
@@ -46,7 +46,7 @@ Create logger utility wrapper that provides a consistent logging interface match
   - `jarek-va/app/services/telegram_service.rb` (lines 33-34, 47-48, etc.) - Error logging with messages and backtraces
   - `jarek-va/app/jobs/telegram_message_job.rb` (lines 33-34) - Error logging pattern
   - Various service files use `Rails.logger.info()`, `Rails.logger.error()`, `Rails.logger.warn()`, `Rails.logger.debug()`
-- **Error Handling**: When logging errors, the wrapper should detect Error objects and automatically include stack traces (similar to how Rails logs both the error message and `e.backtrace.join("\n")`). This ensures error logging matches Rails patterns.
+- **Error Handling**: When logging errors, the wrapper should detect Error objects and automatically include stack traces. The Rails pattern logs errors in two separate calls: first `Rails.logger.error("#{exception.class}: #{exception.message}")` then `Rails.logger.error(exception.backtrace.join("\n"))`. The wrapper should replicate this by detecting Error objects in the arguments and automatically logging both the error message (with class name) and the full stack trace as separate log entries. This ensures error logging matches Rails patterns exactly.
 - **Usage Pattern**: The wrapper should allow usage like:
   ```typescript
   import logger from '@/utils/logger';
