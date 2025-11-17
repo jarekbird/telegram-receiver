@@ -20,7 +20,7 @@ The service handles:
 - [ ] Define class structure `ElevenLabsTextToSpeechService`
 - [ ] Add constructor with optional parameters: `api_key`, `timeout`, `model_id`, `voice_id`
   - Constructor should read from config/environment if parameters not provided
-  - Constructor should validate that api_key is present (throw error if missing)
+  - Constructor should validate that api_key is present (throw `ElevenLabsTextToSpeechServiceError` with message `'ElevenLabs API key is not configured'` if missing)
 - [ ] Define API constants:
   - `API_BASE_URL = 'https://api.elevenlabs.io'`
   - `TEXT_TO_SPEECH_ENDPOINT = '/v1/text-to-speech'`
@@ -35,11 +35,22 @@ The service handles:
   - `InvalidResponseError` (invalid API responses)
   - `SynthesisError` (synthesis failures)
 - [ ] Add private properties: `apiKey`, `timeout`, `modelId`, `voiceId`
-- [ ] Add public method signature: `voiceIdConfigured(): boolean` (checks if voice_id is configured)
+- [ ] Add public method signature: `voiceIdConfigured(): boolean` (checks if voice_id is configured/present)
 - [ ] Add public method signature: `synthesize(text: string, options?: { outputPath?: string, voiceSettings?: object }): Promise<string>` (returns path to audio file)
+  - Method should validate that `text` is not blank (throw `ElevenLabsTextToSpeechServiceError` with message `'Text is required'` if blank)
+  - Method should validate that `voice_id` is configured (throw `ElevenLabsTextToSpeechServiceError` with message `'ElevenLabs voice_id is not configured'` if not configured)
 - [ ] Add public method signature: `synthesizeToStream(text: string, options?: { voiceSettings?: object }): Promise<ReadableStream>` (returns audio stream)
+  - Method should validate that `text` is not blank (throw `ElevenLabsTextToSpeechServiceError` with message `'Text is required'` if blank)
+  - Method should validate that `voice_id` is configured (throw `ElevenLabsTextToSpeechServiceError` with message `'ElevenLabs voice_id is not configured'` if not configured)
 - [ ] Add private method signature: `buildHttp(uri: URL): HttpClient` (builds HTTP client with SSL and timeout)
+  - Should catch connection errors (ECONNREFUSED, EHOSTUNREACH, SocketError) and throw `ConnectionError`
+  - Should catch timeout errors (OpenTimeout, ReadTimeout) and throw `TimeoutError`
 - [ ] Add private method signature: `executeRequest(http: HttpClient, request: HttpRequest, uri: URL): Promise<HttpResponse>` (executes request with error handling)
+  - Should handle HTTP error responses, parsing JSON error bodies and extracting error messages
+  - Should handle both array and hash error response formats from ElevenLabs API
+  - Should throw `SynthesisError` for non-success HTTP responses
+  - Should catch timeout and connection errors and re-throw as `TimeoutError` and `ConnectionError` respectively
+  - Should include logging for request/response (log request path, response code, and error details)
 
 ## Notes
 
@@ -51,16 +62,20 @@ The service handles:
 
 1. **Constructor behavior**:
    - All parameters are optional and have defaults from config/environment
-   - Validates `api_key` is present, throws error if missing
+   - Validates `api_key` is present (not blank), throws `Error` with message `'ElevenLabs API key is not configured'` if missing
    - Uses Rails config values: `elevenlabs_api_key`, `elevenlabs_tts_model_id`, `elevenlabs_voice_id`
+   - Defaults: `timeout` to `DEFAULT_TIMEOUT`, `model_id` to config value or `DEFAULT_MODEL_ID`, `voice_id` to config value or `DEFAULT_VOICE_ID`
 
 2. **Error handling**:
-   - `build_http` catches connection errors (ECONNREFUSED, EHOSTUNREACH, SocketError) and raises `ConnectionError`
-   - `build_http` catches timeout errors (Net::OpenTimeout, Net::ReadTimeout) and raises `TimeoutError`
+   - `build_http` catches connection errors (ECONNREFUSED, EHOSTUNREACH, SocketError) and raises `ConnectionError` with message `"Failed to connect to ElevenLabs: {error.message}"`
+   - `build_http` catches timeout errors (Net::OpenTimeout, Net::ReadTimeout) and raises `TimeoutError` with message `"Request to ElevenLabs timed out: {error.message}"`
    - `execute_request` handles HTTP error responses, parsing JSON error bodies and extracting error messages
    - Error response parsing handles both array and hash formats from ElevenLabs API
-   - Raises `SynthesisError` for non-success HTTP responses
-   - Raises `InvalidResponseError` for JSON parsing failures
+   - For array errors: extracts `msg` field from each error object
+   - For hash errors: extracts `detail`, `error`, or `message` field; if `detail` is an array, extracts `msg` from each item
+   - Raises `SynthesisError` for non-success HTTP responses with extracted error message
+   - Raises `InvalidResponseError` for JSON parsing failures (with message `"Failed to parse response: {error.message}"`)
+   - `execute_request` also catches timeout and connection errors and re-raises them (in addition to `build_http` handling)
 
 3. **API request details**:
    - Endpoint: `POST /v1/text-to-speech/{voice_id}`
@@ -70,14 +85,28 @@ The service handles:
 
 4. **File handling**:
    - `synthesize` saves audio to file (uses temp directory with random filename if `output_path` not provided)
-   - `synthesize_to_io` returns audio as IO/stream object
-   - Uses `SecureRandom.hex(8)` for generating temp filenames in Rails
+   - Temp filename format: `elevenlabs_tts_{random_hex_8}.mp3` (e.g., `elevenlabs_tts_a1b2c3d4e5f6g7h8.mp3`)
+   - `synthesize_to_io` returns audio as IO/stream object (StringIO in Rails, ReadableStream in TypeScript)
+   - Uses `SecureRandom.hex(8)` for generating temp filenames in Rails (use `crypto.randomBytes(8).toString('hex')` in Node.js)
 
 5. **Dependencies**:
    - HTTP client (Net::HTTP in Rails, use Node.js http/https or fetch/axios in TypeScript)
    - File system operations (fs module in Node.js)
    - JSON parsing
    - Random string generation for temp filenames (crypto.randomBytes in Node.js)
+   - Logging (Rails.logger in Rails, use appropriate logger in TypeScript - log request details, response codes, and errors)
+
+6. **Method validations**:
+   - Both `synthesize` and `synthesize_to_io` validate `text` parameter (must not be blank, throws `'Text is required'` error)
+   - Both methods validate `voice_id` is configured (must not be blank, throws `'ElevenLabs voice_id is not configured'` error)
+   - Validations occur at the start of each method before making API requests
+
+7. **Logging**:
+   - Log info before sending request: `"Sending text to ElevenLabs for synthesis: {text[0..50]}..."`
+   - Log info after successful file generation: `"Generated audio file: {output_path} ({file_size} bytes)"`
+   - Log info in `execute_request`: `"ElevenLabsTextToSpeechService: POST {uri.path}"`
+   - Log info for response: `"ElevenLabsTextToSpeechService: Response {code} {message}"`
+   - Log errors: `"ElevenLabs API error: {code} - Response body: {body[0..500]}"` and `"Failed to parse error response as JSON"`
 
 - Task can be completed independently by a single agent
 - This task focuses on class structure only - full method implementations will be in subsequent tasks
