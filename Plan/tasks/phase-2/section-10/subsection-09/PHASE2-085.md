@@ -35,6 +35,7 @@ private async sendTextAsAudio(
 - [ ] Implement error handling in catch block:
   - Log error with logger (include error message and stack trace)
   - Fallback to sending text message via `TelegramService.sendMessage` with same parameters
+  - Include `parseMode: 'HTML'` parameter in the fallback sendMessage call
 - [ ] Implement cleanup in finally block:
   - Check if audio file path exists
   - Delete the audio file if it exists
@@ -55,7 +56,7 @@ private async sendTextAsAudio(
 - Uses `begin/rescue/ensure` pattern (equivalent to try/catch/finally in TypeScript)
 - Calls `ElevenLabsTextToSpeechService.new.synthesize(text)` which returns a file path
 - Calls `TelegramService.send_voice(chat_id: chat_id, voice_path: audio_path, reply_to_message_id: message_id)`
-- On error, falls back to `TelegramService.send_message` with the original text
+- On error, falls back to `TelegramService.send_message` with the original text and `parse_mode: 'HTML'`
 - File cleanup happens in `ensure` block, checking if file exists before deletion
 - Logs errors using `Rails.logger.error` with message and backtrace
 - Logs cleanup actions (success and warnings)
