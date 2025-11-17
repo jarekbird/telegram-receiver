@@ -51,10 +51,13 @@ The TypeScript/Node.js implementation should use:
 ### Register TelegramMessageJob Processor
 - [ ] Register job processor in the worker
   - [ ] Import TelegramMessageJob class (created in previous tasks)
-  - [ ] Register processor function that calls `TelegramMessageJob.perform()`
+  - [ ] Register processor function that calls `TelegramMessageJob.process()` (Note: TypeScript uses `process()` method, equivalent to Rails `perform()` method)
   - [ ] Handle job data parsing (JSON string or object, matching Rails line 17-18)
-  - [ ] Ensure processor matches Rails `perform` method signature: `perform(update)`
+  - [ ] Ensure processor matches Rails `perform` method signature: `process(update)` (TypeScript method name is `process`, Rails equivalent is `perform`)
+  - [ ] Extract update from job data: `job.data.update` (job payload contains `{ update: TelegramUpdate }`)
+  - [ ] Pass update to `TelegramMessageJob.process(update)` method
   - [ ] Reference Rails implementation: `jarek-va/app/jobs/telegram_message_job.rb` lines 10-51
+  - [ ] Reference TypeScript implementation: PHASE2-078 for `process()` method signature
 
 ### Configure Queue Options
 - [ ] Set up queue options matching Sidekiq behavior
@@ -87,7 +90,8 @@ The TypeScript/Node.js implementation should use:
   - [ ] Export queue instance for use in controllers/services
   - [ ] Configure queue with same Redis connection as worker
   - [ ] Set queue name: 'default' (matching Rails `queue_as :default`)
-  - [ ] This queue will be used by TelegramController to enqueue jobs (via `TelegramMessageJob.performLater()` equivalent)
+  - [ ] This queue will be used by TelegramController to enqueue jobs (via `queue.add('telegram-message', { update })` equivalent to Rails `TelegramMessageJob.perform_later(update.to_json)`)
+  - [ ] Job payload should match `TelegramMessageJobPayload` interface: `{ update: TelegramUpdate }`
 
 ### Logging Configuration
 - [ ] Configure queue/worker logging
@@ -119,6 +123,7 @@ The TypeScript/Node.js implementation should use:
 
 4. **Job Enqueueing** (`jarek-va/app/controllers/telegram_controller.rb` line 22):
    - Jobs are enqueued via `TelegramMessageJob.perform_later(update.to_json)`
+   - In TypeScript: Use `queue.add('telegram-message', { update } as TelegramMessageJobPayload)` where `queue` is the BullMQ Queue instance
 
 ### TypeScript/Node.js Implementation Notes
 
@@ -130,7 +135,9 @@ The TypeScript/Node.js implementation should use:
 
 2. **Queue vs Worker**:
    - Queue: Used to add jobs (equivalent to `perform_later` in Rails)
+     - Example: `queue.add('telegram-message', { update } as TelegramMessageJobPayload)`
    - Worker: Processes jobs from queue (equivalent to Sidekiq worker process)
+     - Worker processor function receives `Job<TelegramMessageJobPayload>` and calls `TelegramMessageJob.process(job.data.update)`
 
 3. **Environment Variables**:
    - Use `REDIS_URL` environment variable (same as Rails)
@@ -145,7 +152,10 @@ The TypeScript/Node.js implementation should use:
 ### Dependencies
 
 This task depends on:
-- PHASE2-078: TelegramMessageJob `perform` method implementation
+- PHASE2-078: TelegramMessageJob `process` method implementation (TypeScript equivalent of Rails `perform` method)
+- PHASE2-077: TelegramMessageJob class structure
+- PHASE2-015: BaseJobProcessor class (if using base class pattern)
+- PHASE2-006: TelegramMessageJobPayload type definition
 - Redis connection setup (should already be configured)
 - BullMQ package (already in package.json)
 
