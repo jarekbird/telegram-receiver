@@ -6,18 +6,29 @@
 
 ## Description
 
-Install dotenv package
+Install the `dotenv` package to enable loading environment variables from `.env` files. This is the Node.js equivalent of the `dotenv-rails` gem used in the jarek-va Rails application.
+
+The jarek-va Rails application uses `dotenv-rails` (see `jarek-va/Gemfile` line 21) to automatically load environment variables from `.env` files during development and testing. The Node.js equivalent is the `dotenv` package, which provides similar functionality for loading environment variables from `.env` files into `process.env`.
+
+**Rails Equivalent**: `dotenv-rails` gem (jarek-va/Gemfile)
+
+**Note**: This task only installs the package. Configuration and usage of dotenv will be implemented in PHASE1-024 (Create environment configuration module).
 
 ## Checklist
 
-- [ ] Install `dotenv` as production dependency
-- [ ] Verify installation
+- [ ] Run `npm install dotenv` to install as production dependency
+- [ ] Verify `dotenv` appears in `package.json` dependencies section
+- [ ] Verify installation by checking `node_modules/dotenv` exists
+- [ ] Note that configuration will be done in PHASE1-024
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 7. Environment Variables Management
 - Task can be completed independently by a single agent
+- Rails equivalent: `dotenv-rails` gem (jarek-va/Gemfile line 21)
+- The Rails application uses `ENV.fetch()` throughout to access environment variables (see jarek-va/config/application.rb)
+- Configuration and usage of dotenv will be implemented in the next task (PHASE1-024)
 
 ## Related Tasks
 
