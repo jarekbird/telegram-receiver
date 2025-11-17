@@ -6,21 +6,64 @@
 
 ## Description
 
-Convert implement remove_pending_request method from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/cursor_runner_callback_service.rb`.
+Implement the `removePendingRequest` method in the CursorRunnerCallbackService class. This method removes pending cursor-runner request information from Redis after processing a callback. It takes a unique request ID, generates the Redis key, and deletes the key from Redis.
+
+Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callback_service.rb` (lines 51-57) for complete behavior details.
 
 ## Checklist
 
-- [ ] Implement `removePendingRequest` method
-- [ ] Generate Redis key with prefix
-- [ ] Delete key from Redis
-- [ ] Add error handling
-- [ ] Log operation
+- [ ] Implement `removePendingRequest(requestId: string)` method
+  - Method signature: `requestId` (required string)
+  - Return type: `void` (method doesn't return a value)
+- [ ] Use private `redisKey(requestId: string)` helper method to generate Redis key with prefix
+  - The helper method prepends `REDIS_KEY_PREFIX` constant (`'cursor_runner_callback:'`) to the request ID
+- [ ] Delete key from Redis using the appropriate method based on Redis client package:
+  - If using `redis` package: use `redis.del(key)` (matches Rails API)
+  - If using `ioredis` package: use `redis.del(key)` (ioredis also supports del)
+  - Use the generated Redis key
+  - Note: `del()` returns the number of keys deleted (0 if key didn't exist, 1 if deleted)
+  - The Rails implementation doesn't check the return value, so TypeScript implementation can also ignore it
+- [ ] Add error handling for Redis operations
+  - Handle Redis connection errors
+  - Handle Redis operation errors
+  - Log errors appropriately
+  - Consider whether to throw errors or handle gracefully (Rails version doesn't have explicit error handling, but TypeScript should add it for robustness)
+- [ ] Log successful operation with info level
+  - Log message should include: request ID
+  - Format: `"Removed pending cursor-runner request: {requestId}"`
+  - Use the project's logging system (check existing logger usage in the codebase)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 6. CursorRunnerCallbackService Conversion
-- Reference the Rails implementation for behavior
+- Subsection: 6.4
+- Reference the Rails implementation at `jarek-va/app/services/cursor_runner_callback_service.rb` (lines 51-57) for complete behavior details
+
+**Rails Implementation Details:**
+- Method signature: `remove_pending_request(request_id)`
+- Uses `redis_key(request_id)` private helper to generate key with `REDIS_KEY_PREFIX` prefix
+- Uses `@redis.del(key)` to delete the key from Redis
+- Logs: `Rails.logger.info("Removed pending cursor-runner request: #{request_id}")`
+- No explicit error handling in Rails version (relies on Redis client exceptions)
+- Method is called after processing callback to clean up stored request data
+
+**TypeScript Implementation Requirements:**
+- Method name: `removePendingRequest` (camelCase conversion from Ruby snake_case)
+- Parameters: `requestId: string`
+- Return type: `void` (method doesn't return a value)
+- Use the private `redisKey()` helper method that should already exist from PHASE2-039
+- Use Redis client's `del()` method (both `redis` and `ioredis` packages support `del(key)` which matches the Rails API)
+  - Note: `del()` returns a number (count of keys deleted), but the return value can be ignored
+- Add proper error handling (try/catch) for Redis operations and log errors
+- Use appropriate logger (check project's logging setup - may be console.log, winston, pino, etc.)
+- Ensure method is added to the `CursorRunnerCallbackService` class created in PHASE2-039
+
+**Dependencies:**
+- Assumes `CursorRunnerCallbackService` class structure exists (from PHASE2-039)
+- Assumes `REDIS_KEY_PREFIX` constant exists
+- Assumes private `redisKey()` helper method exists
+- Assumes Redis client instance is available as private property
 
 - Task can be completed independently by a single agent
 
