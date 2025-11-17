@@ -28,6 +28,7 @@ Write integration tests for the cursor-runner callback flow. These tests should 
 - [ ] Test Telegram response sending for failed results
 - [ ] Test response formatting with CURSOR_DEBUG disabled (default) - should send raw output only
 - [ ] Test response formatting with CURSOR_DEBUG enabled - should include metadata and formatted output
+- [ ] Test warnings formatting when success response includes error field (with CURSOR_DEBUG enabled) - should format as "⚠️ Warnings:" in HTML code blocks (truncated to 500 chars)
 - [ ] Test ANSI escape sequence cleaning from output
 - [ ] Test output truncation for long outputs (max 4000 chars without debug, 3500 with debug)
 - [ ] Test Markdown parse mode fallback to HTML when Markdown parsing fails
@@ -45,7 +46,7 @@ Write integration tests for the cursor-runner callback flow. These tests should 
 - [ ] Mock CursorRunnerCallbackService (get_pending_request, remove_pending_request)
 - [ ] Mock TelegramService (send_message, send_voice)
 - [ ] Mock ElevenLabsTextToSpeechService (synthesize method)
-- [ ] Mock SystemSetting (enabled? method for debug and allow_audio_output checks)
+- [ ] Mock SystemSetting (enabled? method for debug checks, disabled? method for allow_audio_output checks)
 - [ ] Mock Redis for callback state management
 - [ ] Verify proper cleanup and isolation between tests
 - [ ] Test that callback returns 200 OK immediately (to prevent cursor-runner retries)
@@ -72,8 +73,9 @@ Write integration tests for the cursor-runner callback flow. These tests should 
 #### Success Response Tests
 1. **With CURSOR_DEBUG disabled**: Should send only raw output (no metadata)
 2. **With CURSOR_DEBUG enabled**: Should send formatted response with metadata (iterations, duration, output in HTML code blocks)
-3. **With long output**: Should truncate output appropriately (4000 chars without debug, 3500 with debug)
-4. **With ANSI escape sequences**: Should clean ANSI codes from output
+3. **With CURSOR_DEBUG enabled and error field present**: Should include warnings section formatted as "⚠️ Warnings:" with error text in HTML code blocks (truncated to 500 chars)
+4. **With long output**: Should truncate output appropriately (4000 chars without debug, 3500 with debug)
+5. **With ANSI escape sequences**: Should clean ANSI codes from output
 
 #### Failure Response Tests
 1. **With CURSOR_DEBUG disabled**: Should send simple error message (❌ error text)
