@@ -6,18 +6,48 @@
 
 ## Description
 
-Create .dockerignore file
+Create `.dockerignore` file to exclude unnecessary files and directories from Docker build context. This improves build performance and reduces image size by preventing copying of development files, dependencies, test files, and other non-runtime artifacts into the Docker image.
 
 ## Checklist
 
-- [ ] Create `.dockerignore` file
-- [ ] Add `node_modules/` to ignore list
-- [ ] Add `dist/` to ignore list (will be built in container)
-- [ ] Add `.git/` to ignore list
-- [ ] Add `tests/` to ignore list
-- [ ] Add `.env*` files to ignore list
-- [ ] Add `coverage/` to ignore list
-- [ ] Add `*.log` to ignore list
+- [ ] Create `.dockerignore` file in project root
+- [ ] Add Git files to ignore list:
+  - [ ] `.git/`
+  - [ ] `.gitignore`
+  - [ ] `.gitattributes`
+- [ ] Add documentation files to ignore list:
+  - [ ] `README.md`
+  - [ ] `*.md` (all markdown files)
+- [ ] Add environment files to ignore list:
+  - [ ] `.env`
+  - [ ] `.env.local`
+  - [ ] `.env.*.local`
+  - [ ] `.env*` (all environment files)
+- [ ] Add dependencies to ignore list:
+  - [ ] `node_modules/` (will be installed in container)
+- [ ] Add build artifacts to ignore list:
+  - [ ] `dist/` (will be built in container)
+- [ ] Add test files to ignore list:
+  - [ ] `tests/`
+  - [ ] `coverage/`
+  - [ ] `.jest/` (if exists)
+- [ ] Add log and temporary files to ignore list:
+  - [ ] `log/*`
+  - [ ] `tmp/*`
+  - [ ] `*.log`
+- [ ] Add IDE files to ignore list:
+  - [ ] `.vscode/`
+  - [ ] `.idea/`
+  - [ ] `*.swp`
+  - [ ] `*.swo`
+  - [ ] `*~`
+- [ ] Add OS files to ignore list:
+  - [ ] `.DS_Store`
+  - [ ] `Thumbs.db`
+- [ ] Add Docker files to ignore list:
+  - [ ] `Dockerfile`
+  - [ ] `docker-compose.yml`
+  - [ ] `.dockerignore`
 
 ## Notes
 
