@@ -6,24 +6,183 @@
 
 ## Description
 
-Review and improve optimize identified performance issues in the codebase to ensure best practices.
+Optimize identified performance issues in the telegram-receiver codebase based on findings from PHASE3-033 (API response time review) and PHASE3-034 (performance benchmarks). This task focuses on implementing specific optimizations to improve response times, reduce memory usage, optimize database queries, and fix performance bottlenecks identified in previous review tasks.
+
+Reference the Rails implementation patterns where applicable to understand expected performance characteristics and ensure the TypeScript implementation follows Node.js best practices for performance optimization.
 
 ## Checklist
 
-- [ ] Optimize slow queries
-- [ ] Add caching where beneficial
-- [ ] Optimize memory usage
-- [ ] Improve API response times
+### Review Identified Issues
+- [ ] Review performance issues documented in PHASE3-033 (API response time review)
+- [ ] Review benchmark results from PHASE3-034 (performance benchmarks)
+- [ ] Prioritize performance issues by impact (response time, throughput, memory)
+- [ ] Document optimization plan with expected improvements
+
+### Database Query Optimization
+- [ ] Optimize slow Redis queries identified in PHASE3-033
+  - Review Redis operation patterns (GET, SET, DEL)
+  - Implement Redis query batching where applicable
+  - Optimize Redis connection pooling
+  - Review and optimize TTL-based cleanup operations
+- [ ] Optimize database queries (if applicable)
+  - Fix N+1 query problems
+  - Add appropriate indexes
+  - Optimize query execution plans
+  - Review query result caching opportunities
+- [ ] Review query caching strategies
+  - Implement caching for frequently accessed data
+  - Optimize cache key strategies
+  - Review cache invalidation overhead
+  - Monitor cache hit rates
+
+### API Response Time Optimization
+- [ ] Optimize slow endpoints identified in PHASE3-033
+  - Focus on endpoints with response time > 200ms (p95)
+  - Prioritize high-traffic endpoints
+  - Optimize endpoint-specific bottlenecks
+- [ ] Optimize Telegram webhook endpoint (`POST /telegram/webhook`)
+  - Minimize synchronous operations before response
+  - Optimize authentication/validation overhead
+  - Ensure webhook acknowledgment is sent quickly (< 200ms)
+  - Move heavy processing to background jobs
+- [ ] Optimize cursor-runner callback endpoint (`POST /cursor-runner/callback`)
+  - Optimize Redis state updates
+  - Minimize blocking operations
+  - Optimize callback processing pipeline
+- [ ] Optimize health check endpoint (`GET /health`)
+  - Ensure response time < 10ms
+  - Remove unnecessary operations
+  - Minimize dependencies
+
+### External API Call Optimization
+- [ ] Optimize Telegram API calls
+  - Implement HTTP connection pooling/keep-alive
+  - Optimize retry logic and timeout handling
+  - Review and optimize message sending patterns
+  - Optimize file download operations
+- [ ] Optimize Cursor Runner API calls
+  - Review connection pooling configuration
+  - Optimize timeout configurations
+  - Ensure async handling of long-running operations
+  - Review request/response payload sizes
+- [ ] Optimize ElevenLabs API calls (if applicable)
+  - Optimize speech-to-text API call patterns
+  - Optimize text-to-speech API call patterns
+  - Review timeout and retry configurations
+  - Implement connection reuse
+
+### Asynchronous Operation Optimization
+- [ ] Optimize async/await patterns
+  - Convert sequential operations to parallel where possible
+  - Use Promise.all() for independent operations
+  - Review waterfall patterns and parallelize
+  - Remove unnecessary await calls
+- [ ] Optimize background job processing
+  - Ensure job enqueueing is fast (< 50ms)
+  - Optimize job processing times
+  - Review job queue configuration
+  - Optimize job payload sizes
+- [ ] Fix event loop blocking
+  - Move CPU-intensive operations to workers or jobs
+  - Optimize synchronous file operations
+  - Optimize large JSON parsing/serialization
+  - Review and optimize heavy computations
+
+### Memory Optimization
 - [ ] Fix memory leaks
-- [ ] Verify improvements
-- [ ] Update benchmarks
+  - Identify and fix unclosed connections
+  - Fix event listener leaks
+  - Fix timer/interval leaks
+  - Review and fix circular references
+- [ ] Optimize memory usage
+  - Reduce unnecessary object creation in hot paths
+  - Optimize buffer allocation strategies
+  - Review memory pressure and GC pauses
+  - Optimize data structure choices
+- [ ] Review memory allocation patterns
+  - Check for memory-intensive operations
+  - Optimize large data structure usage
+  - Review streaming vs buffering trade-offs
+
+### Caching Implementation
+- [ ] Implement response caching where beneficial
+  - Cache static or semi-static responses
+  - Implement cache for frequently accessed data
+  - Review cache invalidation strategies
+  - Monitor cache effectiveness
+- [ ] Implement query result caching
+  - Cache expensive query results
+  - Implement cache warming strategies
+  - Optimize cache hit rates
+- [ ] Review caching overhead
+  - Ensure caching doesn't add significant latency
+  - Optimize cache key generation
+  - Review cache storage efficiency
+
+### Code-Level Optimizations
+- [ ] Optimize inefficient algorithms
+  - Review and optimize loop patterns
+  - Optimize string manipulation
+  - Review regex performance
+  - Optimize data transformation operations
+- [ ] Remove unnecessary operations
+  - Remove redundant API calls
+  - Remove unnecessary data transformations
+  - Remove over-fetching of data
+  - Optimize logging overhead
+- [ ] Optimize middleware performance
+  - Review middleware execution order
+  - Remove unnecessary middleware from fast paths
+  - Optimize authentication middleware
+  - Optimize logging middleware
+
+### Network and Connection Optimization
+- [ ] Optimize HTTP connection handling
+  - Ensure HTTP keep-alive is enabled
+  - Optimize connection pooling configuration
+  - Review connection timeout settings
+  - Minimize connection establishment overhead
+- [ ] Optimize request/response sizes
+  - Minimize unnecessary request body data
+  - Optimize response payload sizes
+  - Enable compression (gzip/brotli) where applicable
+  - Implement streaming for large responses
+
+### Verification and Validation
+- [ ] Verify performance improvements
+  - Re-run benchmarks from PHASE3-034
+  - Compare before/after performance metrics
+  - Verify response time improvements
+  - Verify memory usage improvements
+- [ ] Update performance benchmarks
+  - Update baseline metrics with optimized results
+  - Document performance improvements achieved
+  - Update performance targets if needed
+  - Update performance regression tests
+- [ ] Run performance regression tests
+  - Ensure optimizations don't break functionality
+  - Verify performance improvements are maintained
+  - Check for performance regressions
+
+### Documentation
+- [ ] Document optimizations made
+  - List all optimizations implemented
+  - Document performance gains achieved
+  - Document optimization techniques used
+  - Update performance documentation
+- [ ] Document remaining optimization opportunities
+  - Identify future optimization opportunities
+  - Document optimization recommendations
+  - Create optimization roadmap if needed
 
 ## Notes
 
 - This task is part of Phase 3: Holistic Review and Best Practices
 - Section: 5. Performance Review
-- Focus on identifying issues and improvements
-- Document findings and decisions
+- This task builds on findings from PHASE3-033 (API response time review) and PHASE3-034 (performance benchmarks)
+- Focus on implementing specific optimizations based on identified issues
+- Document all optimizations and their impact
+- Verify improvements through re-benchmarking
 
 - Task can be completed independently by a single agent
 
