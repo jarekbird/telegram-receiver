@@ -10,12 +10,13 @@ Configure the linting and type checking steps for the CI test job in the GitHub 
 
 ## Reference Implementation
 
-The Rails application (`jarek-va`) has a linting step in its CI workflow that includes:
-- Changed file detection (from previous step)
+The Rails application (`jarek-va`) has a linting step in its CI workflow (lines 60-75) that includes:
+- Changed file detection (from previous step, outputs `has_changes` and `changed_files`)
 - Run RuboCop linter on changed source files (excluding spec files)
-- Filter out test files for linting (only lint source files)
-- Fallback to linting all files if no changes detected
-- Conditional execution based on changed files detection
+- Filter out test files (`spec/`) for linting - only lint source files (`app/`, `lib/`, etc.)
+- Handle case when no source files changed after filtering (skip linting)
+- Fallback to linting all files if no changes detected (`bundle exec rubocop`)
+- Conditional execution based on `steps.changed-files.outputs.has_changes`
 
 ## Checklist
 
@@ -23,9 +24,9 @@ The Rails application (`jarek-va`) has a linting step in its CI workflow that in
 - [ ] Add step to run ESLint linter using `npm run lint`
 - [ ] Use changed file detection from previous step (if available)
 - [ ] For changed files: run ESLint only on changed TypeScript files (filter to `.ts` files)
-- [ ] Filter out test files from linting if only source files should be linted (optional, depends on project preference)
+- [ ] Filter out test files (`tests/**/*.ts`) from linting when changed files are detected - only lint source files (`src/**/*.ts`) to match Rails workflow pattern (Rails filters out `spec/` files)
+- [ ] If no source files changed after filtering: skip ESLint or run on all files (handle gracefully)
 - [ ] If no changed files detected: run ESLint on all files (`npm run lint`)
-- [ ] Handle case when no source files changed (skip or run on all files)
 
 ### Prettier Format Checking
 - [ ] Add step to run Prettier format check using `npm run format:check`
@@ -50,15 +51,18 @@ The Rails application (`jarek-va`) has a linting step in its CI workflow that in
 
 ### Changed File Detection
 - The changed file detection step should be added in a previous task (PHASE1-051 or PHASE1-052)
-- Changed files output should be available as `steps.changed-files.outputs.changed_files`
-- Changed files detection should filter for `.ts` files
+- Changed files output should be available as `steps.changed-files.outputs.changed_files` (multiline string)
+- Changed files detection should filter for `.ts` files using `grep -E '\.ts$'`
+- The step should output `has_changes` (boolean) and `changed_files` (multiline string) to `GITHUB_OUTPUT`
 - For pull requests: compare against `github.event.pull_request.base.sha`
 - For pushes: compare against `HEAD~1`
+- Reference Rails workflow lines 33-58 for the exact bash script pattern
 
 ### ESLint Configuration
 - ESLint is configured in `.eslintrc.json`
-- ESLint lints both `src/` and `tests/` directories (as per package.json script)
+- ESLint lints both `src/` and `tests/` directories (as per package.json `npm run lint` script)
 - ESLint uses TypeScript parser and type-aware rules
+- **Note**: In CI, when linting changed files, filter out test files to only lint source files (matching Rails RuboCop pattern which excludes spec files)
 
 ### Prettier Configuration
 - Prettier checks formatting on `src/**/*.ts` and `tests/**/*.ts` (as per package.json script)
@@ -75,6 +79,30 @@ The linting steps should appear in this order (after setup and changed file dete
 1. Run ESLint linter (on changed files or all files)
 2. Run Prettier format check (on changed files or all files)
 3. Run TypeScript type checking (on all files)
+
+### Implementation Pattern (matching Rails workflow)
+The ESLint step should follow this pattern (similar to Rails RuboCop step at lines 60-75):
+```yaml
+- name: Run ESLint linter
+  run: |
+    if [ "${{ steps.changed-files.outputs.has_changes }}" == "true" ]; then
+      echo "Linting changed files..."
+      CHANGED_FILES="${{ steps.changed-files.outputs.changed_files }}"
+      # Filter out test files (only lint source files, matching Rails pattern)
+      SOURCE_FILES=$(echo "$CHANGED_FILES" | grep -v '^tests/' || echo "")
+      if [ -n "$SOURCE_FILES" ]; then
+        # Run ESLint on all changed source files at once
+        npx eslint $SOURCE_FILES
+      else
+        echo "No source files changed, skipping ESLint"
+      fi
+    else
+      echo "No files changed, linting all files..."
+      npm run lint
+    fi
+```
+
+Similar pattern should be used for Prettier format checking (using `npx prettier --check` with filtered source files).
 
 ### Step Naming
 - Use descriptive step names like:
