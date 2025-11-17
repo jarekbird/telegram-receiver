@@ -6,26 +6,69 @@
 
 ## Description
 
-Convert implement process method (main entry point) from Rails to TypeScript/Node.js. Reference `jarek-va/app/jobs/telegram_message_job.rb`.
+Convert the `process` method (main entry point) from Rails to TypeScript/Node.js. This method is the equivalent of Rails' `perform` method and serves as the main entry point for processing Telegram updates. It parses the update payload, routes to appropriate handlers, and implements comprehensive error handling.
+
+Reference: `jarek-va/app/jobs/telegram_message_job.rb` (lines 15-51)
 
 ## Checklist
 
-- [ ] Implement `process` method
-- [ ] Parse update payload
-- [ ] Route to appropriate handler
-- [ ] Handle message updates
-- [ ] Handle edited_message updates
-- [ ] Handle callback_query updates
-- [ ] Log unhandled update types
-- [ ] Add error handling
+- [ ] Implement `process(update)` method as the main entry point
+  - [ ] Accept update parameter (can be object or JSON string)
+  - [ ] Parse JSON string if update is a string type
+  - [ ] Normalize update object (TypeScript equivalent of Rails' `with_indifferent_access`)
+  - [ ] Log the update with full inspection for debugging
+  - [ ] Route to appropriate handler based on update type:
+    - [ ] If `update.message` exists → call `handleMessage(update.message)`
+    - [ ] Else if `update.edited_message` exists → call `handleMessage(update.edited_message)` (note: uses same handler as message)
+    - [ ] Else if `update.callback_query` exists → call `handleCallbackQuery(update.callback_query)`
+    - [ ] Else → log unhandled update types with available keys
+  - [ ] Wrap entire method in try-catch for error handling
+  - [ ] On error:
+    - [ ] Log error message and full stack trace
+    - [ ] Extract chat info from update using `extractChatInfoFromUpdate(update)`
+    - [ ] If chat_id is available, send user-friendly error message to Telegram
+    - [ ] Use TelegramService.sendMessage() with error details
+    - [ ] Include reply_to_message_id if available
+    - [ ] Use parse_mode: 'HTML'
+    - [ ] Handle errors when sending error message (don't fail if Telegram send fails)
+    - [ ] Re-throw error to mark job as failed (for job queue retry logic)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 10. TelegramMessageJob Conversion
-- Reference the Rails implementation for behavior
+- Reference the Rails implementation for behavior: `jarek-va/app/jobs/telegram_message_job.rb` (lines 15-51)
+
+### Key Implementation Details
+
+- **Method Name**: In Rails, this is called `perform`, but in TypeScript/Node.js it should be named `process` to match the task naming convention
+- **Update Parsing**: The update can come as either a JSON string or an object. Must parse if string, then normalize the object structure
+- **Handler Routing**: 
+  - Both `message` and `edited_message` use the same `handleMessage()` handler
+  - `callback_query` uses `handleCallbackQuery()` handler
+  - Unhandled update types are logged but don't cause errors
+- **Error Handling**: 
+  - Comprehensive error handling is critical - errors should be logged, user should be notified via Telegram if possible
+  - Error message format: "Sorry, I encountered an error processing your message: {error.message}"
+  - Must re-throw error after handling to mark job as failed for retry logic
+- **Dependencies**: 
+  - Requires `extractChatInfoFromUpdate()` method (should be implemented in PHASE2-077 or as a utility)
+  - Requires `TelegramService.sendMessage()` method
+  - Requires logging utilities
+
+### Dependencies
+
+This method depends on:
+- `handleMessage()` method (implemented in PHASE2-079)
+- `handleCallbackQuery()` method (implemented in later task)
+- `extractChatInfoFromUpdate()` utility method
+- `TelegramService` for sending error messages
+- Logging utilities
+
+### Task Scope
 
 - Task can be completed independently by a single agent
+- However, ensure dependent methods (`handleMessage`, `handleCallbackQuery`, `extractChatInfoFromUpdate`) are available or can be stubbed for testing
 
 ## Related Tasks
 
