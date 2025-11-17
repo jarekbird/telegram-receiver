@@ -122,6 +122,17 @@ Review and standardize naming conventions across the entire codebase to ensure c
 - Document findings and decisions in `docs/naming-conventions.md`
 - Task can be completed independently by a single agent
 
+### Important: File Naming Convention Decision
+
+**Note on Conflict with PHASE3-023**: PHASE3-023 previously recommended kebab-case for file names. However, this task (PHASE3-028) standardizes on camelCase for the following reasons:
+
+1. **Current Codebase State**: Existing test files already use camelCase (`testUtils.ts`, `telegramApi.ts`, `cursorRunnerApi.ts`)
+2. **TypeScript/Node.js Conventions**: While both camelCase and kebab-case are acceptable, camelCase is more common in TypeScript projects and aligns with the existing codebase
+3. **Consistency**: Using camelCase matches the naming convention for variables, functions, and other identifiers within files
+4. **API_CONVENTIONS.md Alignment**: The API conventions document specifies camelCase for controller/service file names (e.g., `telegramController.ts`, `telegramService.ts`)
+
+**Decision**: Standardize on camelCase for all TypeScript source and test files. This task supersedes the kebab-case recommendation from PHASE3-023.
+
 ## Examples of Naming Conventions
 
 ### Good Examples
@@ -197,6 +208,7 @@ const maxRetryAttempts = 3;  // Should be UPPER_SNAKE_CASE for true constants
 
 - Previous: PHASE3-027
 - Next: PHASE3-029
+- Related: PHASE3-023 (Review naming conventions consistency) - Note: This task supersedes PHASE3-023's file naming recommendation (kebab-case → camelCase)
 
 ---
 
