@@ -8,7 +8,13 @@
 
 Optimize identified performance issues in the telegram-receiver codebase based on findings from PHASE3-033 (API response time review) and PHASE3-034 (performance benchmarks). This task focuses on implementing specific optimizations to improve response times, reduce memory usage, optimize database queries, and fix performance bottlenecks identified in previous review tasks.
 
-Reference the Rails implementation patterns where applicable to understand expected performance characteristics and ensure the TypeScript implementation follows Node.js best practices for performance optimization.
+Reference the Rails implementation patterns (see Rails Implementation Reference section below) to understand expected performance characteristics and ensure the TypeScript implementation follows Node.js best practices for performance optimization. The Rails implementation demonstrates key patterns such as:
+- Immediate webhook acknowledgment (return 200 OK before processing)
+- Asynchronous job processing for long-running operations
+- Efficient Redis state management with TTL-based cleanup
+- HTTP connection pooling and reuse
+- Fire-and-forget patterns for non-critical operations
+- Proper file cleanup to prevent memory leaks
 
 ## Checklist
 
@@ -185,6 +191,75 @@ Reference the Rails implementation patterns where applicable to understand expec
 - Verify improvements through re-benchmarking
 
 - Task can be completed independently by a single agent
+
+## Rails Implementation Reference
+
+For reference, the following Rails files demonstrate expected performance patterns and optimization strategies:
+
+### Performance-Critical Components
+
+- **TelegramController** (`jarek-va/app/controllers/telegram_controller.rb`):
+  - Webhook endpoint returns `head :ok` immediately after enqueueing job (line 25)
+  - Job enqueueing happens synchronously but quickly (< 50ms expected)
+  - Error handling sends messages asynchronously (fire-and-forget pattern)
+  - Admin endpoints make synchronous Telegram API calls (response time depends on Telegram API latency)
+
+- **TelegramMessageJob** (`jarek-va/app/jobs/telegram_message_job.rb`):
+  - Background job processing (not part of API response time)
+  - Audio transcription happens in background job
+  - File cleanup happens in ensure blocks (lines 342-350, 379-387)
+  - Cursor runner forwarding uses async iterate method (line 209)
+  - Redis state storage happens synchronously but quickly (lines 190-201)
+
+- **CursorRunnerCallbackController** (`jarek-va/app/controllers/cursor_runner_callback_controller.rb`):
+  - Callback processing returns 200 OK quickly (line 42)
+  - Redis state retrieval happens synchronously (line 30)
+  - Telegram message sending happens after response is sent (fire-and-forget pattern, lines 186-212)
+  - Audio file generation and cleanup happens synchronously but in background context (lines 221-254)
+
+- **CursorRunnerCallbackService** (`jarek-va/app/services/cursor_runner_callback_service.rb`):
+  - Redis operations use simple GET/SET/DEL patterns (lines 30, 39, 55)
+  - TTL-based cleanup using `setex` (line 30)
+  - Single Redis connection per service instance (lines 15-22)
+  - JSON serialization/deserialization for stored data (lines 30, 42)
+
+- **TelegramService** (`jarek-va/app/services/telegram_service.rb`):
+  - Uses Telegram::Bot::Client which handles HTTP connection pooling internally (line 11)
+  - File downloads use Faraday with streaming (lines 90-186)
+  - Error handling doesn't block request processing
+  - HTML entity escaping happens synchronously (lines 20-24)
+
+- **CursorRunnerService** (`jarek-va/app/services/cursor_runner_service.rb`):
+  - Uses Net::HTTP with timeout configuration (lines 16-19)
+  - Connection pooling handled by Net::HTTP (reuses connections)
+  - Timeout handling for long-running operations (lines 16-19)
+  - Async iterate method supports callback URLs (lines 51-66)
+
+### Key Performance Patterns from Rails Implementation:
+
+1. **Immediate Webhook Acknowledgment**: Telegram webhook returns 200 OK immediately after enqueueing job, processing happens asynchronously.
+
+2. **Redis Connection Management**: Single Redis connection per service instance, simple GET/SET/DEL operations with TTL-based cleanup.
+
+3. **Background Job Processing**: Heavy operations (audio transcription, message processing) happen in background jobs, not blocking API responses.
+
+4. **Fire-and-Forget Telegram Messages**: Telegram messages sent after callback response is returned, not blocking the callback endpoint.
+
+5. **File Cleanup**: Audio files cleaned up in ensure blocks to prevent memory leaks and disk space issues.
+
+6. **Connection Reuse**: HTTP clients (Telegram::Bot::Client, Net::HTTP) handle connection pooling internally.
+
+7. **Error Handling**: Errors don't block responses - always return appropriate status codes even on errors.
+
+8. **Synchronous Redis Operations**: Redis operations are synchronous but fast (< 50ms expected), acceptable for callback processing.
+
+### Optimization Targets Based on Rails Patterns:
+
+- **Webhook Response Time**: < 200ms (matches Rails pattern of immediate acknowledgment)
+- **Job Enqueueing**: < 50ms (matches Rails Sidekiq enqueueing time)
+- **Redis Operations**: < 50ms per operation (matches Rails Redis operation times)
+- **Callback Response Time**: < 500ms (matches Rails callback processing time)
+- **Health Check**: < 10ms (matches Rails simple health check pattern)
 
 ## Related Tasks
 
