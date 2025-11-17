@@ -22,8 +22,9 @@ Write comprehensive unit tests for the CursorRunnerCallbackService class in Type
 - [ ] Test constructor initialization
   - Test constructor with provided `redisClient` parameter (should use provided client)
   - Test constructor with provided `redisUrl` parameter (should create new Redis client from URL)
-  - Test constructor with neither parameter (should use `REDIS_URL` env var or default)
+  - Test constructor with neither parameter (should use `REDIS_URL` environment variable if set, otherwise default to `'redis://localhost:6379/0'`)
   - Test that Redis client is stored as private property
+  - Test that constructor prioritizes `redisClient` over `redisUrl` if both are provided (verify implementation behavior)
 - [ ] Test `storePendingRequest` method
   - Test storing request with default TTL (should use `DEFAULT_TTL` constant = 3600)
   - Test storing request with custom TTL (should use provided TTL value)
@@ -35,7 +36,7 @@ Write comprehensive unit tests for the CursorRunnerCallbackService class in Type
   - Test Redis operation error handling (should throw or handle gracefully)
   - Test TTL validation (if implemented in PHASE2-043: should validate TTL is positive integer, should validate TTL is within bounds)
 - [ ] Test `getPendingRequest` method
-  - Test retrieving existing request (should return parsed JSON object)
+  - Test retrieving existing request (should return parsed JSON object with string keys - TypeScript doesn't have symbol keys like Ruby's `symbolize_names: true`)
   - Test retrieving non-existent request (should return `null`)
   - Test that Redis key is generated correctly with `REDIS_KEY_PREFIX` prefix
   - Test that `redis.get()` is called with correct key
@@ -78,12 +79,13 @@ Write comprehensive unit tests for the CursorRunnerCallbackService class in Type
 **Rails Implementation Analysis:**
 
 The Rails service (`cursor_runner_callback_service.rb`) has:
-- Constructor: `initialize(redis_client: nil, redis_url: nil)` - accepts optional Redis client or URL
-- `store_pending_request(request_id, data, ttl: DEFAULT_TTL)` - stores JSON data in Redis with TTL
-- `get_pending_request(request_id)` - retrieves and parses JSON data, handles JSON parsing errors
-- `remove_pending_request(request_id)` - deletes key from Redis
-- Private `redis_key(request_id)` helper - generates key with prefix
-- Constants: `REDIS_KEY_PREFIX = 'cursor_runner_callback:'`, `DEFAULT_TTL = 3600`
+- Constructor: `initialize(redis_client: nil, redis_url: nil)` - accepts optional Redis client or URL (if `redis_client` is provided, it's used; otherwise, if `redis_url` is provided, a new client is created; otherwise, uses `ENV.fetch('REDIS_URL', 'redis://localhost:6379/0')`)
+- `store_pending_request(request_id, data, ttl: DEFAULT_TTL)` - stores JSON data in Redis with TTL using `setex`, logs info message with request_id and TTL
+- `get_pending_request(request_id)` - retrieves and parses JSON data using `JSON.parse(data, symbolize_names: true)` (returns Hash with symbol keys), handles JSON parsing errors gracefully (returns nil), logs error on JSON parse failure
+- `remove_pending_request(request_id)` - deletes key from Redis using `del`, logs info message with request_id
+- Private `redis_key(request_id)` helper - generates key with prefix: `"#{REDIS_KEY_PREFIX}#{request_id}"`
+- Constants: `REDIS_KEY_PREFIX = 'cursor_runner_callback:'`, `DEFAULT_TTL = 3600` (1 hour in seconds)
+- Note: Rails uses `symbolize_names: true` in JSON.parse, but TypeScript/JavaScript doesn't have symbol keys - parsed objects will have string keys
 
 **Test Requirements:**
 
@@ -101,16 +103,21 @@ The Rails service (`cursor_runner_callback_service.rb`) has:
    - Mock `del` for `removePendingRequest` tests (should return number of keys deleted)
 
 4. **Error Handling Tests**: Based on PHASE2-043, test:
-   - Redis connection errors (network failures, connection refused)
-   - Redis operation errors (write failures, command errors)
-   - JSON parsing errors (`SyntaxError` for invalid JSON)
-   - TTL validation errors (if TTL validation was added in PHASE2-043)
+   - Redis connection errors (network failures, connection refused, ECONNREFUSED, timeout errors)
+   - Redis operation errors (write failures, command errors, memory errors)
+   - JSON parsing errors (`SyntaxError` for invalid JSON - should return null gracefully)
+   - TTL validation errors (if TTL validation was added in PHASE2-043: should validate TTL is positive integer > 0, should validate TTL is within bounds 1-86400)
 
 5. **Logging Tests**: Verify that appropriate log messages are written:
    - Info logs for successful operations (store, remove)
    - Error logs for failures (JSON parsing errors, Redis errors)
 
 6. **File Path**: The test file should be created at `tests/unit/services/cursor-runner-callback-service.test.ts` (not `tests/services/`)
+
+7. **TypeScript vs Ruby Differences**:
+   - Ruby's `JSON.parse(data, symbolize_names: true)` returns a Hash with symbol keys, but TypeScript's `JSON.parse()` returns a plain object with string keys - this is expected and correct
+   - TypeScript doesn't have symbol keys like Ruby, so the parsed object will have string keys (e.g., `{ chat_id: 123 }` in Ruby becomes `{ "chat_id": 123 }` in TypeScript)
+   - This difference is acceptable and doesn't need special handling in tests - just verify the parsed object structure matches expectations
 
 **Dependencies:**
 - Assumes `CursorRunnerCallbackService` class exists (from PHASE2-039)
