@@ -1,4 +1,4 @@
-# PHASE3-017: Review async patterns (avoid callback hell)
+# PHASE3-017: Review callback patterns and avoid callback hell
 
 **Section**: 3. Node.js Best Practices
 **Subsection**: 3.3
@@ -6,25 +6,216 @@
 
 ## Description
 
-Review and improve review async patterns (avoid callback hell) in the codebase to ensure best practices.
+Review and improve callback-based async patterns in the codebase to identify and eliminate callback hell. This task focuses specifically on Node.js callback conventions (error-first callbacks), nested callback patterns, and converting callback-based APIs to Promises or async/await. This complements PHASE3-005 (async/await and Promise patterns) and PHASE3-016 (error handling) by focusing on the specific anti-pattern of callback hell.
+
+## Context
+
+This task is distinct from:
+- **PHASE3-005**: Reviews async/await and Promise patterns broadly (already converted code)
+- **PHASE3-016**: Reviews error handling patterns (error objects, try-catch, etc.)
+- **PHASE3-017**: Focuses specifically on **callback-based patterns** and **callback hell**
+
+Callback hell occurs when callbacks are nested deeply, making code hard to read and maintain:
+```typescript
+// Bad: Callback hell
+fs.readFile('file1.txt', (err1, data1) => {
+  if (err1) throw err1;
+  fs.readFile('file2.txt', (err2, data2) => {
+    if (err2) throw err2;
+    fs.readFile('file3.txt', (err3, data3) => {
+      if (err3) throw err3;
+      // Process all three files...
+    });
+  });
+});
+```
+
+## Architecture Reference
+
+Reference the planned architecture from:
+- `Plan/app-description.md` - Application overview and component descriptions
+- `Plan/CONVERSION_STEPS.md` - Conversion plan and architecture considerations
+- `docs/architecture.md` - Architecture documentation and async patterns
+- `src/` directory structure - Current implementation structure
+
+The application uses:
+- **Express.js** - May use callback-based middleware patterns
+- **Redis/ioredis** - May have callback-based methods
+- **BullMQ** - Queue system that uses Promises/async-await
+- **Axios** - Promise-based HTTP client
+- **File system operations** - May use fs callbacks
+- **Stream operations** - May use event-based callbacks
+
+## Node.js Callback Patterns
+
+### Error-First Callback Convention
+
+Node.js follows the error-first callback convention:
+```typescript
+function callback(error: Error | null, result?: T): void {
+  if (error) {
+    // Handle error
+  } else {
+    // Handle result
+  }
+}
+```
+
+### Common Callback-Based APIs
+
+1. **fs module** - File system operations (fs.readFile, fs.writeFile, etc.)
+2. **Stream operations** - Event-based callbacks (on('data'), on('error'))
+3. **Legacy Redis clients** - Callback-based methods
+4. **Express middleware** - Some middleware uses callbacks
+5. **Database drivers** - Some older drivers use callbacks
 
 ## Checklist
 
-- [ ] Check for callback patterns
-- [ ] Review Promise usage
-- [ ] Review async/await usage
-- [ ] Check for callback hell patterns
-- [ ] Review error handling in async code
+- [ ] Identify callback-based patterns in the codebase
+  - [ ] Search for error-first callback patterns `(err, result) => {}`
+  - [ ] Find callback-based function calls (functions that take callbacks as last parameter)
+  - [ ] Identify Node.js built-in APIs using callbacks (fs, stream, etc.)
+  - [ ] Check for third-party libraries using callback patterns
+  - [ ] Review Express middleware for callback patterns
+  - [ ] Check Redis/ioredis usage for callback methods
+  - [ ] Review file system operations for callback usage
+  - [ ] Check stream operations for event-based callbacks
+
+- [ ] Identify callback hell patterns
+  - [ ] Find deeply nested callbacks (3+ levels of nesting)
+  - [ ] Identify sequential callback chains that could be parallelized
+  - [ ] Check for callback pyramids (increasing indentation)
+  - [ ] Find callbacks within callbacks within callbacks
+  - [ ] Identify callback chains that mix error handling inconsistently
+  - [ ] Review callback nesting depth (should be ≤ 2 levels)
+
+- [ ] Review callback error handling
+  - [ ] Verify error-first callback convention is followed consistently
+  - [ ] Check for missing error handling in callbacks
+  - [ ] Verify error propagation in nested callbacks
+  - [ ] Check for inconsistent error handling patterns
+  - [ ] Review error handling in callback chains
+  - [ ] Verify errors are not swallowed in callbacks
+
+- [ ] Identify promisification opportunities
+  - [ ] Find callback-based functions that should be promisified
+  - [ ] Check if Node.js util.promisify can be used
+  - [ ] Identify custom callback functions that need Promise wrappers
+  - [ ] Review callback-based APIs that have Promise alternatives
+  - [ ] Check for callback functions that could use async/await
+
+- [ ] Review callback-to-Promise conversions
+  - [ ] Verify proper use of util.promisify for Node.js APIs
+  - [ ] Check for custom Promise wrappers around callbacks
+  - [ ] Verify Promise wrappers handle errors correctly
+  - [ ] Review converted code for proper async/await usage
+  - [ ] Check that converted code maintains same functionality
+
+- [ ] Review stream and event-based callbacks
+  - [ ] Check for stream event handlers (on('data'), on('error'))
+  - [ ] Identify stream patterns that could use async iterators
+  - [ ] Review event emitter patterns for callback usage
+  - [ ] Check for proper stream error handling
+  - [ ] Verify stream cleanup in callbacks
+
+- [ ] Review Express middleware callback patterns
+  - [ ] Check route handlers for callback patterns
+  - [ ] Verify async route handlers are properly wrapped
+  - [ ] Review error middleware for callback patterns
+  - [ ] Check for callback-based middleware that should be async
+  - [ ] Verify Express async error handling patterns
+
+- [ ] Check for mixed patterns
+  - [ ] Identify code mixing callbacks with Promises
+  - [ ] Find code mixing callbacks with async/await
+  - [ ] Review for inconsistent async patterns
+  - [ ] Check for unnecessary callback wrapping of Promises
+  - [ ] Verify consistent async pattern usage
+
 - [ ] Identify refactoring opportunities
-- [ ] Document patterns
+  - [ ] List specific files/functions with callback hell
+  - [ ] Document callback patterns that should be converted
+  - [ ] Identify callback-based APIs that should be promisified
+  - [ ] Propose refactoring strategies for nested callbacks
+  - [ ] Create examples of before/after refactoring
+
+- [ ] Document patterns and guidelines
+  - [ ] Document when to use callbacks vs Promises vs async/await
+  - [ ] Create guidelines for promisifying callback-based APIs
+  - [ ] Document callback hell anti-patterns to avoid
+  - [ ] Create examples of proper callback usage (when necessary)
+  - [ ] Document conversion patterns from callbacks to async/await
+  - [ ] Create examples of refactoring callback hell
+
+## Best Practices
+
+1. **Prefer Promises/async-await**: Use Promises or async/await instead of callbacks when possible
+2. **Use util.promisify**: For Node.js built-in APIs, use `util.promisify()` to convert callbacks to Promises
+3. **Avoid deep nesting**: Keep callback nesting to ≤ 2 levels
+4. **Consistent error handling**: Follow error-first callback convention when callbacks are necessary
+5. **Parallelize independent operations**: Use Promise.all() instead of sequential callbacks
+6. **Stream handling**: Consider async iterators for stream operations instead of event callbacks
+
+## Examples
+
+### Bad: Callback Hell
+```typescript
+// Deeply nested callbacks
+fs.readFile('config.json', (err1, config) => {
+  if (err1) throw err1;
+  const settings = JSON.parse(config);
+  db.connect(settings.db, (err2, connection) => {
+    if (err2) throw err2;
+    connection.query('SELECT * FROM users', (err3, users) => {
+      if (err3) throw err3;
+      processUsers(users, (err4, result) => {
+        if (err4) throw err4;
+        // Finally done...
+      });
+    });
+  });
+});
+```
+
+### Good: Async/Await
+```typescript
+// Converted to async/await
+async function processData() {
+  try {
+    const config = await fs.promises.readFile('config.json', 'utf-8');
+    const settings = JSON.parse(config);
+    const connection = await db.connect(settings.db);
+    const users = await connection.query('SELECT * FROM users');
+    const result = await processUsers(users);
+    return result;
+  } catch (error) {
+    // Handle error
+    throw error;
+  }
+}
+```
+
+### Promisification Example
+```typescript
+import { promisify } from 'util';
+import * as fs from 'fs';
+
+// Convert callback-based API to Promise
+const readFile = promisify(fs.readFile);
+
+// Now can use with async/await
+const data = await readFile('file.txt', 'utf-8');
+```
 
 ## Notes
 
 - This task is part of Phase 3: Holistic Review and Best Practices
 - Section: 3. Node.js Best Practices
-- Focus on identifying issues and improvements
-- Document findings and decisions
-
+- Focus specifically on **callback patterns** and **callback hell**, not general async/await patterns (see PHASE3-005)
+- Review actual implementation files in `src/` directory
+- Compare callback patterns with Node.js best practices
+- Document findings with specific file locations and line numbers
+- Reference async/await patterns from PHASE3-005 and error handling from PHASE3-016
 - Task can be completed independently by a single agent
 
 ## Related Tasks
