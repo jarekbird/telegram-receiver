@@ -12,18 +12,49 @@ Create TypeScript type definitions for Telegram Bot API. These types will be use
 
 - [ ] Create `src/types/telegram.ts` file
 - [ ] Define `TelegramUpdate` interface for webhook updates
+  - Should include optional fields: `message`, `edited_message`, `callback_query`
 - [ ] Define `TelegramMessage` interface for message objects
+  - Required fields: `message_id` (number), `chat` (TelegramChat)
+  - Optional fields: `text` (string), `from` (TelegramUser), `voice` (TelegramVoice), `audio` (TelegramAudio), `document` (TelegramDocument)
 - [ ] Define `TelegramChat` interface for chat information
+  - Required fields: `id` (number)
+  - Optional fields: `type`, `title`, `username` (refer to Telegram Bot API docs)
 - [ ] Define `TelegramUser` interface for user information
+  - Required fields: `id` (number)
+  - Optional fields: `first_name`, `last_name`, `username` (refer to Telegram Bot API docs)
 - [ ] Define `TelegramCallbackQuery` interface for callback queries
-- [ ] Define `TelegramFile` interface for file information
+  - Required fields: `id` (string), `data` (string)
+  - Optional fields: `message` (TelegramMessage), `from` (TelegramUser)
+- [ ] Define `TelegramFile` interface for file information (from get_file API)
+  - Should match structure: `{ result: { file_path: string, file_id: string } }`
 - [ ] Define `TelegramVoice` interface for voice/audio messages
+  - Required fields: `file_id` (string)
+  - Optional fields: `duration`, `mime_type`, `file_size` (refer to Telegram Bot API docs)
 - [ ] Define `TelegramAudio` interface for audio messages
+  - Required fields: `file_id` (string)
+  - Optional fields: `duration`, `performer`, `title`, `mime_type`, `file_size` (refer to Telegram Bot API docs)
+- [ ] Define `TelegramDocument` interface for document messages
+  - Required fields: `file_id` (string)
+  - Optional fields: `mime_type` (string), `file_name`, `file_size` (refer to Telegram Bot API docs)
 - [ ] Define `SendMessageParams` interface for sending messages
+  - Required fields: `chat_id` (number), `text` (string)
+  - Optional fields: `parse_mode` ('HTML' | 'Markdown' | 'MarkdownV2'), `reply_to_message_id` (number)
 - [ ] Define `SendVoiceParams` interface for sending voice messages
+  - Required fields: `chat_id` (number), `voice_path` (string - local file path)
+  - Optional fields: `reply_to_message_id` (number), `caption` (string)
+  - Note: `voice_path` is a local file path, not a Telegram file_id
 - [ ] Define `SetWebhookParams` interface for webhook configuration
+  - Required fields: `url` (string)
+  - Optional fields: `secret_token` (string)
+- [ ] Define `AnswerCallbackQueryParams` interface for answering callback queries
+  - Required fields: `callback_query_id` (string)
+  - Optional fields: `text` (string), `show_alert` (boolean)
+- [ ] Define `GetFileParams` interface for getting file information
+  - Required fields: `file_id` (string)
 - [ ] Define `WebhookInfo` interface for webhook information
-- [ ] Define `TelegramApiResponse` generic type for API responses
+  - Should match structure returned by Telegram Bot API get_webhook_info endpoint
+- [ ] Define `TelegramApiResponse<T>` generic type for API responses
+  - Should wrap API responses with `ok` (boolean) and `result` (T) fields
 - [ ] Export all types and interfaces
 
 ## Notes
@@ -33,6 +64,30 @@ Create TypeScript type definitions for Telegram Bot API. These types will be use
 - Reference the Telegram Bot API documentation: https://core.telegram.org/bots/api
 - Types should match the structure used in the Rails application
 - Task can be completed independently by a single agent
+
+### Implementation Details
+
+Based on the Rails implementation analysis:
+
+1. **TelegramUpdate** is the root object received from webhook. It contains one of: `message`, `edited_message`, or `callback_query`.
+
+2. **TelegramMessage** is used extensively throughout the codebase. Key fields accessed:
+   - `message['chat']['id']` - Chat ID (number)
+   - `message['text']` - Message text (string, optional)
+   - `message['message_id']` - Message ID (number)
+   - `message['voice']` - Voice message (optional)
+   - `message['audio']` - Audio message (optional)
+   - `message['document']` - Document (optional, used for audio files with mime_type)
+
+3. **TelegramDocument** is used in `extract_audio_file_id` method to handle audio files sent as documents. Must include `file_id` and `mime_type` fields.
+
+4. **AnswerCallbackQueryParams** is needed for the `answer_callback_query` API call used in `telegram_message_job.rb`.
+
+5. **SendVoiceParams** uses `voice_path` which is a local file path (not a Telegram file_id). This is different from Telegram's native `sendVoice` API which uses file_id or file upload.
+
+6. **TelegramFile** structure matches the response from `get_file` API: `{ result: { file_path: string } }`
+
+7. All optional fields should be marked with `?` in TypeScript. Required fields should not have `?`.
 
 ## Related Tasks
 
