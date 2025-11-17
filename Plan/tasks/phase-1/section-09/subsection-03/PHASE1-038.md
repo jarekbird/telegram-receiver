@@ -6,24 +6,70 @@
 
 ## Description
 
-Create docker-compose.yml for development
+Create a development docker-compose.yml file for the telegram-receiver Node.js/TypeScript application. The docker-compose.yml should configure services needed for local development, including the application service, Redis service (for BullMQ job queue), shared volumes, and development-specific settings like hot reloading and volume mounts. Reference the jarek-va docker-compose.yml (`/cursor/repositories/jarek-va/docker-compose.yml`) for patterns, but adapt for Node.js/TypeScript development needs.
 
 ## Checklist
 
-- [ ] Create `docker-compose.yml` file
-- [ ] Define `app` service
-- [ ] Set build context to current directory
-- [ ] Set Dockerfile path
-- [ ] Map port 3000:3000
-- [ ] Set environment variables
-- [ ] Add volume mount for development (optional)
-- [ ] Set command for development mode
+- [ ] Create `docker-compose.yml` file in project root
+- [ ] Define `app` service:
+  - [ ] Set build context to current directory (`.`)
+  - [ ] Set dockerfile path to `Dockerfile`
+  - [ ] Map port `3000:3000` for direct access during development
+  - [ ] Set `NODE_ENV` environment variable to `development`
+  - [ ] Set `PORT` environment variable to `3000` (or use from `.env.development`)
+  - [ ] Set `REDIS_URL` to `redis://redis:6379` (using Redis service name)
+  - [ ] Set `CURSOR_RUNNER_URL` to `http://cursor-runner:3001` (if cursor-runner is available)
+  - [ ] Set other environment variables from `.env.example` (TELEGRAM_BOT_TOKEN, LOG_LEVEL, etc.)
+  - [ ] Add volume mount for source code (`./src:/app/src`) for hot reloading
+  - [ ] Add volume mount for node_modules (`./node_modules:/app/node_modules`) to persist dependencies
+  - [ ] Add volume mount for shared SQLite database (`shared_sqlite_db:/app/shared_db`) if needed
+  - [ ] Set command to `npm run dev` (or `npm run build:watch && npm start` for TypeScript watch mode)
+  - [ ] Set restart policy to `unless-stopped` or `on-failure` for development
+  - [ ] Add depends_on for `redis` service
+- [ ] Define `redis` service:
+  - [ ] Use `redis:7-alpine` image (matching jarek-va)
+  - [ ] Set container name to `telegram-receiver-redis` (or similar)
+  - [ ] Map port `6379:6379` for direct Redis access during development
+  - [ ] Add volume for Redis data persistence (`shared_redis_data:/data`)
+  - [ ] Set restart policy to `unless-stopped`
+  - [ ] Add healthcheck using `redis-cli ping`
+- [ ] Define volumes:
+  - [ ] `shared_redis_data` volume (driver: local, name: shared_redis_data)
+  - [ ] `shared_sqlite_db` volume (driver: local, name: shared_sqlite_db) if using shared SQLite database
+- [ ] Define networks:
+  - [ ] Create or reference `virtual-assistant-network` (to match jarek-va network for service communication)
+  - [ ] Or create a development-specific network like `telegram-receiver-dev-network`
+- [ ] Add development-specific configurations:
+  - [ ] Consider adding environment file reference (`.env.development`) using `env_file` directive
+  - [ ] Ensure source code changes trigger hot reload (via nodemon or ts-node watch mode)
+  - [ ] Configure logging to stdout for development visibility
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 9. Docker Configuration
 - Task can be completed independently by a single agent
+- Reference the jarek-va docker-compose.yml (`/cursor/repositories/jarek-va/docker-compose.yml`) for patterns:
+  - Redis service configuration
+  - Shared volume setup (Redis data, SQLite database)
+  - Network configuration
+  - Healthcheck patterns
+- The development docker-compose.yml should enable:
+  - Hot reloading of TypeScript source code changes
+  - Direct port access for testing
+  - Redis access for BullMQ job queue
+  - Shared database access if using shared SQLite database
+  - Easy debugging and development workflow
+- Environment variables should match those defined in `.env.example`:
+  - `NODE_ENV=development`
+  - `PORT=3000`
+  - `REDIS_URL=redis://redis:6379`
+  - `CURSOR_RUNNER_URL=http://cursor-runner:3001`
+  - `TELEGRAM_BOT_TOKEN` (from environment or .env file)
+  - `LOG_LEVEL=debug` (for development)
+- The app service should use `npm run dev` command which runs `nodemon --exec ts-node src/index.ts` for hot reloading
+- Volume mounts for `src/` directory enable live code reloading without rebuilding the Docker image
+- The `node_modules` volume mount ensures dependencies persist and don't need to be reinstalled on container restart
 
 ## Related Tasks
 
