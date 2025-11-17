@@ -6,20 +6,58 @@
 
 ## Description
 
-Integrate logger in error handler
+Integrate logger utility in the error handler middleware (`src/middleware/error-handler.middleware.ts`) to replace `console.error()` statements with proper logging using the logger utility wrapper created in PHASE1-032. This task ensures that error logging uses the configured logger instead of console methods, matching Rails error logging patterns from jarek-va's `ApplicationController`.
+
+**Rails Error Logging Patterns to Replicate:**
+- The jarek-va Rails application uses `Rails.logger.error()` for error logging in `ApplicationController` (see `jarek-va/app/controllers/application_controller.rb` lines 10-11)
+- Errors are logged in two separate calls:
+  1. Error class and message: `Rails.logger.error("#{exception.class}: #{exception.message}")`
+  2. Stack trace: `Rails.logger.error(exception.backtrace.join("\n"))`
+- This pattern ensures error class, message, and stack trace are all logged for debugging
+
+**Purpose:**
+- Replace `console.error()` with proper logger methods for consistent logging across the application
+- Ensure error logging uses the configured logger (matching Rails error logging patterns)
+- Enable structured logging for error events (useful for log aggregation in production)
+- Match Rails error logging pattern where error class/message and stack trace are logged separately
 
 ## Checklist
 
-- [ ] Open `src/middleware/error-handler.middleware.ts`
-- [ ] Import logger utility
-- [ ] Replace console.error with logger.error()
-- [ ] Log full error details including stack trace
+- [ ] Open `src/middleware/error-handler.middleware.ts` (created in PHASE1-021)
+- [ ] Import logger utility from `@/utils/logger` (created in PHASE1-032)
+- [ ] Replace `console.error()` calls with `logger.error()` for error logging:
+  - [ ] Replace error class and message logging with `logger.error()` (matching Rails pattern: `Rails.logger.error("#{exception.class}: #{exception.message}")`)
+  - [ ] Replace stack trace logging with `logger.error()` (matching Rails pattern: `Rails.logger.error(exception.backtrace.join("\n"))`)
+- [ ] Ensure error logging matches Rails pattern:
+  - [ ] Log error class name: `err.constructor.name` or `err.name`
+  - [ ] Log error message: `err.message`
+  - [ ] Log stack trace: `err.stack` (as separate log call, matching Rails pattern)
+- [ ] Verify all `console.error()` statements are replaced with logger methods
+- [ ] Ensure logging format is consistent with the logger configuration (from PHASE1-031)
 
 ## Notes
 
 - This task is part of Phase 1: Basic Node.js API Infrastructure
 - Section: 8. Logging Infrastructure
 - Task can be completed independently by a single agent
+- **Prerequisite**: PHASE1-032 must be completed first to create the logger utility wrapper
+- **Prerequisite**: PHASE1-021 must be completed first to create the error handler middleware (`src/middleware/error-handler.middleware.ts`)
+- **Rails Reference**: The jarek-va Rails application uses `Rails.logger.error()` for error logging in `ApplicationController`:
+  - `jarek-va/app/controllers/application_controller.rb` (lines 10-11) - Error logging with error class/message and separate stack trace logging
+  - Errors are logged in two separate calls: first the error class and message, then the backtrace
+- **Error Logging**: The `src/middleware/error-handler.middleware.ts` file (created in PHASE1-021) should already have error logging code using `console.error()`. This task replaces those console statements with logger methods.
+- **Rails Logging Pattern**: Match the Rails pattern where error class/message and stack trace are logged separately:
+  ```typescript
+  // Before (from PHASE1-021):
+  console.error(`Error: ${err.name}: ${err.message}`);
+  console.error(err.stack);
+  
+  // After (this task):
+  import logger from '@/utils/logger';
+  logger.error(`${err.constructor.name}: ${err.message}`);
+  logger.error(err.stack);
+  ```
+- **Error Object Handling**: The logger utility (from PHASE1-032) should handle Error objects and include stack traces automatically, but the error handler should still log them explicitly to match Rails pattern.
 
 ## Related Tasks
 
