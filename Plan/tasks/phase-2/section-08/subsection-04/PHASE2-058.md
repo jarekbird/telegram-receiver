@@ -6,16 +6,35 @@
 
 ## Description
 
-Convert implement set_webhook endpoint from Rails to TypeScript/Node.js. Reference `jarek-va/app/controllers/*_controller.rb` files.
+Convert the `set_webhook` endpoint from Rails to TypeScript/Node.js. This endpoint allows administrators to set the Telegram webhook URL and optional secret token.
+
+**Rails Implementation**: `jarek-va/app/controllers/telegram_controller.rb` (lines 51-70)
+
+**Route**: `POST /telegram/set_webhook`
+
+**Key Functionality**:
+- Requires admin authentication via `authenticate_admin` method (checks `X-Admin-Secret` header or `admin_secret` param)
+- Accepts optional `url` parameter (defaults to constructed webhook URL if not provided)
+- Accepts optional `secret_token` parameter (defaults to config value if not provided)
+- Calls `TelegramService.set_webhook(url, secret_token)` to set the webhook via Telegram Bot API
+- Returns JSON response with success status, message, and webhook info
+- Handles errors and returns appropriate error responses
+
+**Default Webhook URL Construction**:
+- Uses `telegram_webhook_base_url` config or `TELEGRAM_WEBHOOK_BASE_URL` env var
+- Defaults to `http://localhost:3000` if not set
+- Appends `/telegram/webhook` to base URL
 
 ## Checklist
 
 - [ ] Implement `setWebhook` handler method
-- [ ] Require admin authentication
-- [ ] Get webhook URL from params or default
-- [ ] Call TelegramService.setWebhook
-- [ ] Return success response
-- [ ] Add error handling
+- [ ] Require admin authentication (check `X-Admin-Secret` header or `admin_secret` param)
+- [ ] Get webhook URL from request params or use default (construct from config/env + `/telegram/webhook`)
+- [ ] Get secret_token from request params or use config default
+- [ ] Call `TelegramService.setWebhook(url, secretToken)` with both parameters
+- [ ] Return JSON success response with format: `{ ok: true, message: 'Webhook set successfully', webhook_info: result }`
+- [ ] Handle errors and return JSON error response: `{ ok: false, error: errorMessage }` with 500 status
+- [ ] Return 401 Unauthorized if admin authentication fails
 
 ## Notes
 
