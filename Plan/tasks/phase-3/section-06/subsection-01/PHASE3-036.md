@@ -6,17 +6,88 @@
 
 ## Description
 
-Review and improve review authentication/authorization in the codebase to ensure best practices.
+Review and improve authentication/authorization in the codebase to ensure best practices. This task focuses on validating that all authentication mechanisms are properly implemented, secure, and follow best practices.
+
+## Authentication Mechanisms to Review
+
+Based on the jarek-va Rails implementation, the following authentication mechanisms exist:
+
+1. **Telegram Webhook Authentication** (`TelegramController#webhook`)
+   - Header: `X-Telegram-Bot-Api-Secret-Token`
+   - Secret: `telegram_webhook_secret` (from config)
+   - Allows blank secret (development mode bypass)
+   - Applied via `before_action :authenticate_webhook`
+
+2. **Admin Authentication** (`TelegramController#set_webhook`, `#webhook_info`, `#delete_webhook`)
+   - Header: `X-Admin-Secret` (or `HTTP_X_ADMIN_SECRET` env var)
+   - Query/Body param: `admin_secret`
+   - Secret: `webhook_secret` (from config)
+   - Applied via `authenticate_admin` method
+
+3. **Cursor-Runner Callback Authentication** (`CursorRunnerCallbackController#create`)
+   - Headers: `X-Webhook-Secret` or `X-Cursor-Runner-Secret`
+   - Query param: `secret`
+   - Secret: `webhook_secret` (from config)
+   - Allows blank secret (development mode bypass)
+   - Applied via `before_action :authenticate_webhook`
+
+4. **Agent Tools Authentication** (`AgentToolsController#create`)
+   - Header: `X-EL-Secret`
+   - Header: `Authorization: Bearer <token>` (token extracted from Bearer)
+   - Secret: `webhook_secret` (from config)
+   - Applied via `before_action :authenticate_webhook`
+
+5. **Sidekiq Web UI** (mounted at `/sidekiq`)
+   - Currently has no visible authentication protection
+   - Comment in routes.rb mentions "protect in production" but no implementation found
 
 ## Checklist
 
-- [ ] Review webhook authentication
-- [ ] Review admin authentication
-- [ ] Check for authentication bypasses
-- [ ] Review token handling
-- [ ] Check for proper authorization
-- [ ] Identify security gaps
-- [ ] Document authentication flow
+- [ ] Review Telegram webhook authentication (`X-Telegram-Bot-Api-Secret-Token` header validation)
+- [ ] Review admin authentication (`X-Admin-Secret` header/param validation)
+- [ ] Review cursor-runner callback authentication (`X-Webhook-Secret`/`X-Cursor-Runner-Secret` headers)
+- [ ] Review agent tools authentication (`X-EL-Secret` header and `Authorization: Bearer` token)
+- [ ] Review Sidekiq Web UI protection (currently unprotected)
+- [ ] Check for authentication bypasses (development mode blank secret checks)
+- [ ] Review secret token handling (header vs query param vs body param)
+- [ ] Review secret configuration (default values, environment variable handling)
+- [ ] Check for proper authorization (role-based access, endpoint-specific permissions)
+- [ ] Verify consistent secret naming and usage across endpoints
+- [ ] Check for timing attack vulnerabilities in secret comparison
+- [ ] Review error handling and logging (avoid leaking secret information)
+- [ ] Identify security gaps (unprotected endpoints, weak secrets, etc.)
+- [ ] Document authentication flow for each endpoint
+- [ ] Review and document secret management best practices
+
+## Rails Files to Review
+
+Reference the following Rails files in jarek-va for authentication implementation:
+
+- `app/controllers/telegram_controller.rb` - Telegram webhook and admin authentication
+- `app/controllers/cursor_runner_callback_controller.rb` - Cursor-runner callback authentication
+- `app/controllers/agent_tools_controller.rb` - Agent tools authentication
+- `app/controllers/application_controller.rb` - Base controller (error handling)
+- `config/routes.rb` - Route definitions and Sidekiq Web UI mounting
+- `config/application.rb` - Secret configuration (webhook_secret, telegram_webhook_secret)
+- `config/initializers/telegram.rb` - Telegram configuration initialization
+
+## Security Concerns to Address
+
+1. **Development Mode Bypasses**: Some authentication methods allow blank secrets in development mode. Review if this is appropriate or if stricter validation is needed.
+
+2. **Default Secrets**: Default secret values ('changeme') are used when secrets are not configured. This is a security risk in production.
+
+3. **Multiple Secret Sources**: Secrets can be passed via headers, query params, or body params. Review if this flexibility is necessary or if it creates security vulnerabilities.
+
+4. **Inconsistent Secret Usage**: Different endpoints use different secret configurations (`webhook_secret` vs `telegram_webhook_secret`). Review if this is intentional or should be standardized.
+
+5. **Unprotected Sidekiq Web UI**: The Sidekiq Web UI is mounted without authentication. This should be protected in production environments.
+
+6. **Secret Comparison**: Review if secret comparison uses constant-time comparison to prevent timing attacks.
+
+7. **Error Messages**: Ensure error messages don't leak information about secret validation failures.
+
+8. **Logging**: Review if authentication failures are logged appropriately without exposing sensitive information.
 
 ## Notes
 
@@ -24,6 +95,8 @@ Review and improve review authentication/authorization in the codebase to ensure
 - Section: 6. Security Review
 - Focus on identifying issues and improvements
 - Document findings and decisions
+- Compare telegram-receiver implementation with jarek-va Rails implementation
+- Ensure all authentication mechanisms are properly converted and secured
 
 - Task can be completed independently by a single agent
 
