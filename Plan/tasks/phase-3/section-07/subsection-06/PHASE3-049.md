@@ -23,6 +23,9 @@ Review the codebase and add missing tests to ensure comprehensive test coverage.
   - [ ] Routes (`src/routes/`)
   - [ ] Config (`src/config/`)
   - [ ] Types (`src/types/`)
+  - [ ] Errors (`src/errors/`)
+  - [ ] Validators (`src/validators/`)
+  - [ ] Jobs (`src/jobs/`)
 - [ ] Document uncovered files and functions
 
 ### Unit Test Creation
@@ -53,6 +56,19 @@ Review the codebase and add missing tests to ensure comprehensive test coverage.
   - [ ] Create test files in `tests/unit/routes/`
   - [ ] Test route handler functions
   - [ ] Mock Express request/response objects
+- [ ] Add unit tests for uncovered error classes
+  - [ ] Create test files in `tests/unit/errors/`
+  - [ ] Test custom error classes and error handling
+  - [ ] Test error message formatting
+- [ ] Add unit tests for uncovered validators
+  - [ ] Create test files in `tests/unit/validators/`
+  - [ ] Test validation logic with various inputs
+  - [ ] Test validation error cases
+- [ ] Add unit tests for uncovered jobs
+  - [ ] Create test files in `tests/unit/jobs/`
+  - [ ] Test job processing logic
+  - [ ] Mock queue and job dependencies
+  - [ ] Test job error handling and retries
 
 ### Integration Test Creation
 - [ ] Add integration tests for API endpoints
