@@ -98,7 +98,7 @@ When running `act push`, the workflow should execute these steps in order:
 6. Run Prettier format check
 7. Run TypeScript type checking
 8. Build TypeScript project (`npm run build`)
-9. Verify build artifacts
+9. Verify build artifacts (`dist/` directory is created with compiled JavaScript files)
 10. Run Jest tests
 
 ### Common Issues and Solutions
