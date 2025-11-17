@@ -12,7 +12,7 @@ export const waitFor = (ms: number): Promise<void> => {
 /**
  * Creates a mock function with proper typing
  */
-export const createMockFn = <T extends (...args: any[]) => any>(
+export const createMockFn = <T extends (...args: unknown[]) => unknown>(
   implementation?: T
 ): jest.MockedFunction<T> => {
   return jest.fn(implementation) as jest.MockedFunction<T>;
