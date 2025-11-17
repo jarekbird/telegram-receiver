@@ -12,7 +12,8 @@ Create TypeScript type definitions for ElevenLabs API. These types will be used 
 
 - [ ] Create `src/types/elevenlabs.ts` file
 - [ ] Define `ElevenLabsTranscribeRequest` interface for STT requests
-  - [ ] Include `file` field (File or Buffer for multipart/form-data)
+  - [ ] Include `file` field (Buffer or Readable stream for multipart/form-data in Node.js)
+  - [ ] Include `filename` field (string, optional - filename for the audio file in multipart form)
   - [ ] Include `model_id` field (string, default: 'scribe_v1')
   - [ ] Include optional `language` field (string, e.g., 'en', 'es', 'fr')
 - [ ] Define `ElevenLabsTranscribeResponse` interface for STT responses
@@ -29,19 +30,20 @@ Create TypeScript type definitions for ElevenLabs API. These types will be used 
   - [ ] Include optional `stability` field (number, typically 0-1)
   - [ ] Include optional `similarity_boost` field (number, typically 0-1)
   - [ ] Include other voice settings as needed (style, use_speaker_boost, etc.)
-- [ ] Define `ElevenLabsError` interface for error responses
-  - [ ] Support error responses that can be objects or arrays
-  - [ ] Include `detail` field (string | string[] | Array<{msg?: string}>)
+- [ ] Define `ElevenLabsErrorResponse` interface for API error responses
+  - [ ] Support error responses that can be objects or arrays (TTS handles both, STT typically returns objects)
+  - [ ] For array format: `Array<{msg?: string}>` (array of objects with optional `msg` field)
+  - [ ] For object format: Include `detail` field (string | string[] | Array<{msg?: string}>)
   - [ ] Include optional `error` field (string)
   - [ ] Include optional `message` field (string)
-  - [ ] Handle array error responses with `msg` fields
-- [ ] Define error class types matching Rails service errors
-  - [ ] `ElevenLabsError` (base error)
-  - [ ] `ElevenLabsConnectionError`
-  - [ ] `ElevenLabsTimeoutError`
-  - [ ] `ElevenLabsInvalidResponseError`
-  - [ ] `ElevenLabsTranscriptionError` (for STT)
-  - [ ] `ElevenLabsSynthesisError` (for TTS)
+  - [ ] Note: When `detail` is an array, extract `msg` fields from each item
+- [ ] Define error classes matching Rails service errors (extend Error class)
+  - [ ] `ElevenLabsError` (base error class extending Error)
+  - [ ] `ElevenLabsConnectionError` (extends ElevenLabsError)
+  - [ ] `ElevenLabsTimeoutError` (extends ElevenLabsError)
+  - [ ] `ElevenLabsInvalidResponseError` (extends ElevenLabsError)
+  - [ ] `ElevenLabsTranscriptionError` (extends ElevenLabsError, for STT)
+  - [ ] `ElevenLabsSynthesisError` (extends ElevenLabsError, for TTS)
 - [ ] Export all types and interfaces
 
 ## Notes
@@ -55,11 +57,12 @@ Create TypeScript type definitions for ElevenLabs API. These types will be used 
 
 **Speech-to-Text (STT) Service:**
 - Uses `multipart/form-data` format (not JSON)
-- Request fields: `file` (audio file), `model_id` (string), `language` (optional string)
+- Request fields: `file` (audio file content as binary), `model_id` (string), `language` (optional string)
+- In Rails: Uses `File.binread()` or `IO.read()` to get file content, includes filename in multipart form
 - Response is JSON with `text` field containing transcribed text
 - Default model_id: `'scribe_v1'`
 - Endpoint: `/v1/speech-to-text`
-- Error responses can have `detail`, `error`, or `message` fields
+- Error responses are typically objects (not arrays) with `detail`, `error`, or `message` fields
 
 **Text-to-Speech (TTS) Service:**
 - Uses JSON format for request body
@@ -82,7 +85,8 @@ Create TypeScript type definitions for ElevenLabs API. These types will be used 
 **Error Handling:**
 - Both services define custom error classes inheriting from base Error
 - Connection errors, timeout errors, invalid response errors, and operation-specific errors
-- Error parsing handles both JSON object and array responses
+- STT error parsing handles JSON object responses (with `detail`, `error`, or `message` fields)
+- TTS error parsing handles both JSON object and array responses (arrays have `msg` fields, objects can have `detail` as array)
 - Task can be completed independently by a single agent
 
 ## Related Tasks
