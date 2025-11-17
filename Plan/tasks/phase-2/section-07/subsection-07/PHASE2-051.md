@@ -6,25 +6,91 @@
 
 ## Description
 
-Convert implement synthesize method from Rails to TypeScript/Node.js. Reference `jarek-va/app/services/eleven_labs_*.rb` files.
+Convert the `synthesize` method from Rails to TypeScript/Node.js. This method converts text to speech using the ElevenLabs API and saves the generated audio to a file. Reference `jarek-va/app/services/eleven_labs_text_to_speech_service.rb` for the complete implementation.
+
+The `synthesize` method is located in `jarek-va/app/services/eleven_labs_text_to_speech_service.rb` (lines 41-76).
 
 ## Checklist
 
-- [ ] Implement `synthesize` method
-- [ ] Validate text input
-- [ ] Build request body with voice settings
-- [ ] Send POST request to API
-- [ ] Save audio file to output_path or temp
-- [ ] Return file path
-- [ ] Add error handling
+- [ ] Implement `synthesize` method signature: `synthesize(text: string, options?: { outputPath?: string, voiceSettings?: object }): Promise<string>`
+- [ ] Validate text input is not blank (throw error if blank)
+- [ ] Validate voice_id is configured (throw error if not configured)
+- [ ] Build URI with voice_id in path: `https://api.elevenlabs.io/v1/text-to-speech/{voice_id}`
+- [ ] Build HTTP client with SSL and timeout settings (use private `buildHttp` method)
+- [ ] Determine output path:
+  - If `outputPath` provided, use it
+  - If not provided, generate temp file path using random filename (e.g., `elevenlabs_tts_{randomHex(8)}.mp3`) in temp directory
+- [ ] Build request body JSON with:
+  - `text` (required)
+  - `model_id` (use instance `modelId` property)
+  - `output_format` (use `DEFAULT_OUTPUT_FORMAT = 'mp3_44100_128'`)
+  - `voice_settings` (only if provided in options)
+- [ ] Create POST request with headers:
+  - `xi-api-key`: API key
+  - `Content-Type`: `application/json`
+  - `Accept`: `audio/mpeg`
+- [ ] Log request info: "Sending text to ElevenLabs for synthesis: {text[0..50]}..."
+- [ ] Execute HTTP request (use private `executeRequest` method)
+- [ ] Save audio file to output path using binary write (File.binwrite in Rails, fs.writeFileSync with binary mode in Node.js)
+- [ ] Log success: "Generated audio file: {output_path} ({response.body.length} bytes)"
+- [ ] Return output path string
+- [ ] Add error handling:
+  - Catch JSON parsing errors and raise `InvalidResponseError`
+  - Connection/timeout errors are handled in `executeRequest` method
+  - HTTP error responses are handled in `executeRequest` method (raises `SynthesisError`)
 
 ## Notes
 
 - This task is part of Phase 2: File-by-File Conversion
 - Section: 7. ElevenLabs Services Conversion
-- Reference the Rails implementation for behavior
+- **Rails Reference**: `jarek-va/app/services/eleven_labs_text_to_speech_service.rb` (lines 41-76)
+
+### Implementation Details from Rails:
+
+1. **Method signature**:
+   - Parameters: `text` (required), `output_path` (optional), `voice_settings` (optional)
+   - Returns: String path to generated audio file
+
+2. **Validation**:
+   - Raises error if `text` is blank
+   - Raises error if `voice_id` is not configured
+
+3. **Output path handling**:
+   - If `output_path` not provided, generates temp file: `File.join(Dir.tmpdir, "elevenlabs_tts_#{SecureRandom.hex(8)}.mp3")`
+   - In Node.js, use `os.tmpdir()` and `crypto.randomBytes(8).toString('hex')` for random filename
+
+4. **Request body structure**:
+   ```json
+   {
+     "text": "text to synthesize",
+     "model_id": "eleven_turbo_v2_5",
+     "output_format": "mp3_44100_128",
+     "voice_settings": { ... } // optional
+   }
+   ```
+
+5. **API endpoint**:
+   - URL: `POST https://api.elevenlabs.io/v1/text-to-speech/{voice_id}`
+   - Voice ID is included in the URL path, not the request body
+
+6. **Response handling**:
+   - Response is binary audio data (MP3 format)
+   - Save directly to file using binary write
+   - Response body length is logged for debugging
+
+7. **Error handling**:
+   - JSON parsing errors are caught and wrapped in `InvalidResponseError`
+   - HTTP errors, connection errors, and timeout errors are handled in `executeRequest` method
+   - See PHASE2-053 for complete error handling implementation details
+
+8. **Dependencies**:
+   - Uses private `buildHttp` method for HTTP client setup
+   - Uses private `executeRequest` method for request execution with error handling
+   - Requires file system module for writing audio file
+   - Requires crypto module for random filename generation
 
 - Task can be completed independently by a single agent
+- This task assumes the class structure from PHASE2-050 is already in place
 
 ## Related Tasks
 
