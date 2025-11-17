@@ -28,7 +28,7 @@ Convert and implement the `format_success_message` utility function from Rails t
   - Else: returns cleaned_output
 - [ ] Create helper function `formatWarnings(error: string, cursorDebug: boolean): string` that:
   - Uses `cleanAnsiEscapeSequences` (PHASE2-073) to clean the error text
-  - Truncates error to 500 characters if longer: `'{error_text[0, 500]}...'`
+  - Truncates error to 500 characters if longer: take first 500 characters using `errorText.substring(0, 500)` and append `'...'` (Rails equivalent: `error_text[0, 500]`)
   - Returns `'\n⚠️ Warnings:\n<pre><code>{error_text}</code></pre>'`
 - [ ] Implement main `formatSuccessMessage` function logic:
   - Create empty array `messageParts: string[]`
@@ -73,6 +73,7 @@ Convert and implement the `format_success_message` utility function from Rails t
   - `formatWarnings` - formats warnings from error field with ANSI cleaning and truncation
 - HTML code blocks (`<pre><code>...</code></pre>`) are used for better compatibility with Telegram's Markdown/HTML parsing
 - The function returns a string that will be sent to Telegram via `TelegramService.sendMessage()`
+- The function should be placed in an appropriate utilities module/file, such as `src/utils/format-messages.ts` or similar (consider grouping with `formatErrorMessage` from PHASE2-072)
 - Task can be completed independently by a single agent (after PHASE2-073 is complete for `cleanAnsiEscapeSequences` dependency)
 
 ## Related Tasks
