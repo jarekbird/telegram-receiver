@@ -14,6 +14,7 @@ Reference `jarek-va/config/routes.rb` for the complete route definitions. The Ra
 2. **Agent tools route**: `POST /agent-tools`
 3. **Cursor-runner routes**: Multiple endpoints under `/cursor-runner` scope
 4. **Telegram routes**: Multiple endpoints under `/telegram` scope
+5. **Sidekiq Web UI**: `GET /sidekiq/*` - Background job monitoring UI (Ruby-specific, may need Node.js equivalent like BullMQ dashboard)
 
 ## Rails Routes Reference
 
@@ -46,6 +47,10 @@ scope path: 'telegram', as: 'telegram' do
   get 'webhook_info', to: 'telegram#webhook_info'
   delete 'webhook', to: 'telegram#delete_webhook'
 end
+
+# Sidekiq Web UI (mount in development/staging only, protect in production)
+require 'sidekiq/web'
+mount Sidekiq::Web => '/sidekiq'
 ```
 
 ## Checklist
@@ -57,6 +62,7 @@ end
 - [ ] Create `src/routes/agent-tools.routes.ts` - Agent tools webhook route (`POST /agent-tools`)
 - [ ] Create `src/routes/cursor-runner.routes.ts` - Cursor runner API routes (`/cursor-runner/*`)
 - [ ] Create `src/routes/telegram.routes.ts` - Telegram webhook routes (`/telegram/*`)
+- [ ] Consider creating `src/routes/jobs.routes.ts` - Background job monitoring UI routes (`/sidekiq/*` or equivalent) - Note: Sidekiq is Ruby-specific; Node.js equivalent (e.g., BullMQ dashboard) should be implemented in a separate task
 
 ### Route File Structure
 - [ ] Each route file should export an Express Router instance
@@ -100,6 +106,7 @@ end
   - Agent tools routes at `/agent-tools`
   - Cursor runner routes at `/cursor-runner`
   - Telegram routes at `/telegram`
+  - Background job monitoring UI routes at `/sidekiq` (or equivalent path for Node.js job queue dashboard) - Optional, may be implemented in a separate task
 - [ ] Export a function that accepts Express app instance and mounts all routes
 - [ ] Export individual route routers for testing purposes
 
@@ -166,6 +173,7 @@ export { healthRoutes, agentToolsRoutes, cursorRunnerRoutes, telegramRoutes };
 - Reference the Rails implementation (`jarek-va/config/routes.rb`) for exact route definitions
 - Controllers will be implemented in later tasks, so routes may reference controllers that don't exist yet
 - Authentication middleware will be implemented separately - routes should be structured to accept middleware
+- **Sidekiq Web UI**: The Rails application mounts Sidekiq Web UI at `/sidekiq`. Since Sidekiq is Ruby-specific, the Node.js version should use an equivalent background job monitoring solution (e.g., BullMQ dashboard). This route may be implemented in a separate task focused on background job infrastructure.
 - Task can be completed independently by a single agent
 
 ## Related Tasks
