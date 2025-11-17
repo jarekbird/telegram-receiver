@@ -48,6 +48,7 @@ Add comprehensive queue error handling for BullMQ queues and workers, converting
   - [ ] Log failed jobs with full error details and backtraces (matching Rails `backtrace: true`)
   - [ ] Store failed job information for debugging/monitoring
   - [ ] Optionally send notifications for critical failures
+  - [ ] Ensure error handlers never throw errors themselves (prevent cascading failures)
 - [ ] Implement comprehensive logging:
   - [ ] Log all error events with job ID, queue name, error message, and stack trace
   - [ ] Log job failures with full context (attempts, error details, job data)
