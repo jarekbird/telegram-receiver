@@ -37,6 +37,60 @@ In Node.js/TypeScript applications, error handling should follow these patterns:
 6. **Async Error Handling**: Properly handle errors in async/await and Promise chains
 7. **Type Safety**: Use TypeScript to type errors appropriately
 
+## Rails Error Handling Patterns (Reference)
+
+The jarek-va Rails application uses the following error handling patterns that should be adapted for Node.js/TypeScript:
+
+### Application-Level Error Handling
+- **ApplicationController** (`jarek-va/app/controllers/application_controller.rb`): Uses `rescue_from StandardError` to catch all unhandled errors
+  - Logs error with class, message, and full backtrace
+  - Returns consistent error response: `{ ok: false, say: 'Sorry, I encountered an error...', result: { error: message } }`
+  - Uses HTTP 500 status code
+
+### Controller Error Handling
+- **TelegramController** (`jarek-va/app/controllers/telegram_controller.rb`): Uses rescue blocks for specific error handling
+  - Webhook endpoint always returns 200 OK to Telegram (even on error) to prevent retries
+  - Tries to send error message to user via Telegram if chat info is available
+  - Admin endpoints return error JSON with appropriate HTTP status codes
+  - Error responses: `{ ok: false, error: message }` for admin endpoints
+
+### Service Error Handling
+- **TelegramService** (`jarek-va/app/services/telegram_service.rb`): Services raise errors and let them propagate
+  - Logs errors with context before re-raising
+  - Does not catch and ignore errors
+  - Uses rescue blocks only for logging, then re-raises
+
+- **CursorRunnerService** (`jarek-va/app/services/cursor_runner_service.rb`): Uses custom error classes
+  - Custom error classes: `Error`, `ConnectionError`, `TimeoutError`, `InvalidResponseError`
+  - Handles specific error types (connection failures, timeouts, invalid responses)
+  - Raises appropriate error types for different failure scenarios
+  - Handles HTTP 422 as valid response (operation failed but request was valid)
+
+### Job Error Handling
+- **TelegramMessageJob** (`jarek-va/app/jobs/telegram_message_job.rb`): Comprehensive error handling
+  - Catches errors in perform method
+  - Logs errors with full backtrace
+  - Tries to send error message to Telegram user before re-raising
+  - Re-raises error to mark job as failed (for retry logic)
+  - Handles nested errors (e.g., error sending error message)
+  - Truncates error messages for Telegram's 4096 character limit
+  - Uses ensure blocks for cleanup (file deletion)
+
+### Error Response Formats
+- Standard error format: `{ ok: false, error: message }` or `{ ok: false, say: message, result: { error: ... } }`
+- HTTP status codes: 500 for internal errors, 401 for unauthorized, 422 for validation errors
+- Error messages are user-friendly but don't expose sensitive implementation details
+
+### Error Logging
+- Uses Rails.logger.error for all errors
+- Includes error class, message, and full backtrace
+- Logs context information (request ID, chat ID, etc.)
+- Does not log sensitive information (tokens, passwords)
+
+### Resource Cleanup
+- Uses ensure blocks for cleanup operations (file deletion, connection closing)
+- Handles cleanup errors gracefully (logs warning, doesn't fail on cleanup errors)
+
 ## Checklist
 
 - [ ] Review error handling in services
@@ -58,6 +112,9 @@ In Node.js/TypeScript applications, error handling should follow these patterns:
   - [ ] Check for proper error handling in async route handlers
   - [ ] Verify controllers use error middleware instead of duplicating error handling
   - [ ] Check that sensitive error information is not exposed to clients
+  - [ ] Verify webhook endpoints always return 200 OK (even on error) to prevent retries (Telegram webhook pattern)
+  - [ ] Check that controllers try to send user-friendly error messages when possible (e.g., via Telegram)
+  - [ ] Verify error messages are truncated appropriately for external API limits (e.g., Telegram's 4096 character limit)
 - [ ] Review error handling in jobs
   - [ ] Verify jobs handle errors without crashing the job processor
   - [ ] Check that failed jobs are properly logged
@@ -66,6 +123,11 @@ In Node.js/TypeScript applications, error handling should follow these patterns:
   - [ ] Verify error handling for job timeouts
   - [ ] Check for proper error handling in async job operations
   - [ ] Verify jobs handle external API errors gracefully
+  - [ ] Check that jobs try to notify users of errors when possible (e.g., send error message to Telegram)
+  - [ ] Verify jobs re-raise errors after handling to mark job as failed (for retry logic)
+  - [ ] Check for proper handling of nested errors (e.g., error sending error message)
+  - [ ] Verify resource cleanup in finally/ensure blocks (file deletion, connection closing)
+  - [ ] Check that cleanup errors are handled gracefully (log warning, don't fail on cleanup errors)
 - [ ] Review error handling middleware
   - [ ] Verify Express error middleware is properly configured
   - [ ] Check that error middleware handles all error types consistently
@@ -88,12 +150,17 @@ In Node.js/TypeScript applications, error handling should follow these patterns:
   - [ ] Verify errors are logged at appropriate layers (not duplicated)
   - [ ] Check that critical errors trigger alerts/notifications
   - [ ] Verify error logs are structured and searchable
+  - [ ] Check that error logs include error class, message, and stack trace (similar to Rails backtrace)
+  - [ ] Verify context information is logged (chat ID, message ID, request ID, etc.)
+  - [ ] Check that sensitive information (tokens, passwords) is not logged
 - [ ] Review custom error classes
   - [ ] Check if custom error classes are used appropriately
   - [ ] Verify custom errors extend Error properly
   - [ ] Check that custom errors include necessary context
   - [ ] Verify custom errors are typed correctly in TypeScript
   - [ ] Check for consistent naming conventions for error classes
+  - [ ] Verify service-specific error classes exist (e.g., CursorRunnerService should have Error, ConnectionError, TimeoutError, InvalidResponseError)
+  - [ ] Check that error classes form a hierarchy where appropriate (base Error class with specific subclasses)
 - [ ] Review async/await error handling
   - [ ] Verify all async functions have proper error handling
   - [ ] Check for unhandled promise rejections
@@ -106,6 +173,9 @@ In Node.js/TypeScript applications, error handling should follow these patterns:
   - [ ] Verify error responses don't expose sensitive information
   - [ ] Check that error responses are properly typed
   - [ ] Verify error responses match API documentation
+  - [ ] Check that error responses match Rails patterns: `{ ok: false, error: message }` or `{ ok: false, say: message, result: { error: ... } }`
+  - [ ] Verify user-facing error messages are friendly and actionable
+  - [ ] Check that technical error details are not exposed to end users
 - [ ] Identify inconsistencies
   - [ ] Find places where error handling patterns differ
   - [ ] Identify services/controllers that handle errors differently
@@ -119,6 +189,10 @@ In Node.js/TypeScript applications, error handling should follow these patterns:
   - [ ] Check Redis error handling
   - [ ] Verify database error handling (if applicable)
   - [ ] Check for proper timeout handling for external calls
+  - [ ] Verify custom error classes are used for different failure types (ConnectionError, TimeoutError, InvalidResponseError)
+  - [ ] Check that HTTP 422 responses are handled as valid responses (operation failed but request was valid)
+  - [ ] Verify connection failures are distinguished from timeout errors
+  - [ ] Check that invalid response errors are handled separately from network errors
 - [ ] Document error handling approach
   - [ ] Create error handling guidelines document
   - [ ] Document error types and when to use them
@@ -136,7 +210,15 @@ In Node.js/TypeScript applications, error handling should follow these patterns:
 - Compare implemented error handling with Node.js/TypeScript best practices
 - Review both existing code and planned structure to ensure consistent error handling
 - Reference Rails error handling patterns from jarek-va but adapt to Node.js/TypeScript conventions
+- **Important**: Even if the codebase is not fully implemented, this review should establish error handling patterns and guidelines for future implementation
+- Review should validate that planned error handling aligns with Rails patterns (where applicable) and Node.js/TypeScript best practices
 - Task can be completed independently by a single agent
+- Key Rails files to reference:
+  - `jarek-va/app/controllers/application_controller.rb` - Application-level error handling
+  - `jarek-va/app/controllers/telegram_controller.rb` - Controller error handling patterns
+  - `jarek-va/app/services/telegram_service.rb` - Service error propagation
+  - `jarek-va/app/services/cursor_runner_service.rb` - Custom error classes and external API error handling
+  - `jarek-va/app/jobs/telegram_message_job.rb` - Job error handling and resource cleanup
 
 ## Related Tasks
 
