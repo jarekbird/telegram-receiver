@@ -24,7 +24,7 @@ The fixtures should provide reusable test data for job payloads that match the T
 - [ ] Create edited message update fixture
 - [ ] Create callback query update fixture
 - [ ] Create audio/voice message update fixtures (voice, audio, document with audio mime type)
-- [ ] Create update with missing chat_id (error scenario)
+- [ ] Create update with missing chat object (error scenario - matches Rails spec `update_data_no_chat`)
 - [ ] Create update as JSON string format (job accepts both Hash and String)
 - [ ] Create helper function `createJobPayload(overrides)` for custom payloads
 - [ ] Export all fixtures following the pattern in `telegramMessages.ts`
@@ -36,29 +36,39 @@ The fixtures should provide reusable test data for job payloads that match the T
 Based on the Rails spec, the fixtures should include:
 
 1. **Command Message Payload** (`/start`, `/help`, `/status`)
-   - Message with text starting with `/`
-   - Includes chat_id, message_id, from, text fields
+   - Message with text starting with `/` (case-insensitive matching in Rails)
+   - Structure matches Rails spec `message_data`: `{ message_id: number, text: string, chat: { id: number }, from: { id: number, username: string } }`
+   - Wrapped in update: `{ update_id: number, message: { ... } }`
+   - These commands are handled locally and not forwarded to cursor-runner
 
 2. **Non-Command Message Payload**
    - Regular text message that gets forwarded to cursor-runner
-   - Should not match `/start`, `/help`, or `/status` patterns
+   - Should not match `/start`, `/help`, or `/status` patterns (case-insensitive)
+   - Structure matches Rails spec `non_command_message`: `{ message_id: number, text: string, chat: { id: number }, from: { id: number, username: string } }`
+   - Wrapped in update: `{ update_id: number, message: { ... } }`
 
 3. **Edited Message Payload**
-   - Uses `edited_message` field instead of `message` field
-   - Same structure as regular message
+   - Uses `edited_message` field instead of `message` field at the update level
+   - Same structure as regular message: `{ message_id: number, text: string, chat: { id: number }, from: { id: number, username: string } }`
+   - Wrapped in update: `{ update_id: number, edited_message: { ... } }`
+   - The job processes edited messages the same way as regular messages
 
 4. **Callback Query Payload**
-   - Uses `callback_query` field
-   - Includes callback_query.id, data, message fields
+   - Uses `callback_query` field instead of `message` field
+   - Must include: `callback_query.id` (string), `callback_query.data` (string), `callback_query.message` (object)
+   - The `callback_query.message` must include `chat.id` and `message_id` fields
+   - Structure: `{ update_id: number, callback_query: { id: string, data: string, message: { message_id: number, chat: { id: number }, ... } } }`
 
 5. **Audio/Voice Message Payloads**
-   - Voice message: message.voice.file_id
-   - Audio file: message.audio.file_id
-   - Document with audio mime type: message.document.file_id with mime_type starting with 'audio/'
+   - Voice message: `message.voice.file_id` (string) - most common for speech transcription
+   - Audio file: `message.audio.file_id` (string) - standard audio file
+   - Document with audio mime type: `message.document.file_id` (string) with `message.document.mime_type` starting with 'audio/'
+   - All audio types should include standard message fields (message_id, chat, from, text may be empty/null)
+   - The job extracts audio using `extract_audio_file_id()` which checks voice, audio, then document in that order
 
 6. **Error Scenario Payloads**
-   - Update with missing chat_id
-   - Update with missing message_id
+   - Update with missing chat object: `{ message: { text: string, message_id: number } }` (no `chat` field) - matches Rails spec `update_data_no_chat`
+   - Update with missing message_id: Optional edge case (not in Rails spec but useful for testing)
 
 7. **JSON String Format**
    - Same payloads but as JSON strings (job accepts both formats)
@@ -69,7 +79,9 @@ Based on the Rails spec, the fixtures should include:
 - Section: 13. Testing
 - Reference the Rails implementation in `jarek-va/spec/jobs/telegram_message_job_spec.rb` for exact payload structures
 - Follow the existing fixture pattern in `telegram-receiver/tests/fixtures/telegramMessages.ts`
-- Payloads should match the structure used in Rails spec `let` blocks (message_data, update_data, etc.)
+- Payloads should match the structure used in Rails spec `let` blocks (message_data, update_data, non_command_message, non_command_update, update_data_no_chat)
+- All update fixtures should include `update_id` field (standard Telegram Bot API field, even though Rails job doesn't use it)
+- Base structure from Rails spec: `{ update_id: number, message: { message_id: number, text: string, chat: { id: number }, from: { id: number, username: string } } }`
 - Task can be completed independently by a single agent
 
 ## Related Tasks
