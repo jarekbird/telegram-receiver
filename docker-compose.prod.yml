@@ -1,0 +1,139 @@
+services:
+  # Traefik reverse proxy for SSL termination
+  traefik:
+    image: traefik:v2.11
+    container_name: telegram-receiver-traefik
+    restart: unless-stopped
+    command:
+      - "--api.dashboard=true"
+      - "--api.insecure=true"  # Set to false and add auth in production for security
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@example.com}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Traefik dashboard (secure dashboard access in production)
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+    networks:
+      - virtual-assistant-network
+    labels:
+      - "traefik.enable=true"
+
+  # Redis service for BullMQ job queue
+  redis:
+    image: redis:7-alpine
+    container_name: telegram-receiver-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    # Do NOT expose Redis port 6379 in production (Redis is accessed internally via Docker network)
+    volumes:
+      # Shared Redis data volume accessible by all services
+      - shared_redis_data:/data
+    networks:
+      - virtual-assistant-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Node.js/TypeScript application service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: telegram-receiver-app
+    restart: unless-stopped
+    # Do NOT expose ports directly - Traefik will route traffic
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - REDIS_URL=redis://redis:6379/0
+      - CURSOR_RUNNER_URL=http://cursor-runner:3001
+      - CURSOR_RUNNER_TIMEOUT=${CURSOR_RUNNER_TIMEOUT:-300}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - LOG_LEVEL=info
+    volumes:
+      # Mount shared SQLite database for cross-service database access
+      - shared_sqlite_db:/app/shared_db
+      # Mount logs for debugging (optional)
+      - ./log:/app/log
+    networks:
+      - virtual-assistant-network
+    depends_on:
+      - redis
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      # HTTP to HTTPS redirect
+      # Exclude /agents/* paths - these are handled by cursor-agents service
+      - "traefik.http.routers.app.rule=Host(`${DOMAIN_NAME:-localhost}`) && !PathPrefix(`/agents`)"
+      - "traefik.http.routers.app.entrypoints=websecure"
+      - "traefik.http.routers.app.tls.certresolver=letsencrypt"
+      # Service definition
+      - "traefik.http.services.app.loadbalancer.server.port=3000"
+      # Security headers middleware
+      - "traefik.http.middlewares.app-headers.headers.sslredirect=true"
+      - "traefik.http.middlewares.app-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.app-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.app-headers.headers.stsPreload=true"
+      - "traefik.http.routers.app.middlewares=app-headers"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # BullMQ worker service for background jobs
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: telegram-receiver-worker
+    restart: unless-stopped
+    # Worker command - assumes worker script/entry point exists
+    # Note: The worker script/entry point must be created separately
+    # (e.g., add "worker": "node dist/worker.js" to package.json scripts, or create dist/worker.js entry point)
+    command: npm run worker
+    environment:
+      - NODE_ENV=production
+      - REDIS_URL=redis://redis:6379/0
+      - CURSOR_RUNNER_URL=http://cursor-runner:3001
+      - CURSOR_RUNNER_TIMEOUT=${CURSOR_RUNNER_TIMEOUT:-300}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - LOG_LEVEL=info
+    volumes:
+      # Mount shared SQLite database for cross-service database access
+      - shared_sqlite_db:/app/shared_db
+      # Mount logs for debugging (optional)
+      - ./log:/app/log
+    networks:
+      - virtual-assistant-network
+    depends_on:
+      - redis
+      - app
+
+volumes:
+  # Shared Redis data volume accessible by all services
+  shared_redis_data:
+    driver: local
+    name: shared_redis_data
+  # Shared SQLite database volume accessible by all services
+  shared_sqlite_db:
+    driver: local
+    name: shared_sqlite_db
+
+networks:
+  virtual-assistant-network:
+    external: true
+    name: virtual-assistant-network
