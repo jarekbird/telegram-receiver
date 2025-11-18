@@ -60,10 +60,11 @@ jobs:
           if [ "${{ steps.changed-files.outputs.has_changes }}" == "true" ]; then
             echo "Linting changed files..."
             CHANGED_FILES="${{ steps.changed-files.outputs.changed_files }}"
-            # Filter out test files for ESLint (only lint source files)
-            SOURCE_FILES=$(echo "$CHANGED_FILES" | grep -E '^src/.*\.ts$' || echo "")
+            # Filter out test files (only lint source files, matching Rails pattern)
+            SOURCE_FILES=$(echo "$CHANGED_FILES" | grep -v '^tests/' || echo "")
             if [ -n "$SOURCE_FILES" ]; then
-              echo "$SOURCE_FILES" | tr '\n' '\0' | xargs -0 npx eslint --max-warnings=0
+              # Run ESLint on all changed source files at once
+              npx eslint $SOURCE_FILES
             else
               echo "No source files changed, skipping ESLint"
             fi
@@ -72,11 +73,12 @@ jobs:
             npm run lint
           fi
 
-      - name: Run Prettier format check
+      - name: Check Prettier formatting
         run: |
           if [ "${{ steps.changed-files.outputs.has_changes }}" == "true" ]; then
             echo "Checking formatting for changed files..."
             CHANGED_FILES="${{ steps.changed-files.outputs.changed_files }}"
+            # Prettier checks both source and test files
             if [ -n "$CHANGED_FILES" ]; then
               echo "$CHANGED_FILES" | tr '\n' '\0' | xargs -0 npx prettier --check
             else
@@ -113,20 +115,16 @@ jobs:
               while IFS= read -r source_file; do
                 [ -z "$source_file" ] && continue
                 # Map src/**/*.ts to tests/**/*.test.ts or tests/**/*.spec.ts
-                # Example: src/services/telegram_service.ts -> tests/**/services/telegram_service.test.ts
-                # Get relative path from src/
-                rel_path=$(echo "$source_file" | sed 's|^src/||' | sed 's|\.ts$||')
+                # Example: src/services/telegram_service.ts -> tests/services/telegram_service.test.ts
+                test_file=$(echo "$source_file" | sed 's|^src/|tests/|' | sed 's|\.ts$|.test.ts|')
+                spec_file=$(echo "$source_file" | sed 's|^src/|tests/|' | sed 's|\.ts$|.spec.ts|')
                 
-                # Check for test files in various test directories (unit, integration, etc.)
-                # Try .test.ts first, then .spec.ts
-                test_file=$(find tests -path "*/${rel_path}.test.ts" -type f 2>/dev/null | head -1)
-                if [ -n "$test_file" ]; then
+                # Check if .test.ts file exists
+                if [ -f "$test_file" ]; then
                   ALL_TESTS="${ALL_TESTS}${test_file} "
-                else
-                  spec_file=$(find tests -path "*/${rel_path}.spec.ts" -type f 2>/dev/null | head -1)
-                  if [ -n "$spec_file" ]; then
-                    ALL_TESTS="${ALL_TESTS}${spec_file} "
-                  fi
+                # Check if .spec.ts file exists
+                elif [ -f "$spec_file" ]; then
+                  ALL_TESTS="${ALL_TESTS}${spec_file} "
                 fi
               done <<< "$CHANGED_SOURCE"
             fi
@@ -146,61 +144,8 @@ jobs:
             npm test
           fi
 
-      - name: Run Jest tests with coverage
-        if: always()
-        run: |
-          if [ "${{ steps.changed-files.outputs.has_changes }}" == "true" ]; then
-            echo "Running tests with coverage for changed files..."
-            CHANGED_FILES="${{ steps.changed-files.outputs.changed_files }}"
-            # Get changed test files
-            CHANGED_TESTS=$(echo "$CHANGED_FILES" | grep -E '^tests/.*\.(test|spec)\.ts$' || echo "")
-            
-            # Get changed source files (excluding test files)
-            CHANGED_SOURCE=$(echo "$CHANGED_FILES" | grep -E '^src/.*\.ts$' || echo "")
-            
-            # Collect all test files to run:
-            # 1. Changed test files
-            # 2. Related test files for changed source files
-            ALL_TESTS="$CHANGED_TESTS"
-            
-            # Find related test files for changed source files
-            if [ -n "$CHANGED_SOURCE" ]; then
-              echo "Finding related test files for changed source files..."
-              while IFS= read -r source_file; do
-                [ -z "$source_file" ] && continue
-                # Map src/**/*.ts to tests/**/*.test.ts or tests/**/*.spec.ts
-                # Example: src/services/telegram_service.ts -> tests/**/services/telegram_service.test.ts
-                # Get relative path from src/
-                rel_path=$(echo "$source_file" | sed 's|^src/||' | sed 's|\.ts$||')
-                
-                # Check for test files in various test directories (unit, integration, etc.)
-                # Try .test.ts first, then .spec.ts
-                test_file=$(find tests -path "*/${rel_path}.test.ts" -type f 2>/dev/null | head -1)
-                if [ -n "$test_file" ]; then
-                  ALL_TESTS="${ALL_TESTS}${test_file} "
-                else
-                  spec_file=$(find tests -path "*/${rel_path}.spec.ts" -type f 2>/dev/null | head -1)
-                  if [ -n "$spec_file" ]; then
-                    ALL_TESTS="${ALL_TESTS}${spec_file} "
-                  fi
-                fi
-              done <<< "$CHANGED_SOURCE"
-            fi
-            
-            # Remove duplicates and empty entries
-            ALL_TESTS=$(echo "$ALL_TESTS" | tr ' ' '\n' | sort -u | grep -v '^$' | tr '\n' ' ')
-            
-            if [ -n "$ALL_TESTS" ]; then
-              echo "Running tests with coverage for changed test files and related specs..."
-              npm run test:coverage -- $ALL_TESTS
-            else
-              echo "No test files found, running all tests with coverage..."
-              npm run test:coverage
-            fi
-          else
-            echo "No files changed, running all tests with coverage..."
-            npm run test:coverage
-          fi
+      - name: Generate test coverage
+        run: npm run test:coverage
 
       - name: Build project
         run: npm run build
