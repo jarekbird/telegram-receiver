@@ -93,6 +93,44 @@ jobs:
       - name: Run TypeScript type check
         run: npm run type-check
 
+      - name: Build TypeScript project
+        run: npm run build
+
+      - name: Verify build artifacts
+        run: |
+          echo "Verifying build artifacts..."
+          # Verify dist/ directory exists
+          if [ ! -d "dist" ]; then
+            echo "Error: dist/ directory not found"
+            exit 1
+          fi
+          echo "✓ dist/ directory exists"
+          
+          # Verify main entry point exists
+          if [ ! -f "dist/index.js" ]; then
+            echo "Error: dist/index.js not found"
+            exit 1
+          fi
+          echo "✓ dist/index.js exists"
+          
+          # Optionally verify source maps
+          if [ -f "dist/index.js.map" ]; then
+            echo "✓ dist/index.js.map exists"
+          fi
+          
+          # Optionally verify declaration files
+          if [ -f "dist/index.d.ts" ]; then
+            echo "✓ dist/index.d.ts exists"
+          fi
+          
+          # Optionally verify declaration maps
+          if [ -f "dist/index.d.ts.map" ]; then
+            echo "✓ dist/index.d.ts.map exists"
+          fi
+          
+          echo "Listing build artifacts:"
+          ls -la dist/ | head -20
+
       - name: Run Jest tests
         run: |
           if [ "${{ steps.changed-files.outputs.has_changes }}" == "true" ]; then
@@ -146,6 +184,3 @@ jobs:
 
       - name: Generate test coverage
         run: npm run test:coverage
-
-      - name: Build project
-        run: npm run build
