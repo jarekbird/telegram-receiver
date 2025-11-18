@@ -1,0 +1,62 @@
+# Git files
+.git/
+.gitignore
+.gitattributes
+
+# Documentation files
+README.md
+*.md
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.env*
+
+# Dependencies (will be installed in container)
+node_modules/
+
+# Build artifacts (will be built in container)
+dist/
+
+# Test files and test configuration
+tests/
+coverage/
+test-results/
+playwright-report/
+playwright/.cache/
+.nyc_output/
+jest.config.ts
+playwright.config.ts
+tsconfig.test.json
+
+# Log and temporary files
+log/*
+tmp/*
+*.log
+
+# TypeScript build artifacts
+*.tsbuildinfo
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git hooks
+.husky/
+
+# Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Development scripts
+deploy.sh
+scripts/
