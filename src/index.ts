@@ -1,9 +1,24 @@
 import http from 'http';
+import config from './config/environment';
+import validateEnv from './config/validateEnv';
 import app from './app';
 
-const PORT = parseInt(process.env.PORT || '3000', 10);
+// Validate environment configuration before starting the server
+// This ensures the application fails fast with clear error messages
+// if critical configuration is missing or invalid
+try {
+  validateEnv(config);
+} catch (error) {
+  console.error('Environment validation failed:');
+  if (error instanceof Error) {
+    console.error(error.message);
+  } else {
+    console.error('Unknown validation error:', error);
+  }
+  process.exit(1);
+}
+
 const HOST = process.env.HOST || '0.0.0.0';
-const NODE_ENV = process.env.NODE_ENV || 'development';
 
 let server: http.Server | null = null;
 
@@ -12,29 +27,19 @@ let server: http.Server | null = null;
  */
 function startServer(): void {
   try {
-    server = http.createServer(app);
-
-    server.listen(PORT, HOST, () => {
+    server = app.listen(config.port, HOST, () => {
       // eslint-disable-next-line no-console
-      console.log(`Server started successfully`);
-      // eslint-disable-next-line no-console
-      console.log(`  Port: ${PORT}`);
-      // eslint-disable-next-line no-console
-      console.log(`  Host: ${HOST}`);
-      // eslint-disable-next-line no-console
-      console.log(`  Environment: ${NODE_ENV}`);
-      // eslint-disable-next-line no-console
-      console.log(`  App: telegram-receiver`);
+      console.log(`Server running in ${config.env} mode on port ${config.port}`);
     });
 
     server.on('error', (error: NodeJS.ErrnoException) => {
       if (error.code === 'EADDRINUSE') {
         console.error(
-          `Error: Port ${PORT} is already in use. Please choose a different port or stop the process using that port.`
+          `Error: Port ${config.port} is already in use. Please choose a different port or stop the process using that port.`
         );
       } else if (error.code === 'EACCES') {
         console.error(
-          `Error: Permission denied. Cannot bind to port ${PORT}. Try running with elevated privileges or use a port above 1024.`
+          `Error: Permission denied. Cannot bind to port ${config.port}. Try running with elevated privileges or use a port above 1024.`
         );
       } else {
         console.error('Server startup error:', error);
