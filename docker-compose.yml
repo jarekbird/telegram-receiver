@@ -1,0 +1,75 @@
+services:
+  # Redis service for BullMQ job queue
+  redis:
+    image: redis:7-alpine
+    container_name: telegram-receiver-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      # Shared Redis data volume accessible by all services
+      - shared_redis_data:/data
+    networks:
+      - virtual-assistant-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Node.js/TypeScript application service for development
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: telegram-receiver-app-dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.development
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - REDIS_URL=redis://redis:6379/0
+      - CURSOR_RUNNER_URL=http://cursor-runner:3001
+      - CURSOR_RUNNER_TIMEOUT=${CURSOR_RUNNER_TIMEOUT:-300}
+      - LOG_LEVEL=debug
+    volumes:
+      # Mount source code for hot reloading
+      - ./src:/app/src
+      # Mount node_modules to persist dependencies
+      - ./node_modules:/app/node_modules
+      # Mount TypeScript config for ts-node
+      - ./tsconfig.json:/app/tsconfig.json
+      # Mount package.json for reference (already copied by Dockerfile, but mount for edits)
+      - ./package.json:/app/package.json
+      # Mount shared SQLite database for cross-service database access
+      - shared_sqlite_db:/app/shared_db
+    command: npm run dev
+    networks:
+      - virtual-assistant-network
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  # Shared Redis data volume accessible by all services
+  shared_redis_data:
+    driver: local
+    name: shared_redis_data
+  # Shared SQLite database volume accessible by all services
+  shared_sqlite_db:
+    driver: local
+    name: shared_sqlite_db
+
+networks:
+  virtual-assistant-network:
+    external: true
+    name: virtual-assistant-network
