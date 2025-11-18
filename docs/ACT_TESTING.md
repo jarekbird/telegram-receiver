@@ -26,14 +26,23 @@ This guide explains how to test GitHub Actions workflows locally using the `act`
 The easiest way to test the CI workflow is using the provided script:
 
 ```bash
-/cursor/scripts/test-ci-workflow.sh
+./scripts/test-ci-local.sh
+```
+
+Or from the project root:
+
+```bash
+cd /cursor/repositories/telegram-receiver
+./scripts/test-ci-local.sh
 ```
 
 This script will:
-- Check all prerequisites
+- Check all prerequisites (Docker, Node.js, act tool)
+- Verify CI workflow file exists
+- Install act tool if not present (on macOS with Homebrew)
 - List available workflows
 - Test the workflow with `push`, `pull_request`, and `workflow_dispatch` events
-- Report success or failure
+- Report success or failure with detailed output
 
 ### Manual Testing
 
