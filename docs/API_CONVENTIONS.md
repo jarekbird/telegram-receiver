@@ -726,6 +726,34 @@ res.json({
 
 **Used by**: `TelegramController`, `AgentToolsController`
 
+**AgentToolsController Specific Format** (`app/controllers/agent_tools_controller.rb`):
+The AgentToolsController wraps tool router results in a specific format:
+
+**Rails Example**:
+```ruby
+result = ToolRouter.route(...)
+render json: {
+  ok: result[:ok],
+  say: result[:say],
+  result: result[:data]
+}
+```
+
+**Node.js/Express Equivalent**:
+```typescript
+const toolResult = await toolRouter.route(params);
+res.json({
+  ok: toolResult.ok,
+  say: toolResult.say,
+  result: toolResult.data
+});
+```
+
+This format includes:
+- `ok`: Boolean indicating success/failure
+- `say`: User-friendly message string
+- `result`: The actual data/result from the tool execution
+
 #### Service Response Format (`{ success: true, ... }`)
 
 Used when returning responses directly from service calls:
@@ -903,6 +931,102 @@ Maintain consistency within each response format:
   error: 'Error message',
   details: { /* optional additional details */ }
 }
+```
+
+### When to Use Each Response Format Variation
+
+#### Success Response Formats
+
+**Use `{ ok: true, ... }` format when:**
+- Building standard API endpoints that return data
+- Endpoints that need to indicate success/failure clearly
+- User-facing endpoints (e.g., TelegramController, AgentToolsController)
+- Endpoints that return structured data with additional metadata
+
+**Example**: Setting webhook, getting webhook info, tool execution results
+
+**Use `{ success: true, ... }` format when:**
+- Proxying responses directly from external services
+- Service-level operations that return service-specific response structures
+- Endpoints that wrap service calls without transformation (e.g., CursorRunnerController)
+- When the service already defines its response format
+
+**Example**: Cursor execution endpoints that proxy CursorRunnerService responses
+
+**Use `{ status: 'healthy', service: ..., version: ... }` format when:**
+- Health check endpoints
+- Status monitoring endpoints
+- Service discovery endpoints
+- Endpoints that report system state
+
+**Example**: `GET /health` endpoint
+
+**Use `{ received: true, ... }` format when:**
+- Webhook callback acknowledgment endpoints
+- Endpoints that acknowledge receipt without processing
+- Async operation callbacks that need immediate acknowledgment
+- Endpoints that process asynchronously and return immediately
+
+**Example**: `POST /cursor-runner/callback` endpoint
+
+**Use empty response with status code (`head :ok`) when:**
+- Webhook endpoints that must respond immediately (e.g., Telegram webhook)
+- Endpoints that trigger async processing and don't need to return data
+- Simple acknowledgment endpoints
+- Endpoints where the HTTP status code is sufficient information
+
+**Example**: `POST /telegram/webhook` endpoint
+
+#### Error Response Formats
+
+**Use `{ ok: false, say: '...', result: { error: ... } }` format when:**
+- Global error handler catches unhandled exceptions
+- User-facing errors that need friendly messages
+- Errors that should be displayed to end users
+- Errors that need additional context in the `result` object
+
+**Example**: ApplicationController global error handler
+
+**Use `{ ok: false, error: '...' }` format when:**
+- Controller-level handled errors
+- Errors that don't need user-friendly messages
+- Standard API error responses
+- Errors that are caught and handled in controller methods
+
+**Example**: Controller catch blocks, validation errors in controllers
+
+**Use `{ success: false, error: '...' }` format when:**
+- Service-level error responses
+- Errors returned from service methods
+- External service integration errors
+- Errors that match service response format conventions
+
+**Example**: CursorRunnerService errors, service validation failures
+
+**Use `{ error: '...' }` format when:**
+- Authentication failures (401 Unauthorized)
+- Simple validation errors (400 Bad Request)
+- Errors that don't need additional context
+- Standard HTTP error responses
+
+**Example**: Authentication middleware, simple validation middleware
+
+#### Decision Flow
+
+```
+Is this a success response?
+├─ Yes → What type of endpoint?
+│   ├─ Standard API endpoint → { ok: true, ... }
+│   ├─ Service proxy endpoint → { success: true, ... }
+│   ├─ Health check → { status: 'healthy', ... }
+│   ├─ Webhook callback → { received: true, ... }
+│   └─ Immediate webhook → Empty body, 200 status
+│
+└─ No → What type of error?
+    ├─ Unhandled exception → { ok: false, say: '...', result: { error: ... } }
+    ├─ Controller error → { ok: false, error: '...' }
+    ├─ Service error → { success: false, error: '...' }
+    └─ Auth/validation error → { error: '...' }
 ```
 
 ## Authentication Conventions
@@ -1249,4 +1373,4 @@ When implementing new endpoints, refer to this document to ensure consistency wi
 **References**:
 - Rails Application: `/cursor/repositories/jarek-va`
 - Architecture Documentation: `docs/architecture.md`
-- Conversion Plan: `Plan/CONVERSION_STEPS.md`
+- Application Description: `Plan/app-description.md`
