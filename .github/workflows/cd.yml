@@ -1,0 +1,54 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - '*'
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        run: docker build -t telegram-receiver:latest .
+
+      - name: Login to Docker registry
+        if: ${{ secrets.DOCKER_REGISTRY != '' }}
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login ${{ secrets.DOCKER_REGISTRY }} -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Push Docker image
+        if: ${{ secrets.DOCKER_REGISTRY != '' }}
+        run: |
+          docker tag telegram-receiver:latest ${{ secrets.DOCKER_REGISTRY }}/telegram-receiver:latest
+          docker tag telegram-receiver:latest ${{ secrets.DOCKER_REGISTRY }}/telegram-receiver:${{ github.sha }}
+          docker push ${{ secrets.DOCKER_REGISTRY }}/telegram-receiver:latest
+          docker push ${{ secrets.DOCKER_REGISTRY }}/telegram-receiver:${{ github.sha }}
+
+      - name: Deploy
+        run: |
+          echo "Deployment step placeholder"
+          echo "Full deployment logic will be implemented in later phases"
+          echo "This may include SSH deployment, Docker Compose updates, or other deployment strategies"
