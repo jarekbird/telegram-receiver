@@ -4,6 +4,18 @@ import { getHealth } from './controllers/health.controller';
 
 const app = express();
 
+// JSON body parser middleware - must be applied before routes
+// This enables Express to parse JSON request bodies (similar to Rails ActionController::API)
+// Parsed data will be available in req.body for routes
+app.use(express.json());
+
+// URL-encoded body parser middleware - must be applied after JSON parser but before routes
+// This enables Express to parse URL-encoded form data (application/x-www-form-urlencoded)
+// Similar to Rails ActionController::API which automatically parses URL-encoded form data
+// Parsed data will be available in req.body for routes
+// extended: true uses qs library which supports nested objects (matches Rails behavior)
+app.use(express.urlencoded({ extended: true }));
+
 // Register health routes
 // Route file has router.get('/health', getHealth), so register at root to get /health
 app.use('/', healthRoutes); // Creates /health endpoint
