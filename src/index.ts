@@ -1,11 +1,10 @@
 import http from 'http';
 import config from './config/environment';
 import validateEnv from './config/validateEnv';
-import app from './app';
+import { initializeSystemSettings } from './config/initializers/system-settings';
 
-// Validate environment configuration before starting the server
-// This ensures the application fails fast with clear error messages
-// if critical configuration is missing or invalid
+// Validate environment configuration before starting the application
+// This ensures the application fails fast with clear error messages if critical configuration is missing
 try {
   validateEnv(config);
 } catch (error) {
@@ -13,11 +12,12 @@ try {
   if (error instanceof Error) {
     console.error(error.message);
   } else {
-    console.error('Unknown validation error:', error);
+    console.error(error);
   }
   process.exit(1);
 }
 
+// Read host from environment variable (defaulting to Rails defaults)
 const HOST = process.env.HOST || '0.0.0.0';
 
 let server: http.Server | null = null;
@@ -25,11 +25,17 @@ let server: http.Server | null = null;
 /**
  * Starts the HTTP server and handles startup errors
  */
-function startServer(): void {
+async function startServer(): Promise<void> {
   try {
+    // Initialize system settings before starting the server
+    // This ensures system settings are set up in the shared database
+    initializeSystemSettings();
+
+    // Import app module after validation to ensure config is valid before app initialization
+    const { default: app } = await import('./app');
     server = app.listen(config.port, HOST, () => {
       // eslint-disable-next-line no-console
-      console.log(`Server running in ${config.env} mode on port ${config.port}`);
+      console.log(`Server running in ${config.env} mode on ${HOST}:${config.port}`);
     });
 
     server.on('error', (error: NodeJS.ErrnoException) => {
@@ -112,4 +118,7 @@ process.on('SIGINT', () => {
 });
 
 // Start the server
-startServer();
+startServer().catch((error) => {
+  console.error('Failed to start server:', error);
+  process.exit(1);
+});
