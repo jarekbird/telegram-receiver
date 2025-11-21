@@ -2,6 +2,7 @@ import http from 'http';
 import config from './config/environment';
 import validateEnv from './config/validateEnv';
 import { initializeSystemSettings } from './config/initializers/system-settings';
+import { initializeTasks } from './config/initializers/tasks';
 
 // Validate environment configuration before starting the application
 // This ensures the application fails fast with clear error messages if critical configuration is missing
@@ -30,6 +31,10 @@ async function startServer(): Promise<void> {
     // Initialize system settings before starting the server
     // This ensures system settings are set up in the shared database
     initializeSystemSettings();
+
+    // Initialize tasks to ready status
+    // This ensures all tasks are set to ready status in the shared database
+    initializeTasks();
 
     // Import app module after validation to ensure config is valid before app initialization
     const { default: app } = await import('./app');
