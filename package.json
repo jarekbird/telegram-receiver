@@ -1,7 +1,7 @@
 {
   "name": "telegram-receiver",
   "version": "1.0.0",
-  "description": "Telegram webhook receiver that forwards messages to Cursor Runner API (PHASE1-012: complete - build, build:watch, dev, start scripts added)",
+  "description": "Telegram webhook receiver that forwards messages to Cursor Runner API",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
