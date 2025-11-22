@@ -33,11 +33,8 @@ describe('POST /api/users', () => {
 
   it('should create a user and return 201', async () => {
     const userData = { name: 'John', email: 'john@example.com' };
-    
-    const response = await request(app)
-      .post('/api/users')
-      .send(userData)
-      .expect(201);
+
+    const response = await request(app).post('/api/users').send(userData).expect(201);
 
     expect(response.body).toHaveProperty('id');
     expect(response.body.name).toBe(userData.name);

@@ -167,18 +167,11 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   roots: ['<rootDir>/src', '<rootDir>/tests'],
-  testMatch: [
-    '**/__tests__/**/*.ts',
-    '**/?(*.)+(spec|test).ts'
-  ],
+  testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
   transform: {
     '^.+\\.ts$': 'ts-jest',
   },
-  collectCoverageFrom: [
-    'src/**/*.ts',
-    '!src/**/*.d.ts',
-    '!src/index.ts',
-  ],
+  collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts', '!src/index.ts'],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   moduleFileExtensions: ['ts', 'js', 'json'],
@@ -236,10 +229,8 @@ import { app } from '../../../src/app';
 
 describe('Example API Integration', () => {
   it('should handle GET request', async () => {
-    const response = await request(app)
-      .get('/api/example')
-      .expect(200);
-    
+    const response = await request(app).get('/api/example').expect(200);
+
     expect(response.body).toBeDefined();
   });
 });
@@ -266,6 +257,7 @@ test.describe('E2E Tests', () => {
 ```
 
 **playwright.config.ts:**
+
 ```typescript
 import { defineConfig, devices } from '@playwright/test';
 
@@ -334,11 +326,7 @@ module.exports = {
     sourceType: 'module',
     project: './tsconfig.json',
   },
-  extends: [
-    'eslint:recommended',
-    'plugin:@typescript-eslint/recommended',
-    'prettier',
-  ],
+  extends: ['eslint:recommended', 'plugin:@typescript-eslint/recommended', 'prettier'],
   plugins: ['@typescript-eslint', 'prettier'],
   rules: {
     'prettier/prettier': 'error',
@@ -569,14 +557,14 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:14
@@ -587,36 +575,36 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    
+
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Lint
         run: npm run lint
-      
+
       - name: Type check
         run: npm run type-check
-      
+
       - name: Run unit tests
         run: npm run test:unit
-      
+
       - name: Run integration tests
         run: npm run test:integration
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
-      
+
       - name: Generate coverage
         run: npm run test:coverage
-      
+
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         with:
@@ -639,7 +627,7 @@ services:
       - .:/app
       - /app/node_modules
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/telegram_receiver_dev
@@ -656,14 +644,14 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: telegram_receiver_dev
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - '6379:6379'
 
 volumes:
   postgres_data:

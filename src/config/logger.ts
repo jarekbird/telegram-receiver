@@ -69,6 +69,7 @@ function getLogLevel(): string {
  * - PID: Added via base object (matching Rails Logger::Formatter behavior)
  * - Error serialization: Automatic (includes full stack traces)
  */
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
 const logger = pino({
   level: getLogLevel(),
   // Base object includes PID in all logs (matching Rails Logger::Formatter)
@@ -76,6 +77,7 @@ const logger = pino({
     pid: process.pid,
   },
   // Timestamp is included by default in Pino (matching Rails Logger::Formatter)
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
   timestamp: pino.stdTimeFunctions.isoTime,
   // JSON format is default in Pino (good for production/Docker, matches Rails stdout logging)
   // In development, pretty printing can be enabled by:
@@ -83,6 +85,7 @@ const logger = pino({
   //   2. Using require hook: node -r pino-pretty/register dist/index.js
   //   3. Setting PINO_PRETTY=true and using transport (requires pino-pretty installed)
   // For production, always use JSON format (stdout-friendly, Docker-friendly)
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   ...(process.env.NODE_ENV === 'development' && process.env.PINO_PRETTY === 'true'
     ? {
         transport: {
@@ -98,6 +101,7 @@ const logger = pino({
   // Error serialization: Pino automatically includes full stack traces when logging error objects
   // Usage: logger.error({ err }, 'Error message') - err.stack is automatically included
   serializers: {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     err: pino.stdSerializers.err, // Full error serialization with stack trace
   },
 });

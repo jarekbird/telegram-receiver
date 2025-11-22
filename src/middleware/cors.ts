@@ -108,6 +108,7 @@ export const corsOptions: CorsOptions = (() => {
  * app.use(corsMiddleware);
  * ```
  */
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
 export const corsMiddleware = cors(corsOptions);
 
 export default corsMiddleware;

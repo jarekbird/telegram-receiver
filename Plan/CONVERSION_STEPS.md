@@ -11,6 +11,7 @@ The conversion will be performed in phases with automated testing validation at 
 **Objective**: Create a foundational Node.js API that can receive requests and handle basic routing.
 
 ### Tasks:
+
 - [ ] Initialize Node.js project with TypeScript configuration
 - [ ] Set up project structure (src/, tests/, config/)
 - [ ] Configure TypeScript compiler (tsconfig.json)
@@ -25,6 +26,7 @@ The conversion will be performed in phases with automated testing validation at 
 - [ ] Document API structure and conventions
 
 ### Deliverables:
+
 - Working Node.js API server that can receive HTTP requests
 - Basic routing infrastructure
 - Health check endpoint
@@ -40,6 +42,7 @@ The conversion will be performed in phases with automated testing validation at 
 ### Conversion Order:
 
 #### 2.1 Models
+
 - [ ] `app/models/application_record.rb` → Base model/entity classes
 - [ ] `app/models/system_setting.rb` → SystemSetting model/service
 - [ ] `app/models/telegram_bot.rb` → TelegramBot model/service
@@ -47,6 +50,7 @@ The conversion will be performed in phases with automated testing validation at 
 - [ ] Model concerns → Shared interfaces/mixins
 
 #### 2.2 Controllers
+
 - [ ] `app/controllers/application_controller.rb` → Base controller/router
 - [ ] `app/controllers/health_controller.rb` → Health check routes
 - [ ] `app/controllers/telegram_controller.rb` → Telegram webhook routes
@@ -56,6 +60,7 @@ The conversion will be performed in phases with automated testing validation at 
 - [ ] Controller concerns → Middleware/utilities
 
 #### 2.3 Services
+
 - [ ] `app/services/telegram_service.rb` → Telegram service
 - [ ] `app/services/cursor_runner_service.rb` → Cursor runner service
 - [ ] `app/services/cursor_runner_callback_service.rb` → Callback service
@@ -66,10 +71,12 @@ The conversion will be performed in phases with automated testing validation at 
 - [ ] `app/services/tools/*` → Individual tool implementations
 
 #### 2.4 Jobs
+
 - [ ] `app/jobs/application_job.rb` → Base job class/queue system
 - [ ] `app/jobs/telegram_message_job.rb` → Telegram message job
 
 #### 2.5 Configuration
+
 - [ ] `config/routes.rb` → Express/Fastify route definitions
 - [ ] `config/application.rb` → Application configuration
 - [ ] `config/environments/*` → Environment-specific configs
@@ -79,11 +86,13 @@ The conversion will be performed in phases with automated testing validation at 
 - [ ] `config/sidekiq.yml` → Queue/job processor configuration
 
 #### 2.6 Database Migrations
+
 - [ ] Review and convert `db/migrate/*` → Database migration scripts
 - [ ] Convert `db/schema.rb` → Database schema documentation
 - [ ] Convert `db/seeds.rb` → Seed data scripts
 
 ### Testing Strategy:
+
 - For each converted file:
   - [ ] Write unit tests for the converted TypeScript code
   - [ ] Write integration tests for API endpoints
@@ -91,6 +100,7 @@ The conversion will be performed in phases with automated testing validation at 
   - [ ] Ensure test coverage matches or exceeds original
 
 ### Notes:
+
 - Maintain API compatibility where possible
 - Preserve business logic and error handling
 - Convert ActiveRecord queries to appropriate Node.js ORM (TypeORM, Prisma, etc.)
@@ -107,6 +117,7 @@ The conversion will be performed in phases with automated testing validation at 
 ### Areas of Focus:
 
 #### 3.1 Architecture
+
 - [ ] Review overall application architecture
 - [ ] Ensure proper separation of concerns
 - [ ] Verify dependency injection patterns
@@ -114,6 +125,7 @@ The conversion will be performed in phases with automated testing validation at 
 - [ ] Review async/await patterns and Promise handling
 
 #### 3.2 TypeScript Best Practices
+
 - [ ] Ensure proper type definitions throughout
 - [ ] Review interface/type usage
 - [ ] Check for proper generic usage
@@ -121,6 +133,7 @@ The conversion will be performed in phases with automated testing validation at 
 - [ ] Review and improve type inference
 
 #### 3.3 Node.js Best Practices
+
 - [ ] Follow Node.js style guide
 - [ ] Ensure proper error handling (Error objects, try/catch)
 - [ ] Review async patterns (avoid callback hell)
@@ -129,6 +142,7 @@ The conversion will be performed in phases with automated testing validation at 
 - [ ] Review security best practices
 
 #### 3.4 Code Organization
+
 - [ ] Review file/folder structure
 - [ ] Ensure consistent naming conventions
 - [ ] Check for proper module boundaries
@@ -136,6 +150,7 @@ The conversion will be performed in phases with automated testing validation at 
 - [ ] Verify code reusability
 
 #### 3.5 Performance
+
 - [ ] Review database query patterns
 - [ ] Check for N+1 query problems
 - [ ] Review caching strategies
@@ -143,6 +158,7 @@ The conversion will be performed in phases with automated testing validation at 
 - [ ] Review API response times
 
 #### 3.6 Security
+
 - [ ] Review authentication/authorization
 - [ ] Check input validation
 - [ ] Review SQL injection prevention
@@ -150,6 +166,7 @@ The conversion will be performed in phases with automated testing validation at 
 - [ ] Review CORS and security headers
 
 #### 3.7 Testing
+
 - [ ] Ensure comprehensive test coverage
 - [ ] Review test organization
 - [ ] Check for proper mocking strategies
@@ -157,6 +174,7 @@ The conversion will be performed in phases with automated testing validation at 
 - [ ] Review test performance
 
 ### Deliverables:
+
 - Refactored codebase following best practices
 - Documentation of architectural decisions
 - Performance benchmarks
@@ -169,6 +187,7 @@ The conversion will be performed in phases with automated testing validation at 
 **Objective**: Perform comprehensive code smell detection and quality improvements using automated tools and manual review.
 
 ### Automated Code Smell Detection:
+
 - [ ] Set up ESLint with TypeScript rules
 - [ ] Configure Prettier for code formatting
 - [ ] Set up SonarQube or similar code quality tool
@@ -179,6 +198,7 @@ The conversion will be performed in phases with automated testing validation at 
 - [ ] Review dependency analysis
 
 ### Manual Code Review:
+
 - [ ] Review complex business logic
 - [ ] Check for proper documentation
 - [ ] Verify consistent error messages
@@ -187,6 +207,7 @@ The conversion will be performed in phases with automated testing validation at 
 - [ ] Verify code readability
 
 ### Refactoring:
+
 - [ ] Refactor identified code smells
 - [ ] Simplify complex logic
 - [ ] Extract reusable components
@@ -195,6 +216,7 @@ The conversion will be performed in phases with automated testing validation at 
 - [ ] Optimize performance bottlenecks
 
 ### Deliverables:
+
 - Code quality report
 - Refactored codebase
 - Updated documentation
@@ -205,6 +227,7 @@ The conversion will be performed in phases with automated testing validation at 
 ## Testing Strategy (Throughout All Phases)
 
 ### Automated Testing:
+
 - **Unit Tests**: Test individual functions and methods
 - **Integration Tests**: Test API endpoints and service interactions
 - **End-to-End Tests**: Test complete user workflows
@@ -212,12 +235,14 @@ The conversion will be performed in phases with automated testing validation at 
 - **Regression Tests**: Ensure no functionality is broken
 
 ### Testing Tools:
+
 - Jest or Vitest for unit/integration testing
 - Supertest for API testing
 - Test coverage tools (c8, nyc)
 - Load testing tools (k6, Artillery)
 
 ### Testing Requirements:
+
 - Maintain or improve test coverage from Rails application
 - All new code must have corresponding tests
 - Tests must pass before merging any changes
@@ -228,6 +253,7 @@ The conversion will be performed in phases with automated testing validation at 
 ## Migration Checklist
 
 ### Pre-Migration
+
 - [ ] Document current Rails application functionality
 - [ ] Identify all external dependencies
 - [ ] Map Rails features to Node.js equivalents
@@ -235,6 +261,7 @@ The conversion will be performed in phases with automated testing validation at 
 - [ ] Create backup of current application
 
 ### During Migration
+
 - [ ] Track conversion progress (this document)
 - [ ] Run tests after each file conversion
 - [ ] Document any deviations from original behavior
@@ -242,6 +269,7 @@ The conversion will be performed in phases with automated testing validation at 
 - [ ] Keep stakeholders informed of progress
 
 ### Post-Migration
+
 - [ ] Complete end-to-end testing
 - [ ] Performance comparison with original
 - [ ] Security audit
@@ -266,6 +294,7 @@ The conversion will be performed in phases with automated testing validation at 
 ## Notes and Considerations
 
 ### Key Differences: Rails → Node.js
+
 - **ORM**: ActiveRecord → TypeORM/Prisma/Sequelize
 - **Background Jobs**: Sidekiq → Bull/BullMQ/Agenda
 - **Routing**: Rails routes → Express/Fastify routes
@@ -274,6 +303,7 @@ The conversion will be performed in phases with automated testing validation at 
 - **Testing**: RSpec → Jest/Vitest
 
 ### External Dependencies to Maintain:
+
 - Telegram Bot API
 - ElevenLabs API
 - Cursor Runner integration
@@ -281,6 +311,7 @@ The conversion will be performed in phases with automated testing validation at 
 - Redis (for queues)
 
 ### Breaking Changes:
+
 - Document any intentional breaking changes
 - Provide migration guides for API consumers
 - Version API appropriately
@@ -289,7 +320,7 @@ The conversion will be performed in phases with automated testing validation at 
 
 ## Timeline
 
-*To be updated as conversion progresses*
+_To be updated as conversion progresses_
 
 - Phase 1: [Start Date] - [End Date]
 - Phase 2: [Start Date] - [End Date]
@@ -307,4 +338,4 @@ The conversion will be performed in phases with automated testing validation at 
 
 ---
 
-*Last Updated: [Date]*
+_Last Updated: [Date]_

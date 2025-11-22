@@ -82,6 +82,7 @@ npm run format:check
 ### What Gets Formatted
 
 Prettier formats all `.ts` files in:
+
 - `src/` directory (source code)
 - `tests/` directory (test files)
 
@@ -110,6 +111,7 @@ Prettier works seamlessly with ESLint:
 **ESLint Configuration:**
 
 The `.eslintrc.json` includes:
+
 - `"prettier"` in the `extends` array (disables conflicting rules)
 - `"prettier/prettier": "error"` rule (treats Prettier violations as ESLint errors)
 
@@ -138,10 +140,7 @@ The project uses `lint-staged` and `husky` to automatically format code before c
 ```json
 {
   "lint-staged": {
-    "*.ts": [
-      "eslint --fix",
-      "prettier --write"
-    ]
+    "*.ts": ["eslint --fix", "prettier --write"]
   }
 }
 ```
@@ -169,7 +168,7 @@ const config = {
 };
 
 // ❌ Not formatted
-const config = {host:"localhost",port:3000,timeout:5000}
+const config = { host: 'localhost', port: 3000, timeout: 5000 };
 ```
 
 ### Arrow Functions
@@ -182,36 +181,30 @@ const process = (data: Data) => {
 };
 
 // ❌ Not formatted
-const add = a => a + 1
-const process = data=>{return data.process()}
+const add = (a) => a + 1;
+const process = (data) => {
+  return data.process();
+};
 ```
 
 ### Arrays
 
 ```typescript
 // ✅ Formatted (with trailing comma)
-const items = [
-  'item1',
-  'item2',
-  'item3',
-];
+const items = ['item1', 'item2', 'item3'];
 
 // ❌ Not formatted
-const items = ['item1','item2','item3']
+const items = ['item1', 'item2', 'item3'];
 ```
 
 ### Long Lines
 
 ```typescript
 // ✅ Formatted (wrapped at 100 characters)
-const longFunctionCall = someVeryLongFunctionName(
-  parameter1,
-  parameter2,
-  parameter3
-);
+const longFunctionCall = someVeryLongFunctionName(parameter1, parameter2, parameter3);
 
 // ❌ Not formatted (exceeds printWidth)
-const longFunctionCall = someVeryLongFunctionName(parameter1, parameter2, parameter3)
+const longFunctionCall = someVeryLongFunctionName(parameter1, parameter2, parameter3);
 ```
 
 ### Quotes
@@ -222,7 +215,7 @@ const message = 'Hello, world!';
 const template = `Template string with ${variable}`;
 
 // ❌ Not formatted (double quotes)
-const message = "Hello, world!";
+const message = 'Hello, world!';
 ```
 
 ## Best Practices
@@ -248,8 +241,10 @@ npm run format:check
 Most editors support Prettier with "format on save":
 
 **VS Code:**
+
 1. Install the "Prettier - Code formatter" extension
 2. Add to `.vscode/settings.json`:
+
 ```json
 {
   "editor.defaultFormatter": "esbenp.prettier-vscode",
@@ -261,6 +256,7 @@ Most editors support Prettier with "format on save":
 ```
 
 **Other Editors:**
+
 - See [Prettier Editor Integration](https://prettier.io/docs/en/editors.html)
 
 ### 4. Don't Mix Formatting Tools
@@ -274,6 +270,7 @@ Prettier makes opinionated formatting decisions. Trust its choices rather than d
 ## CI/CD Integration
 
 Prettier runs automatically in the deployment script (`./deploy.sh`). The script will fail if:
+
 - Code formatting doesn't match Prettier rules (`npm run format:check`)
 
 This ensures code formatting consistency before deployment.

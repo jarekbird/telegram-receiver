@@ -22,15 +22,15 @@ test.describe('User Registration Flow', () => {
   test('should register a new user successfully', async ({ page }) => {
     // Navigate to registration page
     await page.goto('/register');
-    
+
     // Fill in registration form
     await page.fill('[name="name"]', 'John Doe');
     await page.fill('[name="email"]', 'john@example.com');
     await page.fill('[name="password"]', 'password123');
-    
+
     // Submit form
     await page.click('button[type="submit"]');
-    
+
     // Verify success message
     await expect(page.locator('.success-message')).toBeVisible();
   });

@@ -37,6 +37,7 @@ cd /cursor/repositories/telegram-receiver
 ```
 
 This script will:
+
 - Check all prerequisites (Docker, Node.js, act tool)
 - Verify CI workflow file exists
 - Install act tool if not present (on macOS with Homebrew)
@@ -128,7 +129,8 @@ When running `act push`, the workflow should execute these steps in order:
 
 **Issue**: `act` fails with Docker connection error
 
-**Solution**: 
+**Solution**:
+
 - macOS: Start Docker Desktop
 - Linux: `sudo systemctl start docker`
 - Windows: Start Docker Desktop
@@ -138,6 +140,7 @@ When running `act push`, the workflow should execute these steps in order:
 **Issue**: Workflow fails due to missing secrets
 
 **Solution**: Use `--secret` flag:
+
 ```bash
 act push --secret GITHUB_TOKEN=your-token
 ```
@@ -152,7 +155,8 @@ act push --secret GITHUB_TOKEN=your-token
 
 **Issue**: `act -l` shows no workflows
 
-**Solution**: 
+**Solution**:
+
 - Verify `.github/workflows/ci.yml` exists
 - Check that the YAML file is valid (no syntax errors)
 - Ensure you're running `act` from the project root directory
@@ -167,7 +171,8 @@ act push --secret GITHUB_TOKEN=your-token
 
 **Issue**: Docker permission denied errors
 
-**Solution**: 
+**Solution**:
+
 - Linux: Add your user to the docker group: `sudo usermod -aG docker $USER` (then log out and back in)
 - Or run with `sudo` (not recommended for regular use)
 

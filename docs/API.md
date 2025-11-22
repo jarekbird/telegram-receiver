@@ -180,6 +180,7 @@ The API uses different response formats depending on the endpoint type:
 ### Error Response Formats
 
 1. **Global Error Handler Format**
+
    ```json
    {
      "ok": false,
@@ -191,6 +192,7 @@ The API uses different response formats depending on the endpoint type:
    ```
 
 2. **Controller-Level Error Format**
+
    ```json
    {
      "ok": false,
@@ -199,6 +201,7 @@ The API uses different response formats depending on the endpoint type:
    ```
 
 3. **Service-Level Error Format**
+
    ```json
    {
      "success": false,

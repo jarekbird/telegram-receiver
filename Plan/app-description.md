@@ -173,6 +173,7 @@ Certain commands are handled locally without forwarding to Cursor Runner:
 ### Async Processing
 
 The Rails application uses Sidekiq for background job processing. In Node.js, we can use:
+
 - **Bull** or **BullMQ** with Redis for job queues
 - **Node.js worker threads** for CPU-intensive tasks
 - **Simple async/await** for I/O-bound operations

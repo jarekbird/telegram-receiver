@@ -5,6 +5,7 @@ Mock implementations for external dependencies and services.
 ## Usage
 
 Create mock files for:
+
 - External APIs (Telegram API, Cursor Runner API, etc.)
 - Database connections
 - Redis clients

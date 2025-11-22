@@ -22,10 +22,7 @@ export const testUser = {
   createdAt: new Date('2024-01-01'),
 };
 
-export const testUsers = [
-  testUser,
-  { ...testUser, id: 2, email: 'test2@example.com' },
-];
+export const testUsers = [testUser, { ...testUser, id: 2, email: 'test2@example.com' }];
 
 // In your test
 import { testUser } from '../fixtures/users';

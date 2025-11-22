@@ -97,27 +97,31 @@ Create a `.env` file in the project root (you can copy from `.env.example` if it
 ## Installation
 
 1. Clone the repository:
+
    ```bash
    git clone <repository-url>
    cd telegram-receiver
    ```
 
 2. Install dependencies:
+
    ```bash
    npm install
    ```
 
 3. Set up environment variables:
+
    ```bash
    cp .env.example .env  # If .env.example exists
    # Edit .env with your configuration
    ```
 
 4. Ensure Redis is running:
+
    ```bash
    # Using Docker
    docker run -d -p 6379:6379 redis:7-alpine
-   
+
    # Or install Redis locally
    # Follow Redis installation instructions for your OS
    ```
@@ -295,6 +299,7 @@ The project includes a `deploy.sh` script that automates testing, linting, forma
 ```
 
 The deploy script:
+
 1. Verifies you're in the correct directory
 2. Runs linting checks (`npm run lint`)
 3. Checks code formatting (`npm run format:check`)
@@ -332,10 +337,12 @@ docker-compose up
 ```
 
 This will start:
+
 - Redis service on port 6379
 - Application service on port 3000
 
 The `docker-compose.yml` file includes:
+
 - Redis service for BullMQ job queues
 - Application service with hot reloading in development mode
 - Shared volumes for persistent data

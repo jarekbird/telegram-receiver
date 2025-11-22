@@ -14,6 +14,7 @@
  * - TypeScript type definitions
  */
 
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, no-console */
 import pino from 'pino';
 
 // 1. Verify multiple log levels
@@ -26,7 +27,8 @@ const logger = pino({
 });
 
 // 3. Verify environment-based log level configuration
-const logLevel = process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug');
+const logLevel =
+  process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug');
 console.log(`✓ Environment-based log level: ${logLevel}`);
 
 // 4. Verify request ID/tagging support via child loggers

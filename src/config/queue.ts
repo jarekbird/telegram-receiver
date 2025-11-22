@@ -134,6 +134,7 @@ export function createQueue(name: string, options?: Partial<QueueOptions>): Queu
     ...options,
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
   logger.info({ queueName: name }, 'Creating BullMQ queue');
   return new Queue(name, queueOptions);
 }
@@ -143,5 +144,6 @@ export function createQueue(name: string, options?: Partial<QueueOptions>): Queu
  * Ensures queue operations are logged appropriately (matching Sidekiq's Logger::INFO level)
  */
 export function logQueueOperation(operation: string, details?: Record<string, unknown>): void {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
   logger.info({ operation, ...details }, 'Queue operation');
 }

@@ -25,6 +25,7 @@ Routes follow RESTful conventions using standard HTTP methods:
 - **PUT/PATCH**: Update resources (if needed)
 
 **Rails Example** (`config/routes.rb`):
+
 ```ruby
 get 'health', to: 'health#show'
 post 'agent-tools', to: 'agent_tools#create'
@@ -33,6 +34,7 @@ delete 'telegram/webhook', to: 'telegram#delete_webhook'
 ```
 
 **Node.js/Express Equivalent**:
+
 ```typescript
 router.get('/health', healthController.show);
 router.post('/agent-tools', agentToolsController.create);
@@ -45,6 +47,7 @@ router.delete('/telegram/webhook', telegramController.deleteWebhook);
 Routes are organized using scopes/namespaces to group related endpoints:
 
 **Rails Pattern**:
+
 ```ruby
 scope path: 'cursor-runner', as: 'cursor_runner' do
   post 'cursor/execute', to: 'cursor_runner#execute'
@@ -61,6 +64,7 @@ end
 ```
 
 **Node.js/Express Equivalent**:
+
 ```typescript
 // Use Express Router for namespacing
 const cursorRunnerRouter = express.Router();
@@ -85,6 +89,7 @@ app.use('/telegram', telegramRouter);
 - **Follow RESTful conventions** where applicable (e.g., `/telegram/webhook` for webhook operations)
 
 **Examples**:
+
 - ✅ `POST /telegram/set_webhook`
 - ✅ `GET /telegram/webhook_info`
 - ✅ `POST /cursor-runner/cursor/execute`
@@ -105,6 +110,7 @@ app.use('/telegram', telegramRouter);
 All controllers use the `*Controller` suffix pattern:
 
 **Rails Examples**:
+
 - `TelegramController`
 - `CursorRunnerController`
 - `CursorRunnerCallbackController`
@@ -112,6 +118,7 @@ All controllers use the `*Controller` suffix pattern:
 - `AgentToolsController`
 
 **Node.js/Express Equivalent**:
+
 - `TelegramController`
 - `CursorRunnerController`
 - `CursorRunnerCallbackController`
@@ -123,12 +130,13 @@ All controllers use the `*Controller` suffix pattern:
 All controllers inherit from a base controller that provides common functionality:
 
 **Rails Pattern** (`app/controllers/application_controller.rb`):
+
 ```ruby
 class ApplicationController < ActionController::API
   rescue_from StandardError, with: :handle_error
-  
+
   private
-  
+
   def handle_error(exception)
     # Global error handling
   end
@@ -140,6 +148,7 @@ end
 ```
 
 **Node.js/Express Equivalent**:
+
 ```typescript
 // Base controller class or middleware pattern
 class BaseController {
@@ -164,6 +173,7 @@ Controller methods follow RESTful action naming conventions:
 - **Custom actions**: Use descriptive names (e.g., `webhook`, `setWebhook`, `webhookInfo`)
 
 **Rails Examples**:
+
 ```ruby
 class TelegramController < ApplicationController
   def webhook          # POST /telegram/webhook
@@ -174,12 +184,13 @@ end
 ```
 
 **Node.js/Express Equivalent**:
+
 ```typescript
 class TelegramController {
-  webhook(req: Request, res: Response): Promise<void> { }
-  setWebhook(req: Request, res: Response): Promise<void> { }
-  webhookInfo(req: Request, res: Response): Promise<void> { }
-  deleteWebhook(req: Request, res: Response): Promise<void> { }
+  webhook(req: Request, res: Response): Promise<void> {}
+  setWebhook(req: Request, res: Response): Promise<void> {}
+  webhookInfo(req: Request, res: Response): Promise<void> {}
+  deleteWebhook(req: Request, res: Response): Promise<void> {}
 }
 ```
 
@@ -200,6 +211,7 @@ src/controllers/
 ```
 
 Each controller file should:
+
 - Export a single controller class
 - Be named using camelCase with `Controller` suffix
 - Contain only controller-specific logic (delegate to services)
@@ -211,6 +223,7 @@ Each controller file should:
 All services use the `*Service` suffix pattern:
 
 **Rails Examples**:
+
 - `TelegramService`
 - `CursorRunnerService`
 - `CursorRunnerCallbackService`
@@ -218,6 +231,7 @@ All services use the `*Service` suffix pattern:
 - `ElevenLabsTextToSpeechService`
 
 **Node.js/Express Equivalent**:
+
 - `TelegramService`
 - `CursorRunnerService`
 - `CursorRunnerCallbackService`
@@ -243,6 +257,7 @@ src/services/
 Service methods use descriptive, action-oriented names:
 
 **Rails Examples** (`app/services/telegram_service.rb`):
+
 ```ruby
 class TelegramService
   def self.send_message(chat_id:, text:, parse_mode: 'HTML', reply_to_message_id: nil)
@@ -254,6 +269,7 @@ end
 ```
 
 **Node.js/Express Equivalent**:
+
 ```typescript
 class TelegramService {
   async sendMessage(params: {
@@ -261,27 +277,25 @@ class TelegramService {
     text: string;
     parseMode?: 'HTML' | 'Markdown';
     replyToMessageId?: number;
-  }): Promise<void> { }
+  }): Promise<void> {}
 
-  async setWebhook(params: {
-    url: string;
-    secretToken?: string;
-  }): Promise<WebhookInfo> { }
+  async setWebhook(params: { url: string; secretToken?: string }): Promise<WebhookInfo> {}
 
-  async deleteWebhook(): Promise<void> { }
+  async deleteWebhook(): Promise<void> {}
 
-  async webhookInfo(): Promise<WebhookInfo> { }
+  async webhookInfo(): Promise<WebhookInfo> {}
 
   async sendVoice(params: {
     chatId: number;
     voicePath: string;
     replyToMessageId?: number;
     caption?: string;
-  }): Promise<void> { }
+  }): Promise<void> {}
 }
 ```
 
 **Naming Guidelines**:
+
 - Use camelCase for method names (TypeScript convention)
 - Use descriptive, action-oriented names (e.g., `sendMessage`, `setWebhook`)
 - Use consistent parameter naming (camelCase for TypeScript)
@@ -295,6 +309,7 @@ class TelegramService {
 - **Error Handling**: Services throw typed errors (e.g., `CursorRunnerService::Error`)
 
 **Example Structure**:
+
 ```typescript
 // src/services/telegramService.ts
 export class TelegramService {
@@ -320,16 +335,17 @@ export class TelegramApiError extends TelegramServiceError {}
 Express middleware replaces Rails `before_action` filters. Middleware functions follow these naming patterns:
 
 **Rails Pattern** (`app/controllers/telegram_controller.rb`):
+
 ```ruby
 class TelegramController < ApplicationController
   before_action :authenticate_webhook, only: [:webhook]
-  
+
   def webhook
     # Handler logic
   end
-  
+
   private
-  
+
   def authenticate_webhook
     # Authentication logic
   end
@@ -337,23 +353,16 @@ end
 ```
 
 **Node.js/Express Equivalent**:
+
 ```typescript
 // Middleware function
-export function authenticateWebhook(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
+export function authenticateWebhook(req: Request, res: Response, next: NextFunction): void {
   // Authentication logic
   next();
 }
 
 // Controller usage
-router.post(
-  '/webhook',
-  authenticateWebhook,
-  telegramController.webhook
-);
+router.post('/webhook', authenticateWebhook, telegramController.webhook);
 ```
 
 ### Authentication Middleware Patterns
@@ -365,12 +374,13 @@ Authentication middleware follows these naming conventions:
 - **`authenticateCursorRunnerWebhook`**: Validates cursor-runner callback secrets
 
 **Rails Examples**:
+
 ```ruby
 def authenticate_webhook
   secret_token = request.headers['X-Telegram-Bot-Api-Secret-Token']
   expected_secret = Rails.application.config.telegram_webhook_secret
   return if expected_secret.blank? || secret_token == expected_secret
-  
+
   head :unauthorized
 end
 
@@ -379,40 +389,33 @@ def authenticate_admin
                  request.env['HTTP_X_ADMIN_SECRET'] ||
                  params[:admin_secret]
   expected_secret = Rails.application.config.webhook_secret
-  
+
   return head :unauthorized unless admin_secret == expected_secret
 end
 ```
 
 **Node.js/Express Equivalent**:
+
 ```typescript
-export function authenticateWebhook(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
+export function authenticateWebhook(req: Request, res: Response, next: NextFunction): void {
   const secretToken = req.headers['x-telegram-bot-api-secret-token'];
   const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
-  
+
   if (!expectedSecret || secretToken === expectedSecret) {
     return next();
   }
-  
+
   res.status(401).json({ error: 'Unauthorized' });
 }
 
-export function authenticateAdmin(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
+export function authenticateAdmin(req: Request, res: Response, next: NextFunction): void {
   const adminSecret = req.headers['x-admin-secret'] || req.query.admin_secret;
   const expectedSecret = process.env.WEBHOOK_SECRET;
-  
+
   if (adminSecret === expectedSecret) {
     return next();
   }
-  
+
   res.status(401).json({ error: 'Unauthorized' });
 }
 ```
@@ -422,19 +425,20 @@ export function authenticateAdmin(
 Validation middleware validates request parameters before processing:
 
 **Rails Example** (`app/controllers/agent_tools_controller.rb`):
+
 ```ruby
 class AgentToolsController < ApplicationController
   before_action :validate_request_params
-  
+
   def create
     # Handler logic
   end
-  
+
   private
-  
+
   def validate_request_params
     return if params[:tool].present?
-    
+
     render json: {
       ok: false,
       say: 'Missing required parameter: tool',
@@ -445,29 +449,22 @@ end
 ```
 
 **Node.js/Express Equivalent**:
+
 ```typescript
-export function validateRequestParams(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
+export function validateRequestParams(req: Request, res: Response, next: NextFunction): void {
   if (!req.body.tool) {
     return res.status(400).json({
       ok: false,
       say: 'Missing required parameter: tool',
-      result: { error: 'tool parameter is required' }
+      result: { error: 'tool parameter is required' },
     });
   }
-  
+
   next();
 }
 
 // Usage
-router.post(
-  '/agent-tools',
-  validateRequestParams,
-  agentToolsController.create
-);
+router.post('/agent-tools', validateRequestParams, agentToolsController.create);
 ```
 
 ### Middleware Organization and Structure
@@ -484,6 +481,7 @@ src/middleware/
 ```
 
 Each middleware file should:
+
 - Export a single middleware function
 - Use camelCase naming (TypeScript convention)
 - Follow Express middleware signature: `(req, res, next) => void`
@@ -496,16 +494,17 @@ Each middleware file should:
 A global error handler catches all unhandled errors and formats consistent error responses:
 
 **Rails Pattern** (`app/controllers/application_controller.rb`):
+
 ```ruby
 class ApplicationController < ActionController::API
   rescue_from StandardError, with: :handle_error
-  
+
   private
-  
+
   def handle_error(exception)
     Rails.logger.error("#{exception.class}: #{exception.message}")
     Rails.logger.error(exception.backtrace.join("\n"))
-    
+
     render json: {
       ok: false,
       say: 'Sorry, I encountered an error processing your request.',
@@ -516,21 +515,17 @@ end
 ```
 
 **Node.js/Express Equivalent**:
+
 ```typescript
 // src/middleware/errorHandler.ts
-export function errorHandler(
-  err: Error,
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
+export function errorHandler(err: Error, req: Request, res: Response, next: NextFunction): void {
   logger.error(`${err.constructor.name}: ${err.message}`);
   logger.error(err.stack);
-  
+
   res.status(500).json({
     ok: false,
     say: 'Sorry, I encountered an error processing your request.',
-    result: { error: err.message }
+    result: { error: err.message },
   });
 }
 
@@ -543,6 +538,7 @@ app.use(errorHandler);
 Error responses follow a consistent format:
 
 **Global Error Handler Format**:
+
 ```json
 {
   "ok": false,
@@ -554,6 +550,7 @@ Error responses follow a consistent format:
 ```
 
 **Controller-Level Error Format**:
+
 ```json
 {
   "ok": false,
@@ -562,6 +559,7 @@ Error responses follow a consistent format:
 ```
 
 **Service-Level Error Format** (when returned from service):
+
 ```json
 {
   "success": false,
@@ -570,6 +568,7 @@ Error responses follow a consistent format:
 ```
 
 **Simple Error Format** (for authentication/validation):
+
 ```json
 {
   "error": "Unauthorized"
@@ -588,6 +587,7 @@ Use the following HTTP status codes consistently:
 - **502 Bad Gateway**: External service errors (e.g., CursorRunnerService connection failures)
 
 **Rails Examples**:
+
 ```ruby
 # 200 OK - Success
 render json: { ok: true, message: 'Webhook set successfully' }
@@ -609,6 +609,7 @@ render json: { success: false, error: e.message }, status: :bad_gateway
 ```
 
 **Node.js/Express Equivalent**:
+
 ```typescript
 // 200 OK - Success
 res.json({ ok: true, message: 'Webhook set successfully' });
@@ -634,6 +635,7 @@ res.status(502).json({ success: false, error: err.message });
 Services throw typed errors that controllers catch and handle appropriately:
 
 **Rails Pattern** (`app/services/cursor_runner_service.rb`):
+
 ```ruby
 class CursorRunnerService
   class Error < StandardError; end
@@ -652,6 +654,7 @@ end
 ```
 
 **Node.js/Express Equivalent**:
+
 ```typescript
 // Service error classes
 export class CursorRunnerServiceError extends Error {}
@@ -667,7 +670,7 @@ try {
   if (error instanceof CursorRunnerServiceError) {
     return res.status(502).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
   throw error; // Let error middleware handle
@@ -679,18 +682,21 @@ try {
 Always log errors with sufficient context:
 
 **Rails Pattern**:
+
 ```ruby
 Rails.logger.error("Error handling Telegram webhook: #{e.message}")
 Rails.logger.error(e.backtrace.join("\n"))
 ```
 
 **Node.js/Express Equivalent**:
+
 ```typescript
 logger.error(`Error handling Telegram webhook: ${error.message}`);
 logger.error(error.stack);
 ```
 
 **Logging Guidelines**:
+
 - Log error message and stack trace
 - Include context (e.g., request ID, user ID, operation)
 - Use appropriate log levels (error, warn, info)
@@ -707,6 +713,7 @@ Different endpoints use different success response formats based on their purpos
 Used by most controllers for standard API responses:
 
 **Rails Example** (`app/controllers/telegram_controller.rb`):
+
 ```ruby
 render json: {
   ok: true,
@@ -716,11 +723,12 @@ render json: {
 ```
 
 **Node.js/Express Equivalent**:
+
 ```typescript
 res.json({
   ok: true,
   message: 'Webhook set successfully',
-  webhookInfo: result
+  webhookInfo: result,
 });
 ```
 
@@ -730,6 +738,7 @@ res.json({
 The AgentToolsController wraps tool router results in a specific format:
 
 **Rails Example**:
+
 ```ruby
 result = ToolRouter.route(...)
 render json: {
@@ -740,16 +749,18 @@ render json: {
 ```
 
 **Node.js/Express Equivalent**:
+
 ```typescript
 const toolResult = await toolRouter.route(params);
 res.json({
   ok: toolResult.ok,
   say: toolResult.say,
-  result: toolResult.data
+  result: toolResult.data,
 });
 ```
 
 This format includes:
+
 - `ok`: Boolean indicating success/failure
 - `say`: User-friendly message string
 - `result`: The actual data/result from the tool execution
@@ -759,12 +770,14 @@ This format includes:
 Used when returning responses directly from service calls:
 
 **Rails Example** (`app/controllers/cursor_runner_controller.rb`):
+
 ```ruby
 result = @service.execute(...)
 render json: result, status: result[:success] ? :ok : :unprocessable_entity
 ```
 
 **Node.js/Express Equivalent**:
+
 ```typescript
 const result = await cursorRunnerService.execute(params);
 res.status(result.success ? 200 : 422).json(result);
@@ -777,6 +790,7 @@ res.status(result.success ? 200 : 422).json(result);
 Used for health check endpoints:
 
 **Rails Example** (`app/controllers/health_controller.rb`):
+
 ```ruby
 render json: {
   status: 'healthy',
@@ -786,11 +800,12 @@ render json: {
 ```
 
 **Node.js/Express Equivalent**:
+
 ```typescript
 res.json({
   status: 'healthy',
   service: process.env.APP_NAME || 'Virtual Assistant API',
-  version: process.env.APP_VERSION || '1.0.0'
+  version: process.env.APP_VERSION || '1.0.0',
 });
 ```
 
@@ -801,11 +816,13 @@ res.json({
 Used for webhook callback acknowledgments:
 
 **Rails Example** (`app/controllers/cursor_runner_callback_controller.rb`):
+
 ```ruby
 render json: { received: true, request_id: request_id }, status: :ok
 ```
 
 **Node.js/Express Equivalent**:
+
 ```typescript
 res.json({ received: true, requestId: requestId });
 ```
@@ -867,12 +884,14 @@ Used for authentication and validation errors:
 Some endpoints return empty responses with just a status code:
 
 **Rails Pattern** (`app/controllers/telegram_controller.rb`):
+
 ```ruby
 # Return 200 OK immediately to Telegram
 head :ok
 ```
 
 **Node.js/Express Equivalent**:
+
 ```typescript
 // Return 200 OK immediately
 res.sendStatus(200);
@@ -881,6 +900,7 @@ res.status(200).end();
 ```
 
 **Used when**:
+
 - Webhook endpoints that must respond immediately (e.g., Telegram webhook)
 - Simple acknowledgment endpoints that don't need response data
 
@@ -896,6 +916,7 @@ Choose status codes based on the error type and context:
 6. **502 Bad Gateway**: External service errors
 
 **Decision Tree**:
+
 ```
 Is the request valid?
 ├─ No → 400 Bad Request
@@ -917,6 +938,7 @@ Maintain consistency within each response format:
 - **Use consistent field names** across similar endpoints
 
 **Example**:
+
 ```typescript
 // Consistent success response
 {
@@ -938,6 +960,7 @@ Maintain consistency within each response format:
 #### Success Response Formats
 
 **Use `{ ok: true, ... }` format when:**
+
 - Building standard API endpoints that return data
 - Endpoints that need to indicate success/failure clearly
 - User-facing endpoints (e.g., TelegramController, AgentToolsController)
@@ -946,6 +969,7 @@ Maintain consistency within each response format:
 **Example**: Setting webhook, getting webhook info, tool execution results
 
 **Use `{ success: true, ... }` format when:**
+
 - Proxying responses directly from external services
 - Service-level operations that return service-specific response structures
 - Endpoints that wrap service calls without transformation (e.g., CursorRunnerController)
@@ -954,6 +978,7 @@ Maintain consistency within each response format:
 **Example**: Cursor execution endpoints that proxy CursorRunnerService responses
 
 **Use `{ status: 'healthy', service: ..., version: ... }` format when:**
+
 - Health check endpoints
 - Status monitoring endpoints
 - Service discovery endpoints
@@ -962,6 +987,7 @@ Maintain consistency within each response format:
 **Example**: `GET /health` endpoint
 
 **Use `{ received: true, ... }` format when:**
+
 - Webhook callback acknowledgment endpoints
 - Endpoints that acknowledge receipt without processing
 - Async operation callbacks that need immediate acknowledgment
@@ -970,6 +996,7 @@ Maintain consistency within each response format:
 **Example**: `POST /cursor-runner/callback` endpoint
 
 **Use empty response with status code (`head :ok`) when:**
+
 - Webhook endpoints that must respond immediately (e.g., Telegram webhook)
 - Endpoints that trigger async processing and don't need to return data
 - Simple acknowledgment endpoints
@@ -980,6 +1007,7 @@ Maintain consistency within each response format:
 #### Error Response Formats
 
 **Use `{ ok: false, say: '...', result: { error: ... } }` format when:**
+
 - Global error handler catches unhandled exceptions
 - User-facing errors that need friendly messages
 - Errors that should be displayed to end users
@@ -988,6 +1016,7 @@ Maintain consistency within each response format:
 **Example**: ApplicationController global error handler
 
 **Use `{ ok: false, error: '...' }` format when:**
+
 - Controller-level handled errors
 - Errors that don't need user-friendly messages
 - Standard API error responses
@@ -996,6 +1025,7 @@ Maintain consistency within each response format:
 **Example**: Controller catch blocks, validation errors in controllers
 
 **Use `{ success: false, error: '...' }` format when:**
+
 - Service-level error responses
 - Errors returned from service methods
 - External service integration errors
@@ -1004,6 +1034,7 @@ Maintain consistency within each response format:
 **Example**: CursorRunnerService errors, service validation failures
 
 **Use `{ error: '...' }` format when:**
+
 - Authentication failures (401 Unauthorized)
 - Simple validation errors (400 Bad Request)
 - Errors that don't need additional context
@@ -1036,6 +1067,7 @@ Is this a success response?
 Authentication is performed via HTTP headers:
 
 **Header Names**:
+
 - `X-Admin-Secret`: Admin authentication secret
 - `X-Telegram-Bot-Api-Secret-Token`: Telegram webhook secret token
 - `X-Webhook-Secret`: Generic webhook secret (cursor-runner callbacks)
@@ -1044,6 +1076,7 @@ Authentication is performed via HTTP headers:
 - `Authorization`: Bearer token (alternative format for agent tools)
 
 **Rails Pattern**:
+
 ```ruby
 secret_token = request.headers['X-Telegram-Bot-Api-Secret-Token']
 admin_secret = request.headers['X-Admin-Secret'] ||
@@ -1052,6 +1085,7 @@ admin_secret = request.headers['X-Admin-Secret'] ||
 ```
 
 **Node.js/Express Equivalent**:
+
 ```typescript
 const secretToken = req.headers['x-telegram-bot-api-secret-token'];
 const adminSecret = req.headers['x-admin-secret'] || req.query.admin_secret;
@@ -1064,39 +1098,38 @@ const adminSecret = req.headers['x-admin-secret'] || req.query.admin_secret;
 Webhook endpoints validate secret tokens before processing:
 
 **Pattern**:
+
 1. Extract secret token from header (or query param as fallback)
 2. Compare with expected secret from configuration
 3. Return 401 Unauthorized if mismatch
 4. Allow if expected secret is blank (development mode)
 
 **Rails Example**:
+
 ```ruby
 def authenticate_webhook
   secret_token = request.headers['X-Telegram-Bot-Api-Secret-Token']
   expected_secret = Rails.application.config.telegram_webhook_secret
-  
+
   return if expected_secret.blank? || secret_token == expected_secret
-  
+
   Rails.logger.warn('Unauthorized Telegram webhook request - invalid secret token')
   head :unauthorized
 end
 ```
 
 **Node.js/Express Equivalent**:
+
 ```typescript
-export function authenticateWebhook(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
+export function authenticateWebhook(req: Request, res: Response, next: NextFunction): void {
   const secretToken = req.headers['x-telegram-bot-api-secret-token'];
   const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
-  
+
   // Allow if expected secret is not configured (development)
   if (!expectedSecret || secretToken === expectedSecret) {
     return next();
   }
-  
+
   logger.warn('Unauthorized Telegram webhook request - invalid secret token');
   res.status(401).json({ error: 'Unauthorized' });
 }
@@ -1107,6 +1140,7 @@ export function authenticateWebhook(
 Admin endpoints require `X-Admin-Secret` header:
 
 **Rails Example**:
+
 ```ruby
 def authenticate_admin
   admin_secret = request.headers['X-Admin-Secret'] ||
@@ -1114,25 +1148,22 @@ def authenticate_admin
                  params[:admin_secret] ||
                  params['admin_secret']
   expected_secret = Rails.application.config.webhook_secret
-  
+
   return head :unauthorized unless admin_secret == expected_secret
 end
 ```
 
 **Node.js/Express Equivalent**:
+
 ```typescript
-export function authenticateAdmin(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
+export function authenticateAdmin(req: Request, res: Response, next: NextFunction): void {
   const adminSecret = req.headers['x-admin-secret'] || req.query.admin_secret;
   const expectedSecret = process.env.WEBHOOK_SECRET;
-  
+
   if (adminSecret === expectedSecret) {
     return next();
   }
-  
+
   res.status(401).json({ error: 'Unauthorized' });
 }
 ```
@@ -1149,6 +1180,7 @@ Request parameters can come from multiple sources:
 4. **Route Parameters**: `req.params` (e.g., `:id` in route)
 
 **Rails Pattern**:
+
 ```ruby
 # Query params
 admin_secret = params[:admin_secret]
@@ -1162,6 +1194,7 @@ secret_token = request.headers['X-Telegram-Bot-Api-Secret-Token']
 ```
 
 **Node.js/Express Equivalent**:
+
 ```typescript
 // Query params
 const adminSecret = req.query.admin_secret;
@@ -1179,12 +1212,14 @@ const secretToken = req.headers['x-telegram-bot-api-secret-token'];
 Handle both camelCase and snake_case parameter names for compatibility:
 
 **Rails Pattern**:
+
 ```ruby
 branch_name = params[:branch_name] || params[:branchName]
 request_id = params[:id] || params[:request_id] || params[:requestId]
 ```
 
 **Node.js/Express Equivalent**:
+
 ```typescript
 const branchName = req.body.branch_name || req.body.branchName;
 const requestId = req.body.id || req.body.request_id || req.body.requestId;
@@ -1195,10 +1230,11 @@ const requestId = req.body.id || req.body.request_id || req.body.requestId;
 Validate required parameters before processing:
 
 **Rails Pattern**:
+
 ```ruby
 def validate_request_params
   return if params[:tool].present?
-  
+
   render json: {
     ok: false,
     say: 'Missing required parameter: tool',
@@ -1208,20 +1244,17 @@ end
 ```
 
 **Node.js/Express Equivalent**:
+
 ```typescript
-export function validateRequestParams(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
+export function validateRequestParams(req: Request, res: Response, next: NextFunction): void {
   if (!req.body.tool) {
     return res.status(400).json({
       ok: false,
       say: 'Missing required parameter: tool',
-      result: { error: 'tool parameter is required' }
+      result: { error: 'tool parameter is required' },
     });
   }
-  
+
   next();
 }
 ```
@@ -1231,10 +1264,11 @@ export function validateRequestParams(
 ### Complete Controller Example
 
 **Rails** (`app/controllers/telegram_controller.rb`):
+
 ```ruby
 class TelegramController < ApplicationController
   before_action :authenticate_webhook, only: [:webhook]
-  
+
   def webhook
     update = request.parameters
     TelegramMessageJob.perform_later(update.to_json)
@@ -1243,15 +1277,15 @@ class TelegramController < ApplicationController
     Rails.logger.error("Error handling Telegram webhook: #{e.message}")
     head :ok
   end
-  
+
   def set_webhook
     return head :unauthorized unless authenticate_admin
-    
+
     webhook_url = params[:url] || default_webhook_url
     secret_token = params[:secret_token] || Rails.application.config.telegram_webhook_secret
-    
+
     result = TelegramService.set_webhook(url: webhook_url, secret_token: secret_token)
-    
+
     render json: {
       ok: true,
       message: 'Webhook set successfully',
@@ -1264,17 +1298,17 @@ class TelegramController < ApplicationController
       error: e.message
     }, status: :internal_server_error
   end
-  
+
   private
-  
+
   def authenticate_webhook
     secret_token = request.headers['X-Telegram-Bot-Api-Secret-Token']
     expected_secret = Rails.application.config.telegram_webhook_secret
     return if expected_secret.blank? || secret_token == expected_secret
-    
+
     head :unauthorized
   end
-  
+
   def authenticate_admin
     admin_secret = request.headers['X-Admin-Secret'] ||
                    request.env['HTTP_X_ADMIN_SECRET'] ||
@@ -1286,6 +1320,7 @@ end
 ```
 
 **Node.js/Express Equivalent**:
+
 ```typescript
 // src/controllers/telegramController.ts
 import { Request, Response } from 'express';
@@ -1314,22 +1349,22 @@ export class TelegramController {
     try {
       const webhookUrl = req.body.url || this.defaultWebhookUrl();
       const secretToken = req.body.secret_token || process.env.TELEGRAM_WEBHOOK_SECRET;
-      
+
       const result = await this.telegramService.setWebhook({
         url: webhookUrl,
-        secretToken: secretToken
+        secretToken: secretToken,
       });
-      
+
       res.json({
         ok: true,
         message: 'Webhook set successfully',
-        webhookInfo: result
+        webhookInfo: result,
       });
     } catch (error) {
       logger.error(`Error setting webhook: ${error.message}`);
       res.status(500).json({
         ok: false,
-        error: error.message
+        error: error.message,
       });
     }
   };
@@ -1371,6 +1406,7 @@ When implementing new endpoints, refer to this document to ensure consistency wi
 ---
 
 **References**:
+
 - Rails Application: `/cursor/repositories/jarek-va`
 - Architecture Documentation: `docs/architecture.md`
 - Application Description: `Plan/app-description.md`

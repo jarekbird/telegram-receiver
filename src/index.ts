@@ -57,9 +57,7 @@ async function startServer(): Promise<void> {
     const { default: app } = await import('./app');
     server = app.listen(PORT, HOST, () => {
       // eslint-disable-next-line no-console
-      console.log(
-        `${APP_NAME} v${APP_VERSION} running in ${config.env} mode on ${HOST}:${PORT}`
-      );
+      console.log(`${APP_NAME} v${APP_VERSION} running in ${config.env} mode on ${HOST}:${PORT}`);
     });
 
     server.on('error', (error: NodeJS.ErrnoException) => {

@@ -28,18 +28,21 @@ tests/
 ## Test Types
 
 ### Unit Tests (`tests/unit/`)
+
 - Test individual functions, classes, and modules in isolation
 - Mock all external dependencies
 - Fast execution, high coverage
 - Run with: `npm run test:unit`
 
 ### Integration Tests (`tests/integration/`)
+
 - Test how multiple modules/components work together
 - May use real dependencies (databases, external APIs with mocks)
 - Test API endpoints with Supertest
 - Run with: `npm run test:integration`
 
 ### E2E Tests (`tests/e2e/`)
+
 - Test complete user flows end-to-end
 - Use Playwright for browser automation
 - Test full application stack
@@ -54,6 +57,7 @@ tests/
 **Standard**: Jest-based tests (unit and integration) use `.test.ts`, Playwright E2E tests use `.spec.ts`
 
 Examples:
+
 - Unit: `tests/unit/services/userService.test.ts`
 - Integration: `tests/integration/api/webhook.test.ts`
 - E2E: `tests/e2e/userRegistration.spec.ts`
@@ -101,11 +105,13 @@ describe('YourClass', () => {
     it('should return expected result when conditions are met', () => {
       // Arrange
       const instance = new YourClass();
-      const input = { /* test data */ };
-      
+      const input = {
+        /* test data */
+      };
+
       // Act
       const result = instance.yourMethod(input);
-      
+
       // Assert
       expect(result).toEqual(expectedOutput);
     });

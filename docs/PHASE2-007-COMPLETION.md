@@ -10,13 +10,13 @@
 
 All required Redis client packages are installed and verified:
 
-| Package | Version | Status | TypeScript Types |
-|---------|---------|--------|------------------|
-| `redis` | 4.7.1 | ✅ Installed | ✅ Built-in types |
-| `ioredis` | 5.8.2 | ✅ Installed | ✅ Built-in types |
-| `bullmq` | 5.63.2 | ✅ Installed | ✅ Built-in types |
-| `@types/redis` | ^4.0.11 | ✅ In devDependencies | Optional (package includes types) |
-| `@types/ioredis` | ^5.0.0 | ✅ In devDependencies | Optional (package includes types) |
+| Package          | Version | Status                | TypeScript Types                  |
+| ---------------- | ------- | --------------------- | --------------------------------- |
+| `redis`          | 4.7.1   | ✅ Installed          | ✅ Built-in types                 |
+| `ioredis`        | 5.8.2   | ✅ Installed          | ✅ Built-in types                 |
+| `bullmq`         | 5.63.2  | ✅ Installed          | ✅ Built-in types                 |
+| `@types/redis`   | ^4.0.11 | ✅ In devDependencies | Optional (package includes types) |
+| `@types/ioredis` | ^5.0.0  | ✅ In devDependencies | Optional (package includes types) |
 
 **Note**: Modern versions of `redis` (v4+) and `ioredis` (v5+) include their own TypeScript type definitions. The `@types/*` packages are listed in `package.json` for compatibility but are not strictly required.
 
@@ -29,11 +29,13 @@ Redis connection configuration matches the Rails pattern:
 - **Docker Configuration**: `redis://redis:6379/0` (matches Rails Docker pattern)
 
 **Implementation Locations**:
+
 - `src/worker.ts`: Uses `process.env.REDIS_URL || 'redis://localhost:6379/0'`
 - `docker-compose.yml`: Sets `REDIS_URL=redis://redis:6379/0`
 - `tests/unit/redis-connection.test.ts`: Tests Redis URL configuration
 
 **Rails Reference**:
+
 - `jarek-va/app/services/cursor_runner_callback_service.rb`: `ENV.fetch('REDIS_URL', 'redis://localhost:6379/0')`
 - `jarek-va/config/initializers/sidekiq.rb`: `ENV.fetch('REDIS_URL', 'redis://localhost:6379/0')`
 
@@ -42,6 +44,7 @@ Redis connection configuration matches the Rails pattern:
 Comprehensive documentation exists in `docs/REDIS_CLIENT_USAGE.md`:
 
 **Component Usage**:
+
 1. **BullMQ (Background Jobs)** → Uses `ioredis` (required by BullMQ)
    - Location: `src/worker.ts`
    - Rails Equivalent: `config/initializers/sidekiq.rb` (Sidekiq)
@@ -51,6 +54,7 @@ Comprehensive documentation exists in `docs/REDIS_CLIENT_USAGE.md`:
    - Rails Equivalent: `app/services/cursor_runner_callback_service.rb`
 
 **Decision**: `ioredis` is recommended for CursorRunnerCallbackService because:
+
 - Consistency with BullMQ (which uses ioredis)
 - Better TypeScript support
 - More feature-rich API

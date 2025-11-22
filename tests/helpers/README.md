@@ -20,8 +20,7 @@ export const createTestUser = (overrides = {}) => ({
   ...overrides,
 });
 
-export const waitFor = (ms: number) => 
-  new Promise(resolve => setTimeout(resolve, ms));
+export const waitFor = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // In your test
 import { createTestUser } from '../helpers/testUtils';

@@ -40,12 +40,14 @@ The application follows a layered architecture pattern with clear separation of 
 #### Layer Responsibilities
 
 **Routes Layer** (`src/routes/`)
+
 - Define HTTP endpoints
 - Apply middleware (authentication, validation, etc.)
 - Route requests to appropriate controllers
 - Should not contain business logic
 
 **Controllers Layer** (`src/controllers/`)
+
 - Handle HTTP request/response concerns
 - Parse request data
 - Call services for business logic
@@ -54,6 +56,7 @@ The application follows a layered architecture pattern with clear separation of 
 - Should be thin - delegate to services
 
 **Services Layer** (`src/services/`)
+
 - Contain business logic
 - Integrate with external APIs (Telegram, Cursor Runner, ElevenLabs)
 - Handle complex workflows
@@ -61,27 +64,32 @@ The application follows a layered architecture pattern with clear separation of 
 - Should be framework-agnostic (no Express dependencies)
 
 **Models Layer** (`src/models/`)
+
 - Define data structures
 - Handle data validation
 - Manage persistence (if applicable)
 - Should not contain business logic
 
 **Middleware Layer** (`src/middleware/`)
+
 - Cross-cutting concerns (authentication, logging, error handling)
 - Request/response transformation
 - Should be reusable and composable
 
 **Jobs Layer** (Background Processing)
+
 - Asynchronous task processing
 - Long-running operations
 - Should use BullMQ for job queuing
 
 **Utils Layer** (`src/utils/`)
+
 - Pure utility functions
 - Shared helpers
 - Should be stateless and testable
 
 **Types Layer** (`src/types/`)
+
 - TypeScript type definitions
 - Interfaces and type aliases
 - Should provide type safety across the application
@@ -89,6 +97,7 @@ The application follows a layered architecture pattern with clear separation of 
 ### Service Layer Pattern
 
 Business logic is encapsulated in service classes that:
+
 - Are instantiated with dependencies via constructor injection
 - Provide a clean API for controllers and jobs
 - Handle external API communication
@@ -100,12 +109,14 @@ Business logic is encapsulated in service classes that:
 **Decision**: Use constructor injection for all dependencies
 
 **Rationale**:
+
 - Improves testability (easy to mock dependencies)
 - Reduces coupling between components
 - Makes dependencies explicit
 - Follows Node.js/TypeScript best practices
 
 **Pattern**:
+
 ```typescript
 // Service with constructor injection
 class TelegramService {
@@ -125,12 +136,14 @@ class TelegramController {
 ```
 
 **Trade-offs**:
+
 - **Pros**: Testable, maintainable, explicit dependencies
 - **Cons**: Requires dependency management (factory functions or DI container)
 
 ### Repository Pattern (Future Consideration)
 
 Currently, the application uses direct Redis access for state management. If database persistence is added, consider implementing a repository pattern to:
+
 - Abstract data access logic
 - Make data access testable
 - Provide a consistent interface for data operations
@@ -138,6 +151,7 @@ Currently, the application uses direct Redis access for state management. If dat
 ### Middleware Pattern
 
 Express middleware is used for:
+
 - Request authentication (webhook secret validation)
 - Admin authentication (X-Admin-Secret header)
 - Error handling (centralized error middleware)
@@ -149,12 +163,14 @@ Express middleware is used for:
 **Decision**: Use BullMQ with Redis for background job processing
 
 **Rationale**:
+
 - Provides reliable job processing
 - Supports job retries and failure handling
 - Integrates well with Redis (already used for state management)
 - Better than Rails Sidekiq for Node.js ecosystem
 
 **Pattern**:
+
 - Jobs are enqueued immediately upon webhook receipt
 - Jobs process messages asynchronously
 - Failed jobs are retried with exponential backoff
@@ -167,12 +183,14 @@ Express middleware is used for:
 **Decision**: Use TypeScript for type safety and better developer experience
 
 **Rationale**:
+
 - Catches errors at compile time
 - Improves IDE support and autocomplete
 - Makes refactoring safer
 - Better documentation through types
 
 **Trade-offs**:
+
 - **Pros**: Type safety, better tooling, self-documenting code
 - **Cons**: Additional compilation step, learning curve
 
@@ -181,12 +199,14 @@ Express middleware is used for:
 **Decision**: Use Express.js for HTTP server
 
 **Rationale**:
+
 - Mature and widely used
 - Large ecosystem of middleware
 - Simple and flexible
 - Good performance for API workloads
 
 **Trade-offs**:
+
 - **Pros**: Mature, flexible, large ecosystem
 - **Cons**: Less opinionated than Rails (more decisions to make)
 
@@ -195,12 +215,14 @@ Express middleware is used for:
 **Decision**: Process Telegram updates asynchronously using BullMQ
 
 **Rationale**:
+
 - Must return 200 OK immediately to Telegram to prevent retries
 - Allows handling of long-running operations (audio transcription, API calls)
 - Provides job retry and failure handling
 - Better than synchronous processing for webhook handling
 
 **Trade-offs**:
+
 - **Pros**: Reliable, scalable, handles failures gracefully
 - **Cons**: Additional complexity, requires Redis
 
@@ -209,12 +231,14 @@ Express middleware is used for:
 **Decision**: Use Redis for storing callback state and job queues
 
 **Rationale**:
+
 - Fast in-memory storage
 - Supports TTL for automatic cleanup
 - Used by BullMQ for job queues
 - No need for persistent database for temporary state
 
 **Trade-offs**:
+
 - **Pros**: Fast, simple, integrates with BullMQ
 - **Cons**: Data is ephemeral (by design), requires Redis instance
 
@@ -223,12 +247,14 @@ Express middleware is used for:
 **Decision**: Use axios for direct HTTP calls to Telegram and Cursor Runner APIs
 
 **Rationale**:
+
 - More control over request/response handling
 - Easier to mock in tests
 - No dependency on potentially outdated SDKs
 - Consistent error handling
 
 **Trade-offs**:
+
 - **Pros**: Control, testability, consistency
 - **Cons**: More boilerplate, need to handle API changes manually
 
@@ -237,12 +263,14 @@ Express middleware is used for:
 **Decision**: Use environment variables for all configuration
 
 **Rationale**:
+
 - Follows 12-factor app principles
 - Easy to configure for different environments
 - No secrets in code
 - Simple and standard approach
 
 **Trade-offs**:
+
 - **Pros**: Simple, secure, environment-agnostic
 - **Cons**: No type checking for configuration (can be mitigated with validation)
 
@@ -251,12 +279,14 @@ Express middleware is used for:
 **Decision**: Use custom error classes and centralized error middleware
 
 **Rationale**:
+
 - Consistent error responses
 - Proper error propagation
 - Type-safe error handling
 - Better error logging and debugging
 
 **Pattern**:
+
 - Services throw typed errors
 - Controllers catch and format errors
 - Error middleware handles uncaught errors
@@ -267,11 +297,13 @@ Express middleware is used for:
 **Decision**: Test directory structure mirrors `src/` directory structure
 
 **Rationale**:
+
 - Easy to find tests for specific files
 - Clear organization
 - Follows common Node.js patterns
 
 **Structure**:
+
 ```
 tests/
 ├── unit/          # Unit tests (mirrors src/)

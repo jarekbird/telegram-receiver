@@ -88,6 +88,7 @@ Base JavaScript best practices and common error detection.
 ### 2. TypeScript ESLint Recommended (`plugin:@typescript-eslint/recommended`)
 
 TypeScript-specific rules that don't require type information. Includes:
+
 - Type safety rules
 - TypeScript-specific patterns
 - Best practices for TypeScript code
@@ -95,6 +96,7 @@ TypeScript-specific rules that don't require type information. Includes:
 ### 3. TypeScript ESLint Recommended Requiring Type Checking (`plugin:@typescript-eslint/recommended-requiring-type-checking`)
 
 Advanced TypeScript rules that require type information. These rules can catch:
+
 - Type-related bugs
 - Unsafe type operations
 - Potential runtime errors
@@ -162,12 +164,14 @@ npm run lint:fix
 ### What Gets Linted
 
 ESLint checks all `.ts` files in:
+
 - `src/` directory (source code)
 - `tests/` directory (test files)
 
 ### Ignored Files/Directories
 
 The following are automatically ignored:
+
 - `node_modules/` - Dependencies
 - `dist/` - Compiled output
 - `coverage/` - Test coverage reports
@@ -183,6 +187,7 @@ The following are automatically ignored:
 **Fix:** Replace `any` with a proper type or use `unknown` when the type is truly unknown.
 
 **Example:**
+
 ```typescript
 // ❌ Bad
 function processData(data: any): any {
@@ -207,6 +212,7 @@ function processData(data: unknown): unknown {
 **Fix:** Remove the unused variable or prefix it with `_` if it's required but intentionally unused.
 
 **Example:**
+
 ```typescript
 // ❌ Bad
 function handler(req: Request, res: Response) {
@@ -232,6 +238,7 @@ function handler(_req: Request, res: Response) {
 **Fix:** Remove `console.log` or `console.debug` statements, or use `console.warn`/`console.error` if logging is needed.
 
 **Example:**
+
 ```typescript
 // ❌ Bad
 console.log('Debug info');
@@ -252,9 +259,10 @@ console.error('Error message');
 **Fix:** Run `npm run lint:fix` to automatically fix formatting issues, or run `npm run format` to format all files.
 
 **Example:**
+
 ```typescript
 // ❌ Bad - Inconsistent formatting
-const obj={a:1,b:2};
+const obj = { a: 1, b: 2 };
 
 // ✅ Good - Properly formatted
 const obj = { a: 1, b: 2 };
@@ -267,6 +275,7 @@ const obj = { a: 1, b: 2 };
 **Fix:** Remove `debugger` statements before committing.
 
 **Example:**
+
 ```typescript
 // ❌ Bad
 function debugFunction() {
@@ -328,6 +337,7 @@ npm run lint:fix
 ### 3. Use Proper TypeScript Types
 
 Avoid `any` types. Use:
+
 - Specific types when known
 - Generics (`<T>`) for reusable code
 - `unknown` when the type is truly unknown
@@ -350,6 +360,7 @@ Remove `console.log`, `console.debug`, and `debugger` statements before committi
 ## CI/CD Integration
 
 ESLint runs automatically in the deployment script (`./deploy.sh`). The script will fail if:
+
 - ESLint finds errors
 - Code formatting doesn't match Prettier rules
 
@@ -396,6 +407,7 @@ TypeScript-specific rules are prefixed with `@typescript-eslint/`. Refer to the 
 ### Prettier Conflicts
 
 If Prettier and ESLint conflict:
+
 1. Ensure `eslint-config-prettier` is in the `extends` array (after other configs)
 2. Verify `eslint-plugin-prettier` is installed and configured
 3. Run `npm run format` then `npm run lint:fix`

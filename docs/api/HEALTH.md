@@ -35,6 +35,7 @@ The health endpoint is publicly accessible and does not require authentication. 
 **HTTP Status Code**: `200 OK`
 
 **Response Body** (JSON):
+
 ```json
 {
   "status": "healthy",
@@ -44,6 +45,7 @@ The health endpoint is publicly accessible and does not require authentication. 
 ```
 
 **Response Fields**:
+
 - `status` (string): Always `"healthy"` when the service is running. This field indicates the service is operational and responding to requests.
 - `service` (string): Service name from `APP_NAME` environment variable. Defaults to `"Virtual Assistant API"` if `APP_NAME` is not set.
 - `version` (string): Service version from `APP_VERSION` environment variable. Defaults to `"1.0.0"` if `APP_VERSION` is not set.
@@ -88,6 +90,7 @@ http GET http://localhost:3000/
 ```
 
 **Response Headers**:
+
 ```
 HTTP/1.1 200 OK
 Content-Type: application/json; charset=utf-8
@@ -103,7 +106,7 @@ Content-Length: 65
   - Returns JSON response with status, service name, and version
   - Reads `APP_NAME` and `APP_VERSION` from environment variables with defaults
 
-- **Routes**: 
+- **Routes**:
   - `src/routes/health.routes.ts` - Defines `GET /health` route
   - `src/app.ts` - Registers health routes and root route
   - Both `/health` and `/` endpoints use the same controller function
