@@ -3,12 +3,7 @@
   "version": "1.0.0",
   "description": "Telegram webhook receiver that forwards messages to Cursor Runner API",
   "main": "dist/index.js",
-  "scripts": {
-    "build": "tsc",
-    "build:watch": "tsc --watch",
-    "dev": "nodemon --exec ts-node src/index.ts",
-    "start": "node dist/index.js"
-  },
+  "scripts": {},
   "keywords": [
     "telegram",
     "webhook",
@@ -22,15 +17,5 @@
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
-  },
-  "devDependencies": {
-    "@types/express": "^5.0.5",
-    "@types/node": "^20.19.25",
-    "nodemon": "^3.1.11",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
-  },
-  "dependencies": {
-    "express": "^5.1.0"
   }
 }
