@@ -199,6 +199,8 @@ Before committing, ensure:
 
 #### 4.1 Use the Deploy Script
 
+**CRITICAL: All pushes to origin MUST be done via the deploy script. Never push manually using `git push`.**
+
 The project includes a deploy script that automates testing, linting, formatting checks, and git operations. You MUST use this script to deploy changes:
 
 ```bash
@@ -234,6 +236,70 @@ The deploy script automatically generates commit messages following conventional
 - The script uses cursor-agent to generate meaningful commit messages (if available)
 - If cursor-agent is not available, it will generate a simple commit message based on file changes
 - The script pushes directly to the main branch - ensure you're on main before running it
+- **NEVER push manually** - always use `./deploy.sh` to push to origin
+
+#### 4.2 Resolve Deploy Script Issues
+
+**If the deploy script fails, you MUST resolve the issues before proceeding.**
+
+The deploy script may fail for several reasons:
+
+1. **Linting Errors**: Fix all ESLint errors before running the deploy script again
+
+   ```bash
+   # Check for linting errors
+   npm run lint
+
+   # Auto-fix what can be fixed
+   npm run lint:fix
+
+   # Manually fix remaining errors
+   ```
+
+2. **Formatting Errors**: Fix all Prettier formatting issues
+
+   ```bash
+   # Check formatting
+   npm run format:check
+
+   # Auto-format all files
+   npm run format
+   ```
+
+3. **Test Failures**: Fix all failing tests
+
+   ```bash
+   # Run tests to see failures
+   npm test
+
+   # Fix test issues and re-run
+   npm test
+   ```
+
+4. **Missing Dependencies**: Install any missing npm packages
+
+   ```bash
+   # If tests fail due to missing modules, check package.json
+   # and install missing dependencies
+   npm install
+   ```
+
+5. **Type Errors**: Fix TypeScript compilation errors
+
+   ```bash
+   # Check for type errors
+   npm run type-check
+
+   # Fix type errors in source files
+   ```
+
+**After fixing issues, run the deploy script again:**
+
+```bash
+./deploy.sh
+```
+
+**DO NOT bypass the deploy script by manually committing or pushing.** All issues must be resolved so the deploy script completes successfully.
 
 ## When Testing is Not Applicable
 
@@ -242,6 +308,7 @@ Some tasks may not require automated tests (e.g., documentation updates, configu
 - Document why tests are not applicable
 - Ensure manual verification is performed
 - Still use the deploy script (`./deploy.sh`) - it will handle linting, formatting, and git operations even if tests are minimal
+- **Still push via deploy script** - never push manually even for documentation-only changes
 
 ## Common Pitfalls to Avoid
 
@@ -249,13 +316,16 @@ You must avoid these common mistakes:
 
 1. **Running the Server Manually**: NEVER run the server (`npm run dev`, `npm start`) for testing. Always use automated tests instead.
 2. **Skipping Tests**: Never skip tests to save time. They save more time in the long run.
-3. **Not Using the Deploy Script**: Always use `./deploy.sh` instead of manually committing and pushing. The deploy script ensures all checks pass before deployment.
+3. **Not Using the Deploy Script**: Always use `./deploy.sh` instead of manually committing and pushing. The deploy script ensures all checks pass before deployment. **NEVER use `git push` manually.**
 4. **Committing Without Testing**: The deploy script handles this, but never bypass it by manually committing.
-5. **Poor Commit Messages**: The deploy script generates commit messages automatically, but ensure they're meaningful.
-6. **Large Commits**: Break down large changes into smaller, logical commits before running the deploy script.
-7. **Not Pulling Before Starting**: Always pull the latest changes from main before starting work to avoid conflicts.
-8. **Ignoring Linting Errors**: The deploy script will fail if linting errors exist - fix them before running the script.
-9. **Leaving Debug Code**: Remove console.log, console.debug, debugger statements, and temporary code before running the deploy script.
+5. **Pushing Manually**: **NEVER push to origin using `git push`**. Always use `./deploy.sh` which handles all quality checks before pushing.
+6. **Ignoring Deploy Script Failures**: If the deploy script fails, you MUST fix the issues (linting, tests, formatting) and run it again. Do not bypass it.
+7. **Poor Commit Messages**: The deploy script generates commit messages automatically, but ensure they're meaningful.
+8. **Large Commits**: Break down large changes into smaller, logical commits before running the deploy script.
+9. **Not Pulling Before Starting**: Always pull the latest changes from main before starting work to avoid conflicts.
+10. **Ignoring Linting Errors**: The deploy script will fail if linting errors exist - fix them before running the script.
+11. **Leaving Debug Code**: Remove console.log, console.debug, debugger statements, and temporary code before running the deploy script.
+12. **Bypassing Deploy Script Failures**: If the deploy script fails, fix the issues and run it again. Never manually commit or push to bypass the checks.
 
 ## Testing Resources
 
@@ -281,7 +351,9 @@ Before marking a task as complete, verify:
 - [ ] Code follows style guidelines
 - [ ] No linting errors
 - [ ] Deploy script has been run successfully (`./deploy.sh`)
-- [ ] Changes are committed and pushed to origin/main (via deploy script)
+- [ ] **All deploy script checks passed** (linting, formatting, tests, coverage)
+- [ ] **Changes are committed and pushed to origin/main (via deploy script only - never manually)**
+- [ ] **If deploy script failed, all issues were resolved and script was run again until successful**
 - [ ] Documentation is updated (if needed)
 
 ---
