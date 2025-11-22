@@ -129,9 +129,39 @@ describe('YourClass', () => {
 - Ensure all tests pass before proceeding
 - Fix any failing tests before committing
 
+#### 3.3 Server Testing Policy
+
+**CRITICAL: Never run the server itself for testing purposes.**
+
+Instead of running the server manually, you MUST use automated tests to verify server functionality:
+
+- **DO NOT** run `npm run dev`, `npm start`, or any server start commands
+- **DO NOT** manually test server endpoints using curl, Postman, or browser
+- **DO** write and run automated tests to verify server functionality
+- **DO** use integration tests to test HTTP endpoints and request/response handling
+- **DO** use unit tests to test individual functions and services
+- **DO** use API tests (with Supertest or similar) to test server endpoints
+
+**Testing Server Functionality:**
+```bash
+# Run all tests (including server tests)
+npm test
+
+# Run tests in watch mode
+npm test -- --watch
+
+# Run tests with coverage
+npm test -- --coverage
+
+# Run specific test file
+npm test -- path/to/your.test.ts
+```
+
+All server functionality must be verified through automated tests. Manual server testing is not allowed.
+
 #### 3.4 Verify Implementation
 Before proceeding, you must:
-- Run the application locally and test manually if needed
+- Run automated tests to verify all functionality (including server endpoints)
 - Ensure all existing tests still pass
 - Check for linting errors and fix them
 - Verify the implementation meets all requirements
@@ -192,14 +222,15 @@ Some tasks may not require automated tests (e.g., documentation updates, configu
 ## Common Pitfalls to Avoid
 
 You must avoid these common mistakes:
-1. **Skipping Tests**: Never skip tests to save time. They save more time in the long run.
-2. **Not Using the Deploy Script**: Always use `./deploy.sh` instead of manually committing and pushing. The deploy script ensures all checks pass before deployment.
-3. **Committing Without Testing**: The deploy script handles this, but never bypass it by manually committing.
-4. **Poor Commit Messages**: The deploy script generates commit messages automatically, but ensure they're meaningful.
-5. **Large Commits**: Break down large changes into smaller, logical commits before running the deploy script.
-6. **Not Pulling Before Starting**: Always pull the latest changes from main before starting work to avoid conflicts.
-7. **Ignoring Linting Errors**: The deploy script will fail if linting errors exist - fix them before running the script.
-8. **Leaving Debug Code**: Remove console.log, console.debug, debugger statements, and temporary code before running the deploy script.
+1. **Running the Server Manually**: NEVER run the server (`npm run dev`, `npm start`) for testing. Always use automated tests instead.
+2. **Skipping Tests**: Never skip tests to save time. They save more time in the long run.
+3. **Not Using the Deploy Script**: Always use `./deploy.sh` instead of manually committing and pushing. The deploy script ensures all checks pass before deployment.
+4. **Committing Without Testing**: The deploy script handles this, but never bypass it by manually committing.
+5. **Poor Commit Messages**: The deploy script generates commit messages automatically, but ensure they're meaningful.
+6. **Large Commits**: Break down large changes into smaller, logical commits before running the deploy script.
+7. **Not Pulling Before Starting**: Always pull the latest changes from main before starting work to avoid conflicts.
+8. **Ignoring Linting Errors**: The deploy script will fail if linting errors exist - fix them before running the script.
+9. **Leaving Debug Code**: Remove console.log, console.debug, debugger statements, and temporary code before running the deploy script.
 
 ## Testing Resources
 
@@ -218,7 +249,7 @@ Before marking a task as complete, verify:
 - [ ] You're working on the main branch (`git branch` should show `* main`)
 - [ ] Main branch is up to date with remote (`git pull origin main` before starting)
 - [ ] Code is implemented and working
-- [ ] Automated tests are written and passing (when applicable)
+- [ ] **Automated tests are written and passing** - all server functionality verified through tests (NOT by running the server manually)
 - [ ] All existing tests still pass
 - [ ] Code follows style guidelines
 - [ ] No linting errors

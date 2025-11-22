@@ -33,7 +33,7 @@ This file provides an index of all tasks for Phase 1: Basic Node.js API Infrastr
 - [PHASE1-013](section-05/subsection-01/PHASE1-013.md): Create health check controller
 - [PHASE1-014](section-05/subsection-02/PHASE1-014.md): Create health check route
 - [PHASE1-015](section-05/subsection-03/PHASE1-015.md): Register health route in app
-- [PHASE1-016](section-05/subsection-04/PHASE1-016.md): Test health endpoint manually
+- [PHASE1-016](section-05/subsection-04/PHASE1-016.md): Test health endpoint with automated tests
 
 ### 6. Request/Response Middleware
 
@@ -124,7 +124,7 @@ Total tasks: 63
 - `PHASE1-013` → 5.1 Create health check controller
 - `PHASE1-014` → 5.2 Create health check route
 - `PHASE1-015` → 5.3 Register health route in app
-- `PHASE1-016` → 5.4 Test health endpoint manually
+- `PHASE1-016` → 5.4 Test health endpoint with automated tests
 - `PHASE1-017` → 6.1 Create JSON body parser middleware
 - `PHASE1-018` → 6.2 Create URL encoded parser middleware
 - `PHASE1-019` → 6.3 Create CORS middleware (if needed)

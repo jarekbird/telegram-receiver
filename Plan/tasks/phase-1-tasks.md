@@ -158,12 +158,14 @@
 - [ ] Use health routes with app.use() at path `/`
 - [ ] Verify route registration
 
-### 5.4 Test health endpoint manually
-- [ ] Build the project (`npm run build`)
-- [ ] Start the server (`npm start`)
-- [ ] Make GET request to `http://localhost:PORT/health`
-- [ ] Verify response is `{ status: "ok" }`
-- [ ] Stop the server
+### 5.4 Test health endpoint with automated tests
+- [ ] Create integration test file for health endpoint (e.g., `tests/integration/health.test.ts`)
+- [ ] Use Supertest or similar testing library to test HTTP endpoints
+- [ ] Write test for `GET /health` endpoint that verifies response status and JSON structure
+- [ ] Write test for `GET /` (root route) that verifies it returns same health response
+- [ ] Run tests: `npm test` or `npm run test:integration`
+- [ ] Verify all tests pass
+- [ ] **DO NOT run the server manually** (`npm start`, `npm run dev`) for testing
 
 ---
 
@@ -543,9 +545,10 @@
 After completing all tasks, verify:
 
 - [ ] Project builds successfully (`npm run build`)
-- [ ] Project runs successfully (`npm start`)
-- [ ] Health endpoint responds correctly (`GET /health`)
+- [ ] **DO NOT run the server manually** (`npm start`, `npm run dev`) for testing
+- [ ] Health endpoint responds correctly (verified through automated tests: `GET /health` and `GET /`)
 - [ ] All tests pass (`npm test`)
+- [ ] Integration tests pass (`npm run test:integration`)
 - [ ] Test coverage is generated (`npm run test:coverage`)
 - [ ] Docker image builds successfully (`docker build`)
 - [ ] Docker container runs successfully (`docker run`)
