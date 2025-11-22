@@ -1,6 +1,7 @@
 import express from 'express';
 import healthRoutes from './routes/health.routes';
 import { getHealth } from './controllers/health.controller';
+import { corsMiddleware } from './middleware/cors';
 
 const app = express();
 
@@ -15,6 +16,13 @@ app.use(express.json());
 // Parsed data will be available in req.body for routes
 // extended: true uses qs library which supports nested objects (matches Rails behavior)
 app.use(express.urlencoded({ extended: true }));
+
+// CORS middleware - must be applied after body parsers but before routes
+// Handles Cross-Origin Resource Sharing (CORS) headers to allow cross-origin AJAX requests
+// Disabled by default (matching Rails behavior where CORS is commented out)
+// Enable via CORS_ENABLED environment variable
+// See src/middleware/cors.ts for configuration details
+app.use(corsMiddleware);
 
 // Register health routes
 // Route file has router.get('/health', getHealth), so register at root to get /health
