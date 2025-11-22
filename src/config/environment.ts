@@ -13,13 +13,22 @@
  */
 
 import dotenv from 'dotenv';
+import path from 'path';
 
-// Load environment variables from .env file from project root
+// Load environment variables from .env file from project root (base config)
 // dotenv automatically looks for .env in current working directory
+// This loads base configuration and NODE_ENV if it's defined in .env
 dotenv.config();
 
 // Get NODE_ENV or default to "development" (matching Rails Rails.env behavior)
+// NODE_ENV may be set as an environment variable or loaded from .env above
 const nodeEnv = process.env.NODE_ENV || 'development';
+
+// Load environment-specific .env file (e.g., .env.development, .env.test, .env.production)
+// This overrides base .env values with environment-specific values
+// Matches Rails environment-specific configuration files behavior
+const envFile = `.env.${nodeEnv}`;
+dotenv.config({ path: path.resolve(process.cwd(), envFile), override: true });
 
 /**
  * Environment configuration interface
