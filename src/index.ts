@@ -32,7 +32,10 @@ try {
   process.exit(1);
 }
 
-// Read host from environment variable (defaulting to Rails defaults)
+// Define port constant (default: process.env.PORT || 3000, matching Rails default)
+const PORT = parseInt(process.env.PORT || '3000', 10);
+
+// Define host constant (default: process.env.HOST || '0.0.0.0', matching Rails Puma default)
 const HOST = process.env.HOST || '0.0.0.0';
 
 let server: http.Server | null = null;
@@ -52,21 +55,21 @@ async function startServer(): Promise<void> {
 
     // Import app module after validation to ensure config is valid before app initialization
     const { default: app } = await import('./app');
-    server = app.listen(config.port, HOST, () => {
+    server = app.listen(PORT, HOST, () => {
       // eslint-disable-next-line no-console
       console.log(
-        `${APP_NAME} v${APP_VERSION} running in ${config.env} mode on ${HOST}:${config.port}`
+        `${APP_NAME} v${APP_VERSION} running in ${config.env} mode on ${HOST}:${PORT}`
       );
     });
 
     server.on('error', (error: NodeJS.ErrnoException) => {
       if (error.code === 'EADDRINUSE') {
         console.error(
-          `Error: Port ${config.port} is already in use. Please choose a different port or stop the process using that port.`
+          `Error: Port ${PORT} is already in use. Please choose a different port or stop the process using that port.`
         );
       } else if (error.code === 'EACCES') {
         console.error(
-          `Error: Permission denied. Cannot bind to port ${config.port}. Try running with elevated privileges or use a port above 1024.`
+          `Error: Permission denied. Cannot bind to port ${PORT}. Try running with elevated privileges or use a port above 1024.`
         );
       } else {
         console.error('Server startup error:', error);
