@@ -59,6 +59,11 @@ async function startServer(): Promise<void> {
       );
     });
 
+    // Server is guaranteed to be non-null after app.listen() call
+    if (!server) {
+      throw new Error('Failed to create server instance');
+    }
+
     server.on('error', (error: NodeJS.ErrnoException) => {
       if (error.code === 'EADDRINUSE') {
         console.error(
