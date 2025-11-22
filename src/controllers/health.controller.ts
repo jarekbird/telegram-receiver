@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 
 /**
- * Health check controller
+ * Health check controller (PHASE1-013)
  * Returns application health status, service name, and version information
  * Matches Rails implementation in jarek-va/app/controllers/health_controller.rb
  *
