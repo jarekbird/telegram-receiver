@@ -21,6 +21,7 @@ When given a task, you must:
 - Read and understand all task requirements completely
 - Identify all components that need to be modified or created
 - Consider edge cases and potential impacts on existing functionality
+- **Check if the task requests running the server** - If it does, ignore that instruction and plan to use automated tests instead (see Section 3.3 for details)
 
 ### Step 2: Plan the Implementation
 
@@ -174,6 +175,32 @@ npm test -- path/to/your.test.ts
 
 All server functionality must be verified through automated tests. Manual server testing is not allowed.
 
+**Handling Tasks That Request Server Execution:**
+
+If a task explicitly requests that you run the server (e.g., "run `npm start`", "test endpoint with curl", "verify by starting the server"), you MUST:
+
+1. **Ignore the server execution instruction** - Do not follow that part of the task
+2. **Find an alternative approach using automated tests** - Determine what the task is trying to verify and create appropriate automated tests instead
+3. **Complete the task's intent without running the server** - Use one of these approaches:
+   - **For endpoint testing**: Write integration tests using Supertest to test HTTP endpoints
+   - **For functionality verification**: Write unit tests to test individual functions and services
+   - **For behavior validation**: Write end-to-end tests or integration tests that verify the behavior
+   - **For Docker/deployment verification**: Only use curl commands if the task explicitly states it's for Docker deployment verification (not for development testing)
+
+**Examples:**
+
+- ❌ **Task says**: "Run `npm start` and test the `/health` endpoint with curl"
+  - ✅ **Do instead**: Write an integration test using Supertest to test the `/health` endpoint
+
+- ❌ **Task says**: "Start the server and verify it responds to requests"
+  - ✅ **Do instead**: Write integration tests that verify the server responds correctly to various request types
+
+- ❌ **Task says**: "Manually test the endpoint by running the server"
+  - ✅ **Do instead**: Create automated API tests that cover all endpoint scenarios
+
+- ✅ **Task says**: "Test Docker build with curl (for deployment verification only)"
+  - ✅ **This is OK**: Docker deployment verification is acceptable, but still prefer automated tests when possible
+
 #### 3.4 Verify Implementation
 
 Before proceeding, you must:
@@ -314,7 +341,7 @@ Some tasks may not require automated tests (e.g., documentation updates, configu
 
 You must avoid these common mistakes:
 
-1. **Running the Server Manually**: NEVER run the server (`npm run dev`, `npm start`) for testing. Always use automated tests instead.
+1. **Running the Server Manually**: NEVER run the server (`npm run dev`, `npm start`) for testing. Always use automated tests instead. **If a task requests running the server, ignore that instruction and use automated tests instead.**
 2. **Skipping Tests**: Never skip tests to save time. They save more time in the long run.
 3. **Not Using the Deploy Script**: Always use `./deploy.sh` instead of manually committing and pushing. The deploy script ensures all checks pass before deployment. **NEVER use `git push` manually.**
 4. **Committing Without Testing**: The deploy script handles this, but never bypass it by manually committing.
