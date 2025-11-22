@@ -4,6 +4,10 @@
   "description": "Telegram webhook receiver that forwards messages to Cursor Runner API",
   "main": "dist/index.js",
   "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "dev": "nodemon --exec ts-node src/index.ts",
+    "start": "node dist/index.js",
     "test": "[ -f node_modules/.bin/jest ] && jest || echo 'Jest not installed, skipping tests'",
     "test:coverage": "[ -f node_modules/.bin/jest ] && jest --coverage || echo 'Jest not installed, skipping coverage'",
     "lint": "[ -f node_modules/.bin/eslint ] && eslint src tests --ext .ts || echo 'ESLint not installed, skipping lint'",
