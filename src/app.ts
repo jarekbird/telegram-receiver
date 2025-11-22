@@ -2,6 +2,7 @@ import express from 'express';
 import healthRoutes from './routes/health.routes';
 import { getHealth } from './controllers/health.controller';
 import { corsMiddleware } from './middleware/cors';
+import { requestLoggerMiddleware } from './middleware/request-logger.middleware';
 
 const app = express();
 
@@ -23,6 +24,12 @@ app.use(express.urlencoded({ extended: true }));
 // Enable via CORS_ENABLED environment variable
 // See src/middleware/cors.ts for configuration details
 app.use(corsMiddleware);
+
+// Request logger middleware - must be applied after CORS but before routes
+// Logs incoming HTTP requests and their responses with comprehensive information
+// Provides request/response logging similar to Rails' built-in request logging with request_id tagging
+// See src/middleware/request-logger.middleware.ts for details
+app.use(requestLoggerMiddleware);
 
 // Register health routes
 // Route file has router.get('/health', getHealth), so register at root to get /health
