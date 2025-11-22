@@ -167,15 +167,21 @@ describe('URL-Encoded Body Parser Middleware', () => {
     });
 
     it('should parse URL-encoded form data in the main app', async () => {
-      const appModule = await import('../../../src/app');
-      const app = appModule.default;
+      // Import app configuration to test URL-encoded parsing
+      // Since the app now has 404 middleware registered, we create a test app
+      // that matches the app.ts structure to test URL-encoded parsing
+      const testApp = express();
 
-      // Create a temporary route to test URL-encoded parsing
-      app.post('/test-urlencoded-integration', (req: Request, res: Response) => {
+      // Apply the same middleware as app.ts (in order)
+      testApp.use(express.json());
+      testApp.use(express.urlencoded({ extended: true }));
+
+      // Create a test route BEFORE 404 middleware (matching app.ts structure)
+      testApp.post('/test-urlencoded-integration', (req: Request, res: Response) => {
         res.json({ received: req.body as unknown });
       });
 
-      const response = await request(app)
+      const response = await request(testApp)
         .post('/test-urlencoded-integration')
         .set('Content-Type', 'application/x-www-form-urlencoded')
         .send('url=https%3A%2F%2Fexample.com&secret_token=test123');

@@ -4,6 +4,7 @@ import healthRoutes from './routes/health.routes';
 import { getHealth } from './controllers/health.controller';
 import { corsMiddleware } from './middleware/cors';
 import { requestLoggerMiddleware } from './middleware/request-logger.middleware';
+import { notFoundMiddleware } from './middleware/not-found.middleware';
 
 const app = express();
 
@@ -46,5 +47,13 @@ app.use('/', healthRoutes);
 // Register root route with app.get('/', getHealth) for root / endpoint
 // (to match Rails root 'health#show')
 app.get('/', getHealth);
+
+// PHASE1-022: 404 Not Found handler middleware
+// Catches all requests that don't match any registered routes and returns
+// a standardized 404 Not Found response matching the Rails error format.
+// This middleware must be registered after all routes but before error handler middleware.
+// Express processes middleware in order, so unmatched requests will fall through
+// to this middleware only if no route matches.
+app.use(notFoundMiddleware);
 
 export default app;
