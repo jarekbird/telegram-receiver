@@ -8,9 +8,8 @@ interface HealthResponse {
 }
 
 describe('Health Endpoint', () => {
-  // Note: Health routes will be added in subsequent tasks (PHASE1-011+)
-  // These tests are skipped until routes are configured
-  describe.skip('GET /health', () => {
+  // PHASE1-015: Health routes are now registered in app.ts
+  describe('GET /health', () => {
     it('should return 200 status code', async () => {
       const response = await request(app).get('/health');
       expect(response.status).toBe(200);
@@ -81,9 +80,8 @@ describe('Health Endpoint', () => {
     });
   });
 
-  // Note: Root route will be added in subsequent tasks (PHASE1-011+)
-  // These tests are skipped until routes are configured
-  describe.skip('GET /', () => {
+  // PHASE1-015: Root route is now registered in app.ts
+  describe('GET /', () => {
     it('should return 200 status code', async () => {
       const response = await request(app).get('/');
       expect(response.status).toBe(200);

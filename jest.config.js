@@ -1,6 +1,5 @@
-import type { Config } from 'jest';
-
-const config: Config = {
+/** @type {import('jest').Config} */
+const config = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   roots: ['<rootDir>/tests'],
@@ -23,9 +22,7 @@ const config: Config = {
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   testTimeout: 10000,
   verbose: true,
+  passWithNoTests: true,
 };
 
-// Allow tests to pass when no test files are found (useful during initial setup)
-config.passWithNoTests = true;
-
-export default config;
+module.exports = config;
