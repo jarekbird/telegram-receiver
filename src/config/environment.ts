@@ -14,10 +14,12 @@
 
 import dotenv from 'dotenv';
 
-// Load environment variables from .env file based on NODE_ENV
-// Defaults to .env.development if NODE_ENV is not set
+// Load environment variables from .env file from project root
+// dotenv automatically looks for .env in current working directory
+dotenv.config();
+
+// Get NODE_ENV or default to "development" (matching Rails Rails.env behavior)
 const nodeEnv = process.env.NODE_ENV || 'development';
-dotenv.config({ path: `.env.${nodeEnv}` });
 
 /**
  * Environment configuration interface
