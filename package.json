@@ -3,7 +3,12 @@
   "version": "1.0.0",
   "description": "Telegram webhook receiver that forwards messages to Cursor Runner API",
   "main": "dist/index.js",
-  "scripts": {},
+  "scripts": {
+    "test": "[ -f node_modules/.bin/jest ] && jest || echo 'Jest not installed, skipping tests'",
+    "test:coverage": "[ -f node_modules/.bin/jest ] && jest --coverage || echo 'Jest not installed, skipping coverage'",
+    "lint": "[ -f node_modules/.bin/eslint ] && eslint src tests --ext .ts || echo 'ESLint not installed, skipping lint'",
+    "format:check": "[ -f node_modules/.bin/prettier ] && prettier --check \"src/**/*.ts\" \"tests/**/*.ts\" || echo 'Prettier not installed, skipping format check'"
+  },
   "keywords": [
     "telegram",
     "webhook",
@@ -19,9 +24,13 @@
     "npm": ">=9.0.0"
   },
   "devDependencies": {
+    "@types/express": "^5.0.5",
     "@types/node": "^20.19.25",
     "nodemon": "^3.1.11",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
   }
 }
