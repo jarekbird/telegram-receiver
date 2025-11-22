@@ -14,7 +14,7 @@ describe('Source Directory Structure', () => {
     'utils',
     'types',
   ];
-  const requiredFiles = ['index.ts'];
+  // const requiredFiles = ['index.ts']; // Reserved for future use
 
   it('should have src/ directory', () => {
     expect(fs.existsSync(srcDir)).toBe(true);

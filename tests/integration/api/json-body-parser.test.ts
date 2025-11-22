@@ -132,7 +132,8 @@ describe('JSON Body Parser Middleware', () => {
       expect(response.status).toBe(200);
       // The body might be empty or undefined depending on Express version
       const body = response.body as TestResponse;
-      expect(body.received).toBeDefined();
+      // When Content-Type doesn't match, body parser doesn't parse, so req.body is undefined or {}
+      expect(body.received === undefined || Object.keys(body.received as object).length === 0).toBe(true);
     });
   });
 

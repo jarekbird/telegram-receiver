@@ -133,7 +133,8 @@ describe('URL-Encoded Body Parser Middleware', () => {
       // Without URL-encoded Content-Type, body should be empty object or undefined
       expect(response.status).toBe(200);
       const body = response.body as TestResponse;
-      expect(body.received).toBeDefined();
+      // When Content-Type doesn't match, body parser doesn't parse, so req.body is undefined or {}
+      expect(body.received === undefined || Object.keys(body.received as object).length === 0).toBe(true);
     });
 
     it('should handle multiple values for the same key', async () => {
