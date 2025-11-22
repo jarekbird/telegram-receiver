@@ -1,8 +1,22 @@
 import http from 'http';
+import fs from 'fs';
+import path from 'path';
 import config from './config/environment';
 import validateEnv from './config/validateEnv';
 import { initializeSystemSettings } from './config/initializers/system-settings';
 import { initializeTasks } from './config/initializers/tasks';
+
+// Read app name and version from package.json for logging
+interface PackageJson {
+  name?: string;
+  version?: string;
+}
+
+const packageJsonPath = path.join(__dirname, '..', 'package.json');
+const packageJsonContent = fs.readFileSync(packageJsonPath, 'utf-8');
+const packageJson: PackageJson = JSON.parse(packageJsonContent) as PackageJson;
+const APP_NAME = packageJson.name || 'telegram-receiver';
+const APP_VERSION = packageJson.version || '1.0.0';
 
 // Validate environment configuration before starting the application
 // This ensures the application fails fast with clear error messages if critical configuration is missing
@@ -40,7 +54,9 @@ async function startServer(): Promise<void> {
     const { default: app } = await import('./app');
     server = app.listen(config.port, HOST, () => {
       // eslint-disable-next-line no-console
-      console.log(`Server running in ${config.env} mode on ${HOST}:${config.port}`);
+      console.log(
+        `${APP_NAME} v${APP_VERSION} running in ${config.env} mode on ${HOST}:${config.port}`
+      );
     });
 
     server.on('error', (error: NodeJS.ErrnoException) => {
