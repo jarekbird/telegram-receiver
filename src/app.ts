@@ -2,8 +2,19 @@
 import express from 'express';
 import healthRoutes from './routes/health.routes';
 import { getHealth } from './controllers/health.controller';
+import { corsMiddleware } from './middleware/cors';
 
 const app = express();
+
+// PHASE1-019: CORS middleware
+// CORS (Cross-Origin Resource Sharing) middleware handles cross-origin AJAX requests from web frontends
+// CORS is disabled by default (matching Rails behavior where CORS is commented out)
+// Enable CORS by setting CORS_ENABLED=true environment variable
+// Configure allowed origins via CORS_ORIGIN environment variable
+// This middleware is placed early in the middleware stack, before other middleware
+// Current API usage is server-to-server (Telegram webhooks, cursor-runner callbacks), so CORS is not needed
+// However, middleware is integrated to support future frontend integrations if needed
+app.use(corsMiddleware);
 
 // PHASE1-017: JSON body parser middleware
 // Express requires explicit middleware to parse JSON request bodies
