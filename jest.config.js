@@ -14,7 +14,6 @@ const config = {
         allowSyntheticDefaultImports: true,
         types: ['node', 'jest'],
       },
-      isolatedModules: true,
     }],
   },
   moduleNameMapper: {
@@ -25,13 +24,6 @@ const config = {
   testTimeout: 10000,
   verbose: true,
   passWithNoTests: true,
-  globals: {
-    'ts-jest': {
-      tsconfig: {
-        types: ['node', 'jest'],
-      },
-    },
-  },
 };
 
 module.exports = config;

@@ -12,8 +12,8 @@
     "lint:fix": "echo 'Linting not yet configured' && exit 0",
     "format": "echo 'Formatting not yet configured' && exit 0",
     "format:check": "echo 'Formatting not yet configured' && exit 0",
-    "test": "echo 'Tests not yet configured' && exit 0",
-    "test:coverage": "echo 'Test coverage not yet configured' && exit 0"
+    "test": "npx jest",
+    "test:coverage": "npx jest --coverage"
   },
   "keywords": [
     "telegram",
@@ -31,12 +31,21 @@
   },
   "devDependencies": {
     "@types/express": "^5.0.5",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20.19.25",
+    "@types/supertest": "^6.0.3",
+    "jest": "^30.2.0",
     "nodemon": "^3.1.11",
+    "supertest": "^7.1.4",
+    "ts-jest": "^29.4.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "express": "^5.1.0"
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "pino": "^9.6.0",
+    "pino-pretty": "^13.0.0"
   }
 }
