@@ -13,8 +13,11 @@
     "lint:fix": "echo 'Linting not yet configured' && exit 0",
     "format": "echo 'Formatting not yet configured' && exit 0",
     "format:check": "echo 'Formatting not yet configured' && exit 0",
-    "test": "npx jest --config jest.config.js",
-    "test:coverage": "npx jest --config jest.config.js --coverage"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest --testPathPattern=tests/unit",
+    "test:integration": "jest --testPathPattern=tests/integration"
   },
   "keywords": [
     "telegram",
