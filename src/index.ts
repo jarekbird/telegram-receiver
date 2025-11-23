@@ -33,10 +33,6 @@ try {
   process.exit(1);
 }
 
-// Define port constant (default: process.env.PORT || 3000, matching Rails default)
-// Note: config.port already handles this, but we define it explicitly to match task requirements
-const PORT = config.port;
-
 // Define host constant (default: process.env.HOST || '0.0.0.0', matching Rails Puma default)
 const HOST = process.env.HOST || '0.0.0.0';
 
@@ -55,11 +51,13 @@ function startServer(): void {
     // This ensures all tasks are set to ready status in the shared database
     initializeTasks();
 
-    // PHASE1-011: Start the Express server
-    // Start the Express server using PORT constant (from environment or default 3000)
-    server = app.listen(PORT, HOST, () => {
+    // PHASE1-028: Start the Express server using config.port from environment configuration
+    // Start the Express server using the port from config (from environment or default 3000)
+    server = app.listen(config.port, HOST, () => {
+      // PHASE1-028: Log the environment and port when server starts
+      console.log(`Server running in ${config.env} mode on port ${config.port}`);
       logger.info(
-        `${APP_NAME} v${APP_VERSION} running in ${config.env} mode on ${HOST}:${PORT}`
+        `${APP_NAME} v${APP_VERSION} running in ${config.env} mode on ${HOST}:${config.port}`
       );
     });
 
@@ -68,28 +66,40 @@ function startServer(): void {
       throw new Error('Failed to create server instance');
     }
 
+    // PHASE1-028: Add error handling for server startup
     server.on('error', (error: NodeJS.ErrnoException) => {
+      // Handle port binding errors (EADDRINUSE - port already in use)
       if (error.code === 'EADDRINUSE') {
         logger.error(
-          `Error: Port ${PORT} is already in use. Please choose a different port or stop the process using that port.`,
+          `Error: Port ${config.port} is already in use. Please choose a different port or stop the process using that port.`,
           error
         );
+        console.error(`Error: Port ${config.port} is already in use.`);
       } else if (error.code === 'EACCES') {
+        // Handle permission errors (EACCES - permission denied)
         logger.error(
-          `Error: Permission denied. Cannot bind to port ${PORT}. Try running with elevated privileges or use a port above 1024.`,
+          `Error: Permission denied. Cannot bind to port ${config.port}. Try running with elevated privileges or use a port above 1024.`,
           error
         );
+        console.error(`Error: Permission denied. Cannot bind to port ${config.port}.`);
       } else {
+        // Handle other server startup errors
         logger.error('Server startup error:', error);
+        console.error('Server startup error:', error);
       }
+      // Exit gracefully on fatal errors
       process.exit(1);
     });
   } catch (error) {
+    // Handle other server startup errors
     if (error instanceof Error) {
       logger.error('Failed to start server:', error);
+      console.error('Failed to start server:', error);
     } else {
       logger.error('Failed to start server:', String(error));
+      console.error('Failed to start server:', String(error));
     }
+    // Exit gracefully on fatal errors
     process.exit(1);
   }
 }
