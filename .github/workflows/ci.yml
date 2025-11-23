@@ -64,7 +64,7 @@ jobs:
             SOURCE_FILES=$(echo "$CHANGED_FILES" | grep -v '^tests/' || echo "")
             if [ -n "$SOURCE_FILES" ]; then
               # Run ESLint on all changed source files at once
-              npx eslint $SOURCE_FILES
+              echo "$SOURCE_FILES" | tr '\n' '\0' | xargs -0 npx eslint
             else
               echo "No source files changed, skipping ESLint"
             fi
@@ -91,7 +91,7 @@ jobs:
           fi
 
       - name: Run TypeScript type check
-        run: npm run type-check
+        run: npx tsc --noEmit
 
       - name: Build TypeScript project
         run: npm run build
@@ -154,16 +154,22 @@ jobs:
                 [ -z "$source_file" ] && continue
                 # Map src/**/*.ts to tests/**/*.test.ts or tests/**/*.spec.ts
                 # Example: src/services/telegram_service.ts -> tests/services/telegram_service.test.ts
-                test_file=$(echo "$source_file" | sed 's|^src/|tests/|' | sed 's|\.ts$|.test.ts|')
-                spec_file=$(echo "$source_file" | sed 's|^src/|tests/|' | sed 's|\.ts$|.spec.ts|')
+                # Also check tests/unit/, tests/integration/, and tests/e2e/ subdirectories
+                base_path=$(echo "$source_file" | sed 's|^src/||' | sed 's|\.ts$||')
                 
-                # Check if .test.ts file exists
-                if [ -f "$test_file" ]; then
-                  ALL_TESTS="${ALL_TESTS}${test_file} "
-                # Check if .spec.ts file exists
-                elif [ -f "$spec_file" ]; then
-                  ALL_TESTS="${ALL_TESTS}${spec_file} "
-                fi
+                # Check multiple possible test locations
+                for test_dir in "tests" "tests/unit" "tests/integration" "tests/e2e"; do
+                  test_file="${test_dir}/${base_path}.test.ts"
+                  spec_file="${test_dir}/${base_path}.spec.ts"
+                  
+                  # Check if .test.ts file exists
+                  if [ -f "$test_file" ]; then
+                    ALL_TESTS="${ALL_TESTS}${test_file} "
+                  # Check if .spec.ts file exists
+                  elif [ -f "$spec_file" ]; then
+                    ALL_TESTS="${ALL_TESTS}${spec_file} "
+                  fi
+                done
               done <<< "$CHANGED_SOURCE"
             fi
             
