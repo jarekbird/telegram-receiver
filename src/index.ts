@@ -33,6 +33,10 @@ try {
   process.exit(1);
 }
 
+// Define port constant (default: process.env.PORT || 3000, matching Rails default)
+// Note: config.port already handles this, but we define it explicitly to match task requirements
+const PORT = config.port;
+
 // Define host constant (default: process.env.HOST || '0.0.0.0', matching Rails Puma default)
 const HOST = process.env.HOST || '0.0.0.0';
 
@@ -51,11 +55,11 @@ function startServer(): void {
     // This ensures all tasks are set to ready status in the shared database
     initializeTasks();
 
-    // PHASE1-028: Start the Express server using the port from the environment configuration module
-    // Start the Express server using config.port (from src/config/environment.ts)
-    server = app.listen(config.port, HOST, () => {
+    // PHASE1-011: Start the Express server
+    // Start the Express server using PORT constant (from environment or default 3000)
+    server = app.listen(PORT, HOST, () => {
       logger.info(
-        `${APP_NAME} v${APP_VERSION} running in ${config.env} mode on ${HOST}:${config.port}`
+        `${APP_NAME} v${APP_VERSION} running in ${config.env} mode on ${HOST}:${PORT}`
       );
     });
 
@@ -67,12 +71,12 @@ function startServer(): void {
     server.on('error', (error: NodeJS.ErrnoException) => {
       if (error.code === 'EADDRINUSE') {
         logger.error(
-          `Error: Port ${config.port} is already in use. Please choose a different port or stop the process using that port.`,
+          `Error: Port ${PORT} is already in use. Please choose a different port or stop the process using that port.`,
           error
         );
       } else if (error.code === 'EACCES') {
         logger.error(
-          `Error: Permission denied. Cannot bind to port ${config.port}. Try running with elevated privileges or use a port above 1024.`,
+          `Error: Permission denied. Cannot bind to port ${PORT}. Try running with elevated privileges or use a port above 1024.`,
           error
         );
       } else {
@@ -125,7 +129,7 @@ process.on('uncaughtException', (error: Error) => {
 /**
  * Handles unhandled promise rejections
  */
-process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
+process.on('unhandledRejection', (reason: unknown) => {
   if (reason instanceof Error) {
     logger.error('Unhandled Rejection:', reason);
   } else {
