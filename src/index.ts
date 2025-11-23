@@ -54,8 +54,7 @@ function startServer(): void {
     // PHASE1-028: Start the Express server using config.port from environment configuration
     // Start the Express server using the port from config (from environment or default 3000)
     server = app.listen(config.port, HOST, () => {
-      // PHASE1-028: Log the environment and port when server starts
-      console.log(`Server running in ${config.env} mode on port ${config.port}`);
+      // PHASE1-033: Log server startup using logger instead of console.log
       logger.info(
         `${APP_NAME} v${APP_VERSION} running in ${config.env} mode on ${HOST}:${config.port}`
       );
@@ -70,34 +69,33 @@ function startServer(): void {
     server.on('error', (error: NodeJS.ErrnoException) => {
       // Handle port binding errors (EADDRINUSE - port already in use)
       if (error.code === 'EADDRINUSE') {
+        // PHASE1-033: Use logger.error instead of console.error
         logger.error(
           `Error: Port ${config.port} is already in use. Please choose a different port or stop the process using that port.`,
           error
         );
-        console.error(`Error: Port ${config.port} is already in use.`);
       } else if (error.code === 'EACCES') {
         // Handle permission errors (EACCES - permission denied)
+        // PHASE1-033: Use logger.error instead of console.error
         logger.error(
           `Error: Permission denied. Cannot bind to port ${config.port}. Try running with elevated privileges or use a port above 1024.`,
           error
         );
-        console.error(`Error: Permission denied. Cannot bind to port ${config.port}.`);
       } else {
         // Handle other server startup errors
+        // PHASE1-033: Use logger.error instead of console.error
         logger.error('Server startup error:', error);
-        console.error('Server startup error:', error);
       }
       // Exit gracefully on fatal errors
       process.exit(1);
     });
   } catch (error) {
     // Handle other server startup errors
+    // PHASE1-033: Use logger.error instead of console.error
     if (error instanceof Error) {
       logger.error('Failed to start server:', error);
-      console.error('Failed to start server:', error);
     } else {
       logger.error('Failed to start server:', String(error));
-      console.error('Failed to start server:', String(error));
     }
     // Exit gracefully on fatal errors
     process.exit(1);
