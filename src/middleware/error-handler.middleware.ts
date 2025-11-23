@@ -38,9 +38,8 @@
  * - Sets status to `:internal_server_error` (500)
  *
  * **Logging:**
- * Uses `console.error()` for now. Logger integration will be added in PHASE1-035.
- * Logs error name/class, message, and stack trace following Rails pattern from
- * ApplicationController.
+ * Uses logger utility from `@/utils/logger` to log error class, message, and
+ * stack trace following Rails pattern from ApplicationController.
  *
  * @example
  * ```typescript
@@ -50,6 +49,7 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
+import logger from '@/utils/logger';
 
 /**
  * Error handler middleware function
@@ -69,12 +69,11 @@ export function errorHandlerMiddleware(
 ): void {
   // Log error details following Rails pattern from ApplicationController
   // Match Rails pattern: Rails.logger.error("#{exception.class}: #{exception.message}")
-  // Using console.error() for now. Logger integration will be added in PHASE1-035
   const errorName = err.constructor.name || err.name || 'Error';
-  console.error(`${errorName}: ${err.message}`);
+  logger.error(`${errorName}: ${err.message}`);
   // Match Rails pattern: Rails.logger.error(exception.backtrace.join("\n"))
   if (err.stack) {
-    console.error(err.stack);
+    logger.error(err.stack);
   }
 
   // Check if response has already been sent

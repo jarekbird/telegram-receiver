@@ -7,8 +7,17 @@ import express from 'express';
 import request from 'supertest';
 import { errorHandlerMiddleware } from '../../../src/middleware/error-handler.middleware';
 
-// Mock console.error to verify error logging
-const mockConsoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+// Mock logger utility to verify error logging
+const mockLoggerError = jest.fn();
+jest.mock('../../../src/utils/logger', () => ({
+  __esModule: true,
+  default: {
+    error: (...args: unknown[]) => mockLoggerError(...args),
+    info: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+  },
+}));
 
 interface ErrorResponse {
   ok: boolean;
@@ -28,11 +37,6 @@ describe('Error Handler Middleware', () => {
 
     // Clear all mocks before each test
     jest.clearAllMocks();
-  });
-
-  afterAll(() => {
-    // Restore console.error after all tests
-    mockConsoleError.mockRestore();
   });
 
   describe('Error response format', () => {
@@ -114,11 +118,11 @@ describe('Error Handler Middleware', () => {
 
       await request(app).get('/error');
 
-      // Verify console.error was called
-      expect(mockConsoleError).toHaveBeenCalled();
+      // Verify logger.error was called
+      expect(mockLoggerError).toHaveBeenCalled();
       // Verify error name/class is logged (first call should be "Error: Test error")
-      expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('Error:'));
-      expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('Test error'));
+      expect(mockLoggerError).toHaveBeenCalledWith(expect.stringContaining('Error:'));
+      expect(mockLoggerError).toHaveBeenCalledWith(expect.stringContaining('Test error'));
     });
 
     it('should log error message when error is thrown', async () => {
@@ -132,7 +136,7 @@ describe('Error Handler Middleware', () => {
       await request(app).get('/error');
 
       // Verify error message is logged
-      expect(mockConsoleError).toHaveBeenCalledWith(
+      expect(mockLoggerError).toHaveBeenCalledWith(
         expect.stringContaining(errorMessage),
       );
     });
@@ -146,12 +150,12 @@ describe('Error Handler Middleware', () => {
 
       await request(app).get('/error');
 
-      // Verify console.error was called multiple times (error message + stack trace)
-      expect(mockConsoleError).toHaveBeenCalledTimes(2);
+      // Verify logger.error was called multiple times (error message + stack trace)
+      expect(mockLoggerError).toHaveBeenCalledTimes(2);
       // First call should be error class and message
-      expect(mockConsoleError).toHaveBeenNthCalledWith(1, 'Error: Test error');
+      expect(mockLoggerError).toHaveBeenNthCalledWith(1, 'Error: Test error');
       // Second call should be the stack trace
-      expect(mockConsoleError).toHaveBeenNthCalledWith(2, expect.stringContaining('at'));
+      expect(mockLoggerError).toHaveBeenNthCalledWith(2, expect.stringContaining('at'));
     });
 
     it('should handle errors without stack trace', async () => {
@@ -168,8 +172,8 @@ describe('Error Handler Middleware', () => {
 
       expect(response.status).toBe(500);
       // Should only log error message, not stack trace
-      expect(mockConsoleError).toHaveBeenCalledTimes(1);
-      expect(mockConsoleError).toHaveBeenCalledWith('Error: Test error');
+      expect(mockLoggerError).toHaveBeenCalledTimes(1);
+      expect(mockLoggerError).toHaveBeenCalledWith('Error: Test error');
     });
   });
 
@@ -199,7 +203,7 @@ describe('Error Handler Middleware', () => {
       expect(response.status).toBe(500);
       expect((response.body as ErrorResponse).result.error).toBe('Type error');
       // Verify error name/class is logged
-      expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('TypeError:'));
+      expect(mockLoggerError).toHaveBeenCalledWith(expect.stringContaining('TypeError:'));
     });
 
     it('should handle ReferenceError', async () => {
@@ -213,7 +217,7 @@ describe('Error Handler Middleware', () => {
 
       expect(response.status).toBe(500);
       expect((response.body as ErrorResponse).result.error).toBe('Reference error');
-      expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('ReferenceError:'));
+      expect(mockLoggerError).toHaveBeenCalledWith(expect.stringContaining('ReferenceError:'));
     });
 
     it('should handle custom error classes', async () => {
@@ -234,7 +238,7 @@ describe('Error Handler Middleware', () => {
 
       expect(response.status).toBe(500);
       expect((response.body as ErrorResponse).result.error).toBe('Custom error message');
-      expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('CustomError:'));
+      expect(mockLoggerError).toHaveBeenCalledWith(expect.stringContaining('CustomError:'));
     });
 
     it('should handle errors without name property', async () => {
