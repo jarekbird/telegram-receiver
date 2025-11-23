@@ -3,14 +3,7 @@
   "version": "1.0.0",
   "description": "Telegram webhook receiver that forwards messages to Cursor Runner API",
   "main": "dist/index.js",
-  "scripts": {
-    "lint": "exit 0",
-    "lint:fix": "exit 0",
-    "format": "exit 0",
-    "format:check": "exit 0",
-    "test": "exit 0",
-    "test:coverage": "exit 0"
-  },
+  "scripts": {},
   "keywords": [
     "telegram",
     "webhook",
