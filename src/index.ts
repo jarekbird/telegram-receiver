@@ -5,6 +5,7 @@ import config from './config/environment';
 import validateEnv from './config/validateEnv';
 import { initializeSystemSettings } from './config/initializers/system-settings';
 import { initializeTasks } from './config/initializers/tasks';
+import logger from './utils/logger';
 
 // Read app name and version from package.json for logging
 interface PackageJson {
@@ -23,11 +24,10 @@ const APP_VERSION = packageJson.version || '1.0.0';
 try {
   validateEnv(config);
 } catch (error) {
-  console.error('Environment validation failed:');
   if (error instanceof Error) {
-    console.error(error.message);
+    logger.error('Environment validation failed:', error);
   } else {
-    console.error(error);
+    logger.error('Environment validation failed:', String(error));
   }
   process.exit(1);
 }
@@ -55,8 +55,7 @@ async function startServer(): Promise<void> {
     // PHASE1-028: Use environment config in application
     // Start the Express server using the port from the environment configuration module
     server = app.listen(config.port, HOST, () => {
-      // eslint-disable-next-line no-console
-      console.log(
+      logger.info(
         `${APP_NAME} v${APP_VERSION} running in ${config.env} mode on ${HOST}:${config.port}`
       );
     });
@@ -68,20 +67,26 @@ async function startServer(): Promise<void> {
 
     server.on('error', (error: NodeJS.ErrnoException) => {
       if (error.code === 'EADDRINUSE') {
-        console.error(
-          `Error: Port ${config.port} is already in use. Please choose a different port or stop the process using that port.`
+        logger.error(
+          `Error: Port ${config.port} is already in use. Please choose a different port or stop the process using that port.`,
+          error
         );
       } else if (error.code === 'EACCES') {
-        console.error(
-          `Error: Permission denied. Cannot bind to port ${config.port}. Try running with elevated privileges or use a port above 1024.`
+        logger.error(
+          `Error: Permission denied. Cannot bind to port ${config.port}. Try running with elevated privileges or use a port above 1024.`,
+          error
         );
       } else {
-        console.error('Server startup error:', error);
+        logger.error('Server startup error:', error);
       }
       process.exit(1);
     });
   } catch (error) {
-    console.error('Failed to start server:', error);
+    if (error instanceof Error) {
+      logger.error('Failed to start server:', error);
+    } else {
+      logger.error('Failed to start server:', String(error));
+    }
     process.exit(1);
   }
 }
@@ -90,25 +95,22 @@ async function startServer(): Promise<void> {
  * Gracefully shuts down the server
  */
 function gracefulShutdown(signal: string): void {
-  // eslint-disable-next-line no-console
-  console.log(`\n${signal} received. Starting graceful shutdown...`);
+  logger.info(`\n${signal} received. Starting graceful shutdown...`);
 
   if (!server) {
-    // eslint-disable-next-line no-console
-    console.log('No server instance found. Exiting immediately.');
+    logger.info('No server instance found. Exiting immediately.');
     process.exit(0);
   }
 
   // Stop accepting new connections
   server.close(() => {
-    // eslint-disable-next-line no-console
-    console.log('HTTP server closed. All connections have been closed.');
+    logger.info('HTTP server closed. All connections have been closed.');
     process.exit(0);
   });
 
   // Force shutdown after 10 seconds if graceful shutdown doesn't complete
   setTimeout(() => {
-    console.error('Graceful shutdown timeout exceeded. Forcing exit...');
+    logger.error('Graceful shutdown timeout exceeded. Forcing exit...');
     process.exit(1);
   }, 10000);
 }
@@ -117,8 +119,7 @@ function gracefulShutdown(signal: string): void {
  * Handles uncaught exceptions
  */
 process.on('uncaughtException', (error: Error) => {
-  console.error('Uncaught Exception:', error);
-  console.error('Stack:', error.stack);
+  logger.error('Uncaught Exception:', error);
   gracefulShutdown('uncaughtException');
 });
 
@@ -126,8 +127,11 @@ process.on('uncaughtException', (error: Error) => {
  * Handles unhandled promise rejections
  */
 process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
-  console.error('Unhandled Rejection at:', promise);
-  console.error('Reason:', reason);
+  if (reason instanceof Error) {
+    logger.error('Unhandled Rejection:', reason);
+  } else {
+    logger.error('Unhandled Rejection:', String(reason));
+  }
   gracefulShutdown('unhandledRejection');
 });
 
@@ -147,6 +151,10 @@ process.on('SIGINT', () => {
 
 // Start the server
 startServer().catch((error) => {
-  console.error('Failed to start server:', error);
+  if (error instanceof Error) {
+    logger.error('Failed to start server:', error);
+  } else {
+    logger.error('Failed to start server:', String(error));
+  }
   process.exit(1);
 });
