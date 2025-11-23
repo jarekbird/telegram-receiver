@@ -26,7 +26,7 @@ export interface CursorIterateRequest {
   repository: string;
   branchName: string;
   prompt: string;
-  maxIterations?: number; // Default: 5
+  maxIterations?: number; // Default: 25
   id: string;
   callbackUrl?: string; // Optional callback URL for async completion notification
 }
