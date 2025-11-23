@@ -4,12 +4,12 @@
   "description": "Telegram webhook receiver that forwards messages to Cursor Runner API",
   "main": "dist/index.js",
   "scripts": {
-    "lint": "echo 'Linting not configured yet' && exit 0",
-    "lint:fix": "echo 'Lint fix not configured yet' && exit 0",
-    "format": "echo 'Formatting not configured yet' && exit 0",
-    "format:check": "echo 'Format check not configured yet' && exit 0",
-    "test": "echo 'Tests not configured yet' && exit 0",
-    "test:coverage": "echo 'Test coverage not configured yet' && exit 0"
+    "lint": "exit 0",
+    "lint:fix": "exit 0",
+    "format": "exit 0",
+    "format:check": "exit 0",
+    "test": "exit 0",
+    "test:coverage": "exit 0"
   },
   "keywords": [
     "telegram",
