@@ -60,3 +60,7 @@ docker-compose.yml
 # Development scripts
 deploy.sh
 scripts/
+
+# Planning and documentation
+Plan/
+docs/
