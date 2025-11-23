@@ -5,6 +5,7 @@ import { getHealth } from './controllers/health.controller';
 import { corsMiddleware } from './middleware/cors';
 import { requestLoggerMiddleware } from './middleware/request-logger.middleware';
 import { notFoundMiddleware } from './middleware/not-found.middleware';
+import { errorHandlerMiddleware } from './middleware/error-handler.middleware';
 
 const app = express();
 
@@ -55,5 +56,15 @@ app.get('/', getHealth);
 // Express processes middleware in order, so unmatched requests will fall through
 // to this middleware only if no route matches.
 app.use(notFoundMiddleware);
+
+// PHASE1-021: Error handling middleware
+// Catches all unhandled errors thrown in route handlers and middleware,
+// logs error details, and returns a standardized error response matching
+// the Rails ApplicationController error handling pattern.
+// This middleware must be registered after all routes and other middleware,
+// as the last middleware in the chain.
+// Express error handling middleware must have exactly 4 parameters
+// (err, req, res, next) to be recognized as an error handler.
+app.use(errorHandlerMiddleware);
 
 export default app;
