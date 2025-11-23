@@ -78,7 +78,9 @@ Main TypeScript compiler configuration. Key settings:
 - **Output Directory**: `./dist`
 - **Root Directory**: `./src`
 - **Strict Mode**: Enabled for type safety
-- **Path Aliases**: `@/*` maps to `./src/*` for cleaner imports
+- **Path Aliases**: `@/*` maps to `./src/*` for cleaner imports (configured via moduleNameMapper in Jest)
+- **Experimental Decorators**: Enabled for future ORM/decorator support
+- **Declaration Maps**: Enabled for better debugging experience
 
 #### `tsconfig.eslint.json`
 
@@ -97,9 +99,10 @@ ESLint linting rules configuration. Key features:
 - Uses TypeScript ESLint parser and plugins
 - Extends recommended TypeScript rules
 - Integrates with Prettier for formatting
-- Enforces no console.log/debugger statements
+- Enforces no console.log/debugger statements (allows console.warn and console.error)
 - Warns on `any` types
-- Configures unused variable patterns
+- Configures unused variable patterns (allows variables prefixed with `_`)
+- Uses project-aware type checking via `tsconfig.eslint.json`
 
 #### `.prettierrc.json`
 
@@ -110,6 +113,8 @@ Prettier code formatting rules. Defines:
 - 100 character print width
 - 2 space indentation
 - Trailing commas (ES5 style)
+- Arrow function parentheses: always
+- Line endings: LF
 
 ### Build and Runtime Files
 
@@ -162,6 +167,37 @@ Logger configuration and setup. Configures Pino logger with appropriate settings
 #### `src/config/validateEnv.ts`
 
 Environment validation logic. Validates that all required environment variables are present and have valid values before the application starts.
+
+#### `src/config/redis.ts`
+
+Redis configuration module. Provides Redis connection configuration for the application, reading the Redis URL from environment variables. Used by BullMQ queues and other Redis-dependent services.
+
+#### `src/config/queue.ts`
+
+BullMQ queue configuration. Provides centralized BullMQ queue configuration, converting Sidekiq configuration from Rails to BullMQ in TypeScript/Node.js. Includes:
+
+- Default job options (retry attempts, cleanup settings)
+- Environment-specific queue configuration (concurrency, queue names)
+- Queue creation utilities
+- Redis connection setup for BullMQ
+
+**Pattern**: This module replaces Rails' Sidekiq configuration and provides equivalent functionality in Node.js.
+
+#### `src/config/initializers/`
+
+Application initializers that run at startup. These modules set up system-wide configurations and ensure proper initialization of shared resources.
+
+##### `src/config/initializers/system-settings.ts`
+
+System settings initializer. Sets up system-wide settings in the shared SQLite database (`/app/shared_db/shared.sqlite3`). Ensures that required system settings are initialized with their default values. Creates the `system_settings` table if it doesn't exist and sets default values.
+
+**Pattern**: Similar to Rails initializers, these modules run at application startup to configure shared resources.
+
+##### `src/config/initializers/tasks.ts`
+
+Tasks initializer. Sets all tasks in the shared SQLite database to ready status (status = 0) when the application starts. Ensures that tasks are in the correct state for processing by the task operator.
+
+**Pattern**: Initializers handle cross-cutting concerns that need to be set up before the application starts processing requests.
 
 ### `src/controllers/`
 
@@ -391,11 +427,11 @@ Mock implementation of Telegram Bot API client.
 
 ---
 
-## Configuration Files
+## Root-Level Configuration Files
 
 ### Test Configuration
 
-#### `jest.config.ts`
+#### `jest.config.js`
 
 Jest test runner configuration. Defines:
 
@@ -405,6 +441,7 @@ Jest test runner configuration. Defines:
 - Module path mappings (`@/*` → `src/*`)
 - Setup files and test timeouts
 - Coverage reporters (text, lcov, html)
+- TypeScript transformation using ts-jest
 
 #### `playwright.config.ts`
 
@@ -500,11 +537,13 @@ Project documentation including:
 
 Utility scripts for development and deployment. Contains:
 
-- TypeScript scripts for various tasks
-- Shell scripts for automation
-- Documentation for script usage
+- `query_completed_tasks.py` - Python script for querying completed tasks from the shared database
+- `test-ci-local.sh` - Shell script for testing CI configuration locally
+- `test-docker-compose-prod.sh` - Shell script for testing production Docker Compose setup
+- `verify-pino-requirements.ts` - TypeScript script for verifying Pino logger requirements
+- `README.md` - Documentation for script usage
 
-**Note**: One-time scripts should be placed in `/cursor/scripts` (shared directory), not in repository directories.
+**Note**: One-time scripts should be placed in `/cursor/scripts` (shared directory), not in repository directories. Repository scripts are for project-specific automation tasks.
 
 ---
 
@@ -631,6 +670,7 @@ See `Plan/CONVERSION_STEPS.md` for detailed conversion plan and `Plan/tasks/` fo
 | -------------------- | ------------------------------------------ |
 | `src/`               | All application source code (TypeScript)   |
 | `src/config/`        | Configuration and environment management   |
+| `src/config/initializers/` | Application initializers (system settings, tasks) |
 | `src/controllers/`   | HTTP request handlers                      |
 | `src/middleware/`    | Express middleware functions               |
 | `src/models/`        | Data models (reserved for future)          |
