@@ -19,16 +19,13 @@ node_modules/
 # Build artifacts (will be built in container)
 dist/
 
-# Test files and test configuration
+# Test files
 tests/
 coverage/
 test-results/
 playwright-report/
 playwright/.cache/
 .nyc_output/
-jest.config.ts
-playwright.config.ts
-tsconfig.test.json
 
 # Log and temporary files
 log/*
@@ -56,11 +53,3 @@ Thumbs.db
 Dockerfile
 docker-compose.yml
 .dockerignore
-
-# Development scripts
-deploy.sh
-scripts/
-
-# Planning and documentation
-Plan/
-docs/
