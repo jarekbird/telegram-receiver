@@ -34,22 +34,43 @@ jest.mock('../../../src/config/redis', () => ({
 
 // Mock ioredis module - create a mock class that can be used with instanceof
 class MockRedis {
-  constructor(url?: string) {
-    // Store URL for verification
+  constructor(url?: string, options?: unknown) {
+    // Store URL and options for verification
     this._url = url;
+    this._options = options;
+    // Initialize event listeners storage
+    this._listeners = new Map<string, Array<(...args: unknown[]) => void>>();
   }
   _url?: string;
+  _options?: unknown;
+  _listeners: Map<string, Array<(...args: unknown[]) => void>>;
   ping = jest.fn().mockResolvedValue('PONG');
   get = jest.fn();
   set = jest.fn();
   quit = jest.fn().mockResolvedValue('OK');
   disconnect = jest.fn();
+  // Event listener methods
+  on = jest.fn((event: string, handler: (...args: unknown[]) => void) => {
+    if (!this._listeners.has(event)) {
+      this._listeners.set(event, []);
+    }
+    this._listeners.get(event)!.push(handler);
+    return this;
+  });
+  removeAllListeners = jest.fn((event?: string) => {
+    if (event) {
+      this._listeners.delete(event);
+    } else {
+      this._listeners.clear();
+    }
+    return this;
+  });
 }
 
 jest.mock('ioredis', () => {
   return {
-    Redis: jest.fn().mockImplementation((url?: string) => {
-      return new MockRedis(url);
+    Redis: jest.fn().mockImplementation((url?: string, options?: unknown) => {
+      return new MockRedis(url, options);
     }),
   };
 });
@@ -89,7 +110,7 @@ describe('Redis Connection Utility', () => {
       // First call should initialize
       const client1 = getClient();
       expect(Redis).toHaveBeenCalledTimes(1);
-      expect(Redis).toHaveBeenCalledWith(redisConfig.url);
+      expect(Redis).toHaveBeenCalledWith(redisConfig.url, expect.any(Object));
 
       // Second call should return existing instance
       const client2 = getClient();
@@ -106,7 +127,7 @@ describe('Redis Connection Utility', () => {
 
       getClient();
 
-      expect(Redis).toHaveBeenCalledWith(redisConfig.url);
+      expect(Redis).toHaveBeenCalledWith(redisConfig.url, expect.any(Object));
     });
   });
 
@@ -297,7 +318,7 @@ describe('Redis Connection Utility', () => {
       getClient();
 
       // Should use redisConfig.url (which matches Rails pattern)
-      expect(Redis).toHaveBeenCalledWith(redisConfig.url);
+      expect(Redis).toHaveBeenCalledWith(redisConfig.url, expect.any(Object));
     });
 
     it('should support dependency injection like Rails (redis_client parameter)', async () => {
@@ -360,6 +381,160 @@ describe('Redis Connection Utility', () => {
 
       expect(client2).not.toBe(mockClient);
       expect(client2).toBeInstanceOf(MockRedis);
+    });
+  });
+
+  describe('Connection Status', () => {
+    it('should export getConnectionStatus function', async () => {
+      const { getConnectionStatus, ConnectionStatus } = await import('../../../src/utils/redis');
+      
+      expect(getConnectionStatus).toBeDefined();
+      expect(typeof getConnectionStatus).toBe('function');
+      expect(ConnectionStatus).toBeDefined();
+    });
+
+    it('should return initial connection status as DISCONNECTED', async () => {
+      const { getConnectionStatus, ConnectionStatus } = await import('../../../src/utils/redis');
+      
+      // Before any client is created, status should be DISCONNECTED
+      const status = getConnectionStatus();
+      expect(status).toBe(ConnectionStatus.DISCONNECTED);
+    });
+
+    it('should track connection status when client is created', async () => {
+      const { default: getClient, getConnectionStatus, ConnectionStatus } = await import('../../../src/utils/redis');
+      
+      getClient();
+      
+      // After client creation, status should be CONNECTING initially
+      // (Note: In real scenario, status would change to CONNECTED when 'ready' event fires)
+      const status = getConnectionStatus();
+      expect([ConnectionStatus.CONNECTING, ConnectionStatus.CONNECTED]).toContain(status);
+    });
+  });
+
+  describe('Event Listeners', () => {
+    it('should register event listeners when client is created', async () => {
+      const { default: getClient } = await import('../../../src/utils/redis');
+      
+      const client = getClient() as MockRedis;
+      
+      // Should register listeners for all events
+      expect(client.on).toHaveBeenCalledWith('error', expect.any(Function));
+      expect(client.on).toHaveBeenCalledWith('connect', expect.any(Function));
+      expect(client.on).toHaveBeenCalledWith('ready', expect.any(Function));
+      expect(client.on).toHaveBeenCalledWith('close', expect.any(Function));
+      expect(client.on).toHaveBeenCalledWith('reconnecting', expect.any(Function));
+      expect(client.on).toHaveBeenCalledWith('end', expect.any(Function));
+    });
+
+    it('should not register event listeners multiple times', async () => {
+      const { default: getClient } = await import('../../../src/utils/redis');
+      
+      const client1 = getClient() as MockRedis;
+      const initialCallCount = (client1.on as jest.Mock).mock.calls.length;
+      
+      // Second call should return same instance
+      const client2 = getClient() as MockRedis;
+      expect(client1).toBe(client2);
+      
+      // Should not register listeners again
+      expect((client2.on as jest.Mock).mock.calls.length).toBe(initialCallCount);
+    });
+
+    it('should register event listeners on custom client', async () => {
+      const { default: getClient } = await import('../../../src/utils/redis');
+      
+      const mockClient = new MockRedis();
+      const client = getClient(mockClient as any) as MockRedis;
+      
+      expect(client).toBe(mockClient);
+      expect(mockClient.on).toHaveBeenCalledWith('error', expect.any(Function));
+      expect(mockClient.on).toHaveBeenCalledWith('connect', expect.any(Function));
+      expect(mockClient.on).toHaveBeenCalledWith('ready', expect.any(Function));
+      expect(mockClient.on).toHaveBeenCalledWith('close', expect.any(Function));
+      expect(mockClient.on).toHaveBeenCalledWith('reconnecting', expect.any(Function));
+      expect(mockClient.on).toHaveBeenCalledWith('end', expect.any(Function));
+    });
+
+    it('should clean up event listeners when custom client replaces existing client', async () => {
+      const { default: getClient } = await import('../../../src/utils/redis');
+      
+      // Create initial client
+      const client1 = getClient() as MockRedis;
+      const initialRemoveCallCount = (client1.removeAllListeners as jest.Mock).mock.calls.length;
+      
+      // Replace with custom client
+      const mockClient = new MockRedis();
+      const client2 = getClient(mockClient as any) as MockRedis;
+      
+      // Should clean up listeners from previous client
+      expect(client1.removeAllListeners).toHaveBeenCalledTimes(initialRemoveCallCount + 6); // 6 events
+    });
+  });
+
+  describe('Reconnection Configuration', () => {
+    it('should create Redis client with reconnection options', async () => {
+      const { Redis } = await import('ioredis');
+      const { default: getClient } = await import('../../../src/utils/redis');
+      
+      (Redis as jest.Mock).mockClear();
+      
+      getClient();
+      
+      expect(Redis).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          maxRetriesPerRequest: null,
+          enableReadyCheck: true,
+          enableOfflineQueue: true,
+          retryStrategy: expect.any(Function),
+        })
+      );
+    });
+
+    it('should configure retry strategy with exponential backoff', async () => {
+      const { Redis } = await import('ioredis');
+      const { default: getClient } = await import('../../../src/utils/redis');
+      
+      getClient();
+      
+      const callArgs = (Redis as jest.Mock).mock.calls[0];
+      const options = callArgs[1];
+      const retryStrategy = options.retryStrategy;
+      
+      expect(retryStrategy).toBeDefined();
+      expect(typeof retryStrategy).toBe('function');
+      
+      // Test retry strategy with different attempt numbers
+      expect(retryStrategy(1)).toBe(50); // 50 * 2^0 = 50
+      expect(retryStrategy(2)).toBe(100); // 50 * 2^1 = 100
+      expect(retryStrategy(3)).toBe(200); // 50 * 2^2 = 200
+      expect(retryStrategy(4)).toBe(400); // 50 * 2^3 = 400
+      expect(retryStrategy(10)).toBe(3000); // Max delay
+    });
+  });
+
+  describe('Logging', () => {
+    it('should log masked URL during initialization', async () => {
+      const { default: getClient } = await import('../../../src/utils/redis');
+      const logger = await import('../../../src/utils/logger');
+      
+      getClient();
+      
+      // Should log with masked URL (if URL contains credentials)
+      expect(logger.default.debug).toHaveBeenCalledWith(expect.stringContaining('Initializing Redis client with URL:'));
+    });
+
+    it('should log event listener registration', async () => {
+      const { default: getClient } = await import('../../../src/utils/redis');
+      const logger = await import('../../../src/utils/logger');
+      
+      jest.clearAllMocks();
+      
+      getClient();
+      
+      expect(logger.default.debug).toHaveBeenCalledWith('Redis event listeners registered');
     });
   });
 });
