@@ -26,7 +26,9 @@ telegram-receiver/
 │   ├── config/            # Configuration files
 │   │   ├── environment.ts # Environment variable management
 │   │   ├── logger.ts      # Logger configuration
-│   │   └── validateEnv.ts # Environment validation
+│   │   ├── validateEnv.ts # Environment validation
+│   │   ├── redis.ts       # Redis configuration
+│   │   └── queue.ts       # Queue configuration
 │   ├── controllers/       # Request handlers
 │   │   └── health.controller.ts
 │   ├── routes/            # Route definitions
@@ -42,14 +44,15 @@ telegram-receiver/
 │   │   └── logger.ts
 │   ├── types/             # TypeScript type definitions
 │   │   ├── cursor-runner.ts
-│   │   └── telegram.ts
+│   │   ├── telegram.ts
+│   │   ├── elevenlabs.ts
+│   │   └── jobs.ts
 │   ├── validators/        # Input validation
 │   ├── jobs/              # Background job definitions
 │   └── errors/            # Custom error classes
 ├── tests/                 # Test files
 │   ├── unit/             # Unit tests
 │   ├── integration/      # Integration tests
-│   ├── e2e/              # End-to-end tests
 │   ├── fixtures/         # Test fixtures
 │   ├── mocks/            # Mock implementations
 │   └── helpers/          # Test helper utilities
@@ -109,6 +112,8 @@ Create a `.env` file in the project root (you can copy from `.env.example` if it
    npm install
    ```
 
+   **Note**: Ensure you have Node.js >=18.0.0 and npm >=9.0.0 installed (see `package.json` engines field).
+
 3. Set up environment variables:
 
    ```bash
@@ -128,16 +133,6 @@ Create a `.env` file in the project root (you can copy from `.env.example` if it
 
 ## Development Setup
 
-### Running the Development Server
-
-Start the development server with hot reloading:
-
-```bash
-npm run dev
-```
-
-The server will start on `http://localhost:3000` (or the port specified in `PORT` environment variable).
-
 ### Building the Project
 
 Compile TypeScript to JavaScript:
@@ -148,13 +143,21 @@ npm run build
 
 The compiled files will be in the `dist/` directory.
 
-### Running the Production Server
+### Important: Server Testing Policy
 
-After building, run the production server:
+**CRITICAL: Developers should NOT run the server manually (`npm run dev`, `npm start`) for testing purposes.**
 
-```bash
-npm start
-```
+Instead of running the server manually, you MUST use automated tests to verify server functionality:
+
+- **DO NOT** run `npm run dev` or `npm start` for manual testing
+- **DO NOT** manually test server endpoints using curl, Postman, or browser
+- **DO** write and run automated tests to verify server functionality
+- **DO** use integration tests to test HTTP endpoints and request/response handling
+- **DO** use unit tests to test individual functions and services
+
+The `npm run dev` and `npm start` commands are for deployment/Docker purposes only, not for manual testing. All server functionality must be verified through automated tests.
+
+See the [Testing](#testing) section below for how to run automated tests.
 
 ## Available Scripts
 
@@ -166,6 +169,7 @@ npm start
 ### Development
 
 - `npm run dev` - Start development server with hot reloading (nodemon)
+  - **Note**: This is for deployment/Docker purposes only. Do not use for manual testing. Use automated tests instead.
 
 ### Testing
 
@@ -174,16 +178,13 @@ npm start
 - `npm run test:coverage` - Generate test coverage report
 - `npm run test:unit` - Run only unit tests
 - `npm run test:integration` - Run only integration tests
-- `npm run test:e2e` - Run end-to-end tests (Playwright)
-- `npm run test:e2e:ui` - Run E2E tests with Playwright UI
-- `npm run test:all` - Run all tests (unit, integration, and E2E)
 
 ### Code Quality
 
-- `npm run lint` - Run ESLint to check for code issues
-- `npm run lint:fix` - Run ESLint and automatically fix issues
-- `npm run format` - Format code using Prettier
-- `npm run format:check` - Check code formatting without making changes
+- `npm run lint` - Run linting checks (currently placeholder)
+- `npm run lint:fix` - Auto-fix linting issues (currently placeholder)
+- `npm run format` - Format code (currently placeholder)
+- `npm run format:check` - Check code formatting without making changes (currently placeholder)
 - `npm run type-check` - Run TypeScript type checking without emitting files
 
 ## Testing
@@ -204,14 +205,6 @@ Run integration tests for API endpoints:
 npm run test:integration
 ```
 
-### End-to-End Tests
-
-Run end-to-end tests using Playwright:
-
-```bash
-npm run test:e2e
-```
-
 ### Test Coverage
 
 Generate and view test coverage report:
@@ -227,15 +220,13 @@ Coverage reports are generated in the `coverage/` directory.
 Run all test suites:
 
 ```bash
-npm run test:all
+npm test
 ```
 
 ## API Endpoints
 
 ### Public Endpoints
 
-- `GET /health` - Health check endpoint
-- `GET /` - Root endpoint (returns health status)
 - `POST /telegram/webhook` - Receives Telegram updates (authenticated via secret token)
 
 ### Admin Endpoints
@@ -250,11 +241,15 @@ Admin endpoints require the `X-Admin-Secret` header with the value from `WEBHOOK
 
 - `POST /cursor-runner/callback` - Receives callbacks from Cursor Runner
 
+### Health Check Endpoint
+
+- `GET /health` - Health check endpoint
+
 ## Code Quality
 
 ### Linting
 
-The project uses ESLint for code linting. Run linting checks:
+The project uses linting for code quality checks. Run linting checks:
 
 ```bash
 npm run lint
@@ -268,7 +263,7 @@ npm run lint:fix
 
 ### Formatting
 
-The project uses Prettier for code formatting. Format all code:
+The project uses formatting tools for code consistency. Format all code:
 
 ```bash
 npm run format
@@ -347,12 +342,6 @@ The `docker-compose.yml` file includes:
 - Application service with hot reloading in development mode
 - Shared volumes for persistent data
 - Network configuration for service communication
-
-For production deployment, use `docker-compose.prod.yml`:
-
-```bash
-docker-compose -f docker-compose.prod.yml up
-```
 
 ## Project Status
 
