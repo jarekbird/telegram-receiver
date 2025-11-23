@@ -94,9 +94,10 @@ jobs:
           fi
 
       - name: Run TypeScript type check
-        run: tsc --noEmit
+        run: npm run type-check
 
       - name: Run Jest tests with changed file detection and coverage
+        id: test
         run: |
           if [ "${{ steps.changed-files.outputs.has_changes }}" == "true" ]; then
             echo "Running tests for changed files with coverage..."
@@ -164,6 +165,21 @@ jobs:
           fi
         env:
           NODE_ENV: test
+
+      - name: Test result summary
+        if: always()
+        run: |
+          echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          if [ -f "coverage/coverage-summary.json" ]; then
+            echo "### Coverage Report" >> $GITHUB_STEP_SUMMARY
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            cat coverage/coverage-summary.json | jq '.total' >> $GITHUB_STEP_SUMMARY || echo "Coverage summary not available" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ -f "coverage/lcov.info" ]; then
+            echo "### Coverage Details" >> $GITHUB_STEP_SUMMARY
+            echo "Coverage report generated successfully. See artifacts for full HTML report." >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
