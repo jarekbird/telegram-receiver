@@ -1,6 +1,7 @@
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
+import app from './app';
 import config from './config/environment';
 import validateEnv from './config/validateEnv';
 import { initializeSystemSettings } from './config/initializers/system-settings';
@@ -32,10 +33,6 @@ try {
   process.exit(1);
 }
 
-// Define port constant (default: process.env.PORT || 3000, matching Rails default)
-// Note: config.port also reads from process.env.PORT || 3000, but we define it here for clarity
-const PORT = parseInt(process.env.PORT || '3000', 10);
-
 // Define host constant (default: process.env.HOST || '0.0.0.0', matching Rails Puma default)
 const HOST = process.env.HOST || '0.0.0.0';
 
@@ -44,7 +41,7 @@ let server: http.Server | null = null;
 /**
  * Starts the HTTP server and handles startup errors
  */
-async function startServer(): Promise<void> {
+function startServer(): void {
   try {
     // Initialize system settings before starting the server
     // This ensures system settings are set up in the shared database
@@ -54,13 +51,11 @@ async function startServer(): Promise<void> {
     // This ensures all tasks are set to ready status in the shared database
     initializeTasks();
 
-    // Import app module after validation to ensure config is valid before app initialization
-    const { default: app } = await import('./app');
-    // PHASE1-011: Start the Express server using the port and host constants
-    // Start the Express server using the port from the environment configuration module
-    server = app.listen(PORT, HOST, () => {
+    // PHASE1-028: Start the Express server using the port from the environment configuration module
+    // Start the Express server using config.port (from src/config/environment.ts)
+    server = app.listen(config.port, HOST, () => {
       logger.info(
-        `${APP_NAME} v${APP_VERSION} running in ${config.env} mode on ${HOST}:${PORT}`
+        `${APP_NAME} v${APP_VERSION} running in ${config.env} mode on ${HOST}:${config.port}`
       );
     });
 
@@ -72,12 +67,12 @@ async function startServer(): Promise<void> {
     server.on('error', (error: NodeJS.ErrnoException) => {
       if (error.code === 'EADDRINUSE') {
         logger.error(
-          `Error: Port ${PORT} is already in use. Please choose a different port or stop the process using that port.`,
+          `Error: Port ${config.port} is already in use. Please choose a different port or stop the process using that port.`,
           error
         );
       } else if (error.code === 'EACCES') {
         logger.error(
-          `Error: Permission denied. Cannot bind to port ${PORT}. Try running with elevated privileges or use a port above 1024.`,
+          `Error: Permission denied. Cannot bind to port ${config.port}. Try running with elevated privileges or use a port above 1024.`,
           error
         );
       } else {
@@ -154,11 +149,4 @@ process.on('SIGINT', () => {
 });
 
 // Start the server
-startServer().catch((error) => {
-  if (error instanceof Error) {
-    logger.error('Failed to start server:', error);
-  } else {
-    logger.error('Failed to start server:', String(error));
-  }
-  process.exit(1);
-});
+startServer();
