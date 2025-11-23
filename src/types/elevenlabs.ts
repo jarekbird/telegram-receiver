@@ -99,11 +99,10 @@ export interface ElevenLabsSynthesizeRequest {
 export type ElevenLabsSynthesizeResponse = Buffer | ArrayBuffer;
 
 /**
- * Error response interface for ElevenLabs API
- * Error responses can be objects or arrays
- * TTS handles both formats, STT typically returns objects
+ * Object format error response for ElevenLabs API
+ * STT typically returns objects with detail, error, or message fields
  */
-export interface ElevenLabsErrorResponse {
+export interface ElevenLabsErrorResponseObject {
   /**
    * Error detail - can be a string, array of strings, or array of objects with msg field
    * When detail is an array, extract msg fields from each item
@@ -121,9 +120,19 @@ export interface ElevenLabsErrorResponse {
 
 /**
  * Array format error response for ElevenLabs API
- * Some endpoints return errors as arrays of objects with optional msg field
+ * TTS can return errors as arrays of objects with optional msg field
  */
 export type ElevenLabsArrayErrorResponse = Array<{ msg?: string }>;
+
+/**
+ * Error response type for ElevenLabs API
+ * Error responses can be objects or arrays
+ * TTS handles both formats, STT typically returns objects
+ * When detail is an array, extract msg fields from each item
+ */
+export type ElevenLabsErrorResponse =
+  | ElevenLabsErrorResponseObject
+  | ElevenLabsArrayErrorResponse;
 
 /**
  * Base error class for ElevenLabs API errors
