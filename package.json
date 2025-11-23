@@ -24,18 +24,5 @@
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
-  },
-  "devDependencies": {
-    "@types/express": "^5.0.5",
-    "@types/node": "^20.19.25",
-    "@types/pino": "^7.0.4",
-    "nodemon": "^3.1.11",
-    "pino-pretty": "^13.1.2",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
-  },
-  "dependencies": {
-    "express": "^5.1.0",
-    "pino": "^10.1.0"
   }
 }
