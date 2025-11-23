@@ -28,13 +28,14 @@ describe('Health Endpoint', () => {
       expect(body.status).toBe('healthy');
     });
 
-    it('should return service name from environment or default', async () => {
+    it('should return service name from environment or package.json', async () => {
       const originalAppName = process.env.APP_NAME;
       delete process.env.APP_NAME;
 
       const response = await request(app).get('/health');
       const body = response.body as HealthResponse;
-      expect(body.service).toBe('Virtual Assistant API');
+      // Service name should be read from package.json (telegram-receiver)
+      expect(body.service).toBe('telegram-receiver');
 
       if (originalAppName) {
         process.env.APP_NAME = originalAppName;
