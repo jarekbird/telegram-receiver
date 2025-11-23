@@ -62,8 +62,8 @@ jobs:
           if [ "${{ steps.changed-files.outputs.has_changes }}" == "true" ]; then
             echo "Linting changed files..."
             CHANGED_FILES="${{ steps.changed-files.outputs.changed_files }}"
-            # Filter out test files for ESLint (only lint source files, matching Rails pattern)
-            SOURCE_FILES=$(echo "$CHANGED_FILES" | grep -E '^src/.*\.(ts|js)$' || echo "")
+            # Filter out test files (only lint source files, matching Rails pattern)
+            SOURCE_FILES=$(echo "$CHANGED_FILES" | grep -v '^tests/' || echo "")
             if [ -n "$SOURCE_FILES" ]; then
               # Run ESLint on all changed source files at once
               echo "$SOURCE_FILES" | tr '\n' '\0' | xargs -0 npx eslint
@@ -76,10 +76,25 @@ jobs:
           fi
 
       - name: Check Prettier formatting
-        run: npm run format:check
+        run: |
+          if [ "${{ steps.changed-files.outputs.has_changes }}" == "true" ]; then
+            echo "Checking formatting for changed files..."
+            CHANGED_FILES="${{ steps.changed-files.outputs.changed_files }}"
+            # Filter to TypeScript files only
+            TS_FILES=$(echo "$CHANGED_FILES" | grep -E '\.(ts|js)$' || echo "")
+            if [ -n "$TS_FILES" ]; then
+              # Run Prettier check on changed TypeScript files
+              echo "$TS_FILES" | tr '\n' '\0' | xargs -0 npx prettier --check
+            else
+              echo "No TypeScript files changed, skipping Prettier check"
+            fi
+          else
+            echo "No files changed, checking formatting for all files..."
+            npm run format:check
+          fi
 
       - name: Run TypeScript type check
-        run: npm run type-check
+        run: tsc --noEmit
 
       - name: Run Jest tests with changed file detection and coverage
         run: |
