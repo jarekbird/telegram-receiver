@@ -22,10 +22,10 @@ This document verifies that Pino logging library meets all requirements from tas
 ### Installation
 
 - [x] Install chosen logging library as production dependency
-  - ✅ `pino: ^10.1.0` installed in `package.json` dependencies
+  - ✅ `pino: ^9.6.0` installed in `package.json` dependencies (currently v9.14.0)
 - [x] Install TypeScript types if available as dev dependency
-  - ✅ `@types/pino: ^7.0.4` installed in `package.json` devDependencies
-  - ✅ `pino-pretty: ^13.1.2` installed in `package.json` devDependencies (for development)
+  - ✅ Pino v9+ includes built-in TypeScript types (no @types/pino needed)
+  - ✅ `pino-pretty: ^13.0.0` installed in `package.json` dependencies (for development, currently v13.1.2)
 
 ### Feature Verification
 
@@ -130,11 +130,13 @@ This document verifies that Pino logging library meets all requirements from tas
 ```bash
 # Production dependency
 npm list pino
-# Expected: pino@10.1.0
+# Expected: pino@9.14.0 (or higher)
 
 # Development dependencies
-npm list @types/pino pino-pretty
-# Expected: @types/pino@7.0.4, pino-pretty@13.1.2
+npm list pino-pretty
+# Expected: pino-pretty@13.1.2 (or higher)
+
+# TypeScript types: Built-in to Pino v9+ (no separate @types/pino package needed)
 ```
 
 ## Usage Examples

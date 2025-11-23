@@ -186,9 +186,9 @@ The chosen library must support:
 
 **Installation:**
 
-- Production: `pino` (already installed: ^10.1.0)
-- Development: `pino-pretty` (already installed: ^13.1.2)
-- TypeScript: `@types/pino` (already installed: ^7.0.4)
+- Production: `pino` (already installed: ^9.6.0, currently v9.14.0)
+- Development: `pino-pretty` (already installed: ^13.0.0, currently v13.1.2)
+- TypeScript: Built-in types (Pino v9+ includes TypeScript definitions, no @types/pino needed)
 
 **Configuration:**
 
