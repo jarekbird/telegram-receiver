@@ -12,8 +12,8 @@
     "lint:fix": "echo 'Lint fix not configured yet' && exit 0",
     "format": "echo 'Formatting not configured yet' && exit 0",
     "format:check": "echo 'Format check not configured yet' && exit 0",
-    "test": "echo 'Tests not configured yet' && exit 0",
-    "test:coverage": "echo 'Test coverage not configured yet' && exit 0"
+    "test": "/usr/local/bin/jest",
+    "test:coverage": "/usr/local/bin/jest --coverage"
   },
   "keywords": [
     "telegram",
@@ -30,9 +30,16 @@
     "npm": ">=9.0.0"
   },
   "devDependencies": {
+    "@swc/core": "^1.15.3",
+    "@swc/jest": "^0.2.39",
     "@types/express": "^5.0.5",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20.19.25",
+    "@types/supertest": "^6.0.3",
+    "jest": "^30.2.0",
     "nodemon": "^3.1.11",
+    "supertest": "^7.1.4",
+    "ts-jest": "^29.4.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   },
