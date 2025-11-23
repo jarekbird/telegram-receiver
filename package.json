@@ -4,6 +4,10 @@
   "description": "Telegram webhook receiver that forwards messages to Cursor Runner API",
   "main": "dist/index.js",
   "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "dev": "nodemon --exec ts-node src/index.ts",
+    "start": "node dist/index.js",
     "lint": "echo 'Linting not yet configured' && exit 0",
     "lint:fix": "echo 'Linting not yet configured' && exit 0",
     "format": "echo 'Formatting not yet configured' && exit 0",
