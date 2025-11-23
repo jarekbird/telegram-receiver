@@ -10,6 +10,20 @@ import express from 'express';
 import request from 'supertest';
 import { requestLoggerMiddleware } from '../../../src/middleware/request-logger.middleware';
 
+// Mock the logger utility
+jest.mock('../../../src/utils/logger', () => {
+  const mockLogger = {
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+  };
+  return {
+    __esModule: true,
+    default: mockLogger,
+  };
+});
+
 /**
  * Type definitions for log objects
  */
@@ -36,19 +50,23 @@ type LogData = RequestLog | ResponseLog;
 
 describe('Request Logger Middleware', () => {
   let app: express.Application;
-  let consoleLogSpy: jest.SpyInstance;
-  let consoleErrorSpy: jest.SpyInstance;
+  let logger: {
+    info: jest.Mock;
+    error: jest.Mock;
+    warn: jest.Mock;
+    debug: jest.Mock;
+  };
 
   beforeEach(() => {
-    // Mock console.log to capture log output
-    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {
-      // Suppress console output during tests
-    });
-
-    // Mock console.error to capture error output
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {
-      // Suppress console output during tests
-    });
+    // Get the mocked logger
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    logger = require('../../../src/utils/logger').default;
+    
+    // Reset all mocks
+    logger.info.mockClear();
+    logger.error.mockClear();
+    logger.warn.mockClear();
+    logger.debug.mockClear();
 
     // Create a test Express app
     app = express();
@@ -66,27 +84,26 @@ describe('Request Logger Middleware', () => {
   });
 
   afterEach(() => {
-    // Restore console methods
-    consoleLogSpy.mockRestore();
-    consoleErrorSpy.mockRestore();
+    // Clear all mocks
+    jest.clearAllMocks();
   });
 
   describe('Request logging', () => {
     it('should log incoming request with method, URL, IP, request ID, and timestamp', async () => {
       await request(app).get('/test');
 
-      // Verify console.log was called at least once (for request log)
-      expect(consoleLogSpy).toHaveBeenCalled();
+      // Verify logger.info was called at least once (for request log)
+      expect(logger.info).toHaveBeenCalled();
 
-      // Get the first call (request log)
-      const requestLogCall = consoleLogSpy.mock.calls.find((call) => {
-        const logData = JSON.parse(call[0] as string) as LogData;
+      // Get the first call (request log) - logger.info is called with (object, message)
+      const requestLogCall = logger.info.mock.calls.find((call) => {
+        const logData = call[0] as LogData;
         return logData.type === 'request';
       });
 
       expect(requestLogCall).toBeDefined();
 
-      const requestLog = JSON.parse(requestLogCall[0] as string) as RequestLog;
+      const requestLog = requestLogCall[0] as RequestLog;
 
       expect(requestLog).toMatchObject({
         method: 'GET',
@@ -104,14 +121,14 @@ describe('Request Logger Middleware', () => {
     it('should log POST requests correctly', async () => {
       await request(app).post('/test');
 
-      const requestLogCall = consoleLogSpy.mock.calls.find((call) => {
-        const logData = JSON.parse(call[0] as string) as LogData;
+      const requestLogCall = logger.info.mock.calls.find((call) => {
+        const logData = call[0] as LogData;
         return logData.type === 'request' && logData.method === 'POST';
       });
 
       expect(requestLogCall).toBeDefined();
 
-      const requestLog = JSON.parse(requestLogCall[0] as string) as RequestLog;
+      const requestLog = requestLogCall[0] as RequestLog;
       expect(requestLog.method).toBe('POST');
       expect(requestLog.url).toBe('/test');
     });
@@ -119,14 +136,14 @@ describe('Request Logger Middleware', () => {
     it('should include query string in URL when present', async () => {
       await request(app).get('/test?foo=bar&baz=qux');
 
-      const requestLogCall = consoleLogSpy.mock.calls.find((call) => {
-        const logData = JSON.parse(call[0] as string) as LogData;
+      const requestLogCall = logger.info.mock.calls.find((call) => {
+        const logData = call[0] as LogData;
         return logData.type === 'request';
       });
 
       expect(requestLogCall).toBeDefined();
 
-      const requestLog = JSON.parse(requestLogCall[0] as string) as RequestLog;
+      const requestLog = requestLogCall[0] as RequestLog;
       expect(requestLog.url).toBe('/test?foo=bar&baz=qux');
     });
   });
@@ -139,14 +156,14 @@ describe('Request Logger Middleware', () => {
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       // Find response log
-      const responseLogCall = consoleLogSpy.mock.calls.find((call) => {
-        const logData = JSON.parse(call[0] as string) as LogData;
+      const responseLogCall = logger.info.mock.calls.find((call) => {
+        const logData = call[0] as LogData;
         return logData.type === 'response';
       });
 
       expect(responseLogCall).toBeDefined();
 
-      const responseLog = JSON.parse(responseLogCall[0] as string) as ResponseLog;
+      const responseLog = responseLogCall[0] as ResponseLog;
 
       expect(responseLog).toMatchObject({
         method: 'GET',
@@ -165,14 +182,14 @@ describe('Request Logger Middleware', () => {
       await request(app).post('/test');
       await new Promise((resolve) => setTimeout(resolve, 10));
 
-      const responseLogCall = consoleLogSpy.mock.calls.find((call) => {
-        const logData = JSON.parse(call[0] as string) as LogData;
+      const responseLogCall = logger.info.mock.calls.find((call) => {
+        const logData = call[0] as LogData;
         return logData.type === 'response' && logData.statusCode === 201;
       });
 
       expect(responseLogCall).toBeDefined();
 
-      const responseLog = JSON.parse(responseLogCall[0] as string) as ResponseLog;
+      const responseLog = responseLogCall[0] as ResponseLog;
       expect(responseLog.statusCode).toBe(201);
     });
 
@@ -180,14 +197,14 @@ describe('Request Logger Middleware', () => {
       await request(app).get('/error');
       await new Promise((resolve) => setTimeout(resolve, 10));
 
-      const responseLogCall = consoleLogSpy.mock.calls.find((call) => {
-        const logData = JSON.parse(call[0] as string) as LogData;
+      const responseLogCall = logger.info.mock.calls.find((call) => {
+        const logData = call[0] as LogData;
         return logData.type === 'response' && logData.statusCode === 500;
       });
 
       expect(responseLogCall).toBeDefined();
 
-      const responseLog = JSON.parse(responseLogCall[0] as string) as ResponseLog;
+      const responseLog = responseLogCall[0] as ResponseLog;
       expect(responseLog.statusCode).toBe(500);
     });
 
@@ -202,14 +219,14 @@ describe('Request Logger Middleware', () => {
       await request(app).get('/slow');
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      const responseLogCall = consoleLogSpy.mock.calls.find((call) => {
-        const logData = JSON.parse(call[0] as string) as LogData;
+      const responseLogCall = logger.info.mock.calls.find((call) => {
+        const logData = call[0] as LogData;
         return logData.type === 'response' && logData.url === '/slow';
       });
 
       expect(responseLogCall).toBeDefined();
 
-      const responseLog = JSON.parse(responseLogCall[0] as string) as ResponseLog;
+      const responseLog = responseLogCall[0] as ResponseLog;
       expect(responseLog.duration).toBeGreaterThanOrEqual(50);
     });
   });
@@ -218,14 +235,14 @@ describe('Request Logger Middleware', () => {
     it('should generate UUID request ID when req.id is not available', async () => {
       await request(app).get('/test');
 
-      const requestLogCall = consoleLogSpy.mock.calls.find((call) => {
-        const logData = JSON.parse(call[0] as string) as LogData;
+      const requestLogCall = logger.info.mock.calls.find((call) => {
+        const logData = call[0] as LogData;
         return logData.type === 'request';
       });
 
       expect(requestLogCall).toBeDefined();
 
-      const requestLog = JSON.parse(requestLogCall[0] as string) as RequestLog;
+      const requestLog = requestLogCall[0] as RequestLog;
       expect(requestLog.requestId).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
       );
@@ -248,14 +265,14 @@ describe('Request Logger Middleware', () => {
 
       await request(testApp).get('/test');
 
-      const requestLogCall = consoleLogSpy.mock.calls.find((call) => {
-        const logData = JSON.parse(call[0] as string) as LogData;
+      const requestLogCall = logger.info.mock.calls.find((call) => {
+        const logData = call[0] as LogData;
         return logData.type === 'request';
       });
 
       expect(requestLogCall).toBeDefined();
 
-      const requestLog = JSON.parse(requestLogCall[0] as string) as RequestLog;
+      const requestLog = requestLogCall[0] as RequestLog;
       expect(requestLog.requestId).toBe('custom-request-id-123');
     });
 
@@ -279,21 +296,21 @@ describe('Request Logger Middleware', () => {
       await request(app).get('/test');
       await new Promise((resolve) => setTimeout(resolve, 10));
 
-      const requestLogCall = consoleLogSpy.mock.calls.find((call) => {
-        const logData = JSON.parse(call[0] as string);
+      const requestLogCall = logger.info.mock.calls.find((call) => {
+        const logData = call[0] as LogData;
         return logData.type === 'request';
       });
 
-      const responseLogCall = consoleLogSpy.mock.calls.find((call) => {
-        const logData = JSON.parse(call[0] as string);
+      const responseLogCall = logger.info.mock.calls.find((call) => {
+        const logData = call[0] as LogData;
         return logData.type === 'response';
       });
 
       expect(requestLogCall).toBeDefined();
       expect(responseLogCall).toBeDefined();
 
-      const requestLog = JSON.parse(requestLogCall[0] as string) as RequestLog;
-      const responseLog = JSON.parse(responseLogCall[0] as string) as ResponseLog;
+      const requestLog = requestLogCall[0] as RequestLog;
+      const responseLog = responseLogCall[0] as ResponseLog;
 
       expect(requestLog.requestId).toBe(responseLog.requestId);
     });
@@ -306,14 +323,14 @@ describe('Request Logger Middleware', () => {
 
       await request(app).get('/test');
 
-      const requestLogCall = consoleLogSpy.mock.calls.find((call) => {
-        const logData = JSON.parse(call[0] as string) as LogData;
+      const requestLogCall = logger.info.mock.calls.find((call) => {
+        const logData = call[0] as LogData;
         return logData.type === 'request';
       });
 
       expect(requestLogCall).toBeDefined();
 
-      const requestLog = JSON.parse(requestLogCall[0] as string) as RequestLog;
+      const requestLog = requestLogCall[0] as RequestLog;
       expect(requestLog.ip).toBeDefined();
       expect(requestLog.ip).not.toBe('unknown');
     });
@@ -321,14 +338,14 @@ describe('Request Logger Middleware', () => {
     it('should extract IP from x-forwarded-for header when present', async () => {
       await request(app).get('/test').set('x-forwarded-for', '192.168.1.1,10.0.0.1');
 
-      const requestLogCall = consoleLogSpy.mock.calls.find((call) => {
-        const logData = JSON.parse(call[0] as string) as LogData;
+      const requestLogCall = logger.info.mock.calls.find((call) => {
+        const logData = call[0] as LogData;
         return logData.type === 'request';
       });
 
       expect(requestLogCall).toBeDefined();
 
-      const requestLog = JSON.parse(requestLogCall[0] as string) as RequestLog;
+      const requestLog = requestLogCall[0] as RequestLog;
       // Should use first IP in x-forwarded-for chain (original client)
       expect(requestLog.ip).toBe('192.168.1.1');
     });
@@ -344,14 +361,14 @@ describe('Request Logger Middleware', () => {
 
       await request(testApp).get('/test');
 
-      const requestLogCall = consoleLogSpy.mock.calls.find((call) => {
-        const logData = JSON.parse(call[0] as string) as LogData;
+      const requestLogCall = logger.info.mock.calls.find((call) => {
+        const logData = call[0] as LogData;
         return logData.type === 'request';
       });
 
       expect(requestLogCall).toBeDefined();
 
-      const requestLog = JSON.parse(requestLogCall[0] as string) as RequestLog;
+      const requestLog = requestLogCall[0] as RequestLog;
       expect(requestLog.ip).toBeDefined();
       // IP should be defined (either from socket or 'unknown')
     });
@@ -359,8 +376,8 @@ describe('Request Logger Middleware', () => {
 
   describe('Error handling', () => {
     it('should call next() even if logging fails', async () => {
-      // Mock console.log to throw an error
-      consoleLogSpy.mockImplementation(() => {
+      // Mock logger.info to throw an error
+      logger.info.mockImplementation(() => {
         throw new Error('Logging failed');
       });
 
@@ -368,16 +385,15 @@ describe('Request Logger Middleware', () => {
       const response = await request(app).get('/test');
 
       expect(response.status).toBe(200);
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error in request logger middleware:',
+      expect(logger.error).toHaveBeenCalledWith(
+        'Error in request logger middleware',
         expect.any(Error)
       );
     });
 
     it('should handle errors in response logging gracefully', async () => {
-      // Mock console.log to throw an error only on response log
-      consoleLogSpy.mockImplementation((message: string) => {
-        const logData = JSON.parse(message) as LogData;
+      // Mock logger.info to throw an error only on response log
+      logger.info.mockImplementation((logData: LogData) => {
         if (logData.type === 'response') {
           throw new Error('Response logging failed');
         }
@@ -388,36 +404,36 @@ describe('Request Logger Middleware', () => {
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       expect(response.status).toBe(200);
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Error logging response:', expect.any(Error));
+      expect(logger.error).toHaveBeenCalledWith('Error logging response', expect.any(Error));
     });
   });
 
   describe('Structured logging format', () => {
-    it('should log in JSON format', async () => {
+    it('should log in structured format', async () => {
       await request(app).get('/test');
 
-      const requestLogCall = consoleLogSpy.mock.calls.find((call) => {
-        const logData = JSON.parse(call[0] as string) as LogData;
+      const requestLogCall = logger.info.mock.calls.find((call) => {
+        const logData = call[0] as LogData;
         return logData.type === 'request';
       });
 
       expect(requestLogCall).toBeDefined();
 
-      // Verify it's valid JSON
-      expect(() => JSON.parse(requestLogCall[0] as string)).not.toThrow();
+      // Verify it's a structured object (not a string)
+      expect(typeof requestLogCall[0]).toBe('object');
     });
 
     it('should include all required fields in request log', async () => {
       await request(app).get('/test');
 
-      const requestLogCall = consoleLogSpy.mock.calls.find((call) => {
-        const logData = JSON.parse(call[0] as string) as LogData;
+      const requestLogCall = logger.info.mock.calls.find((call) => {
+        const logData = call[0] as LogData;
         return logData.type === 'request';
       });
 
       expect(requestLogCall).toBeDefined();
 
-      const requestLog = JSON.parse(requestLogCall[0] as string) as RequestLog;
+      const requestLog = requestLogCall[0] as RequestLog;
 
       expect(requestLog).toHaveProperty('timestamp');
       expect(requestLog).toHaveProperty('requestId');
@@ -431,14 +447,14 @@ describe('Request Logger Middleware', () => {
       await request(app).get('/test');
       await new Promise((resolve) => setTimeout(resolve, 10));
 
-      const responseLogCall = consoleLogSpy.mock.calls.find((call) => {
-        const logData = JSON.parse(call[0] as string) as LogData;
+      const responseLogCall = logger.info.mock.calls.find((call) => {
+        const logData = call[0] as LogData;
         return logData.type === 'response';
       });
 
       expect(responseLogCall).toBeDefined();
 
-      const responseLog = JSON.parse(responseLogCall[0] as string) as ResponseLog;
+      const responseLog = responseLogCall[0] as ResponseLog;
 
       expect(responseLog).toHaveProperty('timestamp');
       expect(responseLog).toHaveProperty('requestId');

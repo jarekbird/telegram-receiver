@@ -34,6 +34,7 @@
 
 import type { Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'crypto';
+import logger from '@/utils/logger';
 
 /**
  * Extend Express Request type to include requestId
@@ -129,8 +130,8 @@ export function requestLoggerMiddleware(req: Request, res: Response, next: NextF
       type: 'request' as const,
     };
 
-    // eslint-disable-next-line no-console
-    console.log(JSON.stringify(requestLog));
+    // Use logger.info() with structured logging (matching Rails logging patterns with request_id tagging)
+    logger.info(requestLog, `[${requestId}] ${req.method} ${url} - ${clientIp}`);
 
     // Log response when request completes
     res.on('finish', () => {
@@ -150,12 +151,11 @@ export function requestLoggerMiddleware(req: Request, res: Response, next: NextF
           type: 'response' as const,
         };
 
-        // eslint-disable-next-line no-console
-        console.log(JSON.stringify(responseLog));
+        // Use logger.info() with structured logging (matching Rails logging patterns with request_id tagging)
+        logger.info(responseLog, `[${requestId}] ${res.statusCode} ${duration}ms`);
       } catch (error) {
         // Log error but don't throw - we don't want to break the response
-        // eslint-disable-next-line no-console
-        console.error('Error logging response:', error);
+        logger.error('Error logging response', error instanceof Error ? error : new Error(String(error)));
       }
     });
 
@@ -163,8 +163,7 @@ export function requestLoggerMiddleware(req: Request, res: Response, next: NextF
     next();
   } catch (error) {
     // Log error but ensure next() is always called
-    // eslint-disable-next-line no-console
-    console.error('Error in request logger middleware:', error);
+    logger.error('Error in request logger middleware', error instanceof Error ? error : new Error(String(error)));
     next();
   }
 }
