@@ -4,16 +4,24 @@
 
 The telegram-receiver API is a Virtual Assistant orchestration layer that provides endpoints for Telegram Bot API integration, cursor-runner service integration, and agent tools execution. This API serves as a conversion from the jarek-va Ruby on Rails application to Node.js/TypeScript, maintaining feature parity with the original Rails implementation.
 
+### Purpose
+
+The API serves as a Virtual Assistant orchestration layer that coordinates interactions between Telegram Bot API, cursor-runner service, and external agent tools. It receives webhook requests, processes them, and orchestrates responses through various integrated services.
+
 ### Main Functionality Areas
 
 1. **Telegram Integration**: Receives and processes Telegram webhook updates, manages webhook configuration
 2. **Cursor Runner Integration**: Proxies requests to cursor-runner service for code generation and Git operations
 3. **Agent Tools**: Provides webhook endpoint for tool execution requests from external agents
 
+### Conversion from Rails Application
+
+This API is a conversion from the jarek-va Ruby on Rails application (`/cursor/repositories/jarek-va`). The Node.js/Express implementation maintains feature parity with the original Rails API structure and behavior, ensuring compatibility with existing integrations.
+
 ## Base URL and Versioning
 
-- **Base URL**: Configured via environment variables (default: `http://localhost:3000`)
-- **API Versioning**: Currently no versioning strategy implemented. All endpoints are at the root level.
+- **Base URL**: Configured via environment variables (default: `http://localhost:3000`). The base URL is typically set by the deployment environment and may vary between development, staging, and production environments.
+- **API Versioning**: Currently no versioning strategy implemented. All endpoints are at the root level. Future versions may introduce versioning (e.g., `/v1/`, `/v2/`) if breaking changes are required.
 
 ## Endpoint Groups
 
@@ -25,12 +33,12 @@ Health check endpoints for monitoring and service status:
   - Returns service status, name, and version
   - Response format: `{ status: 'healthy', service: '...', version: '...' }`
   - No authentication required
+  - See [docs/api/HEALTH.md](api/HEALTH.md) for detailed documentation
 
 - **`GET /`** - Root endpoint (also serves health check)
   - Same response as `/health` endpoint
   - No authentication required
-
-**Detailed Documentation**: See [docs/api/HEALTH.md](api/HEALTH.md) for detailed health endpoint documentation.
+  - See [docs/api/HEALTH.md](api/HEALTH.md) for detailed documentation
 
 ### Agent Tools Endpoints
 
@@ -146,14 +154,26 @@ Authentication is performed via HTTP headers. Different endpoint groups use diff
 
 ### Authentication Details
 
-- Authentication secrets are configured via environment variables
+- Authentication secrets are configured via environment variables:
+  - `WEBHOOK_SECRET` - Used for admin endpoints, cursor-runner callbacks, and agent tools
+  - `TELEGRAM_WEBHOOK_SECRET` - Used for Telegram webhook authentication
 - If the expected secret is not configured (development mode), authentication may be bypassed for some endpoints
 - Invalid or missing authentication results in `401 Unauthorized` response
+- Which endpoints require authentication:
+  - **Admin endpoints**: `POST /telegram/set_webhook`, `GET /telegram/webhook_info`, `DELETE /telegram/webhook`
+  - **Telegram webhook**: `POST /telegram/webhook`
+  - **Cursor runner callback**: `POST /cursor-runner/callback`
+  - **Agent tools**: `POST /agent-tools`
+  - **Public endpoints** (no authentication): `GET /health`, `GET /`
 - See [docs/API_CONVENTIONS.md](API_CONVENTIONS.md) for detailed authentication patterns and middleware usage
 
 ## Rate Limiting
 
-The API does not implement rate limiting at the application level. Rate limiting may be handled at the infrastructure level (e.g., reverse proxy, load balancer), but this is not part of the application code itself.
+The API does not implement rate limiting at the application level. The Rails application (jarek-va) does not implement rate limiting at the application level either. Rate limiting may be handled at the infrastructure level (e.g., Traefik reverse proxy, load balancer), but this is not part of the application code itself.
+
+### Rate Limit Headers
+
+If rate limiting is implemented at the infrastructure level, rate limit headers may be included in responses. However, the application itself does not set or enforce rate limit headers.
 
 ## Response Formats
 
@@ -235,18 +255,26 @@ The API follows RESTful conventions where applicable, but also includes webhook 
 
 ## Detailed Endpoint Documentation
 
-- **[Health Endpoints](api/HEALTH.md)**: Detailed documentation for health check endpoints
-- Additional endpoint documentation will be added as tasks are completed
+- **[API Conventions](API_CONVENTIONS.md)**: Detailed documentation on API conventions, patterns, authentication, error handling, and request/response formats
+- **[Health Endpoints](api/HEALTH.md)**: Detailed documentation for health check endpoints (`GET /health` and `GET /`)
+- Additional endpoint documentation will be added as tasks are completed (e.g., Telegram endpoints, Cursor Runner endpoints, Agent Tools endpoints)
 
 ## Reference Implementation
 
-This API is based on the jarek-va Ruby on Rails application. For reference:
+This API is based on the jarek-va Ruby on Rails application (`/cursor/repositories/jarek-va`). The Node.js/Express implementation should match the Rails API structure and behavior.
+
+### Rails Implementation Reference
 
 - **Routes**: `jarek-va/config/routes.rb` - Defines all API endpoints and their HTTP methods
 - **Controllers**: `jarek-va/app/controllers/*.rb` - Implement endpoint logic and authentication
+  - `HealthController` - Health check endpoint
+  - `TelegramController` - Telegram webhook and admin endpoints
+  - `CursorRunnerController` - Cursor execution and Git operation endpoints
+  - `CursorRunnerCallbackController` - Callback endpoint for cursor-runner results
+  - `AgentToolsController` - Agent tools webhook endpoint
 - **Application Controller**: `jarek-va/app/controllers/application_controller.rb` - Base controller with global error handling
 
-The Node.js/Express implementation maintains feature parity with the Rails API structure and behavior.
+The Node.js/Express implementation maintains feature parity with the Rails API structure, ensuring compatibility with existing integrations and maintaining the same endpoint behavior and response formats.
 
 ## Notes
 
