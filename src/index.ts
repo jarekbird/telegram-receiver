@@ -1,9 +1,9 @@
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
-import app from './app';
 import config from './config/environment';
 import validateEnv from './config/validateEnv';
+import app from './app';
 import { initializeSystemSettings } from './config/initializers/system-settings';
 import { initializeTasks } from './config/initializers/tasks';
 import logger from './utils/logger';
