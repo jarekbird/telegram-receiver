@@ -6,6 +6,8 @@
 # Documentation files
 README.md
 *.md
+Plan/
+docs/
 
 # Environment files
 .env

@@ -3,7 +3,7 @@
 FROM node:18-alpine AS builder
 
 # Install system dependencies needed for building native modules
-# better-sqlite3 requires python3, make, and g++ for native compilation
+# Some npm packages may require python3, make, and g++ for native compilation
 RUN apk add --no-cache \
     python3 \
     make \
@@ -31,7 +31,7 @@ FROM node:18-alpine AS production
 
 # Install system dependencies for runtime
 # curl is needed for health checks
-# better-sqlite3 may need sqlite3 runtime library
+# sqlite is needed for shared SQLite database access
 RUN apk add --no-cache \
     curl \
     sqlite
@@ -47,9 +47,6 @@ RUN npm ci --only=production && npm cache clean --force
 
 # Copy built files from builder stage
 COPY --from=builder /app/dist ./dist
-
-# Copy package.json for runtime (needed for app name/version in logs)
-COPY package.json ./
 
 # Create shared database directory with proper permissions
 # This directory is used for shared SQLite database at /app/shared_db/shared.sqlite3
