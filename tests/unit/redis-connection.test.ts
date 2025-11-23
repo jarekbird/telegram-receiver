@@ -3,7 +3,7 @@
  *
  * These tests verify that:
  * - Redis connection configuration matches Rails pattern (REDIS_URL environment variable)
- * - Both ioredis and redis (node-redis) clients can connect to Redis
+ * - IORedis client can connect to Redis
  * - Basic Redis operations (set/get/del) work correctly
  * - Redis URL configuration is properly read from environment variables
  *
@@ -13,7 +13,6 @@
  */
 
 import IORedis from 'ioredis';
-import { createClient } from 'redis';
 import { redisConfig } from '../../src/config/redis';
 
 describe('Redis Connection Configuration', () => {
@@ -178,146 +177,6 @@ describe('Redis Connection Configuration', () => {
 
       try {
         const testKey = 'test:redis:connection:del';
-        const testValue = 'test-value-to-delete';
-
-        // Set value
-        await client.set(testKey, testValue);
-        // Verify it exists
-        const beforeDelete = await client.get(testKey);
-        expect(beforeDelete).toBe(testValue);
-
-        // Delete value (matching Rails redis.del pattern)
-        await client.del(testKey);
-        // Verify it's gone
-        const afterDelete = await client.get(testKey);
-        expect(afterDelete).toBeNull();
-      } catch (error) {
-        // If Redis is not available, skip this test
-        if (error instanceof Error && error.message.includes('ECONNREFUSED')) {
-          console.warn('Redis not available, skipping DEL test');
-          return;
-        }
-        throw error;
-      }
-    }, 10000);
-  });
-
-  describe('Redis (node-redis) Client Connectivity', () => {
-    let redisClient: ReturnType<typeof createClient> | null = null;
-
-    afterEach(async () => {
-      if (redisClient) {
-        try {
-          // Only quit if client is connected
-          if (redisClient.isOpen) {
-            await redisClient.quit();
-          }
-        } catch (error) {
-          // Ignore errors when closing unconnected clients
-        }
-        redisClient = null;
-      }
-    });
-
-    it('should create redis client with default URL', () => {
-      const client = createClient({ url: redisConfig.url });
-      expect(client).toBeDefined();
-      // Don't assign to redisClient since it's not connected
-    });
-
-    it('should create redis client with custom URL', () => {
-      const customUrl = 'redis://localhost:6379/1';
-      const client = createClient({ url: customUrl });
-      expect(client).toBeDefined();
-      // Don't assign to redisClient since it's not connected
-    });
-
-    it('should connect to Redis and execute PING command', async () => {
-      const client = createClient({ url: redisConfig.url });
-      redisClient = client;
-
-      try {
-        await client.connect();
-        const result = await client.ping();
-        expect(result).toBe('PONG');
-      } catch (error) {
-        // If Redis is not available, skip this test
-        if (error instanceof Error && error.message.includes('ECONNREFUSED')) {
-          console.warn('Redis not available, skipping connectivity test');
-          return;
-        }
-        throw error;
-      }
-    }, 10000);
-
-    it('should perform basic SET/GET operations', async () => {
-      const client = createClient({ url: redisConfig.url });
-      redisClient = client;
-
-      try {
-        await client.connect();
-        const testKey = 'test:redis:connection:setget:node-redis';
-        const testValue = 'test-value-456';
-
-        // Set value
-        await client.set(testKey, testValue);
-        // Get value
-        const result = await client.get(testKey);
-        expect(result).toBe(testValue);
-
-        // Cleanup
-        await client.del(testKey);
-      } catch (error) {
-        // If Redis is not available, skip this test
-        if (error instanceof Error && error.message.includes('ECONNREFUSED')) {
-          console.warn('Redis not available, skipping operations test');
-          return;
-        }
-        throw error;
-      }
-    }, 10000);
-
-    it('should perform SETEX operation (matching Rails pattern)', async () => {
-      const client = createClient({ url: redisConfig.url });
-      redisClient = client;
-
-      try {
-        await client.connect();
-        const testKey = 'test:redis:connection:setex:node-redis';
-        const testValue = 'test-value-with-ttl';
-        const ttl = 60; // 60 seconds
-
-        // Set value with TTL (matching Rails redis.setex pattern)
-        // Note: node-redis uses setEx (camelCase) instead of setex
-        await client.setEx(testKey, ttl, testValue);
-        // Get value
-        const result = await client.get(testKey);
-        expect(result).toBe(testValue);
-
-        // Verify TTL is set
-        const remainingTtl = await client.ttl(testKey);
-        expect(remainingTtl).toBeGreaterThan(0);
-        expect(remainingTtl).toBeLessThanOrEqual(ttl);
-
-        // Cleanup
-        await client.del(testKey);
-      } catch (error) {
-        // If Redis is not available, skip this test
-        if (error instanceof Error && error.message.includes('ECONNREFUSED')) {
-          console.warn('Redis not available, skipping SETEX test');
-          return;
-        }
-        throw error;
-      }
-    }, 10000);
-
-    it('should perform DEL operation (matching Rails pattern)', async () => {
-      const client = createClient({ url: redisConfig.url });
-      redisClient = client;
-
-      try {
-        await client.connect();
-        const testKey = 'test:redis:connection:del:node-redis';
         const testValue = 'test-value-to-delete';
 
         // Set value

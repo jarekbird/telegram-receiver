@@ -4,10 +4,11 @@ This document describes how Redis clients are used in the telegram-receiver appl
 
 ## Overview
 
-The application uses Redis for two main purposes:
+The application uses Redis for:
 
-1. **Background Job Processing** (BullMQ) - Replaces Rails Sidekiq
-2. **Direct Redis Operations** (CursorRunnerCallbackService) - Stores callback state
+1. **Direct Redis Operations** (CursorRunnerCallbackService) - Stores callback state
+
+**Note**: This application uses Node.js native async/await instead of a queue system like BullMQ or Sidekiq.
 
 ## Redis Client Packages
 
@@ -15,9 +16,9 @@ The application includes the following Redis client packages:
 
 | Package | Version | Purpose | TypeScript Types |
 |---------|---------|---------|------------------|
-| `redis` | ^4.6.10 | Direct Redis operations (alternative to ioredis) | `@types/redis` (^4.0.11) |
-| `ioredis` | ^5.8.2 | BullMQ integration and direct Redis operations (recommended) | Built-in types |
-| `bullmq` | ^5.64.1 | Background job processing (Sidekiq replacement) | Built-in types |
+| `ioredis` | ^5.8.2 | Direct Redis operations | Built-in types |
+
+**Note**: `bullmq` and `redis` (node-redis) are not used in this application. We use `ioredis` for Redis operations and Node.js native async/await instead of a queue system.
 
 **Note**: Modern versions of `redis` (v4+) and `ioredis` (v5+) include their own TypeScript type definitions. The `@types/*` packages are listed in `package.json` for compatibility but are not strictly required.
 
@@ -43,30 +44,7 @@ export const redisConfig = {
 
 ## Component Usage
 
-### 1. BullMQ (Background Jobs) → Uses `ioredis`
-
-**Location**: `src/worker.ts`, `src/config/queue.ts`
-
-**Rails Equivalent**: `config/initializers/sidekiq.rb` (Sidekiq)
-
-BullMQ requires `ioredis` for its connection. The application creates an IORedis instance and passes it to BullMQ:
-
-```typescript
-import IORedis from 'ioredis';
-import { redisConfig } from './redis';
-
-export const redisConnection = new IORedis(redisConfig.url, {
-  maxRetriesPerRequest: null,
-  enableReadyCheck: false,
-});
-
-// BullMQ uses this connection
-export const connection = redisConnection;
-```
-
-**Why ioredis**: BullMQ has a hard dependency on `ioredis` and cannot use the `redis` (node-redis) package.
-
-### 2. CursorRunnerCallbackService (Direct Redis Operations) → Uses `ioredis` (recommended)
+### CursorRunnerCallbackService (Direct Redis Operations) → Uses `ioredis` (recommended)
 
 **Location**: `src/services/cursor_runner_callback_service.ts` (to be implemented)
 
@@ -74,10 +52,9 @@ export const connection = redisConnection;
 
 The CursorRunnerCallbackService performs direct Redis operations (`setex`, `get`, `del`) to store callback state. While both `redis` and `ioredis` can be used, **`ioredis` is recommended** for the following reasons:
 
-1. **Consistency**: BullMQ already uses `ioredis`, so using the same client reduces dependencies
-2. **TypeScript Support**: Better TypeScript support and type definitions
-3. **Feature-Rich API**: More comprehensive API with better error handling
-4. **Connection Reuse**: Can reuse the same IORedis connection instance used by BullMQ
+1. **TypeScript Support**: Better TypeScript support and type definitions
+2. **Feature-Rich API**: More comprehensive API with better error handling
+3. **Connection Management**: Better connection pooling and error handling
 
 **Example Implementation** (using ioredis):
 
@@ -170,15 +147,14 @@ This matches the Rails Docker configuration where `REDIS_URL` is set to `redis:/
 
 When converting Rails code that uses Redis:
 
-1. **Sidekiq → BullMQ**: Use `ioredis` connection with BullMQ
-2. **Direct Redis operations**: Use `ioredis` for consistency (or `redis` if preferred)
-3. **Connection URL**: Use `REDIS_URL` environment variable (same as Rails)
-4. **Operations**: Map Rails redis gem methods to ioredis/redis equivalents
+1. **Direct Redis operations**: Use `ioredis` (recommended) or `redis` for direct Redis operations
+2. **Connection URL**: Use `REDIS_URL` environment variable (same as Rails)
+3. **Operations**: Map Rails redis gem methods to ioredis/redis equivalents
 
 ## Summary
 
-- **BullMQ**: Must use `ioredis` (hard requirement)
-- **CursorRunnerCallbackService**: Recommended to use `ioredis` for consistency and better TypeScript support
+- **CursorRunnerCallbackService**: Recommended to use `ioredis` for better TypeScript support and feature-rich API
 - **Connection Configuration**: Uses `REDIS_URL` environment variable (matches Rails pattern)
 - **Default URL**: `redis://localhost:6379/0` (matches Rails default)
 - **Docker URL**: `redis://redis:6379/0` (matches Rails Docker pattern)
+- **Note**: This application uses Node.js native async/await instead of a queue system like BullMQ or Sidekiq

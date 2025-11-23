@@ -3,7 +3,7 @@
  *
  * This module provides Redis connection configuration for the application.
  * It reads the Redis URL from environment variables and provides connection settings
- * that can be used with both `redis` and `ioredis` packages.
+ * for the `ioredis` package.
  *
  * Rails Implementation Reference:
  * - `jarek-va/config/initializers/sidekiq.rb` - Sidekiq Redis configuration uses `ENV.fetch('REDIS_URL', 'redis://localhost:6379/0')`
@@ -49,7 +49,7 @@ const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379/0';
 /**
  * Redis configuration object
  * Contains the Redis connection URL and optional connection options
- * Supports both `redis` and `ioredis` packages
+ * Used with the `ioredis` package
  */
 export const redisConfig: RedisConfig = {
   /** Redis connection URL (default: redis://localhost:6379/0) */

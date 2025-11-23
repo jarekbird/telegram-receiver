@@ -22,13 +22,11 @@ telegram-receiver/
 ├── src/                    # Source code
 │   ├── app.ts             # Express application setup
 │   ├── index.ts           # Application entry point
-│   ├── worker.ts          # Worker process entry point
 │   ├── config/            # Configuration files
 │   │   ├── environment.ts # Environment variable management
 │   │   ├── logger.ts      # Logger configuration
 │   │   ├── validateEnv.ts # Environment validation
-│   │   ├── redis.ts       # Redis configuration
-│   │   └── queue.ts       # Queue configuration
+│   │   └── redis.ts       # Redis configuration
 │   ├── controllers/       # Request handlers
 │   │   └── health.controller.ts
 │   ├── routes/            # Route definitions
@@ -45,10 +43,8 @@ telegram-receiver/
 │   ├── types/             # TypeScript type definitions
 │   │   ├── cursor-runner.ts
 │   │   ├── telegram.ts
-│   │   ├── elevenlabs.ts
-│   │   └── jobs.ts
+│   │   └── elevenlabs.ts
 │   ├── validators/        # Input validation
-│   ├── jobs/              # Background job definitions
 │   └── errors/            # Custom error classes
 ├── tests/                 # Test files
 │   ├── unit/             # Unit tests
@@ -74,7 +70,7 @@ telegram-receiver/
 
 - **Node.js**: >=18.0.0 (see `package.json` engines field)
 - **npm**: >=9.0.0 (see `package.json` engines field)
-- **Redis**: Required for BullMQ job queues and callback state management
+- **Redis**: Required for callback state management
 
 ### Environment Variables
 
@@ -338,7 +334,7 @@ This will start:
 
 The `docker-compose.yml` file includes:
 
-- Redis service for BullMQ job queues
+- Redis service for callback state management
 - Application service with hot reloading in development mode
 - Shared volumes for persistent data
 - Network configuration for service communication

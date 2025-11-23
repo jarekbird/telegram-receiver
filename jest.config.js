@@ -4,7 +4,7 @@ const config = {
   roots: ['<rootDir>/tests'],
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
   transform: {
-    '^.+\\.ts$': ['/usr/local/lib/node_modules/ts-jest', {
+    '^.+\\.ts$': ['ts-jest', {
       tsconfig: {
         esModuleInterop: true,
         allowSyntheticDefaultImports: true,
@@ -27,7 +27,7 @@ const config = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
-  moduleDirectories: ['node_modules', '/usr/local/lib/node_modules'],
+  moduleDirectories: ['node_modules'],
   passWithNoTests: true,
 };
 

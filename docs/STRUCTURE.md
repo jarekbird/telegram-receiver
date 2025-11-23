@@ -23,7 +23,7 @@ This document provides a comprehensive overview of the telegram-receiver project
 
 Project dependencies and scripts. Defines:
 
-- **Dependencies**: Runtime dependencies including Express.js, BullMQ, Redis clients, Axios, and Pino logger
+- **Dependencies**: Runtime dependencies including Express.js, Redis clients, Axios, and Pino logger
 - **DevDependencies**: Development tools including TypeScript, Jest, Playwright, ESLint, Prettier, and testing libraries
 - **Scripts**: Common npm commands for building, testing, linting, formatting, and running the application
   - `npm run build` - Compiles TypeScript to JavaScript
@@ -170,18 +170,7 @@ Environment validation logic. Validates that all required environment variables 
 
 #### `src/config/redis.ts`
 
-Redis configuration module. Provides Redis connection configuration for the application, reading the Redis URL from environment variables. Used by BullMQ queues and other Redis-dependent services.
-
-#### `src/config/queue.ts`
-
-BullMQ queue configuration. Provides centralized BullMQ queue configuration, converting Sidekiq configuration from Rails to BullMQ in TypeScript/Node.js. Includes:
-
-- Default job options (retry attempts, cleanup settings)
-- Environment-specific queue configuration (concurrency, queue names)
-- Queue creation utilities
-- Redis connection setup for BullMQ
-
-**Pattern**: This module replaces Rails' Sidekiq configuration and provides equivalent functionality in Node.js.
+Redis configuration module. Provides Redis connection configuration for the application, reading the Redis URL from environment variables. Used by Redis-dependent services like callback state management.
 
 #### `src/config/initializers/`
 
@@ -290,15 +279,12 @@ Custom error classes. Reserved for application-specific error types that extend 
 
 #### `src/jobs/`
 
-Background job definitions. Reserved for BullMQ job processors and job definitions.
+Reserved for async handler definitions (if needed). Since we use Node.js native async/await instead of a queue system, this directory may not be needed.
 
 #### `src/validators/`
 
 Input validation schemas and validators. Reserved for request validation logic using libraries like Joi or Zod.
 
-#### `src/worker.ts`
-
-Background worker entry point. Separate entry point for running background job processors (BullMQ workers) independently from the main HTTP server.
 
 ---
 
@@ -620,7 +606,7 @@ The application follows a layered architecture pattern:
 
 - All asynchronous operations use `async/await` syntax
 - Promises are properly handled with error catching
-- Background jobs use BullMQ for queue management
+- Async operations use Node.js native async/await (no queue system needed)
 
 ---
 
@@ -635,12 +621,12 @@ This project is a conversion from a Ruby on Rails application (`jarek-va`) to No
 - **Rails Services** → **Node.js Services** (`src/services/`)
 - **Rails Models** → **TypeScript Types/Interfaces** (`src/types/`) and future Models (`src/models/`)
 - **Rails Middleware** → **Express Middleware** (`src/middleware/`)
-- **Rails Jobs (Sidekiq)** → **BullMQ Jobs** (`src/jobs/`)
+- **Rails Jobs (Sidekiq)** → **Async Handlers** (using Node.js native async/await, no queue system)
 
 ### Key Differences
 
 1. **No ActiveRecord**: Database interactions will use a lightweight ORM (TypeORM, Prisma) or direct database clients when added
-2. **No ActiveJob**: Background jobs use BullMQ with Redis
+2. **No ActiveJob**: Async operations use Node.js native async/await (no queue system needed)
 3. **No Rails Credentials**: Configuration uses environment variables (`.env` files)
 4. **TypeScript Types**: Strong typing replaces Ruby's duck typing
 5. **Express Middleware**: Request/response handling uses Express middleware instead of Rails filters

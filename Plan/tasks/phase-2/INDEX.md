@@ -21,14 +21,14 @@ This file provides an index of all tasks for Phase 2: File-by-File Conversion fr
 - [PHASE2-010](section-02/subsection-04/PHASE2-010.md): Add Redis connection error handling
 - [PHASE2-011](section-02/subsection-05/PHASE2-011.md): Test Redis connection
 
-### 3. Queue System Setup (BullMQ)
+### 3. Async Processing Setup
 
-- [PHASE2-012](section-03/subsection-01/PHASE2-012.md): Install BullMQ dependencies
-- [PHASE2-013](section-03/subsection-02/PHASE2-013.md): Create queue configuration
-- [PHASE2-014](section-03/subsection-03/PHASE2-014.md): Create queue connection utility
-- [PHASE2-015](section-03/subsection-04/PHASE2-015.md): Create base job processor class
-- [PHASE2-016](section-03/subsection-05/PHASE2-016.md): Add queue error handling
-- [PHASE2-017](section-03/subsection-06/PHASE2-017.md): Test queue system
+- [PHASE2-012](section-03/subsection-01/PHASE2-012.md): Verify async processing dependencies
+- [PHASE2-013](section-03/subsection-02/PHASE2-013.md): Create async processing configuration
+- [PHASE2-014](section-03/subsection-03/PHASE2-014.md): Create async processing utilities
+- [PHASE2-015](section-03/subsection-04/PHASE2-015.md): Create base async handler
+- [PHASE2-016](section-03/subsection-05/PHASE2-016.md): Add async error handling
+- [PHASE2-017](section-03/subsection-06/PHASE2-017.md): Test async processing system
 
 ### 4. TelegramService Conversion
 
@@ -119,7 +119,7 @@ This file provides an index of all tasks for Phase 2: File-by-File Conversion fr
 - [PHASE2-084](section-10/subsection-08/PHASE2-084.md): Implement process_local_message method
 - [PHASE2-085](section-10/subsection-09/PHASE2-085.md): Implement send_text_as_audio method
 - [PHASE2-086](section-10/subsection-10/PHASE2-086.md): Add error handling to TelegramMessageJob
-- [PHASE2-087](section-10/subsection-11/PHASE2-087.md): Register job processor with queue
+- [PHASE2-087](section-10/subsection-11/PHASE2-087.md): Register async handler
 - [PHASE2-088](section-10/subsection-12/PHASE2-088.md): Write TelegramMessageJob unit tests
 
 ### 11. Routes Configuration
@@ -158,7 +158,7 @@ This phase converts the Rails application components to TypeScript/Node.js:
 
 - Type definitions for all external APIs
 - Redis integration for callback state management
-- BullMQ queue system for async job processing
+- Async processing system for message handling (using Node.js native async/await)
 - All services (Telegram, Cursor Runner, Callback, ElevenLabs)
 - All controllers (Telegram, Callback)
 - Message job processor

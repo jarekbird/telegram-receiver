@@ -205,6 +205,7 @@ If a task explicitly requests that you run the server (e.g., "run `npm start`", 
 
 Before proceeding, you must:
 
+- **For code writing tasks: Verify the required operation succeeded without errors AND produced the expected artifacts** (e.g., `node_modules` created, packages installed, build completed, migrations applied, files created, directories created, etc.)
 - Run automated tests to verify all functionality (including server endpoints)
 - Ensure all existing tests still pass
 - Check for linting errors and fix them
@@ -373,6 +374,7 @@ Before marking a task as complete, verify:
 - [ ] You're working on the main branch (`git branch` should show `* main`)
 - [ ] Main branch is up to date with remote (`git pull origin main` before starting)
 - [ ] Code is implemented and working
+- [ ] **For code writing tasks: The required operation succeeded without errors AND produced the expected artifacts** (e.g., `node_modules` created, packages installed, build completed, migrations applied, files created, directories created, etc.)
 - [ ] **Automated tests are written and passing** - all server functionality verified through tests (NOT by running the server manually)
 - [ ] All existing tests still pass
 - [ ] Code follows style guidelines
