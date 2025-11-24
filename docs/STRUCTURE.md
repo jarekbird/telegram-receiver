@@ -271,6 +271,28 @@ Logger utility. Provides a configured logger instance that can be imported and u
 
 **Pattern**: Utilities are pure functions or simple modules that don't depend on application state. They should be easily testable and reusable.
 
+### `src/handlers/`
+
+Async handler base classes and patterns. Contains base classes and utilities for async operations with retry logic and error handling.
+
+#### `src/handlers/base-async-handler.ts`
+
+Base async handler pattern for TypeScript/Node.js. Provides:
+
+- **BaseAsyncHandler<T, R>**: Abstract base class for async handlers with retry logic, error handling, and logging
+- **DeserializationError**: Custom error class for deserialization/parsing errors (discarded, not retried)
+- **wrapHandler()**: Helper function to wrap handler functions with retry and error handling
+- **Default configuration**: Matches Rails `ApplicationJob` behavior:
+  - Handler name: "default" (matching Rails `queue_as :default`)
+  - Retry attempts: 3 (matching Rails `attempts: 3`)
+  - Exponential backoff (matching Rails `wait: :exponentially_longer`)
+  - Retry on StandardError/Error (matching Rails `retry_on StandardError`)
+  - Discard on deserialization errors (matching Rails `discard_on ActiveJob::DeserializationError`)
+
+**Pattern**: Handlers provide a common pattern for async operations that can be called directly (no queue system needed). They match Rails `ApplicationJob` behavior but use Node.js native async/await instead of a job queue.
+
+**Rails Mapping**: `app/jobs/application_job.rb` → `src/handlers/base-async-handler.ts`
+
 ### Other `src/` Subdirectories
 
 #### `src/errors/`
@@ -279,7 +301,7 @@ Custom error classes. Reserved for application-specific error types that extend 
 
 #### `src/jobs/`
 
-Reserved for async handler definitions (if needed). Since we use Node.js native async/await instead of a queue system, this directory may not be needed.
+Reserved for async handler definitions (if needed). Since we use Node.js native async/await instead of a queue system, this directory may not be needed. Async handlers should use the `BaseAsyncHandler` pattern from `src/handlers/` instead.
 
 #### `src/validators/`
 
@@ -658,6 +680,7 @@ See `Plan/CONVERSION_STEPS.md` for detailed conversion plan and `Plan/tasks/` fo
 | `src/config/`        | Configuration and environment management   |
 | `src/config/initializers/` | Application initializers (system settings, tasks) |
 | `src/controllers/`   | HTTP request handlers                      |
+| `src/handlers/`      | Async handler base classes and patterns    |
 | `src/middleware/`    | Express middleware functions               |
 | `src/models/`        | Data models (reserved for future)          |
 | `src/routes/`        | Route definitions                          |
