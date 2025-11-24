@@ -188,9 +188,9 @@ function registerEventListeners(client: Redis): void {
     logger.error(`Redis connection error (${maskedUrl}):`, error);
   });
 
-  // Connect event: Connection established (but not yet ready)
+  // Connect event: Connection established
   client.on('connect', () => {
-    connectionStatus = ConnectionStatus.CONNECTING;
+    connectionStatus = ConnectionStatus.CONNECTED;
     logger.info(`Redis connection established (${maskedUrl})`);
   });
 
