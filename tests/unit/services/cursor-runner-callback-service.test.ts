@@ -73,10 +73,18 @@ describe('CursorRunnerCallbackService', () => {
     created_at: '2024-01-01T00:00:00Z',
   };
 
+  // Mock console methods
+  let consoleLogSpy: jest.SpyInstance;
+  let consoleErrorSpy: jest.SpyInstance;
+
   beforeEach(() => {
     jest.clearAllMocks();
     getMockLogger().info.mockClear();
     getMockLogger().error.mockClear();
+
+    // Setup console spies
+    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     // Create mock Redis instance
     mockRedis = {
@@ -84,6 +92,11 @@ describe('CursorRunnerCallbackService', () => {
       get: jest.fn().mockResolvedValue(null),
       del: jest.fn().mockResolvedValue(1),
     } as unknown as jest.Mocked<Redis>;
+  });
+
+  afterEach(() => {
+    consoleLogSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
   });
 
   describe('Constructor', () => {
@@ -145,7 +158,7 @@ describe('CursorRunnerCallbackService', () => {
       await service.storePendingRequest(requestId, testData);
 
       expect(mockRedis.setex).toHaveBeenCalledWith(key, 3600, jsonString);
-      expect(getMockLogger().info).toHaveBeenCalledWith(
+      expect(consoleLogSpy).toHaveBeenCalledWith(
         `Stored pending cursor-runner request: ${requestId}, TTL: 3600s`
       );
     });
@@ -167,7 +180,7 @@ describe('CursorRunnerCallbackService', () => {
       await service.storePendingRequest(requestId, testData, customTtl);
 
       expect(mockRedis.setex).toHaveBeenCalledWith(key, customTtl, jsonString);
-      expect(getMockLogger().info).toHaveBeenCalledWith(
+      expect(consoleLogSpy).toHaveBeenCalledWith(
         `Stored pending cursor-runner request: ${requestId}, TTL: ${customTtl}s`
       );
     });
@@ -183,6 +196,35 @@ describe('CursorRunnerCallbackService', () => {
       await service.storePendingRequest(requestId, partialData);
 
       expect(mockRedis.setex).toHaveBeenCalledWith(key, 3600, jsonString);
+    });
+
+    it('should handle Redis connection errors', async () => {
+      const redisError = new Error('Redis connection failed');
+      mockRedis.setex.mockRejectedValue(redisError);
+
+      await expect(
+        service.storePendingRequest(requestId, testData)
+      ).rejects.toThrow('Redis connection failed');
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        `Failed to store pending cursor-runner request: ${requestId}`,
+        redisError
+      );
+    });
+
+    it('should handle Redis operation errors', async () => {
+      const redisError = new Error('SETEX operation failed');
+      mockRedis.setex.mockRejectedValue(redisError);
+
+      await expect(
+        service.storePendingRequest(requestId, testData, 1800)
+      ).rejects.toThrow('SETEX operation failed');
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        `Failed to store pending cursor-runner request: ${requestId}`,
+        redisError
+      );
+      expect(consoleLogSpy).not.toHaveBeenCalled();
     });
   });
 

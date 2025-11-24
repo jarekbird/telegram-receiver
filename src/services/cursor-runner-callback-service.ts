@@ -72,11 +72,16 @@ class CursorRunnerCallbackService {
     data: PendingRequestData,
     ttl: number = CursorRunnerCallbackService.DEFAULT_TTL
   ): Promise<void> {
-    const key = this.redisKey(requestId);
-    const jsonString = JSON.stringify(data);
-    
-    await this.redis.setex(key, ttl, jsonString);
-    logger.info(`Stored pending cursor-runner request: ${requestId}, TTL: ${ttl}s`);
+    try {
+      const key = this.redisKey(requestId);
+      const jsonString = JSON.stringify(data);
+      
+      await this.redis.setex(key, ttl, jsonString);
+      console.log(`Stored pending cursor-runner request: ${requestId}, TTL: ${ttl}s`);
+    } catch (error) {
+      console.error(`Failed to store pending cursor-runner request: ${requestId}`, error);
+      throw error;
+    }
   }
 
   /**
