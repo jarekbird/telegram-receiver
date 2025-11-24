@@ -102,28 +102,14 @@ class TelegramController {
       // Comprehensive error handling (equivalent to Rails rescue StandardError)
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      const errorStack =
-        error instanceof Error ? error.stack : undefined;
+      const errorObj = error instanceof Error ? error : new Error(String(error));
 
-      // Log error message and stack trace (equivalent to Rails error logging)
-      logger.error(
-        {
-          err: error instanceof Error ? error : new Error(String(error)),
-        },
-        `Error handling Telegram webhook: ${errorMessage}`,
-      );
-
-      if (errorStack) {
-        logger.error(
-          {
-            stack: errorStack,
-          },
-          'Error stack trace',
-        );
-      }
+      // Log error message (equivalent to Rails: Rails.logger.error("Error handling Telegram webhook: #{e.message}"))
+      logger.error(`Error handling Telegram webhook: ${errorMessage}`, errorObj);
 
       // Try to send error message if we have chat info
-      // Convert update to plain object if needed (handle both object and plain types)
+      // Convert update to plain object if needed (handle Hash/object conversion like Rails: update.is_a?(Hash) ? update : update.to_h)
+      // In TypeScript, update is already a plain object, but we ensure it's not undefined
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const updateHash: any = update || {};
       const [chatId, messageId] = this.extractChatInfoFromUpdate(updateHash);
@@ -140,14 +126,14 @@ class TelegramController {
           );
         } catch (sendError) {
           // Log errors from sending error message (but don't re-raise)
+          // Equivalent to Rails: Rails.logger.error("Error sending error message: #{send_error.message}")
+          const sendErrorObj =
+            sendError instanceof Error
+              ? sendError
+              : new Error(String(sendError));
           logger.error(
-            {
-              err:
-                sendError instanceof Error
-                  ? sendError
-                  : new Error(String(sendError)),
-            },
-            'Error sending error message',
+            `Error sending error message: ${sendErrorObj.message}`,
+            sendErrorObj,
           );
         }
       }
@@ -210,12 +196,10 @@ class TelegramController {
       // Error handling (matching Rails rescue StandardError)
       const errorMessage =
         error instanceof Error ? error.message : String(error);
+      const errorObj = error instanceof Error ? error : new Error(String(error));
 
       // Log error (matching Rails: Rails.logger.error("Error setting webhook: #{e.message}"))
-      logger.error(
-        `Error setting webhook: ${errorMessage}`,
-        error instanceof Error ? error : new Error(String(error)),
-      );
+      logger.error(`Error setting webhook: ${errorMessage}`, errorObj);
 
       // Return JSON error response (matching Rails format)
       res.status(500).json({
@@ -260,12 +244,10 @@ class TelegramController {
       // Error handling (matching Rails rescue StandardError)
       const errorMessage =
         error instanceof Error ? error.message : String(error);
+      const errorObj = error instanceof Error ? error : new Error(String(error));
 
       // Log error (matching Rails: Rails.logger.error("Error getting webhook info: #{e.message}"))
-      logger.error(
-        `Error getting webhook info: ${errorMessage}`,
-        error instanceof Error ? error : new Error(String(error)),
-      );
+      logger.error(`Error getting webhook info: ${errorMessage}`, errorObj);
 
       // Return JSON error response (matching Rails format)
       res.status(500).json({
@@ -310,12 +292,10 @@ class TelegramController {
       // Error handling (matching Rails rescue StandardError)
       const errorMessage =
         error instanceof Error ? error.message : String(error);
+      const errorObj = error instanceof Error ? error : new Error(String(error));
 
       // Log error (matching Rails: Rails.logger.error("Error deleting webhook: #{e.message}"))
-      logger.error(
-        `Error deleting webhook: ${errorMessage}`,
-        error instanceof Error ? error : new Error(String(error)),
-      );
+      logger.error(`Error deleting webhook: ${errorMessage}`, errorObj);
 
       // Return JSON error response (matching Rails format)
       res.status(500).json({
