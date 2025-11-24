@@ -163,20 +163,66 @@ class TelegramController {
    * Sets the Telegram webhook URL and optional secret token.
    * Requires admin authentication.
    * 
-   * Implementation will be added in PHASE2-058
+   * Matches Rails implementation in jarek-va/app/controllers/telegram_controller.rb (lines 51-70)
    * 
    * @param req - Express request object
    * @param res - Express response object
    * @returns Promise that resolves when the response is sent
    */
-  async setWebhook(_req: Request, _res: Response): Promise<void> {
-    // Implementation will be added in PHASE2-058
-    // - Check admin authentication
-    // - Get webhook URL from params or use default
-    // - Get secret token from params or config
-    // - Call TelegramService.setWebhook
-    // - Return JSON with { ok: true/false, ... } format
-    throw new Error('Not implemented: setWebhook method implementation in PHASE2-058');
+  async setWebhook(req: Request, res: Response): Promise<void> {
+    try {
+      // Check admin authentication (matching Rails: return head :unauthorized unless authenticate_admin)
+      if (!this.authenticateAdmin(req)) {
+        res.status(401).json({
+          ok: false,
+          error: 'Unauthorized',
+        });
+        return;
+      }
+
+      // Get webhook URL from params or use default (matching Rails: params[:url] || default_webhook_url)
+      const webhookUrl =
+        (req.body?.url as string) ||
+        (req.query.url as string) ||
+        this.defaultWebhookUrl();
+
+      // Get secret_token from params or use config default
+      // Rails uses: params[:secret_token] || Rails.application.config.telegram_webhook_secret
+      const secretToken =
+        (req.body?.secret_token as string) ||
+        (req.query.secret_token as string) ||
+        process.env.TELEGRAM_WEBHOOK_SECRET ||
+        'changeme';
+
+      // Call TelegramService.setWebhook (matching Rails: TelegramService.set_webhook(url: webhook_url, secret_token: secret_token))
+      const result = await this.telegramService.setWebhook(
+        webhookUrl,
+        secretToken,
+      );
+
+      // Return JSON success response (matching Rails format)
+      res.status(200).json({
+        ok: true,
+        message: 'Webhook set successfully',
+        webhook_info: result,
+      });
+    } catch (error) {
+      // Error handling (matching Rails rescue StandardError)
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      // Log error (matching Rails: Rails.logger.error("Error setting webhook: #{e.message}"))
+      logger.error(
+        `Error setting webhook: ${errorMessage}`,
+        error instanceof Error ? error : new Error(String(error)),
+      );
+
+      // Return JSON error response (matching Rails format)
+      res.status(500).json({
+        ok: false,
+        error: errorMessage,
+      });
+    }
   }
 
   /**
@@ -222,20 +268,43 @@ class TelegramController {
   /**
    * Authenticates admin requests
    * 
-   * Checks X-Admin-Secret header or admin_secret query/body param
+   * Checks X-Admin-Secret header, HTTP_X_ADMIN_SECRET env var, or admin_secret query/body param
    * against the expected WEBHOOK_SECRET configuration.
    * 
-   * Implementation will be added in PHASE2-061
+   * Matches Rails implementation in jarek-va/app/controllers/telegram_controller.rb (lines 110-130)
    * 
    * @param req - Express request object
    * @returns true if authenticated, false otherwise
    */
-  protected authenticateAdmin(_req: Request): boolean {
-    // Implementation will be added in PHASE2-061
-    // - Check X-Admin-Secret header or admin_secret query/body param
-    // - Compare against WEBHOOK_SECRET environment variable
-    // - Return true if authenticated, false otherwise
-    return false;
+  protected authenticateAdmin(req: Request): boolean {
+    // Get admin secret from various sources (matching Rails implementation)
+    // Rails checks: request.headers['X-Admin-Secret'] || request.env['HTTP_X_ADMIN_SECRET'] || params[:admin_secret] || params['admin_secret']
+    const adminSecret =
+      req.headers['x-admin-secret'] ||
+      req.headers['X-Admin-Secret'] ||
+      (req as any).env?.['HTTP_X_ADMIN_SECRET'] ||
+      req.query.admin_secret ||
+      req.body?.admin_secret;
+
+    // Get expected secret from WEBHOOK_SECRET environment variable
+    // Rails uses: Rails.application.config.webhook_secret
+    const expectedSecret = process.env.WEBHOOK_SECRET || 'changeme';
+
+    // Compare secrets (matching Rails: admin_secret == expected_secret)
+    const result = adminSecret === expectedSecret;
+
+    // Debug logging in test environment (matching Rails behavior)
+    if (process.env.NODE_ENV === 'test' && !result) {
+      logger.warn('Admin authentication failed', {
+        adminSecret: adminSecret ? '***' : undefined,
+        expectedSecret: expectedSecret ? '***' : undefined,
+        hasHeader: !!req.headers['x-admin-secret'] || !!req.headers['X-Admin-Secret'],
+        hasQueryParam: !!req.query.admin_secret,
+        hasBodyParam: !!req.body?.admin_secret,
+      });
+    }
+
+    return result;
   }
 
   /**
