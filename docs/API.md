@@ -46,7 +46,7 @@ Tool execution webhook endpoint for external agent integrations:
 
 - **`POST /agent-tools`** - Tool execution webhook endpoint
   - Executes tools requested by external agents
-  - **Authentication**: Required via `X-EL-Secret` header or `Authorization: Bearer <token>`
+  - **Authentication**: Required via `X-EL-Secret` header or `Authorization: Bearer <token>` (matches `WEBHOOK_SECRET` config)
   - Request body: `{ tool: string, args: object, conversation_id?: string }`
   - Response format: `{ ok: boolean, say: string, result: object }`
 
