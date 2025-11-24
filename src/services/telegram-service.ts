@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
+import { TelegramApiResponse, TelegramMessage } from '../types/telegram';
 // Dependencies for future implementation (PHASE2-023, PHASE2-024)
 // import { promises as fs } from 'fs';
 // import * as path from 'path';
@@ -55,28 +56,55 @@ class TelegramService {
    * @param text - Message text to send
    * @param parseMode - Optional parse mode ('HTML' or 'Markdown'). Defaults to 'HTML'
    * @param replyToMessageId - Optional message ID to reply to
-   * @returns Promise resolving to Telegram API response
+   * @returns Promise resolving to Telegram API response, or undefined if bot token is blank
    * 
-   * @throws Error if bot token is blank or if API request fails
-   * 
-   * Implementation will be added in PHASE2-019
+   * @throws Error if API request fails
    */
   async sendMessage(
-    _chatId: number | string,
-    _text: string,
-    _parseMode: string = 'HTML',
-    _replyToMessageId?: number
-  ): Promise<any> {
+    chatId: number | string,
+    text: string,
+    parseMode: string = 'HTML',
+    replyToMessageId?: number
+  ): Promise<TelegramApiResponse<TelegramMessage> | undefined> {
     if (!this.isTokenValid()) {
-      return;
+      return undefined;
     }
 
     try {
-      // TODO: Implement in PHASE2-019
-      // - Escape HTML entities if parseMode is 'HTML' using escapeHtmlEntities helper
-      // - Make POST request to /sendMessage endpoint
-      // - Return API response
-      throw new Error('Method not yet implemented');
+      // Escape HTML entities if using HTML parse_mode to prevent parsing errors
+      // with text that looks like HTML tags (e.g., "tcpsocket:(closed)")
+      const escapedText = parseMode === 'HTML' 
+        ? this.escapeHtmlEntities(text)
+        : text;
+
+      // Build request body
+      const requestBody: {
+        chat_id: number | string;
+        text: string;
+        parse_mode?: string;
+        reply_to_message_id?: number;
+      } = {
+        chat_id: chatId,
+        text: escapedText,
+      };
+
+      // Only include parse_mode if it's provided (Telegram API accepts null for plain text)
+      if (parseMode) {
+        requestBody.parse_mode = parseMode;
+      }
+
+      // Only include reply_to_message_id if provided
+      if (replyToMessageId !== undefined) {
+        requestBody.reply_to_message_id = replyToMessageId;
+      }
+
+      // Make POST request to Telegram Bot API sendMessage endpoint
+      const response = await this.axiosInstance.post<TelegramApiResponse<TelegramMessage>>(
+        '/sendMessage',
+        requestBody
+      );
+
+      return response.data;
     } catch (error: any) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const stackTrace = error instanceof Error ? error.stack : '';
@@ -283,16 +311,14 @@ class TelegramService {
    * 
    * @param text - Text to escape
    * @returns Escaped text
-   * 
-   * Implementation will be added in PHASE2-025
    */
-  private escapeHtmlEntities(_text: string): string {
-    // TODO: Implement in PHASE2-025
-    // - Replace & with &amp; (must be first)
-    // - Replace < with &lt;
-    // - Replace > with &gt;
-    // - Return escaped text
-    return _text;
+  private escapeHtmlEntities(text: string): string {
+    // Escape HTML special characters to prevent Telegram from trying to parse
+    // them as HTML tags. Must escape & first to avoid double-escaping existing entities.
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
   }
 }
 
