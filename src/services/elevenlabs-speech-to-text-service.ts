@@ -293,6 +293,179 @@ class ElevenLabsSpeechToTextService {
       throw new Error(`Unexpected error during transcription: ${String(error)}`);
     }
   }
+
+  /**
+   * Transcribe audio from an IO object (e.g., downloaded file stream) to text
+   * 
+   * @param audioIo - ReadableStream or Buffer containing audio data
+   * @param options - Optional parameters: filename (default: 'audio.ogg') and language code
+   * @returns Promise resolving to the transcribed text
+   * @throws Error if audioIo is null/undefined
+   * @throws TranscriptionError if HTTP response is not successful or transcribed text is blank
+   * @throws InvalidResponseError if JSON parsing fails
+   * @throws ConnectionError for network connection issues
+   * @throws TimeoutError for request timeouts
+   */
+  async transcribeIo(
+    audioIo: NodeJS.ReadableStream | Buffer,
+    options?: { filename?: string; language?: string }
+  ): Promise<string> {
+    // Validate audioIo parameter is not null/undefined
+    if (audioIo === null || audioIo === undefined) {
+      throw new Error('Audio IO is required');
+    }
+
+    // Extract options with defaults
+    const filename = options?.filename || 'audio.ogg';
+    const language = options?.language;
+
+    // Convert stream to Buffer if it's a ReadableStream
+    let fileContent: Buffer;
+    if (Buffer.isBuffer(audioIo)) {
+      // If it's already a Buffer, use it directly
+      fileContent = audioIo;
+    } else {
+      // If it's a ReadableStream, read it into a Buffer
+      // Note: Node.js streams don't have a rewind method, but we can read the stream
+      // If the stream has already been read, this will fail - that's expected behavior
+      try {
+        const chunks: Buffer[] = [];
+        for await (const chunk of audioIo) {
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        }
+        fileContent = Buffer.concat(chunks);
+      } catch (streamError: any) {
+        throw new Error(`Failed to read audio stream: ${streamError.message}`);
+      }
+    }
+
+    // Create multipart form data
+    const formData = new FormData();
+    formData.append('file', fileContent, {
+      filename: filename,
+    });
+    formData.append('model_id', this._modelId);
+    
+    // Add language field only if language parameter is provided
+    if (language !== undefined && language !== null && language.trim().length > 0) {
+      formData.append('language', language);
+    }
+
+    // Build HTTP POST request URL
+    const url = `${API_BASE_URL}${TRANSCRIPTION_ENDPOINT}`;
+
+    // Log when sending audio IO for transcription
+    logger.info(`Sending audio IO to ElevenLabs for transcription: ${filename}`);
+
+    try {
+      // Execute HTTP request with timeout handling
+      const response = await axios.post(url, formData, {
+        headers: {
+          'xi-api-key': this._apiKey,
+          ...formData.getHeaders(),
+        },
+        timeout: this._timeout * 1000, // Convert seconds to milliseconds
+      });
+
+      // Log request info (from execute_request equivalent)
+      logger.info(`ElevenLabsSpeechToTextService: POST ${TRANSCRIPTION_ENDPOINT}`);
+      
+      // Log response info (from execute_request equivalent)
+      logger.info(`ElevenLabsSpeechToTextService: Response ${response.status} ${response.statusText}`);
+
+      // Parse JSON response
+      let result: any;
+      try {
+        result = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+      } catch (parseError: any) {
+        throw new InvalidResponseError(`Failed to parse response: ${parseError.message}`);
+      }
+
+      // Extract text field from response (handle both string and symbol keys)
+      const transcribedText = result.text || result['text'] || '';
+
+      // Validate transcribed text is not blank
+      if (!transcribedText || transcribedText.trim().length === 0) {
+        throw new TranscriptionError('No text returned from transcription');
+      }
+
+      // Log successful transcription (include first 50 characters of transcribed text)
+      const preview = transcribedText.length > 50 
+        ? `${transcribedText.substring(0, 50)}...` 
+        : transcribedText;
+      logger.info(`Successfully transcribed audio: ${preview}`);
+
+      // Return transcribed text string
+      return transcribedText;
+    } catch (error: any) {
+      // Re-throw custom errors first (Error, TranscriptionError, InvalidResponseError, etc.)
+      // This must happen before axios error handling to preserve error types
+      if (
+        error instanceof TranscriptionError ||
+        error instanceof InvalidResponseError ||
+        error instanceof ConnectionError ||
+        error instanceof TimeoutError ||
+        error instanceof Error
+      ) {
+        throw error;
+      }
+
+      // Handle HTTP error responses (non-2xx status codes)
+      if (axios.isAxiosError(error)) {
+        const axiosError = error as AxiosError;
+        
+        // Handle timeout errors
+        if (axiosError.code === 'ECONNABORTED' || (axiosError.message && axiosError.message.includes('timeout'))) {
+          throw new TimeoutError(`Request to ElevenLabs timed out: ${axiosError.message || 'Request timeout'}`);
+        }
+
+        // Handle connection errors
+        if (
+          axiosError.code === 'ECONNREFUSED' ||
+          axiosError.code === 'EHOSTUNREACH' ||
+          axiosError.code === 'ENOTFOUND' ||
+          axiosError.code === 'ETIMEDOUT'
+        ) {
+          throw new ConnectionError(`Failed to connect to ElevenLabs: ${axiosError.message}`);
+        }
+
+        // Handle HTTP error responses (non-2xx status codes)
+        if (axiosError.response) {
+          const status = axiosError.response.status;
+          const statusText = axiosError.response.statusText;
+          let errorMessage = `HTTP ${status}: ${statusText}`;
+
+          // Log error response body (first 500 characters) for debugging
+          const responseBody = axiosError.response.data 
+            ? String(axiosError.response.data).substring(0, 500)
+            : '';
+          logger.error(`ElevenLabs API error: ${status} - Response body: ${responseBody}`);
+
+          // Extract error message from response body JSON if available
+          try {
+            const errorBody = typeof axiosError.response.data === 'string'
+              ? JSON.parse(axiosError.response.data)
+              : axiosError.response.data;
+            
+            if (errorBody && typeof errorBody === 'object') {
+              errorMessage = errorBody.detail || errorBody.error || errorBody.message || errorMessage;
+            }
+          } catch (jsonError) {
+            // Failed to parse error response as JSON - use default error message
+            logger.error('Failed to parse error response as JSON');
+          }
+
+          throw new TranscriptionError(errorMessage);
+        }
+
+        // Handle other axios errors (network errors, etc.)
+        throw new ConnectionError(`Failed to connect to ElevenLabs: ${axiosError.message || 'Connection error'}`);
+      }
+
+      // Handle unexpected errors
+      throw new Error(`Unexpected error during transcription: ${String(error)}`);
+    }
+  }
 }
 
 export default ElevenLabsSpeechToTextService;
