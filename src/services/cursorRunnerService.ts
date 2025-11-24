@@ -1,5 +1,6 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import { randomBytes } from 'crypto';
+import logger from '@/utils/logger';
 
 /**
  * Base error class for CursorRunnerService
@@ -110,6 +111,227 @@ class CursorRunnerService {
     const timestamp = Math.floor(Date.now() / 1000);
     const randomHex = randomBytes(4).toString('hex');
     return `req-${timestamp}-${randomHex}`;
+  }
+
+  /**
+   * Performs a GET request to the cursor-runner API
+   * @param path - API path (will be appended to baseUrl)
+   * @returns Axios response object
+   * @throws {ConnectionError} When connection fails
+   * @throws {TimeoutError} When request times out
+   * @throws {CursorRunnerServiceError} When HTTP status is not success (except 422)
+   */
+  private async get(path: string): Promise<AxiosResponse> {
+    const uri = `${this.baseUrl}${path}`;
+    const http = this.buildHttp(uri);
+    return this.executeRequest(http, 'GET', path, uri);
+  }
+
+  /**
+   * Performs a POST request to the cursor-runner API
+   * @param path - API path (will be appended to baseUrl)
+   * @param body - Request body object (will be converted to JSON)
+   * @returns Axios response object
+   * @throws {ConnectionError} When connection fails
+   * @throws {TimeoutError} When request times out
+   * @throws {CursorRunnerServiceError} When HTTP status is not success (except 422)
+   */
+  private async post(path: string, body: Record<string, unknown>): Promise<AxiosResponse> {
+    const uri = `${this.baseUrl}${path}`;
+    const http = this.buildHttp(uri);
+    const jsonBody = JSON.stringify(body);
+    return this.executeRequest(http, 'POST', path, uri, jsonBody);
+  }
+
+  /**
+   * Builds and configures an HTTP client (axios instance) for making requests
+   * Configures SSL/TLS based on URI scheme, sets timeouts, and handles connection errors
+   * @param uri - Full URI string (used to determine http vs https)
+   * @returns Configured axios instance
+   * @throws {ConnectionError} When connection configuration fails
+   * @throws {TimeoutError} When timeout configuration fails
+   */
+  private buildHttp(uri: string): AxiosInstance {
+    try {
+      // Parse URI to determine protocol and configure accordingly
+      const url = new URL(uri);
+      
+      // Create a new axios instance for this request with proper configuration
+      // Don't set baseURL since we'll use full URIs in requests
+      const http = axios.create({
+        timeout: this.timeout,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        // Axios automatically handles SSL/TLS based on protocol in the URI
+        // https://axios-http.com/docs/config_defaults
+      });
+
+      return http;
+    } catch (error) {
+      // Handle connection errors during HTTP client setup
+      if (error instanceof Error) {
+        const errorCode = (error as NodeJS.ErrnoException).code;
+        if (errorCode === 'ECONNREFUSED' || errorCode === 'EHOSTUNREACH') {
+          throw new ConnectionError(`Failed to connect to cursor-runner: ${error.message}`);
+        }
+        // Re-throw as ConnectionError for other socket errors
+        if (error.message.includes('socket') || error.message.includes('connect')) {
+          throw new ConnectionError(`Failed to connect to cursor-runner: ${error.message}`);
+        }
+      }
+      // For timeout errors during setup (unlikely but possible)
+      if (error instanceof Error && (error.message.includes('timeout') || error.message.includes('ETIMEDOUT'))) {
+        throw new TimeoutError(`Request to cursor-runner timed out: ${error.message}`);
+      }
+      // Re-throw unknown errors
+      throw error;
+    }
+  }
+
+  /**
+   * Executes an HTTP request using the configured axios instance
+   * Logs request method and path, executes request, logs response, and handles errors
+   * @param http - Configured axios instance
+   * @param method - HTTP method ('GET' or 'POST')
+   * @param path - API path (for logging)
+   * @param uri - Full URI (for request)
+   * @param body - Optional request body (for POST requests)
+   * @returns Axios response object
+   * @throws {ConnectionError} When connection fails
+   * @throws {TimeoutError} When request times out
+   * @throws {CursorRunnerServiceError} When HTTP status is not success (except 422)
+   */
+  private async executeRequest(
+    http: AxiosInstance,
+    method: 'GET' | 'POST',
+    path: string,
+    uri: string,
+    body?: string
+  ): Promise<AxiosResponse> {
+    // Log request method and path
+    logger.info(`CursorRunnerService: ${method} ${path}`);
+
+    try {
+      let response: AxiosResponse;
+
+      if (method === 'GET') {
+        response = await http.get(uri);
+      } else {
+        response = await http.post(uri, body);
+      }
+
+      // Log response status code and message
+      logger.info(`CursorRunnerService: Response ${response.status} ${response.statusText}`);
+
+      // Handle 422 Unprocessable Entity as a valid response (allows caller to receive error details)
+      if (response.status === 422) {
+        return response;
+      }
+
+      // Raise error for non-success HTTP status codes (non-2xx, except 422)
+      if (response.status < 200 || response.status >= 300) {
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+
+        // Attempt to extract error message from response body JSON if available
+        try {
+          const errorBody = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+          if (errorBody && typeof errorBody === 'object' && 'error' in errorBody) {
+            errorMessage = errorBody.error as string;
+          }
+        } catch {
+          // Use default error message if JSON parsing fails
+        }
+
+        throw new CursorRunnerServiceError(errorMessage);
+      }
+
+      return response;
+    } catch (error) {
+      // Handle timeout errors
+      if (axios.isAxiosError(error)) {
+        const axiosError = error as AxiosError;
+        if (axiosError.code === 'ECONNABORTED' || axiosError.message.includes('timeout')) {
+          throw new TimeoutError(`Request to cursor-runner timed out: ${axiosError.message}`);
+        }
+        // Handle connection errors
+        if (axiosError.code === 'ECONNREFUSED' || axiosError.code === 'EHOSTUNREACH') {
+          throw new ConnectionError(`Failed to connect to cursor-runner: ${axiosError.message}`);
+        }
+        // Handle other axios errors (network errors, etc.)
+        if (axiosError.code === 'ENOTFOUND' || axiosError.code === 'ECONNRESET') {
+          throw new ConnectionError(`Failed to connect to cursor-runner: ${axiosError.message}`);
+        }
+        // If axios error has a response, handle HTTP status errors
+        if (axiosError.response) {
+          const response = axiosError.response;
+          // Handle 422 as valid (shouldn't reach here since we handle it above, but just in case)
+          if (response.status === 422) {
+            return response;
+          }
+          let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+          // Try to extract error from response body
+          try {
+            const errorBody = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+            if (errorBody && typeof errorBody === 'object' && 'error' in errorBody) {
+              errorMessage = errorBody.error as string;
+            }
+          } catch {
+            // Use default error message
+          }
+          throw new CursorRunnerServiceError(errorMessage);
+        }
+      }
+
+      // Handle Node.js system errors
+      if (error instanceof Error) {
+        const nodeError = error as NodeJS.ErrnoException;
+        if (nodeError.code === 'ECONNREFUSED' || nodeError.code === 'EHOSTUNREACH') {
+          throw new ConnectionError(`Failed to connect to cursor-runner: ${error.message}`);
+        }
+        if (nodeError.code === 'ETIMEDOUT' || error.message.includes('timeout')) {
+          throw new TimeoutError(`Request to cursor-runner timed out: ${error.message}`);
+        }
+        // Generic socket errors
+        if (error.message.includes('socket') || error.message.includes('connect')) {
+          throw new ConnectionError(`Failed to connect to cursor-runner: ${error.message}`);
+        }
+      }
+
+      // Re-throw unknown errors
+      throw error;
+    }
+  }
+
+  /**
+   * Parses JSON response body from HTTP response
+   * @param response - Axios response object
+   * @returns Parsed object (plain JavaScript/TypeScript object, equivalent to Rails symbolize_names: true)
+   * @throws {InvalidResponseError} When JSON parsing fails
+   */
+  private parseResponse(response: AxiosResponse): Record<string, unknown> {
+    try {
+      // Axios automatically parses JSON responses, but we'll handle it explicitly
+      // to match Rails behavior and handle edge cases
+      let data = response.data;
+
+      // If data is already an object, return it
+      if (typeof data === 'object' && data !== null) {
+        return data as Record<string, unknown>;
+      }
+
+      // If data is a string, try to parse it
+      if (typeof data === 'string') {
+        return JSON.parse(data) as Record<string, unknown>;
+      }
+
+      // If data is undefined or null, return empty object
+      return {};
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown parsing error';
+      throw new InvalidResponseError(`Failed to parse response: ${errorMessage}`);
+    }
   }
 }
 
