@@ -231,18 +231,48 @@ class TelegramController {
    * Gets information about the current webhook configuration.
    * Requires admin authentication.
    * 
-   * Implementation will be added in PHASE2-059
+   * Matches Rails implementation in jarek-va/app/controllers/telegram_controller.rb (lines 72-88)
    * 
    * @param req - Express request object
    * @param res - Express response object
    * @returns Promise that resolves when the response is sent
    */
-  async getWebhookInfo(_req: Request, _res: Response): Promise<void> {
-    // Implementation will be added in PHASE2-059
-    // - Check admin authentication
-    // - Call TelegramService.getWebhookInfo
-    // - Return JSON with { ok: true/false, webhook_info: ... } format
-    throw new Error('Not implemented: getWebhookInfo method implementation in PHASE2-059');
+  async getWebhookInfo(req: Request, res: Response): Promise<void> {
+    try {
+      // Check admin authentication (matching Rails: return head :unauthorized unless authenticate_admin)
+      if (!this.authenticateAdmin(req)) {
+        res.status(401).json({
+          ok: false,
+          error: 'Unauthorized',
+        });
+        return;
+      }
+
+      // Call TelegramService.getWebhookInfo (matching Rails: TelegramService.webhook_info)
+      const info = await this.telegramService.getWebhookInfo();
+
+      // Return JSON success response (matching Rails format)
+      res.status(200).json({
+        ok: true,
+        webhook_info: info,
+      });
+    } catch (error) {
+      // Error handling (matching Rails rescue StandardError)
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      // Log error (matching Rails: Rails.logger.error("Error getting webhook info: #{e.message}"))
+      logger.error(
+        `Error getting webhook info: ${errorMessage}`,
+        error instanceof Error ? error : new Error(String(error)),
+      );
+
+      // Return JSON error response (matching Rails format)
+      res.status(500).json({
+        ok: false,
+        error: errorMessage,
+      });
+    }
   }
 
   /**
