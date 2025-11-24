@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import { randomBytes } from 'crypto';
 import logger from '@/utils/logger';
-import { CursorExecuteResponse, CursorIterateResponse, GitCloneResponse } from '@/types/cursor-runner';
+import { CursorExecuteResponse, CursorIterateResponse, GitCloneResponse, GitListRepositoriesResponse } from '@/types/cursor-runner';
 
 /**
  * Base error class for CursorRunnerService
@@ -458,6 +458,25 @@ class CursorRunnerService {
 
     // Return parsed response as GitCloneResponse
     return parsedResponse as GitCloneResponse;
+  }
+
+  /**
+   * Lists all locally cloned Git repositories by calling the cursor-runner API's /git/repositories endpoint
+   * @returns Promise resolving to GitListRepositoriesResponse with success, repositories (string array), and count
+   * @throws {ConnectionError} When connection to cursor-runner fails
+   * @throws {TimeoutError} When request times out
+   * @throws {InvalidResponseError} When response cannot be parsed
+   * @throws {CursorRunnerServiceError} When HTTP error occurs (non-2xx, except 422)
+   */
+  async listRepositories(): Promise<GitListRepositoriesResponse> {
+    // GET to /git/repositories endpoint using helper method
+    const response = await this.get('/git/repositories');
+
+    // Parse JSON response body using helper method
+    const parsedResponse = this.parseResponse(response);
+
+    // Return parsed response as GitListRepositoriesResponse
+    return parsedResponse as GitListRepositoriesResponse;
   }
 }
 

@@ -12,7 +12,7 @@ import CursorRunnerService, {
 } from '../../../src/services/cursorRunnerService';
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import { AxiosRequestConfig } from 'axios';
-import { CursorExecuteResponse, CursorIterateResponse, GitCloneResponse } from '../../../src/types/cursor-runner';
+import { CursorExecuteResponse, CursorIterateResponse, GitCloneResponse, GitListRepositoriesResponse } from '../../../src/types/cursor-runner';
 
 // Mock logger - define inline to avoid hoisting issues
 jest.mock('../../../src/utils/logger', () => {
@@ -1463,6 +1463,210 @@ describe('CursorRunnerService', () => {
           repositoryUrl: 'https://github.com/user/repo.git',
         })
       ).rejects.toThrow('Failed to parse response: Unexpected token');
+
+      buildHttpSpy.mockRestore();
+      executeRequestSpy.mockRestore();
+      parseResponseSpy.mockRestore();
+    });
+  });
+
+  describe('listRepositories method', () => {
+    let mockAxiosInstance: jest.Mocked<AxiosInstance>;
+    let mockResponse: AxiosResponse;
+
+    beforeEach(() => {
+      mockAxiosInstance = {
+        get: jest.fn(),
+        post: jest.fn(),
+      } as unknown as jest.Mocked<AxiosInstance>;
+
+      mockResponse = {
+        status: 200,
+        statusText: 'OK',
+        data: {
+          success: true,
+          repositories: ['repo1', 'repo2', 'repo3'],
+          count: 3,
+        },
+        headers: {},
+        config: {} as AxiosRequestConfig,
+      } as AxiosResponse;
+    });
+
+    it('should list repositories successfully', async () => {
+      const buildHttpSpy = jest.spyOn(service as any, 'buildHttp').mockReturnValue(mockAxiosInstance);
+      const executeRequestSpy = jest.spyOn(service as any, 'executeRequest').mockResolvedValue(mockResponse);
+      const parseResponseSpy = jest.spyOn(service as any, 'parseResponse').mockReturnValue(mockResponse.data);
+
+      const result = await service.listRepositories();
+
+      expect(buildHttpSpy).toHaveBeenCalledWith(`${baseUrl}/git/repositories`);
+      expect(executeRequestSpy).toHaveBeenCalledWith(
+        mockAxiosInstance,
+        'GET',
+        '/git/repositories',
+        `${baseUrl}/git/repositories`
+      );
+      expect(parseResponseSpy).toHaveBeenCalledWith(mockResponse);
+      expect(result).toEqual(mockResponse.data);
+      expect(result.success).toBe(true);
+      expect(result.repositories).toEqual(['repo1', 'repo2', 'repo3']);
+      expect(result.count).toBe(3);
+
+      buildHttpSpy.mockRestore();
+      executeRequestSpy.mockRestore();
+      parseResponseSpy.mockRestore();
+    });
+
+    it('should return repositories as string array', async () => {
+      const buildHttpSpy = jest.spyOn(service as any, 'buildHttp').mockReturnValue(mockAxiosInstance);
+      const executeRequestSpy = jest.spyOn(service as any, 'executeRequest').mockResolvedValue(mockResponse);
+      const parseResponseSpy = jest.spyOn(service as any, 'parseResponse').mockReturnValue(mockResponse.data);
+
+      const result = await service.listRepositories();
+
+      expect(Array.isArray(result.repositories)).toBe(true);
+      expect(result.repositories.every((repo) => typeof repo === 'string')).toBe(true);
+
+      buildHttpSpy.mockRestore();
+      executeRequestSpy.mockRestore();
+      parseResponseSpy.mockRestore();
+    });
+
+    it('should handle empty repositories list', async () => {
+      const emptyResponse = {
+        ...mockResponse,
+        data: {
+          success: true,
+          repositories: [],
+          count: 0,
+        },
+      } as AxiosResponse;
+
+      const buildHttpSpy = jest.spyOn(service as any, 'buildHttp').mockReturnValue(mockAxiosInstance);
+      const executeRequestSpy = jest.spyOn(service as any, 'executeRequest').mockResolvedValue(emptyResponse);
+      const parseResponseSpy = jest.spyOn(service as any, 'parseResponse').mockReturnValue(emptyResponse.data);
+
+      const result = await service.listRepositories();
+
+      expect(result.success).toBe(true);
+      expect(result.repositories).toEqual([]);
+      expect(result.count).toBe(0);
+
+      buildHttpSpy.mockRestore();
+      executeRequestSpy.mockRestore();
+      parseResponseSpy.mockRestore();
+    });
+
+    it('should use GET method (not POST)', async () => {
+      const buildHttpSpy = jest.spyOn(service as any, 'buildHttp').mockReturnValue(mockAxiosInstance);
+      const executeRequestSpy = jest.spyOn(service as any, 'executeRequest').mockResolvedValue(mockResponse);
+      const parseResponseSpy = jest.spyOn(service as any, 'parseResponse').mockReturnValue(mockResponse.data);
+
+      await service.listRepositories();
+
+      expect(executeRequestSpy).toHaveBeenCalledWith(
+        mockAxiosInstance,
+        'GET',
+        '/git/repositories',
+        `${baseUrl}/git/repositories`
+      );
+
+      buildHttpSpy.mockRestore();
+      executeRequestSpy.mockRestore();
+      parseResponseSpy.mockRestore();
+    });
+
+    it('should not send request body (GET request)', async () => {
+      const buildHttpSpy = jest.spyOn(service as any, 'buildHttp').mockReturnValue(mockAxiosInstance);
+      const executeRequestSpy = jest.spyOn(service as any, 'executeRequest').mockResolvedValue(mockResponse);
+      const parseResponseSpy = jest.spyOn(service as any, 'parseResponse').mockReturnValue(mockResponse.data);
+
+      await service.listRepositories();
+
+      // Verify that no body is passed (5th parameter should not exist)
+      expect(executeRequestSpy.mock.calls[0].length).toBe(4);
+
+      buildHttpSpy.mockRestore();
+      executeRequestSpy.mockRestore();
+      parseResponseSpy.mockRestore();
+    });
+
+    it('should handle connection errors', async () => {
+      const buildHttpSpy = jest.spyOn(service as any, 'buildHttp').mockReturnValue(mockAxiosInstance);
+      const executeRequestSpy = jest.spyOn(service as any, 'executeRequest').mockRejectedValue(
+        new ConnectionError('Failed to connect to cursor-runner: Connection refused')
+      );
+
+      await expect(service.listRepositories()).rejects.toThrow(ConnectionError);
+      await expect(service.listRepositories()).rejects.toThrow('Failed to connect to cursor-runner: Connection refused');
+
+      buildHttpSpy.mockRestore();
+      executeRequestSpy.mockRestore();
+    });
+
+    it('should handle timeout errors', async () => {
+      const buildHttpSpy = jest.spyOn(service as any, 'buildHttp').mockReturnValue(mockAxiosInstance);
+      const executeRequestSpy = jest.spyOn(service as any, 'executeRequest').mockRejectedValue(
+        new TimeoutError('Request to cursor-runner timed out: timeout of 5000ms exceeded')
+      );
+
+      await expect(service.listRepositories()).rejects.toThrow(TimeoutError);
+      await expect(service.listRepositories()).rejects.toThrow('Request to cursor-runner timed out: timeout of 5000ms exceeded');
+
+      buildHttpSpy.mockRestore();
+      executeRequestSpy.mockRestore();
+    });
+
+    it('should handle HTTP error responses (non-2xx, except 422)', async () => {
+      const buildHttpSpy = jest.spyOn(service as any, 'buildHttp').mockReturnValue(mockAxiosInstance);
+      const executeRequestSpy = jest.spyOn(service as any, 'executeRequest').mockRejectedValue(
+        new CursorRunnerServiceError('HTTP 500: Internal Server Error')
+      );
+
+      await expect(service.listRepositories()).rejects.toThrow(CursorRunnerServiceError);
+      await expect(service.listRepositories()).rejects.toThrow('HTTP 500: Internal Server Error');
+
+      buildHttpSpy.mockRestore();
+      executeRequestSpy.mockRestore();
+    });
+
+    it('should handle 422 response as valid (not throw error)', async () => {
+      const response422 = {
+        ...mockResponse,
+        status: 422,
+        statusText: 'Unprocessable Entity',
+        data: {
+          success: false,
+          repositories: [],
+          count: 0,
+          message: 'No repositories found',
+        },
+      } as AxiosResponse;
+
+      const buildHttpSpy = jest.spyOn(service as any, 'buildHttp').mockReturnValue(mockAxiosInstance);
+      const executeRequestSpy = jest.spyOn(service as any, 'executeRequest').mockResolvedValue(response422);
+      const parseResponseSpy = jest.spyOn(service as any, 'parseResponse').mockReturnValue(response422.data);
+
+      const result = await service.listRepositories();
+
+      expect(result).toEqual(response422.data);
+      expect(result.success).toBe(false);
+
+      buildHttpSpy.mockRestore();
+      executeRequestSpy.mockRestore();
+      parseResponseSpy.mockRestore();
+    });
+
+    it('should handle JSON parsing errors', async () => {
+      const buildHttpSpy = jest.spyOn(service as any, 'buildHttp').mockReturnValue(mockAxiosInstance);
+      const executeRequestSpy = jest.spyOn(service as any, 'executeRequest').mockResolvedValue(mockResponse);
+      const parseResponseSpy = jest.spyOn(service as any, 'parseResponse').mockImplementation(() => {
+        throw new InvalidResponseError('Failed to parse response: Unexpected token');
+      });
+
+      await expect(service.listRepositories()).rejects.toThrow(InvalidResponseError);
+      await expect(service.listRepositories()).rejects.toThrow('Failed to parse response: Unexpected token');
 
       buildHttpSpy.mockRestore();
       executeRequestSpy.mockRestore();
