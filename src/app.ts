@@ -49,6 +49,11 @@ app.use('/', healthRoutes);
 // (to match Rails root 'health#show')
 app.get('/', getHealth);
 
+// PHASE2-060: Register telegram routes
+// Register telegram routes with app.use('/telegram', telegramRoutes) for /telegram/* endpoints
+import telegramRoutes from './routes/telegram.routes';
+app.use('/telegram', telegramRoutes);
+
 // PHASE1-022: 404 Not Found handler middleware
 // Catches all requests that don't match any registered routes and returns
 // a standardized 404 Not Found response matching the Rails error format.

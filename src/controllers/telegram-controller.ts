@@ -281,18 +281,48 @@ class TelegramController {
    * Deletes the current webhook configuration.
    * Requires admin authentication.
    * 
-   * Implementation will be added in PHASE2-060
+   * Matches Rails implementation in jarek-va/app/controllers/telegram_controller.rb (lines 90-106)
    * 
    * @param req - Express request object
    * @param res - Express response object
    * @returns Promise that resolves when the response is sent
    */
-  async deleteWebhook(_req: Request, _res: Response): Promise<void> {
-    // Implementation will be added in PHASE2-060
-    // - Check admin authentication
-    // - Call TelegramService.deleteWebhook
-    // - Return JSON with { ok: true/false, message: ... } format
-    throw new Error('Not implemented: deleteWebhook method implementation in PHASE2-060');
+  async deleteWebhook(req: Request, res: Response): Promise<void> {
+    try {
+      // Check admin authentication (matching Rails: return head :unauthorized unless authenticate_admin)
+      if (!this.authenticateAdmin(req)) {
+        res.status(401).json({
+          ok: false,
+          error: 'Unauthorized',
+        });
+        return;
+      }
+
+      // Call TelegramService.deleteWebhook (matching Rails: TelegramService.delete_webhook)
+      await this.telegramService.deleteWebhook();
+
+      // Return JSON success response (matching Rails format)
+      res.status(200).json({
+        ok: true,
+        message: 'Webhook deleted successfully',
+      });
+    } catch (error) {
+      // Error handling (matching Rails rescue StandardError)
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      // Log error (matching Rails: Rails.logger.error("Error deleting webhook: #{e.message}"))
+      logger.error(
+        `Error deleting webhook: ${errorMessage}`,
+        error instanceof Error ? error : new Error(String(error)),
+      );
+
+      // Return JSON error response (matching Rails format)
+      res.status(500).json({
+        ok: false,
+        error: errorMessage,
+      });
+    }
   }
 
   /**
