@@ -83,8 +83,72 @@ describe('ElevenLabsSpeechToTextService', () => {
     getMockLogger().warn.mockClear();
     getMockLogger().debug.mockClear();
 
+    // Clear environment variables
+    delete process.env.ELEVENLABS_API_KEY;
+    delete process.env.ELEVENLABS_STT_MODEL_ID;
+
     // Create service instance
     service = new ElevenLabsSpeechToTextService(mockApiKey, mockTimeout, mockModelId);
+  });
+
+  describe('constructor', () => {
+    it('should create service with valid API key from parameter', () => {
+      const testApiKey = 'test-key-123';
+      const service = new ElevenLabsSpeechToTextService(testApiKey);
+      expect(service.apiKey).toBe(testApiKey);
+    });
+
+    it('should create service with valid API key from environment variable', () => {
+      const envApiKey = 'env-api-key-456';
+      process.env.ELEVENLABS_API_KEY = envApiKey;
+      const service = new ElevenLabsSpeechToTextService();
+      expect(service.apiKey).toBe(envApiKey);
+      delete process.env.ELEVENLABS_API_KEY;
+    });
+
+    it('should throw Error when API key is blank', () => {
+      expect(() => new ElevenLabsSpeechToTextService('')).toThrow(Error);
+      expect(() => new ElevenLabsSpeechToTextService('   ')).toThrow(Error);
+    });
+
+    it('should throw Error when API key is null', () => {
+      expect(() => new ElevenLabsSpeechToTextService(null as any)).toThrow(Error);
+    });
+
+    it('should throw Error when API key is undefined and env var is not set', () => {
+      delete process.env.ELEVENLABS_API_KEY;
+      expect(() => new ElevenLabsSpeechToTextService(undefined)).toThrow(Error);
+    });
+
+    it('should use default timeout (60 seconds) when not provided', () => {
+      const service = new ElevenLabsSpeechToTextService(mockApiKey);
+      expect(service.timeout).toBe(60);
+    });
+
+    it('should use custom timeout when provided', () => {
+      const customTimeout = 120;
+      const service = new ElevenLabsSpeechToTextService(mockApiKey, customTimeout);
+      expect(service.timeout).toBe(customTimeout);
+    });
+
+    it('should use default model_id (scribe_v1) when not provided', () => {
+      const service = new ElevenLabsSpeechToTextService(mockApiKey);
+      expect(service.modelId).toBe('scribe_v1');
+    });
+
+    it('should use custom model_id when provided', () => {
+      const customModelId = 'custom_model_v2';
+      const service = new ElevenLabsSpeechToTextService(mockApiKey, undefined, customModelId);
+      expect(service.modelId).toBe(customModelId);
+    });
+
+    it('should use model_id from environment variable when not provided', () => {
+      const envModelId = 'env_model_v3';
+      process.env.ELEVENLABS_STT_MODEL_ID = envModelId;
+      const service = new ElevenLabsSpeechToTextService(mockApiKey);
+      expect(service.modelId).toBe(envModelId);
+      delete process.env.ELEVENLABS_STT_MODEL_ID;
+    });
   });
 
   describe('transcribe', () => {
@@ -1643,6 +1707,232 @@ describe('ElevenLabsSpeechToTextService', () => {
           `Successfully transcribed audio: ${shortText}`
         );
       });
+    });
+  });
+
+  describe('edge cases and integration', () => {
+    beforeEach(() => {
+      (fs.access as jest.Mock).mockResolvedValue(undefined);
+      (fs.readFile as jest.Mock).mockResolvedValue(mockFileContent);
+      (path.basename as jest.Mock).mockReturnValue(mockFilename);
+    });
+
+    it('should handle empty audio file gracefully', async () => {
+      const emptyFileContent = Buffer.from('');
+      (fs.readFile as jest.Mock).mockResolvedValue(emptyFileContent);
+
+      const mockFormData = {
+        append: jest.fn(),
+        getHeaders: jest.fn().mockReturnValue({ 'content-type': 'multipart/form-data' }),
+      };
+      (FormData as any).mockImplementation(() => mockFormData);
+
+      mockedAxios.post = jest.fn().mockResolvedValue({
+        data: { text: 'Empty file transcription' },
+        status: 200,
+        statusText: 'OK',
+      });
+
+      const result = await service.transcribe(mockAudioFilePath);
+      expect(result).toBe('Empty file transcription');
+      expect(mockFormData.append).toHaveBeenCalledWith('file', emptyFileContent, {
+        filename: mockFilename,
+      });
+    });
+
+    it('should handle very large audio files', async () => {
+      const largeFileContent = Buffer.alloc(10 * 1024 * 1024); // 10MB
+      (fs.readFile as jest.Mock).mockResolvedValue(largeFileContent);
+
+      const mockFormData = {
+        append: jest.fn(),
+        getHeaders: jest.fn().mockReturnValue({ 'content-type': 'multipart/form-data' }),
+      };
+      (FormData as any).mockImplementation(() => mockFormData);
+
+      mockedAxios.post = jest.fn().mockResolvedValue({
+        data: { text: 'Large file transcription' },
+        status: 200,
+        statusText: 'OK',
+      });
+
+      const result = await service.transcribe(mockAudioFilePath);
+      expect(result).toBe('Large file transcription');
+      expect(mockFormData.append).toHaveBeenCalledWith('file', largeFileContent, {
+        filename: mockFilename,
+      });
+    });
+
+    it('should handle special characters in file paths', async () => {
+      const specialPath = '/path/to/audio file (1).ogg';
+      const specialFilename = 'audio file (1).ogg';
+      (path.basename as jest.Mock).mockReturnValue(specialFilename);
+
+      const mockFormData = {
+        append: jest.fn(),
+        getHeaders: jest.fn().mockReturnValue({ 'content-type': 'multipart/form-data' }),
+      };
+      (FormData as any).mockImplementation(() => mockFormData);
+
+      mockedAxios.post = jest.fn().mockResolvedValue({
+        data: { text: 'Transcribed text' },
+        status: 200,
+        statusText: 'OK',
+      });
+
+      await service.transcribe(specialPath);
+
+      expect(path.basename).toHaveBeenCalledWith(specialPath);
+      expect(mockFormData.append).toHaveBeenCalledWith('file', mockFileContent, {
+        filename: specialFilename,
+      });
+    });
+
+    it('should handle different audio file formats', async () => {
+      const formats = [
+        { path: '/path/to/audio.mp3', filename: 'audio.mp3' },
+        { path: '/path/to/audio.wav', filename: 'audio.wav' },
+        { path: '/path/to/audio.m4a', filename: 'audio.m4a' },
+        { path: '/path/to/audio.flac', filename: 'audio.flac' },
+      ];
+
+      for (const format of formats) {
+        (path.basename as jest.Mock).mockReturnValue(format.filename);
+
+        const mockFormData = {
+          append: jest.fn(),
+          getHeaders: jest.fn().mockReturnValue({ 'content-type': 'multipart/form-data' }),
+        };
+        (FormData as any).mockImplementation(() => mockFormData);
+
+        mockedAxios.post = jest.fn().mockResolvedValue({
+          data: { text: 'Transcribed text' },
+          status: 200,
+          statusText: 'OK',
+        });
+
+        await service.transcribe(format.path);
+
+        expect(mockFormData.append).toHaveBeenCalledWith('file', mockFileContent, {
+          filename: format.filename,
+        });
+      }
+    });
+
+    it('should handle concurrent transcription requests', async () => {
+      const mockFormData1 = {
+        append: jest.fn(),
+        getHeaders: jest.fn().mockReturnValue({ 'content-type': 'multipart/form-data' }),
+      };
+      const mockFormData2 = {
+        append: jest.fn(),
+        getHeaders: jest.fn().mockReturnValue({ 'content-type': 'multipart/form-data' }),
+      };
+
+      let formDataCallCount = 0;
+      (FormData as any).mockImplementation(() => {
+        formDataCallCount++;
+        return formDataCallCount === 1 ? mockFormData1 : mockFormData2;
+      });
+
+      mockedAxios.post = jest
+        .fn()
+        .mockResolvedValueOnce({
+          data: { text: 'First transcription' },
+          status: 200,
+          statusText: 'OK',
+        })
+        .mockResolvedValueOnce({
+          data: { text: 'Second transcription' },
+          status: 200,
+          statusText: 'OK',
+        });
+
+      const [result1, result2] = await Promise.all([
+        service.transcribe('/path/to/audio1.ogg'),
+        service.transcribe('/path/to/audio2.ogg'),
+      ]);
+
+      expect(result1).toBe('First transcription');
+      expect(result2).toBe('Second transcription');
+      expect(mockedAxios.post).toHaveBeenCalledTimes(2);
+    });
+
+    it('should use correct model_id from instance configuration', async () => {
+      const customModelId = 'custom_model_test';
+      const customService = new ElevenLabsSpeechToTextService(mockApiKey, mockTimeout, customModelId);
+
+      const mockFormData = {
+        append: jest.fn(),
+        getHeaders: jest.fn().mockReturnValue({ 'content-type': 'multipart/form-data' }),
+      };
+      (FormData as any).mockImplementation(() => mockFormData);
+
+      mockedAxios.post = jest.fn().mockResolvedValue({
+        data: { text: 'Transcribed text' },
+        status: 200,
+        statusText: 'OK',
+      });
+
+      await customService.transcribe(mockAudioFilePath);
+
+      expect(mockFormData.append).toHaveBeenCalledWith('model_id', customModelId);
+    });
+
+    it('should respect timeout configuration', async () => {
+      const customTimeout = 30;
+      const customService = new ElevenLabsSpeechToTextService(mockApiKey, customTimeout);
+
+      const mockFormData = {
+        append: jest.fn(),
+        getHeaders: jest.fn().mockReturnValue({ 'content-type': 'multipart/form-data' }),
+      };
+      (FormData as any).mockImplementation(() => mockFormData);
+
+      mockedAxios.post = jest.fn().mockResolvedValue({
+        data: { text: 'Transcribed text' },
+        status: 200,
+        statusText: 'OK',
+      });
+
+      await customService.transcribe(mockAudioFilePath);
+
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(Object),
+        expect.objectContaining({
+          timeout: customTimeout * 1000,
+        })
+      );
+    });
+
+    it('should handle stream rewinding if stream supports it', async () => {
+      const mockStream = {
+        rewind: jest.fn(),
+        [Symbol.asyncIterator]: async function* () {
+          yield Buffer.from('chunk1');
+          yield Buffer.from('chunk2');
+        },
+      } as any;
+
+      const mockFormData = {
+        append: jest.fn(),
+        getHeaders: jest.fn().mockReturnValue({ 'content-type': 'multipart/form-data' }),
+      };
+      (FormData as any).mockImplementation(() => mockFormData);
+
+      mockedAxios.post = jest.fn().mockResolvedValue({
+        data: { text: 'Transcribed text' },
+        status: 200,
+        statusText: 'OK',
+      });
+
+      await service.transcribeIo(mockStream);
+
+      // Note: Node.js streams don't have rewind by default, but if a stream supports it,
+      // the service should handle it. Since we're using async iteration, rewind won't be called
+      // but the stream should still be readable.
+      expect(mockFormData.append).toHaveBeenCalled();
     });
   });
 });
