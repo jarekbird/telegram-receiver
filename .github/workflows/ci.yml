@@ -91,7 +91,7 @@ jobs:
           fi
 
       - name: Run TypeScript type check
-        run: npx tsc --noEmit
+        run: npm run type-check
 
       - name: Build TypeScript project
         run: npm run build
@@ -154,22 +154,31 @@ jobs:
                 [ -z "$source_file" ] && continue
                 # Map src/**/*.ts to tests/**/*.test.ts or tests/**/*.spec.ts
                 # Example: src/services/telegram_service.ts -> tests/services/telegram_service.test.ts
-                # Also check tests/unit/, tests/integration/, and tests/e2e/ subdirectories
-                base_path=$(echo "$source_file" | sed 's|^src/||' | sed 's|\.ts$||')
+                # Mirror Rails workflow pattern: maintain same relative path structure
+                test_file=$(echo "$source_file" | sed 's|^src/|tests/|' | sed 's|\.ts$|.test.ts|')
+                spec_file=$(echo "$source_file" | sed 's|^src/|tests/|' | sed 's|\.ts$|.spec.ts|')
                 
-                # Check multiple possible test locations
-                for test_dir in "tests" "tests/unit" "tests/integration" "tests/e2e"; do
-                  test_file="${test_dir}/${base_path}.test.ts"
-                  spec_file="${test_dir}/${base_path}.spec.ts"
-                  
-                  # Check if .test.ts file exists
-                  if [ -f "$test_file" ]; then
-                    ALL_TESTS="${ALL_TESTS}${test_file} "
-                  # Check if .spec.ts file exists
-                  elif [ -f "$spec_file" ]; then
-                    ALL_TESTS="${ALL_TESTS}${spec_file} "
-                  fi
-                done
+                # Check if .test.ts file exists (primary check, matching Rails pattern)
+                if [ -f "$test_file" ]; then
+                  ALL_TESTS="${ALL_TESTS}${test_file} "
+                # Check if .spec.ts file exists (alternative naming)
+                elif [ -f "$spec_file" ]; then
+                  ALL_TESTS="${ALL_TESTS}${spec_file} "
+                else
+                  # Fallback: check subdirectories (tests/unit/, tests/integration/, tests/e2e/)
+                  base_path=$(echo "$source_file" | sed 's|^src/||' | sed 's|\.ts$||')
+                  for test_dir in "tests/unit" "tests/integration" "tests/e2e"; do
+                    fallback_test="${test_dir}/${base_path}.test.ts"
+                    fallback_spec="${test_dir}/${base_path}.spec.ts"
+                    if [ -f "$fallback_test" ]; then
+                      ALL_TESTS="${ALL_TESTS}${fallback_test} "
+                      break
+                    elif [ -f "$fallback_spec" ]; then
+                      ALL_TESTS="${ALL_TESTS}${fallback_spec} "
+                      break
+                    fi
+                  done
+                fi
               done <<< "$CHANGED_SOURCE"
             fi
             

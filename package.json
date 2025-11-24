@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
+    "type-check": "tsc --noEmit",
     "dev": "nodemon --exec ts-node src/index.ts",
     "start": "node dist/index.js",
     "lint": "echo 'Linting not yet configured' && exit 0",
