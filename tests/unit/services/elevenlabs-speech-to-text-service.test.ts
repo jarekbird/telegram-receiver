@@ -728,12 +728,54 @@ describe('ElevenLabsSpeechToTextService', () => {
 
         mockedAxios.post = jest.fn().mockResolvedValue({
           data: { text: 'Transcribed text' },
+          status: 200,
+          statusText: 'OK',
         });
 
         await service.transcribe(mockAudioFilePath);
 
         expect(getMockLogger().info).toHaveBeenCalledWith(
           `Sending audio file to ElevenLabs for transcription: ${mockAudioFilePath}`
+        );
+      });
+
+      it('should log request info: "ElevenLabsSpeechToTextService: POST {uri.path}"', async () => {
+        const mockFormData = {
+          append: jest.fn(),
+          getHeaders: jest.fn().mockReturnValue({ 'content-type': 'multipart/form-data' }),
+        };
+        (FormData as any).mockImplementation(() => mockFormData);
+
+        mockedAxios.post = jest.fn().mockResolvedValue({
+          data: { text: 'Transcribed text' },
+          status: 200,
+          statusText: 'OK',
+        });
+
+        await service.transcribe(mockAudioFilePath);
+
+        expect(getMockLogger().info).toHaveBeenCalledWith(
+          'ElevenLabsSpeechToTextService: POST /v1/speech-to-text'
+        );
+      });
+
+      it('should log response info: "ElevenLabsSpeechToTextService: Response {code} {message}"', async () => {
+        const mockFormData = {
+          append: jest.fn(),
+          getHeaders: jest.fn().mockReturnValue({ 'content-type': 'multipart/form-data' }),
+        };
+        (FormData as any).mockImplementation(() => mockFormData);
+
+        mockedAxios.post = jest.fn().mockResolvedValue({
+          data: { text: 'Transcribed text' },
+          status: 200,
+          statusText: 'OK',
+        });
+
+        await service.transcribe(mockAudioFilePath);
+
+        expect(getMockLogger().info).toHaveBeenCalledWith(
+          'ElevenLabsSpeechToTextService: Response 200 OK'
         );
       });
 
@@ -747,6 +789,8 @@ describe('ElevenLabsSpeechToTextService', () => {
         const longText = 'This is a very long transcribed text that should be truncated in the log';
         mockedAxios.post = jest.fn().mockResolvedValue({
           data: { text: longText },
+          status: 200,
+          statusText: 'OK',
         });
 
         await service.transcribe(mockAudioFilePath);
@@ -766,6 +810,8 @@ describe('ElevenLabsSpeechToTextService', () => {
         const shortText = 'Short text';
         mockedAxios.post = jest.fn().mockResolvedValue({
           data: { text: shortText },
+          status: 200,
+          statusText: 'OK',
         });
 
         await service.transcribe(mockAudioFilePath);
