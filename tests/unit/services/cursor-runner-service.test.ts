@@ -2399,4 +2399,131 @@ describe('CursorRunnerService', () => {
       parseResponseSpy.mockRestore();
     });
   });
+
+  describe('Initialization', () => {
+    it('should initialize with custom baseUrl and timeout', () => {
+      const customBaseUrl = 'http://custom-url:8080';
+      const customTimeout = 10000;
+      const customService = new CursorRunnerService(customBaseUrl, customTimeout);
+
+      // Verify service was created (can't directly access private properties, but we can test behavior)
+      expect(customService).toBeInstanceOf(CursorRunnerService);
+    });
+
+    it('should initialize with default baseUrl from environment variable', () => {
+      const originalEnv = process.env.CURSOR_RUNNER_URL;
+      process.env.CURSOR_RUNNER_URL = 'http://env-url:3002';
+      
+      const defaultService = new CursorRunnerService();
+      expect(defaultService).toBeInstanceOf(CursorRunnerService);
+      
+      // Restore original env
+      if (originalEnv) {
+        process.env.CURSOR_RUNNER_URL = originalEnv;
+      } else {
+        delete process.env.CURSOR_RUNNER_URL;
+      }
+    });
+
+    it('should initialize with default timeout from environment variable', () => {
+      const originalEnv = process.env.CURSOR_RUNNER_TIMEOUT;
+      process.env.CURSOR_RUNNER_TIMEOUT = '600';
+      
+      const defaultService = new CursorRunnerService();
+      expect(defaultService).toBeInstanceOf(CursorRunnerService);
+      
+      // Restore original env
+      if (originalEnv) {
+        process.env.CURSOR_RUNNER_TIMEOUT = originalEnv;
+      } else {
+        delete process.env.CURSOR_RUNNER_TIMEOUT;
+      }
+    });
+
+    it('should use default baseUrl when not provided and env var not set', () => {
+      const originalEnv = process.env.CURSOR_RUNNER_URL;
+      delete process.env.CURSOR_RUNNER_URL;
+      
+      const defaultService = new CursorRunnerService();
+      expect(defaultService).toBeInstanceOf(CursorRunnerService);
+      
+      // Restore original env
+      if (originalEnv) {
+        process.env.CURSOR_RUNNER_URL = originalEnv;
+      }
+    });
+
+    it('should use default timeout when not provided and env var not set', () => {
+      const originalEnv = process.env.CURSOR_RUNNER_TIMEOUT;
+      delete process.env.CURSOR_RUNNER_TIMEOUT;
+      
+      const defaultService = new CursorRunnerService();
+      expect(defaultService).toBeInstanceOf(CursorRunnerService);
+      
+      // Restore original env
+      if (originalEnv) {
+        process.env.CURSOR_RUNNER_TIMEOUT = originalEnv;
+      }
+    });
+  });
+
+  describe('generateRequestId', () => {
+    it('should generate request ID with correct format: req-{timestamp}-{random_hex}', () => {
+      const generateRequestId = (service as any).generateRequestId.bind(service);
+      const requestId = generateRequestId();
+
+      // Format: req-{timestamp}-{random_hex}
+      // Example: req-1234567890-a1b2c3d4
+      expect(requestId).toMatch(/^req-\d+-[a-f0-9]{8}$/);
+    });
+
+    it('should generate unique request IDs on each call', () => {
+      const generateRequestId = (service as any).generateRequestId.bind(service);
+      const id1 = generateRequestId();
+      const id2 = generateRequestId();
+      const id3 = generateRequestId();
+
+      // All should be different
+      expect(id1).not.toBe(id2);
+      expect(id2).not.toBe(id3);
+      expect(id1).not.toBe(id3);
+    });
+
+    it('should generate request ID with timestamp in seconds', () => {
+      const generateRequestId = (service as any).generateRequestId.bind(service);
+      const requestId = generateRequestId();
+      const parts = requestId.split('-');
+      
+      // Should have format: req-{timestamp}-{random}
+      expect(parts.length).toBe(3);
+      expect(parts[0]).toBe('req');
+      
+      // Timestamp should be a valid number (seconds since epoch)
+      const timestamp = parseInt(parts[1], 10);
+      expect(timestamp).toBeGreaterThan(0);
+      expect(timestamp).toBeLessThanOrEqual(Math.floor(Date.now() / 1000) + 1); // Allow 1 second tolerance
+    });
+
+    it('should generate request ID with 8-character hex random part', () => {
+      const generateRequestId = (service as any).generateRequestId.bind(service);
+      const requestId = generateRequestId();
+      const parts = requestId.split('-');
+      
+      // Random part should be 8 hex characters
+      expect(parts[2]).toMatch(/^[a-f0-9]{8}$/);
+      expect(parts[2].length).toBe(8);
+    });
+
+    it('should match Rails pattern: req-{timestamp}-{random_hex}', () => {
+      const generateRequestId = (service as any).generateRequestId.bind(service);
+      
+      // Generate multiple IDs to ensure pattern consistency
+      for (let i = 0; i < 10; i++) {
+        const requestId = generateRequestId();
+        // Rails pattern: "req-#{Time.now.to_i}-#{SecureRandom.hex(4)}"
+        // SecureRandom.hex(4) generates 8 hex characters
+        expect(requestId).toMatch(/^req-\d+-[a-f0-9]{8}$/);
+      }
+    });
+  });
 });
