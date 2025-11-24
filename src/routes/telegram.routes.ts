@@ -3,6 +3,7 @@ import TelegramController from '../controllers/telegram-controller';
 import TelegramService from '../services/telegram-service';
 import { BaseAsyncHandler } from '../handlers/base-async-handler';
 import { TelegramUpdate } from '../types/telegram';
+import { authenticateAdmin } from '../middleware/authenticate-admin.middleware';
 
 /**
  * Creates and returns the Telegram routes router
@@ -32,13 +33,13 @@ export function createTelegramRoutes(
   router.post('/webhook', telegramController.webhook.bind(telegramController));
 
   // POST /telegram/set_webhook - Set webhook (admin only)
-  router.post('/set_webhook', telegramController.setWebhook.bind(telegramController));
+  router.post('/set_webhook', authenticateAdmin, telegramController.setWebhook.bind(telegramController));
 
   // GET /telegram/webhook_info - Get webhook info (admin only)
-  router.get('/webhook_info', telegramController.getWebhookInfo.bind(telegramController));
+  router.get('/webhook_info', authenticateAdmin, telegramController.getWebhookInfo.bind(telegramController));
 
   // DELETE /telegram/webhook - Delete webhook (admin only)
-  router.delete('/webhook', telegramController.deleteWebhook.bind(telegramController));
+  router.delete('/webhook', authenticateAdmin, telegramController.deleteWebhook.bind(telegramController));
 
   return router;
 }
@@ -69,12 +70,12 @@ const telegramController = new TelegramController(telegramService, stubHandler);
 router.post('/webhook', telegramController.webhook.bind(telegramController));
 
 // POST /telegram/set_webhook - Set webhook (admin only)
-router.post('/set_webhook', telegramController.setWebhook.bind(telegramController));
+router.post('/set_webhook', authenticateAdmin, telegramController.setWebhook.bind(telegramController));
 
 // GET /telegram/webhook_info - Get webhook info (admin only)
-router.get('/webhook_info', telegramController.getWebhookInfo.bind(telegramController));
+router.get('/webhook_info', authenticateAdmin, telegramController.getWebhookInfo.bind(telegramController));
 
 // DELETE /telegram/webhook - Delete webhook (admin only)
-router.delete('/webhook', telegramController.deleteWebhook.bind(telegramController));
+router.delete('/webhook', authenticateAdmin, telegramController.deleteWebhook.bind(telegramController));
 
 export default router;
