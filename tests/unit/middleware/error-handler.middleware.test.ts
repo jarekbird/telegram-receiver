@@ -313,8 +313,13 @@ describe('Error Handler Middleware', () => {
     });
 
     it('should catch errors from async route handlers', async () => {
-      app.get('/error', async () => {
-        throw new Error('Async route error');
+      // Express requires async route handlers to call next(error) to pass errors to error handler
+      app.get('/error', async (_req, _res, next) => {
+        try {
+          throw new Error('Async route error');
+        } catch (error) {
+          next(error);
+        }
       });
 
       app.use(errorHandlerMiddleware);
