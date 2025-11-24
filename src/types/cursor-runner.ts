@@ -16,6 +16,7 @@ export interface CursorExecuteRequest {
   branchName: string;
   prompt: string;
   id: string;
+  conversationId?: string; // Optional conversation ID for context management
 }
 
 /**
@@ -29,6 +30,7 @@ export interface CursorIterateRequest {
   maxIterations?: number; // Default: 25
   id: string;
   callbackUrl?: string; // Optional callback URL for async completion notification
+  conversationId?: string; // Optional conversation ID for context management
 }
 
 /**
