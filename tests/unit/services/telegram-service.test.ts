@@ -7,6 +7,8 @@ import TelegramService from '../../../src/services/telegram-service';
 import axios from 'axios';
 import { TelegramApiResponse, WebhookInfo, TelegramMessage } from '../../../src/types/telegram';
 import { promises as fs } from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import FormData from 'form-data';
 
 // Mock axios
@@ -18,7 +20,14 @@ jest.mock('fs', () => ({
   promises: {
     access: jest.fn(),
     readFile: jest.fn(),
+    mkdir: jest.fn(),
+    writeFile: jest.fn(),
   },
+}));
+
+// Mock os
+jest.mock('os', () => ({
+  tmpdir: jest.fn(),
 }));
 
 // Mock form-data
@@ -1075,6 +1084,358 @@ describe('TelegramService', () => {
         filename: 'voice.ogg',
         contentType: 'audio/ogg',
       });
+    });
+  });
+
+  describe('downloadFile', () => {
+    const testFileId = 'test-file-id-12345';
+    const testFilePath = 'photos/file_123.jpg';
+    const testDestinationPath = '/path/to/downloaded/file.jpg';
+    const mockFileContent = Buffer.from('mock file content');
+
+    beforeEach(() => {
+      // Reset fs mocks
+      jest.clearAllMocks();
+      (fs.mkdir as jest.Mock).mockResolvedValue(undefined);
+      (fs.writeFile as jest.Mock).mockResolvedValue(undefined);
+      (os.tmpdir as jest.Mock).mockReturnValue('/tmp');
+    });
+
+    it('should return undefined if bot token is blank', async () => {
+      // Arrange
+      const originalToken = process.env.TELEGRAM_BOT_TOKEN;
+      delete process.env.TELEGRAM_BOT_TOKEN;
+      const blankTokenMockAxiosInstance = {
+        post: jest.fn(),
+      };
+      mockedAxios.create = jest.fn().mockReturnValue(blankTokenMockAxiosInstance as any);
+      const serviceWithBlankToken = new TelegramService('');
+
+      // Act
+      const result = await serviceWithBlankToken.downloadFile(testFileId);
+
+      // Assert
+      expect(result).toBeUndefined();
+      expect(blankTokenMockAxiosInstance.post).not.toHaveBeenCalled();
+
+      // Cleanup
+      if (originalToken) {
+        process.env.TELEGRAM_BOT_TOKEN = originalToken;
+      }
+    });
+
+    it('should return undefined if bot token is not provided and env var is not set', async () => {
+      // Arrange
+      const originalToken = process.env.TELEGRAM_BOT_TOKEN;
+      delete process.env.TELEGRAM_BOT_TOKEN;
+      const serviceWithoutToken = new TelegramService();
+
+      // Act
+      const result = await serviceWithoutToken.downloadFile(testFileId);
+
+      // Assert
+      expect(result).toBeUndefined();
+      expect(mockAxiosInstance.post).not.toHaveBeenCalled();
+
+      // Cleanup
+      if (originalToken) {
+        process.env.TELEGRAM_BOT_TOKEN = originalToken;
+      }
+    });
+
+    it('should download file successfully with destination path provided', async () => {
+      // Arrange
+      const mockFileInfoResponse: TelegramApiResponse<{ file_path: string }> = {
+        ok: true,
+        result: {
+          file_path: testFilePath,
+        },
+      };
+      mockAxiosInstance.post.mockResolvedValue({ data: mockFileInfoResponse });
+
+      // Mock axios.get for file download
+      const mockDownloadResponse = {
+        status: 200,
+        statusText: 'OK',
+        data: mockFileContent,
+      };
+      (mockedAxios.get as jest.Mock) = jest.fn().mockResolvedValue(mockDownloadResponse);
+
+      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+
+      // Act
+      const result = await telegramService.downloadFile(testFileId, testDestinationPath);
+
+      // Assert
+      expect(mockAxiosInstance.post).toHaveBeenCalledTimes(1);
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/getFile', { file_id: testFileId });
+      expect(mockedAxios.get).toHaveBeenCalledWith(
+        `https://api.telegram.org/file/bot${mockBotToken}/${testFilePath}`,
+        {
+          responseType: 'arraybuffer',
+          timeout: 30000,
+        }
+      );
+      expect(fs.mkdir).toHaveBeenCalledWith(path.dirname(testDestinationPath), { recursive: true });
+      expect(fs.writeFile).toHaveBeenCalledWith(testDestinationPath, mockFileContent);
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        `Downloading Telegram file ${testFileId} to ${testDestinationPath}`
+      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        `Downloaded file to ${testDestinationPath} (${mockFileContent.length} bytes)`
+      );
+      expect(result).toBe(testDestinationPath);
+
+      // Cleanup
+      consoleLogSpy.mockRestore();
+    });
+
+    it('should download file successfully without destination path (uses temp directory)', async () => {
+      // Arrange
+      const mockTempDir = '/tmp';
+      const expectedTempPath = path.join(mockTempDir, `telegram_${testFileId}_file_123.jpg`);
+      (os.tmpdir as jest.Mock).mockReturnValue(mockTempDir);
+
+      const mockFileInfoResponse: TelegramApiResponse<{ file_path: string }> = {
+        ok: true,
+        result: {
+          file_path: testFilePath,
+        },
+      };
+      mockAxiosInstance.post.mockResolvedValue({ data: mockFileInfoResponse });
+
+      // Mock axios.get for file download
+      const mockDownloadResponse = {
+        status: 200,
+        statusText: 'OK',
+        data: mockFileContent,
+      };
+      (mockedAxios.get as jest.Mock) = jest.fn().mockResolvedValue(mockDownloadResponse);
+
+      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+
+      // Act
+      const result = await telegramService.downloadFile(testFileId);
+
+      // Assert
+      expect(mockAxiosInstance.post).toHaveBeenCalledTimes(1);
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/getFile', { file_id: testFileId });
+      expect(mockedAxios.get).toHaveBeenCalledWith(
+        `https://api.telegram.org/file/bot${mockBotToken}/${testFilePath}`,
+        {
+          responseType: 'arraybuffer',
+          timeout: 30000,
+        }
+      );
+      expect(fs.mkdir).toHaveBeenCalledWith(path.dirname(expectedTempPath), { recursive: true });
+      expect(fs.writeFile).toHaveBeenCalledWith(expectedTempPath, mockFileContent);
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        `Downloading Telegram file ${testFileId} to ${expectedTempPath}`
+      );
+      expect(result).toBe(expectedTempPath);
+
+      // Cleanup
+      consoleLogSpy.mockRestore();
+    });
+
+    it('should extract filename correctly from file path for temp directory', async () => {
+      // Arrange
+      const mockTempDir = '/tmp';
+      const testFilePathWithSubdir = 'photos/subdir/file_123.jpg';
+      const expectedFilename = 'file_123.jpg';
+      const expectedTempPath = path.join(mockTempDir, `telegram_${testFileId}_${expectedFilename}`);
+      (os.tmpdir as jest.Mock).mockReturnValue(mockTempDir);
+
+      const mockFileInfoResponse: TelegramApiResponse<{ file_path: string }> = {
+        ok: true,
+        result: {
+          file_path: testFilePathWithSubdir,
+        },
+      };
+      mockAxiosInstance.post.mockResolvedValue({ data: mockFileInfoResponse });
+
+      // Mock axios.get for file download
+      const mockDownloadResponse = {
+        status: 200,
+        statusText: 'OK',
+        data: mockFileContent,
+      };
+      (mockedAxios.get as jest.Mock) = jest.fn().mockResolvedValue(mockDownloadResponse);
+
+      // Act
+      const result = await telegramService.downloadFile(testFileId);
+
+      // Assert
+      expect(result).toBe(expectedTempPath);
+      expect(fs.writeFile).toHaveBeenCalledWith(expectedTempPath, mockFileContent);
+    });
+
+    it('should throw error when Telegram API returns error response', async () => {
+      // Arrange
+      const mockErrorResponse: TelegramApiResponse<{ file_path: string }> = {
+        ok: false,
+        description: 'Bad Request: file not found',
+        error_code: 400,
+      };
+      mockAxiosInstance.post.mockResolvedValue({ data: mockErrorResponse });
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      // Act & Assert
+      await expect(telegramService.downloadFile(testFileId)).rejects.toThrow(
+        'Telegram API error: Bad Request: file not found'
+      );
+
+      // Verify error was logged
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Error downloading Telegram file: Telegram API error: Bad Request: file not found'
+      );
+
+      // Cleanup
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should throw error when HTTP download fails with non-2xx status', async () => {
+      // Arrange
+      const mockFileInfoResponse: TelegramApiResponse<{ file_path: string }> = {
+        ok: true,
+        result: {
+          file_path: testFilePath,
+        },
+      };
+      mockAxiosInstance.post.mockResolvedValue({ data: mockFileInfoResponse });
+
+      // Mock axios.get to return error status
+      const mockDownloadResponse = {
+        status: 404,
+        statusText: 'Not Found',
+        data: mockFileContent,
+      };
+      (mockedAxios.get as jest.Mock) = jest.fn().mockResolvedValue(mockDownloadResponse);
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      // Act & Assert
+      await expect(telegramService.downloadFile(testFileId, testDestinationPath)).rejects.toThrow(
+        'Failed to download file: HTTP 404 Not Found'
+      );
+
+      // Verify error was logged
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Error downloading file from URL: Failed to download file: HTTP 404 Not Found'
+      );
+
+      // Cleanup
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should throw error when axios download request fails', async () => {
+      // Arrange
+      const mockFileInfoResponse: TelegramApiResponse<{ file_path: string }> = {
+        ok: true,
+        result: {
+          file_path: testFilePath,
+        },
+      };
+      mockAxiosInstance.post.mockResolvedValue({ data: mockFileInfoResponse });
+
+      // Mock axios.get to throw error
+      const mockError = new Error('Network error');
+      (mockedAxios.get as jest.Mock) = jest.fn().mockRejectedValue(mockError);
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      // Act & Assert
+      await expect(telegramService.downloadFile(testFileId, testDestinationPath)).rejects.toThrow(
+        'Network error'
+      );
+
+      // Verify error was logged
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Error downloading file from URL: Network error'
+      );
+
+      // Cleanup
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should handle axios error with response object', async () => {
+      // Arrange
+      const mockFileInfoResponse: TelegramApiResponse<{ file_path: string }> = {
+        ok: true,
+        result: {
+          file_path: testFilePath,
+        },
+      };
+      mockAxiosInstance.post.mockResolvedValue({ data: mockFileInfoResponse });
+
+      // Mock axios.get to throw error with response
+      const mockAxiosError = {
+        response: {
+          status: 500,
+          statusText: 'Internal Server Error',
+        },
+        message: 'Request failed',
+      };
+      (mockedAxios.get as jest.Mock) = jest.fn().mockRejectedValue(mockAxiosError);
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      // Act & Assert
+      await expect(telegramService.downloadFile(testFileId, testDestinationPath)).rejects.toThrow(
+        'Failed to download file: HTTP 500 Internal Server Error'
+      );
+
+      // Verify error was logged
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Error downloading file from URL: Failed to download file: HTTP 500 Internal Server Error'
+      );
+
+      // Cleanup
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should log error and re-throw exception when getFile API request fails', async () => {
+      // Arrange
+      const mockError = new Error('Network error');
+      mockAxiosInstance.post.mockRejectedValue(mockError);
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      // Act & Assert
+      await expect(telegramService.downloadFile(testFileId)).rejects.toThrow('Network error');
+
+      // Verify error was logged
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Error downloading Telegram file: Network error'
+      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(mockError.stack);
+
+      // Cleanup
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should handle errors that are not Error instances', async () => {
+      // Arrange
+      const mockFileInfoResponse: TelegramApiResponse<{ file_path: string }> = {
+        ok: true,
+        result: {
+          file_path: testFilePath,
+        },
+      };
+      mockAxiosInstance.post.mockResolvedValue({ data: mockFileInfoResponse });
+
+      // Mock axios.get to throw string error
+      const mockError = 'String error';
+      (mockedAxios.get as jest.Mock) = jest.fn().mockRejectedValue(mockError);
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      // Act & Assert
+      await expect(telegramService.downloadFile(testFileId, testDestinationPath)).rejects.toBe(
+        mockError
+      );
+
+      // Verify error was logged
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error downloading file from URL: String error');
+      expect(consoleErrorSpy).toHaveBeenCalledWith('');
+
+      // Cleanup
+      consoleErrorSpy.mockRestore();
     });
   });
 });

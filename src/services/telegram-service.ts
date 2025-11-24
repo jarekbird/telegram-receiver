@@ -2,6 +2,7 @@ import axios, { AxiosInstance } from 'axios';
 import { TelegramApiResponse, TelegramMessage, WebhookInfo } from '../types/telegram';
 import { promises as fs } from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 import FormData from 'form-data';
 
 /**
@@ -311,25 +312,49 @@ class TelegramService {
    * 
    * @param fileId - Telegram file ID
    * @param destinationPath - Optional path to save the file. If not provided, saves to temp directory
-   * @returns Promise resolving to the path of the downloaded file
+   * @returns Promise resolving to the path of the downloaded file, or undefined if bot token is blank
    * 
-   * @throws Error if bot token is blank or if download fails
-   * 
-   * Implementation will be added in PHASE2-024
+   * @throws Error if download fails
    */
-  async downloadFile(_fileId: string, _destinationPath?: string): Promise<string> {
+  async downloadFile(fileId: string, destinationPath?: string): Promise<string | undefined> {
     if (!this.isTokenValid()) {
-      return '';
+      return undefined;
     }
 
     try {
-      // TODO: Implement in PHASE2-024
-      // - Call get_file API to get file info (file_path)
-      // - Construct download URL: https://api.telegram.org/file/bot{token}/{file_path}
-      // - If destinationPath not provided, use temp directory: os.tmpdir() + path.sep + `telegram_${fileId}_${filename}`
-      // - Use downloadFileFromUrl helper to download the file
-      // - Return destination path
-      throw new Error('Method not yet implemented');
+      // Get file info from Telegram Bot API
+      const fileInfoResponse = await this.axiosInstance.post<TelegramApiResponse<{ file_path: string }>>(
+        '/getFile',
+        { file_id: fileId }
+      );
+
+      // Check if API response indicates an error
+      if (!fileInfoResponse.data.ok) {
+        throw new Error(`Telegram API error: ${fileInfoResponse.data.description}`);
+      }
+
+      const filePath = fileInfoResponse.data.result.file_path;
+
+      // Construct download URL
+      const downloadUrl = `https://api.telegram.org/file/bot${this.botToken}/${filePath}`;
+
+      // Determine destination path
+      let finalDestinationPath: string;
+      if (destinationPath === undefined) {
+        // Use temp directory with original filename
+        const filename = path.basename(filePath);
+        finalDestinationPath = path.join(os.tmpdir(), `telegram_${fileId}_${filename}`);
+      } else {
+        finalDestinationPath = destinationPath;
+      }
+
+      // Log download start
+      console.log(`Downloading Telegram file ${fileId} to ${finalDestinationPath}`);
+
+      // Download the file
+      await this.downloadFileFromUrl(downloadUrl, finalDestinationPath);
+
+      return finalDestinationPath;
     } catch (error: any) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const stackTrace = error instanceof Error ? error.stack : '';
@@ -347,20 +372,44 @@ class TelegramService {
    * @returns Promise that resolves when the file is downloaded
    * 
    * @throws Error if download fails
-   * 
-   * Implementation will be added in PHASE2-024
    */
-  private async downloadFileFromUrl(_url: string, _destinationPath: string): Promise<void> {
+  private async downloadFileFromUrl(url: string, destinationPath: string): Promise<void> {
     try {
-      // TODO: Implement in PHASE2-024
-      // - Use axios to download file from URL
-      // - Ensure destination directory exists using fs.mkdir with recursive option
-      // - Write file using fs.writeFile
-      // - Log success message with file size
-      throw new Error('Method not yet implemented');
+      // Download file from URL using axios with arraybuffer response type for binary data
+      const response = await axios.get(url, {
+        responseType: 'arraybuffer',
+        timeout: 30000, // 30 second timeout
+      });
+
+      // Check HTTP status code
+      if (response.status < 200 || response.status >= 300) {
+        throw new Error(`Failed to download file: HTTP ${response.status} ${response.statusText}`);
+      }
+
+      // Ensure destination directory exists
+      const destinationDir = path.dirname(destinationPath);
+      await fs.mkdir(destinationDir, { recursive: true });
+
+      // Write file using binary mode (no encoding specified)
+      await fs.writeFile(destinationPath, Buffer.from(response.data));
+
+      // Log success message with file size
+      const fileSize = Buffer.from(response.data).length;
+      console.log(`Downloaded file to ${destinationPath} (${fileSize} bytes)`);
     } catch (error: any) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const stackTrace = error instanceof Error ? error.stack : '';
+      
+      // If it's an axios error with response, format it properly
+      if (error.response) {
+        const statusCode = error.response.status;
+        const statusText = error.response.statusText || 'Unknown';
+        const httpError = new Error(`Failed to download file: HTTP ${statusCode} ${statusText}`);
+        console.error(`Error downloading file from URL: ${httpError.message}`);
+        console.error(stackTrace);
+        throw httpError;
+      }
+      
       console.error(`Error downloading file from URL: ${errorMessage}`);
       console.error(stackTrace);
       throw error;
