@@ -70,7 +70,7 @@ telegram-receiver/
 
 - **Node.js**: >=18.0.0 (see `package.json` engines field)
 - **npm**: >=9.0.0 (see `package.json` engines field)
-- **Redis**: Required for callback state management
+- **Redis**: Required for BullMQ job queues and callback state management
 
 ### Environment Variables
 
@@ -88,10 +88,16 @@ Create a `.env` file in the project root (you can copy from `.env.example` if it
 
 - `CURSOR_RUNNER_TIMEOUT` - Request timeout in seconds (default: 300)
 - `ELEVENLABS_API_KEY` - API key for ElevenLabs services (optional, for audio features)
+- `ELEVENLABS_STT_MODEL_ID` - Speech-to-text model ID (e.g., 'scribe_v1', 'scribe_v2')
+- `ELEVENLABS_TTS_MODEL_ID` - Text-to-speech model ID (e.g., 'eleven_turbo_v2_5', 'eleven_multilingual_v2')
+- `ELEVENLABS_VOICE_ID` - Voice ID for text-to-speech
 - `WEBHOOK_SECRET` - Admin secret for management endpoints
 - `PORT` - Server port (default: 3000)
 - `NODE_ENV` - Environment mode (development, production, test)
 - `LOG_LEVEL` - Logging level (info, debug, warn, error)
+- `APP_NAME` - Application name (default: 'Virtual Assistant API')
+- `APP_VERSION` - Application version (default: '1.0.0')
+- `DEFAULT_NOTES_REPOSITORY` - Default repository for note operations (optional)
 
 ## Installation
 
@@ -174,6 +180,8 @@ See the [Testing](#testing) section below for how to run automated tests.
 - `npm run test:coverage` - Generate test coverage report
 - `npm run test:unit` - Run only unit tests
 - `npm run test:integration` - Run only integration tests
+- `npm run test:e2e` - Run end-to-end tests (not yet configured)
+- `npm run test:all` - Run all test suites including E2E (not yet configured)
 
 ### Code Quality
 
@@ -201,6 +209,16 @@ Run integration tests for API endpoints:
 npm run test:integration
 ```
 
+### E2E Tests
+
+Run end-to-end tests (when configured):
+
+```bash
+npm run test:e2e
+```
+
+**Note**: E2E tests are not yet configured. This script will be available once E2E testing is set up.
+
 ### Test Coverage
 
 Generate and view test coverage report:
@@ -218,6 +236,14 @@ Run all test suites:
 ```bash
 npm test
 ```
+
+Or use the comprehensive test command (when configured):
+
+```bash
+npm run test:all
+```
+
+**Note**: `test:all` is not yet configured. Use `npm test` to run all currently available tests.
 
 ## API Endpoints
 
@@ -338,6 +364,10 @@ The `docker-compose.yml` file includes:
 - Application service with hot reloading in development mode
 - Shared volumes for persistent data
 - Network configuration for service communication
+
+## CI/CD
+
+CI/CD status badges and automated testing will be added when CI/CD is configured. Currently, the project uses the `deploy.sh` script for automated deployment with testing and quality checks.
 
 ## Project Status
 
