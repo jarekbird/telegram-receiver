@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import { randomBytes } from 'crypto';
 import logger from '@/utils/logger';
-import { CursorExecuteResponse, CursorIterateResponse } from '@/types/cursor-runner';
+import { CursorExecuteResponse, CursorIterateResponse, GitCloneResponse } from '@/types/cursor-runner';
 
 /**
  * Base error class for CursorRunnerService
@@ -423,6 +423,41 @@ class CursorRunnerService {
 
     // Return parsed response as CursorIterateResponse
     return parsedResponse as CursorIterateResponse;
+  }
+
+  /**
+   * Clones a Git repository by calling the cursor-runner API's /git/clone endpoint
+   * @param params - Clone parameters
+   * @param params.repositoryUrl - Git repository URL to clone
+   * @param params.repositoryName - Optional repository name (defaults to URL-based name if not provided)
+   * @returns Promise resolving to GitCloneResponse with success, repository, message, etc.
+   * @throws {ConnectionError} When connection to cursor-runner fails
+   * @throws {TimeoutError} When request times out
+   * @throws {InvalidResponseError} When response cannot be parsed
+   * @throws {CursorRunnerServiceError} When HTTP error occurs (non-2xx, except 422)
+   */
+  async cloneRepository(params: {
+    repositoryUrl: string;
+    repositoryName?: string;
+  }): Promise<GitCloneResponse> {
+    // Build request body with repositoryUrl (camelCase)
+    const requestBody: Record<string, unknown> = {
+      repositoryUrl: params.repositoryUrl,
+    };
+
+    // Conditionally add repositoryName to request body only if provided
+    if (params.repositoryName) {
+      requestBody.repositoryName = params.repositoryName;
+    }
+
+    // POST to /git/clone endpoint using helper method
+    const response = await this.post('/git/clone', requestBody);
+
+    // Parse JSON response body using helper method
+    const parsedResponse = this.parseResponse(response);
+
+    // Return parsed response as GitCloneResponse
+    return parsedResponse as GitCloneResponse;
   }
 }
 
