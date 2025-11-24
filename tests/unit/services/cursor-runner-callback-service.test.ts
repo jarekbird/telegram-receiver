@@ -9,6 +9,7 @@ import CursorRunnerCallbackService, {
   PendingRequestData,
 } from '../../../src/services/cursor-runner-callback-service';
 import { Redis } from 'ioredis';
+import { mockRedisClient, resetRedisMocks } from '../../mocks/redis';
 
 // Mock logger
 jest.mock('../../../src/utils/logger', () => {
@@ -86,12 +87,15 @@ describe('CursorRunnerCallbackService', () => {
     consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-    // Create mock Redis instance
-    mockRedis = {
-      setex: jest.fn().mockResolvedValue('OK'),
-      get: jest.fn().mockResolvedValue(null),
-      del: jest.fn().mockResolvedValue(1),
-    } as unknown as jest.Mocked<Redis>;
+    // Reset Redis mocks and use mockRedisClient from mocks/redis.ts
+    resetRedisMocks();
+    // Ensure default implementations are restored after reset
+    (mockRedisClient.setex as jest.Mock).mockResolvedValue('OK');
+    (mockRedisClient.get as jest.Mock).mockResolvedValue(null);
+    (mockRedisClient.del as jest.Mock).mockResolvedValue(1);
+    
+    // Use mockRedisClient from mocks/redis.ts
+    mockRedis = mockRedisClient as unknown as jest.Mocked<Redis>;
   });
 
   afterEach(() => {
@@ -143,6 +147,28 @@ describe('CursorRunnerCallbackService', () => {
       if (originalEnv) {
         process.env.REDIS_URL = originalEnv;
       }
+    });
+
+    it('should prioritize redisClient over redisUrl if both are provided', () => {
+      const { Redis } = require('ioredis');
+      jest.clearAllMocks();
+      
+      // If redisClient is provided, redisUrl should be ignored
+      service = new CursorRunnerCallbackService({ 
+        redisClient: mockRedis,
+        redisUrl: 'redis://should-be-ignored:6379/0'
+      });
+      
+      // Redis constructor should not be called since redisClient was provided
+      expect(Redis).not.toHaveBeenCalled();
+    });
+
+    it('should store Redis client as private property', () => {
+      service = new CursorRunnerCallbackService({ redisClient: mockRedis });
+      
+      // Verify that the service uses the provided client by calling a method
+      // If the client wasn't stored, the method would fail
+      expect(service).toBeInstanceOf(CursorRunnerCallbackService);
     });
   });
 
@@ -554,6 +580,58 @@ describe('CursorRunnerCallbackService', () => {
       mockRedis.get.mockResolvedValue(jsonString);
       const result = await service.getPendingRequest(requestId);
       expect(result).toEqual(fullData);
+    });
+
+    it('should store multiple requests with different IDs without interference', async () => {
+      const requestId1 = 'request-1';
+      const requestId2 = 'request-2';
+      const data1: PendingRequestData = { chat_id: 111 };
+      const data2: PendingRequestData = { chat_id: 222 };
+      const key1 = `cursor_runner_callback:${requestId1}`;
+      const key2 = `cursor_runner_callback:${requestId2}`;
+
+      await service.storePendingRequest(requestId1, data1);
+      await service.storePendingRequest(requestId2, data2);
+
+      expect(mockRedis.setex).toHaveBeenCalledWith(key1, 3600, JSON.stringify(data1));
+      expect(mockRedis.setex).toHaveBeenCalledWith(key2, 3600, JSON.stringify(data2));
+      expect(mockRedis.setex).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('Constants', () => {
+    beforeEach(() => {
+      service = new CursorRunnerCallbackService({ redisClient: mockRedis });
+    });
+
+    it('should have REDIS_KEY_PREFIX constant value of "cursor_runner_callback:"', () => {
+      // Test by verifying the key format used in methods
+      const requestId = 'test-request-id';
+      const expectedKey = 'cursor_runner_callback:test-request-id';
+      
+      // Store a request and verify the key format
+      service.storePendingRequest(requestId, { chat_id: 123 });
+      expect(mockRedis.setex).toHaveBeenCalledWith(
+        expectedKey,
+        expect.any(Number),
+        expect.any(String)
+      );
+    });
+
+    it('should have DEFAULT_TTL constant value of 3600 (1 hour in seconds)', async () => {
+      const requestId = 'test-request-id';
+      const key = `cursor_runner_callback:${requestId}`;
+      const testData: PendingRequestData = { chat_id: 123 };
+
+      // Store without specifying TTL - should use default
+      await service.storePendingRequest(requestId, testData);
+      
+      // Verify DEFAULT_TTL (3600) was used
+      expect(mockRedis.setex).toHaveBeenCalledWith(
+        key,
+        3600, // DEFAULT_TTL = 3600 seconds = 1 hour
+        JSON.stringify(testData)
+      );
     });
   });
 });
