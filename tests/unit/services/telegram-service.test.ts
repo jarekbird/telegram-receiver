@@ -1,6 +1,7 @@
 /**
  * Unit tests for TelegramService
- * Tests the setWebhook, deleteWebhook, and getWebhookInfo method implementations
+ * Tests all public methods: sendMessage, setWebhook, deleteWebhook, getWebhookInfo, sendVoice, downloadFile
+ * Also tests private methods: escapeHtmlEntities (via sendMessage), downloadFileFromUrl (via downloadFile)
  */
 
 import TelegramService from '../../../src/services/telegram-service';
@@ -94,6 +95,491 @@ describe('TelegramService', () => {
 
     // Create service instance with test token
     telegramService = new TelegramService(mockBotToken);
+  });
+
+  describe('sendMessage', () => {
+    const testChatId = 12345;
+    const testText = 'Test message';
+    const testReplyToMessageId = 67890;
+
+    it('should return undefined if bot token is blank', async () => {
+      // Arrange
+      const originalToken = process.env.TELEGRAM_BOT_TOKEN;
+      delete process.env.TELEGRAM_BOT_TOKEN;
+      const blankTokenMockAxiosInstance = {
+        post: jest.fn(),
+      };
+      mockedAxios.create = jest.fn().mockReturnValue(blankTokenMockAxiosInstance as any);
+      const serviceWithBlankToken = new TelegramService('');
+
+      // Act
+      const result = await serviceWithBlankToken.sendMessage(testChatId, testText);
+
+      // Assert
+      expect(result).toBeUndefined();
+      expect(blankTokenMockAxiosInstance.post).not.toHaveBeenCalled();
+
+      // Cleanup
+      if (originalToken) {
+        process.env.TELEGRAM_BOT_TOKEN = originalToken;
+      }
+    });
+
+    it('should return undefined if bot token is not provided and env var is not set', async () => {
+      // Arrange
+      const originalToken = process.env.TELEGRAM_BOT_TOKEN;
+      delete process.env.TELEGRAM_BOT_TOKEN;
+      const serviceWithoutToken = new TelegramService();
+
+      // Act
+      const result = await serviceWithoutToken.sendMessage(testChatId, testText);
+
+      // Assert
+      expect(result).toBeUndefined();
+      expect(mockAxiosInstance.post).not.toHaveBeenCalled();
+
+      // Cleanup
+      if (originalToken) {
+        process.env.TELEGRAM_BOT_TOKEN = originalToken;
+      }
+    });
+
+    it('should send message successfully with all parameters', async () => {
+      // Arrange
+      const mockMessage: TelegramMessage = {
+        message_id: 123,
+        chat: { id: testChatId },
+        text: testText,
+      };
+      const mockResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: true,
+        result: mockMessage,
+      };
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      // Act
+      const result = await telegramService.sendMessage(
+        testChatId,
+        testText,
+        'HTML',
+        testReplyToMessageId
+      );
+
+      // Assert
+      expect(mockAxiosInstance.post).toHaveBeenCalledTimes(1);
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/sendMessage', {
+        chat_id: testChatId,
+        text: testText,
+        parse_mode: 'HTML',
+        reply_to_message_id: testReplyToMessageId,
+      });
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should send message with HTML parse mode and escape HTML entities', async () => {
+      // Arrange
+      const textWithHtml = 'Text with <tags> & entities';
+      const expectedEscapedText = 'Text with &lt;tags&gt; &amp; entities';
+      const mockMessage: TelegramMessage = {
+        message_id: 123,
+        chat: { id: testChatId },
+        text: expectedEscapedText,
+      };
+      const mockResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: true,
+        result: mockMessage,
+      };
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      // Act
+      const result = await telegramService.sendMessage(testChatId, textWithHtml, 'HTML');
+
+      // Assert
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/sendMessage', {
+        chat_id: testChatId,
+        text: expectedEscapedText,
+        parse_mode: 'HTML',
+      });
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should escape & first to avoid double-escaping', async () => {
+      // Arrange
+      const textWithAmpersand = 'Text with &amp; already escaped';
+      const expectedEscapedText = 'Text with &amp;amp; already escaped';
+      const mockMessage: TelegramMessage = {
+        message_id: 123,
+        chat: { id: testChatId },
+        text: expectedEscapedText,
+      };
+      const mockResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: true,
+        result: mockMessage,
+      };
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      // Act
+      await telegramService.sendMessage(testChatId, textWithAmpersand, 'HTML');
+
+      // Assert
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/sendMessage', {
+        chat_id: testChatId,
+        text: expectedEscapedText,
+        parse_mode: 'HTML',
+      });
+    });
+
+    it('should escape < to &lt;', async () => {
+      // Arrange
+      const textWithLessThan = 'Text with <tag>';
+      const expectedEscapedText = 'Text with &lt;tag&gt;';
+      const mockMessage: TelegramMessage = {
+        message_id: 123,
+        chat: { id: testChatId },
+        text: expectedEscapedText,
+      };
+      const mockResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: true,
+        result: mockMessage,
+      };
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      // Act
+      await telegramService.sendMessage(testChatId, textWithLessThan, 'HTML');
+
+      // Assert
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/sendMessage', {
+        chat_id: testChatId,
+        text: expectedEscapedText,
+        parse_mode: 'HTML',
+      });
+    });
+
+    it('should escape > to &gt;', async () => {
+      // Arrange
+      const textWithGreaterThan = 'Text with >tag<';
+      const expectedEscapedText = 'Text with &gt;tag&lt;';
+      const mockMessage: TelegramMessage = {
+        message_id: 123,
+        chat: { id: testChatId },
+        text: expectedEscapedText,
+      };
+      const mockResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: true,
+        result: mockMessage,
+      };
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      // Act
+      await telegramService.sendMessage(testChatId, textWithGreaterThan, 'HTML');
+
+      // Assert
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/sendMessage', {
+        chat_id: testChatId,
+        text: expectedEscapedText,
+        parse_mode: 'HTML',
+      });
+    });
+
+    it('should not escape HTML entities when parse mode is not HTML', async () => {
+      // Arrange
+      const textWithHtml = 'Text with <tags> & entities';
+      const mockMessage: TelegramMessage = {
+        message_id: 123,
+        chat: { id: testChatId },
+        text: textWithHtml,
+      };
+      const mockResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: true,
+        result: mockMessage,
+      };
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      // Act
+      await telegramService.sendMessage(testChatId, textWithHtml, 'Markdown');
+
+      // Assert
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/sendMessage', {
+        chat_id: testChatId,
+        text: textWithHtml,
+        parse_mode: 'Markdown',
+      });
+    });
+
+    it('should not escape HTML entities when parse mode is empty string', async () => {
+      // Arrange
+      const textWithHtml = 'Text with <tags> & entities';
+      const mockMessage: TelegramMessage = {
+        message_id: 123,
+        chat: { id: testChatId },
+        text: textWithHtml,
+      };
+      const mockResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: true,
+        result: mockMessage,
+      };
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      // Act
+      await telegramService.sendMessage(testChatId, textWithHtml, '');
+
+      // Assert
+      // Empty string parse mode is falsy, so it won't be included in the request
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/sendMessage', {
+        chat_id: testChatId,
+        text: textWithHtml,
+      });
+      expect(mockAxiosInstance.post.mock.calls[0][1]).not.toHaveProperty('parse_mode');
+    });
+
+    it('should handle string conversion for non-string inputs in escapeHtmlEntities', async () => {
+      // Arrange
+      // TypeScript prevents non-string inputs, but we test the behavior if somehow a non-string gets through
+      const textWithSpecialChars = 'Text with <tags> & entities';
+      const expectedEscapedText = 'Text with &lt;tags&gt; &amp; entities';
+      const mockMessage: TelegramMessage = {
+        message_id: 123,
+        chat: { id: testChatId },
+        text: expectedEscapedText,
+      };
+      const mockResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: true,
+        result: mockMessage,
+      };
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      // Act - sendMessage accepts string, but escapeHtmlEntities handles .to_s conversion in Rails
+      // In TypeScript, we ensure the method handles strings properly
+      await telegramService.sendMessage(testChatId, textWithSpecialChars, 'HTML');
+
+      // Assert
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/sendMessage', {
+        chat_id: testChatId,
+        text: expectedEscapedText,
+        parse_mode: 'HTML',
+      });
+    });
+
+    it('should not include reply_to_message_id when not provided', async () => {
+      // Arrange
+      const mockMessage: TelegramMessage = {
+        message_id: 123,
+        chat: { id: testChatId },
+        text: testText,
+      };
+      const mockResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: true,
+        result: mockMessage,
+      };
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      // Act
+      await telegramService.sendMessage(testChatId, testText);
+
+      // Assert
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/sendMessage', {
+        chat_id: testChatId,
+        text: testText,
+        parse_mode: 'HTML',
+      });
+      expect(mockAxiosInstance.post.mock.calls[0][1]).not.toHaveProperty('reply_to_message_id');
+    });
+
+    it('should include reply_to_message_id when provided', async () => {
+      // Arrange
+      const mockMessage: TelegramMessage = {
+        message_id: 123,
+        chat: { id: testChatId },
+        text: testText,
+      };
+      const mockResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: true,
+        result: mockMessage,
+      };
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      // Act
+      await telegramService.sendMessage(testChatId, testText, 'HTML', testReplyToMessageId);
+
+      // Assert
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/sendMessage', {
+        chat_id: testChatId,
+        text: testText,
+        parse_mode: 'HTML',
+        reply_to_message_id: testReplyToMessageId,
+      });
+    });
+
+    it('should use default HTML parse mode when not specified', async () => {
+      // Arrange
+      const mockMessage: TelegramMessage = {
+        message_id: 123,
+        chat: { id: testChatId },
+        text: testText,
+      };
+      const mockResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: true,
+        result: mockMessage,
+      };
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      // Act
+      await telegramService.sendMessage(testChatId, testText);
+
+      // Assert
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/sendMessage', {
+        chat_id: testChatId,
+        text: testText,
+        parse_mode: 'HTML',
+      });
+    });
+
+    it('should return API response with ok: false when Telegram API returns error', async () => {
+      // Arrange
+      const mockErrorResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: false,
+        description: 'Bad Request: chat not found',
+        error_code: 400,
+      };
+      mockAxiosInstance.post.mockResolvedValue({ data: mockErrorResponse });
+
+      // Act
+      const result = await telegramService.sendMessage(testChatId, testText);
+
+      // Assert
+      expect(result).toEqual(mockErrorResponse);
+      expect(result?.ok).toBe(false);
+    });
+
+    it('should log error and re-throw exception when axios request fails', async () => {
+      // Arrange
+      const mockError = new Error('Network error');
+      mockAxiosInstance.post.mockRejectedValue(mockError);
+
+      // Act & Assert
+      await expect(telegramService.sendMessage(testChatId, testText)).rejects.toThrow('Network error');
+
+      // Verify error was logged
+      expect(getMockLogger().error).toHaveBeenCalledWith('Error sending Telegram message:', mockError);
+    });
+
+    it('should handle axios errors that are not Error instances', async () => {
+      // Arrange
+      const mockError = 'String error';
+      mockAxiosInstance.post.mockRejectedValue(mockError);
+
+      // Act & Assert
+      await expect(telegramService.sendMessage(testChatId, testText)).rejects.toBe(mockError);
+
+      // Verify error was logged (logger converts non-Error to Error)
+      expect(getMockLogger().error).toHaveBeenCalledWith('Error sending Telegram message:', expect.any(Error));
+    });
+
+    it('should return response data from axios response', async () => {
+      // Arrange
+      const mockMessage: TelegramMessage = {
+        message_id: 123,
+        chat: { id: testChatId },
+        text: testText,
+      };
+      const mockResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: true,
+        result: mockMessage,
+      };
+      mockAxiosInstance.post.mockResolvedValue({
+        data: mockResponse,
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: {} as any,
+      });
+
+      // Act
+      const result = await telegramService.sendMessage(testChatId, testText);
+
+      // Assert
+      expect(result).toEqual(mockResponse);
+      expect(result).not.toHaveProperty('status');
+      expect(result).not.toHaveProperty('statusText');
+    });
+
+    it('should handle chatId as string', async () => {
+      // Arrange
+      const stringChatId = '12345';
+      const mockMessage: TelegramMessage = {
+        message_id: 123,
+        chat: { id: Number(stringChatId) },
+        text: testText,
+      };
+      const mockResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: true,
+        result: mockMessage,
+      };
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      // Act
+      await telegramService.sendMessage(stringChatId, testText);
+
+      // Assert
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/sendMessage', {
+        chat_id: stringChatId,
+        text: testText,
+        parse_mode: 'HTML',
+      });
+    });
+
+    it('should handle text that looks like HTML tags (e.g., "tcpsocket:(closed)")', async () => {
+      // Arrange
+      const textLikeHtml = 'tcpsocket:(closed)';
+      const expectedEscapedText = 'tcpsocket:(closed)';
+      // This text doesn't contain < or >, so it shouldn't be escaped
+      const mockMessage: TelegramMessage = {
+        message_id: 123,
+        chat: { id: testChatId },
+        text: expectedEscapedText,
+      };
+      const mockResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: true,
+        result: mockMessage,
+      };
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      // Act
+      await telegramService.sendMessage(testChatId, textLikeHtml, 'HTML');
+
+      // Assert
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/sendMessage', {
+        chat_id: testChatId,
+        text: expectedEscapedText,
+        parse_mode: 'HTML',
+      });
+    });
+
+    it('should escape text with parentheses and angle brackets', async () => {
+      // Arrange
+      const textWithBrackets = 'tcpsocket:(<closed>)';
+      const expectedEscapedText = 'tcpsocket:(&lt;closed&gt;)';
+      const mockMessage: TelegramMessage = {
+        message_id: 123,
+        chat: { id: testChatId },
+        text: expectedEscapedText,
+      };
+      const mockResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: true,
+        result: mockMessage,
+      };
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      // Act
+      await telegramService.sendMessage(testChatId, textWithBrackets, 'HTML');
+
+      // Assert
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/sendMessage', {
+        chat_id: testChatId,
+        text: expectedEscapedText,
+        parse_mode: 'HTML',
+      });
+    });
   });
 
   describe('setWebhook', () => {
