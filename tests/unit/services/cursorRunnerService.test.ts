@@ -12,6 +12,7 @@ import CursorRunnerService, {
 } from '../../../src/services/cursorRunnerService';
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import { AxiosRequestConfig } from 'axios';
+import { CursorExecuteResponse } from '../../../src/types/cursor-runner';
 
 // Mock logger - define inline to avoid hoisting issues
 jest.mock('../../../src/utils/logger', () => {
@@ -577,6 +578,256 @@ describe('CursorRunnerService', () => {
 
       buildHttpSpy.mockRestore();
       executeRequestSpy.mockRestore();
+    });
+  });
+
+  describe('execute method', () => {
+    let mockAxiosInstance: jest.Mocked<AxiosInstance>;
+    let mockResponse: AxiosResponse;
+
+    beforeEach(() => {
+      mockAxiosInstance = {
+        get: jest.fn(),
+        post: jest.fn(),
+      } as unknown as jest.Mocked<AxiosInstance>;
+
+      mockResponse = {
+        status: 200,
+        statusText: 'OK',
+        data: {
+          success: true,
+          requestId: 'req-1234567890-a1b2c3d4',
+          repository: 'test-repo',
+          branchName: 'main',
+          output: 'Command executed successfully',
+          exitCode: 0,
+        },
+        headers: {},
+        config: {} as AxiosRequestConfig,
+      } as AxiosResponse;
+    });
+
+    it('should execute with all parameters provided', async () => {
+      const buildHttpSpy = jest.spyOn(service as any, 'buildHttp').mockReturnValue(mockAxiosInstance);
+      const executeRequestSpy = jest.spyOn(service as any, 'executeRequest').mockResolvedValue(mockResponse);
+      const parseResponseSpy = jest.spyOn(service as any, 'parseResponse').mockReturnValue(mockResponse.data);
+
+      const result = await service.execute({
+        repository: 'test-repo',
+        branchName: 'main',
+        prompt: 'Test prompt',
+        requestId: 'req-custom-id',
+      });
+
+      expect(buildHttpSpy).toHaveBeenCalledWith(`${baseUrl}/cursor/execute`);
+      expect(executeRequestSpy).toHaveBeenCalledWith(
+        mockAxiosInstance,
+        'POST',
+        '/cursor/execute',
+        `${baseUrl}/cursor/execute`,
+        JSON.stringify({
+          repository: 'test-repo',
+          branchName: 'main',
+          prompt: 'Test prompt',
+          id: 'req-custom-id',
+        })
+      );
+      expect(parseResponseSpy).toHaveBeenCalledWith(mockResponse);
+      expect(result).toEqual(mockResponse.data);
+
+      buildHttpSpy.mockRestore();
+      executeRequestSpy.mockRestore();
+      parseResponseSpy.mockRestore();
+    });
+
+    it('should auto-generate requestId when not provided', async () => {
+      const generateRequestIdSpy = jest.spyOn(service as any, 'generateRequestId').mockReturnValue('req-auto-generated');
+      const buildHttpSpy = jest.spyOn(service as any, 'buildHttp').mockReturnValue(mockAxiosInstance);
+      const executeRequestSpy = jest.spyOn(service as any, 'executeRequest').mockResolvedValue(mockResponse);
+      const parseResponseSpy = jest.spyOn(service as any, 'parseResponse').mockReturnValue(mockResponse.data);
+
+      const result = await service.execute({
+        repository: 'test-repo',
+        branchName: 'main',
+        prompt: 'Test prompt',
+      });
+
+      expect(generateRequestIdSpy).toHaveBeenCalled();
+      expect(executeRequestSpy).toHaveBeenCalledWith(
+        mockAxiosInstance,
+        'POST',
+        '/cursor/execute',
+        `${baseUrl}/cursor/execute`,
+        JSON.stringify({
+          repository: 'test-repo',
+          branchName: 'main',
+          prompt: 'Test prompt',
+          id: 'req-auto-generated',
+        })
+      );
+      expect(result).toEqual(mockResponse.data);
+
+      generateRequestIdSpy.mockRestore();
+      buildHttpSpy.mockRestore();
+      executeRequestSpy.mockRestore();
+      parseResponseSpy.mockRestore();
+    });
+
+    it('should handle connection errors', async () => {
+      const buildHttpSpy = jest.spyOn(service as any, 'buildHttp').mockReturnValue(mockAxiosInstance);
+      const executeRequestSpy = jest.spyOn(service as any, 'executeRequest').mockRejectedValue(
+        new ConnectionError('Failed to connect to cursor-runner: Connection refused')
+      );
+
+      await expect(
+        service.execute({
+          repository: 'test-repo',
+          branchName: 'main',
+          prompt: 'Test prompt',
+        })
+      ).rejects.toThrow(ConnectionError);
+      await expect(
+        service.execute({
+          repository: 'test-repo',
+          branchName: 'main',
+          prompt: 'Test prompt',
+        })
+      ).rejects.toThrow('Failed to connect to cursor-runner: Connection refused');
+
+      buildHttpSpy.mockRestore();
+      executeRequestSpy.mockRestore();
+    });
+
+    it('should handle timeout errors', async () => {
+      const buildHttpSpy = jest.spyOn(service as any, 'buildHttp').mockReturnValue(mockAxiosInstance);
+      const executeRequestSpy = jest.spyOn(service as any, 'executeRequest').mockRejectedValue(
+        new TimeoutError('Request to cursor-runner timed out: timeout of 5000ms exceeded')
+      );
+
+      await expect(
+        service.execute({
+          repository: 'test-repo',
+          branchName: 'main',
+          prompt: 'Test prompt',
+        })
+      ).rejects.toThrow(TimeoutError);
+      await expect(
+        service.execute({
+          repository: 'test-repo',
+          branchName: 'main',
+          prompt: 'Test prompt',
+        })
+      ).rejects.toThrow('Request to cursor-runner timed out: timeout of 5000ms exceeded');
+
+      buildHttpSpy.mockRestore();
+      executeRequestSpy.mockRestore();
+    });
+
+    it('should handle HTTP error responses (non-2xx, except 422)', async () => {
+      const buildHttpSpy = jest.spyOn(service as any, 'buildHttp').mockReturnValue(mockAxiosInstance);
+      const executeRequestSpy = jest.spyOn(service as any, 'executeRequest').mockRejectedValue(
+        new CursorRunnerServiceError('HTTP 500: Internal Server Error')
+      );
+
+      await expect(
+        service.execute({
+          repository: 'test-repo',
+          branchName: 'main',
+          prompt: 'Test prompt',
+        })
+      ).rejects.toThrow(CursorRunnerServiceError);
+      await expect(
+        service.execute({
+          repository: 'test-repo',
+          branchName: 'main',
+          prompt: 'Test prompt',
+        })
+      ).rejects.toThrow('HTTP 500: Internal Server Error');
+
+      buildHttpSpy.mockRestore();
+      executeRequestSpy.mockRestore();
+    });
+
+    it('should handle 422 response as valid (not throw error)', async () => {
+      const response422 = {
+        ...mockResponse,
+        status: 422,
+        statusText: 'Unprocessable Entity',
+        data: {
+          success: false,
+          requestId: 'req-1234567890-a1b2c3d4',
+          repository: 'test-repo',
+          branchName: 'main',
+          output: '',
+          error: 'Validation failed',
+          exitCode: 1,
+        },
+      } as AxiosResponse;
+
+      const buildHttpSpy = jest.spyOn(service as any, 'buildHttp').mockReturnValue(mockAxiosInstance);
+      const executeRequestSpy = jest.spyOn(service as any, 'executeRequest').mockResolvedValue(response422);
+      const parseResponseSpy = jest.spyOn(service as any, 'parseResponse').mockReturnValue(response422.data);
+
+      const result = await service.execute({
+        repository: 'test-repo',
+        branchName: 'main',
+        prompt: 'Test prompt',
+      });
+
+      expect(result).toEqual(response422.data);
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Validation failed');
+
+      buildHttpSpy.mockRestore();
+      executeRequestSpy.mockRestore();
+      parseResponseSpy.mockRestore();
+    });
+
+    it('should handle JSON parsing errors', async () => {
+      const buildHttpSpy = jest.spyOn(service as any, 'buildHttp').mockReturnValue(mockAxiosInstance);
+      const executeRequestSpy = jest.spyOn(service as any, 'executeRequest').mockResolvedValue(mockResponse);
+      const parseResponseSpy = jest.spyOn(service as any, 'parseResponse').mockImplementation(() => {
+        throw new InvalidResponseError('Failed to parse response: Unexpected token');
+      });
+
+      await expect(
+        service.execute({
+          repository: 'test-repo',
+          branchName: 'main',
+          prompt: 'Test prompt',
+        })
+      ).rejects.toThrow(InvalidResponseError);
+      await expect(
+        service.execute({
+          repository: 'test-repo',
+          branchName: 'main',
+          prompt: 'Test prompt',
+        })
+      ).rejects.toThrow('Failed to parse response: Unexpected token');
+
+      buildHttpSpy.mockRestore();
+      executeRequestSpy.mockRestore();
+      parseResponseSpy.mockRestore();
+    });
+
+    it('should use branchName in camelCase in request body', async () => {
+      const buildHttpSpy = jest.spyOn(service as any, 'buildHttp').mockReturnValue(mockAxiosInstance);
+      const executeRequestSpy = jest.spyOn(service as any, 'executeRequest').mockResolvedValue(mockResponse);
+      const parseResponseSpy = jest.spyOn(service as any, 'parseResponse').mockReturnValue(mockResponse.data);
+
+      await service.execute({
+        repository: 'test-repo',
+        branchName: 'feature-branch',
+        prompt: 'Test prompt',
+      });
+
+      const requestBody = JSON.parse(executeRequestSpy.mock.calls[0][4] as string);
+      expect(requestBody.branchName).toBe('feature-branch');
+      expect(requestBody).not.toHaveProperty('branch_name');
+
+      buildHttpSpy.mockRestore();
+      executeRequestSpy.mockRestore();
+      parseResponseSpy.mockRestore();
     });
   });
 });

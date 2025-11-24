@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import { randomBytes } from 'crypto';
 import logger from '@/utils/logger';
+import { CursorExecuteResponse } from '@/types/cursor-runner';
 
 /**
  * Base error class for CursorRunnerService
@@ -332,6 +333,46 @@ class CursorRunnerService {
       const errorMessage = error instanceof Error ? error.message : 'Unknown parsing error';
       throw new InvalidResponseError(`Failed to parse response: ${errorMessage}`);
     }
+  }
+
+  /**
+   * Executes a cursor command synchronously by calling the cursor-runner API's /cursor/execute endpoint
+   * @param params - Execution parameters
+   * @param params.repository - Repository name (must be locally cloned)
+   * @param params.branchName - Branch name to checkout (camelCase)
+   * @param params.prompt - Prompt text for cursor to execute
+   * @param params.requestId - Optional request ID for tracking. If not provided, will be auto-generated
+   * @returns Promise resolving to CursorExecuteResponse with success, output, error, exitCode, requestId, etc.
+   * @throws {ConnectionError} When connection to cursor-runner fails
+   * @throws {TimeoutError} When request times out
+   * @throws {InvalidResponseError} When response cannot be parsed
+   * @throws {CursorRunnerServiceError} When HTTP error occurs (non-2xx, except 422)
+   */
+  async execute(params: {
+    repository: string;
+    branchName: string;
+    prompt: string;
+    requestId?: string;
+  }): Promise<CursorExecuteResponse> {
+    // Generate requestId if not provided
+    const requestId = params.requestId || this.generateRequestId();
+
+    // Build request body with correct structure
+    const requestBody = {
+      repository: params.repository,
+      branchName: params.branchName,
+      prompt: params.prompt,
+      id: requestId,
+    };
+
+    // POST to /cursor/execute endpoint using helper method
+    const response = await this.post('/cursor/execute', requestBody);
+
+    // Parse JSON response body using helper method
+    const parsedResponse = this.parseResponse(response);
+
+    // Return parsed response as CursorExecuteResponse
+    return parsedResponse as CursorExecuteResponse;
   }
 }
 
