@@ -11,6 +11,45 @@ import * as os from 'os';
 import * as path from 'path';
 import FormData from 'form-data';
 
+// Mock logger - define inline to avoid hoisting issues
+const mockLogger = {
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
+};
+
+jest.mock('../../../src/utils/logger', () => {
+  const mockLogger = {
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+  };
+  return {
+    __esModule: true,
+    default: mockLogger,
+  };
+});
+
+// Import the mocked logger to get the same instance
+import logger from '../../../src/utils/logger';
+// Get the actual mock instance that jest created
+const getMockLogger = () => logger as typeof mockLogger;
+
+// Mock pino to avoid os.hostname issues in test environment
+jest.mock('../../../src/config/logger', () => {
+  return {
+    __esModule: true,
+    default: {
+      info: jest.fn(),
+      error: jest.fn(),
+      warn: jest.fn(),
+      debug: jest.fn(),
+    },
+  };
+});
+
 // Mock axios
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
@@ -44,6 +83,11 @@ describe('TelegramService', () => {
   beforeEach(() => {
     // Reset all mocks
     jest.clearAllMocks();
+    // Reset logger mocks
+    getMockLogger().info.mockClear();
+    getMockLogger().error.mockClear();
+    getMockLogger().warn.mockClear();
+    getMockLogger().debug.mockClear();
 
     // Mock axios.create to return our mock instance
     mockedAxios.create = jest.fn().mockReturnValue(mockAxiosInstance as any);
@@ -209,38 +253,24 @@ describe('TelegramService', () => {
       // Arrange
       const mockError = new Error('Network error');
       mockAxiosInstance.post.mockRejectedValue(mockError);
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
       // Act & Assert
       await expect(telegramService.setWebhook(testUrl)).rejects.toThrow('Network error');
 
       // Verify error was logged
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error setting Telegram webhook: Network error'
-      );
-      expect(consoleErrorSpy).toHaveBeenCalledWith(mockError.stack);
-
-      // Cleanup
-      consoleErrorSpy.mockRestore();
+      expect(getMockLogger().error).toHaveBeenCalledWith('Error setting Telegram webhook:', mockError);
     });
 
     it('should handle axios errors that are not Error instances', async () => {
       // Arrange
       const mockError = 'String error';
       mockAxiosInstance.post.mockRejectedValue(mockError);
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
       // Act & Assert
       await expect(telegramService.setWebhook(testUrl)).rejects.toBe(mockError);
 
-      // Verify error was logged
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error setting Telegram webhook: String error'
-      );
-      expect(consoleErrorSpy).toHaveBeenCalledWith('');
-
-      // Cleanup
-      consoleErrorSpy.mockRestore();
+      // Verify error was logged (logger converts non-Error to Error)
+      expect(getMockLogger().error).toHaveBeenCalledWith('Error setting Telegram webhook:', expect.any(Error));
     });
 
     it('should return response data from axios response', async () => {
@@ -352,38 +382,24 @@ describe('TelegramService', () => {
       // Arrange
       const mockError = new Error('Network error');
       mockAxiosInstance.post.mockRejectedValue(mockError);
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
       // Act & Assert
       await expect(telegramService.deleteWebhook()).rejects.toThrow('Network error');
 
       // Verify error was logged
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error deleting Telegram webhook: Network error'
-      );
-      expect(consoleErrorSpy).toHaveBeenCalledWith(mockError.stack);
-
-      // Cleanup
-      consoleErrorSpy.mockRestore();
+      expect(getMockLogger().error).toHaveBeenCalledWith('Error deleting Telegram webhook:', mockError);
     });
 
     it('should handle axios errors that are not Error instances', async () => {
       // Arrange
       const mockError = 'String error';
       mockAxiosInstance.post.mockRejectedValue(mockError);
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
       // Act & Assert
       await expect(telegramService.deleteWebhook()).rejects.toBe(mockError);
 
-      // Verify error was logged
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error deleting Telegram webhook: String error'
-      );
-      expect(consoleErrorSpy).toHaveBeenCalledWith('');
-
-      // Cleanup
-      consoleErrorSpy.mockRestore();
+      // Verify error was logged (logger converts non-Error to Error)
+      expect(getMockLogger().error).toHaveBeenCalledWith('Error deleting Telegram webhook:', expect.any(Error));
     });
 
     it('should return response data from axios response', async () => {
@@ -531,38 +547,24 @@ describe('TelegramService', () => {
       // Arrange
       const mockError = new Error('Network error');
       mockAxiosInstance.get.mockRejectedValue(mockError);
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
       // Act & Assert
       await expect(telegramService.getWebhookInfo()).rejects.toThrow('Network error');
 
       // Verify error was logged
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error getting Telegram webhook info: Network error'
-      );
-      expect(consoleErrorSpy).toHaveBeenCalledWith(mockError.stack);
-
-      // Cleanup
-      consoleErrorSpy.mockRestore();
+      expect(getMockLogger().error).toHaveBeenCalledWith('Error getting Telegram webhook info:', mockError);
     });
 
     it('should handle axios errors that are not Error instances', async () => {
       // Arrange
       const mockError = 'String error';
       mockAxiosInstance.get.mockRejectedValue(mockError);
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
       // Act & Assert
       await expect(telegramService.getWebhookInfo()).rejects.toBe(mockError);
 
-      // Verify error was logged
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error getting Telegram webhook info: String error'
-      );
-      expect(consoleErrorSpy).toHaveBeenCalledWith('');
-
-      // Cleanup
-      consoleErrorSpy.mockRestore();
+      // Verify error was logged (logger converts non-Error to Error)
+      expect(getMockLogger().error).toHaveBeenCalledWith('Error getting Telegram webhook info:', expect.any(Error));
     });
 
     it('should return response data from axios response', async () => {
@@ -661,7 +663,6 @@ describe('TelegramService', () => {
     it('should throw error if voice file does not exist', async () => {
       // Arrange
       (fs.access as jest.Mock).mockRejectedValue({ code: 'ENOENT' });
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
       // Act & Assert
       await expect(telegramService.sendVoice(testChatId, testVoicePath)).rejects.toThrow(
@@ -669,12 +670,10 @@ describe('TelegramService', () => {
       );
 
       // Verify error was logged
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error sending Telegram voice: Voice file does not exist'
+      expect(getMockLogger().error).toHaveBeenCalledWith(
+        'Error sending Telegram voice:',
+        expect.objectContaining({ message: 'Voice file does not exist' })
       );
-
-      // Cleanup
-      consoleErrorSpy.mockRestore();
     });
 
     it('should send voice with required parameters only', async () => {
@@ -970,37 +969,24 @@ describe('TelegramService', () => {
       (FormData as jest.Mock).mockReturnValue(mockFormData);
       const mockError = new Error('Network error');
       mockAxiosInstance.post.mockRejectedValue(mockError);
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
       // Act & Assert
       await expect(telegramService.sendVoice(testChatId, testVoicePath)).rejects.toThrow('Network error');
 
       // Verify error was logged
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error sending Telegram voice: Network error'
-      );
-      expect(consoleErrorSpy).toHaveBeenCalledWith(mockError.stack);
-
-      // Cleanup
-      consoleErrorSpy.mockRestore();
+      expect(getMockLogger().error).toHaveBeenCalledWith('Error sending Telegram voice:', mockError);
     });
 
     it('should log error and re-throw exception when file read fails', async () => {
       // Arrange
       const readError = new Error('Permission denied');
       (fs.readFile as jest.Mock).mockRejectedValue(readError);
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
       // Act & Assert
       await expect(telegramService.sendVoice(testChatId, testVoicePath)).rejects.toThrow('Permission denied');
 
       // Verify error was logged
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error sending Telegram voice: Permission denied'
-      );
-
-      // Cleanup
-      consoleErrorSpy.mockRestore();
+      expect(getMockLogger().error).toHaveBeenCalledWith('Error sending Telegram voice:', readError);
     });
 
     it('should handle axios errors that are not Error instances', async () => {
@@ -1012,19 +998,12 @@ describe('TelegramService', () => {
       (FormData as jest.Mock).mockReturnValue(mockFormData);
       const mockError = 'String error';
       mockAxiosInstance.post.mockRejectedValue(mockError);
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
       // Act & Assert
       await expect(telegramService.sendVoice(testChatId, testVoicePath)).rejects.toBe(mockError);
 
-      // Verify error was logged
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error sending Telegram voice: String error'
-      );
-      expect(consoleErrorSpy).toHaveBeenCalledWith('');
-
-      // Cleanup
-      consoleErrorSpy.mockRestore();
+      // Verify error was logged (logger converts non-Error to Error)
+      expect(getMockLogger().error).toHaveBeenCalledWith('Error sending Telegram voice:', expect.any(Error));
     });
 
     it('should return response data from axios response', async () => {
@@ -1161,8 +1140,6 @@ describe('TelegramService', () => {
       };
       (mockedAxios.get as jest.Mock) = jest.fn().mockResolvedValue(mockDownloadResponse);
 
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-
       // Act
       const result = await telegramService.downloadFile(testFileId, testDestinationPath);
 
@@ -1178,16 +1155,13 @@ describe('TelegramService', () => {
       );
       expect(fs.mkdir).toHaveBeenCalledWith(path.dirname(testDestinationPath), { recursive: true });
       expect(fs.writeFile).toHaveBeenCalledWith(testDestinationPath, mockFileContent);
-      expect(consoleLogSpy).toHaveBeenCalledWith(
+      expect(getMockLogger().info).toHaveBeenCalledWith(
         `Downloading Telegram file ${testFileId} to ${testDestinationPath}`
       );
-      expect(consoleLogSpy).toHaveBeenCalledWith(
+      expect(getMockLogger().info).toHaveBeenCalledWith(
         `Downloaded file to ${testDestinationPath} (${mockFileContent.length} bytes)`
       );
       expect(result).toBe(testDestinationPath);
-
-      // Cleanup
-      consoleLogSpy.mockRestore();
     });
 
     it('should download file successfully without destination path (uses temp directory)', async () => {
@@ -1212,8 +1186,6 @@ describe('TelegramService', () => {
       };
       (mockedAxios.get as jest.Mock) = jest.fn().mockResolvedValue(mockDownloadResponse);
 
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-
       // Act
       const result = await telegramService.downloadFile(testFileId);
 
@@ -1229,13 +1201,10 @@ describe('TelegramService', () => {
       );
       expect(fs.mkdir).toHaveBeenCalledWith(path.dirname(expectedTempPath), { recursive: true });
       expect(fs.writeFile).toHaveBeenCalledWith(expectedTempPath, mockFileContent);
-      expect(consoleLogSpy).toHaveBeenCalledWith(
+      expect(getMockLogger().info).toHaveBeenCalledWith(
         `Downloading Telegram file ${testFileId} to ${expectedTempPath}`
       );
       expect(result).toBe(expectedTempPath);
-
-      // Cleanup
-      consoleLogSpy.mockRestore();
     });
 
     it('should extract filename correctly from file path for temp directory', async () => {
@@ -1278,7 +1247,6 @@ describe('TelegramService', () => {
         error_code: 400,
       };
       mockAxiosInstance.post.mockResolvedValue({ data: mockErrorResponse });
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
       // Act & Assert
       await expect(telegramService.downloadFile(testFileId)).rejects.toThrow(
@@ -1286,12 +1254,10 @@ describe('TelegramService', () => {
       );
 
       // Verify error was logged
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error downloading Telegram file: Telegram API error: Bad Request: file not found'
+      expect(getMockLogger().error).toHaveBeenCalledWith(
+        'Error downloading Telegram file:',
+        expect.objectContaining({ message: 'Telegram API error: Bad Request: file not found' })
       );
-
-      // Cleanup
-      consoleErrorSpy.mockRestore();
     });
 
     it('should throw error when HTTP download fails with non-2xx status', async () => {
@@ -1311,7 +1277,6 @@ describe('TelegramService', () => {
         data: mockFileContent,
       };
       (mockedAxios.get as jest.Mock) = jest.fn().mockResolvedValue(mockDownloadResponse);
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
       // Act & Assert
       await expect(telegramService.downloadFile(testFileId, testDestinationPath)).rejects.toThrow(
@@ -1319,12 +1284,10 @@ describe('TelegramService', () => {
       );
 
       // Verify error was logged
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error downloading file from URL: Failed to download file: HTTP 404 Not Found'
+      expect(getMockLogger().error).toHaveBeenCalledWith(
+        'Error downloading file from URL:',
+        expect.objectContaining({ message: 'Failed to download file: HTTP 404 Not Found' })
       );
-
-      // Cleanup
-      consoleErrorSpy.mockRestore();
     });
 
     it('should throw error when axios download request fails', async () => {
@@ -1340,7 +1303,6 @@ describe('TelegramService', () => {
       // Mock axios.get to throw error
       const mockError = new Error('Network error');
       (mockedAxios.get as jest.Mock) = jest.fn().mockRejectedValue(mockError);
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
       // Act & Assert
       await expect(telegramService.downloadFile(testFileId, testDestinationPath)).rejects.toThrow(
@@ -1348,12 +1310,7 @@ describe('TelegramService', () => {
       );
 
       // Verify error was logged
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error downloading file from URL: Network error'
-      );
-
-      // Cleanup
-      consoleErrorSpy.mockRestore();
+      expect(getMockLogger().error).toHaveBeenCalledWith('Error downloading file from URL:', mockError);
     });
 
     it('should handle axios error with response object', async () => {
@@ -1375,7 +1332,6 @@ describe('TelegramService', () => {
         message: 'Request failed',
       };
       (mockedAxios.get as jest.Mock) = jest.fn().mockRejectedValue(mockAxiosError);
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
       // Act & Assert
       await expect(telegramService.downloadFile(testFileId, testDestinationPath)).rejects.toThrow(
@@ -1383,31 +1339,22 @@ describe('TelegramService', () => {
       );
 
       // Verify error was logged
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error downloading file from URL: Failed to download file: HTTP 500 Internal Server Error'
+      expect(getMockLogger().error).toHaveBeenCalledWith(
+        'Error downloading file from URL:',
+        expect.objectContaining({ message: 'Failed to download file: HTTP 500 Internal Server Error' })
       );
-
-      // Cleanup
-      consoleErrorSpy.mockRestore();
     });
 
     it('should log error and re-throw exception when getFile API request fails', async () => {
       // Arrange
       const mockError = new Error('Network error');
       mockAxiosInstance.post.mockRejectedValue(mockError);
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
       // Act & Assert
       await expect(telegramService.downloadFile(testFileId)).rejects.toThrow('Network error');
 
       // Verify error was logged
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error downloading Telegram file: Network error'
-      );
-      expect(consoleErrorSpy).toHaveBeenCalledWith(mockError.stack);
-
-      // Cleanup
-      consoleErrorSpy.mockRestore();
+      expect(getMockLogger().error).toHaveBeenCalledWith('Error downloading Telegram file:', mockError);
     });
 
     it('should handle errors that are not Error instances', async () => {
@@ -1423,19 +1370,14 @@ describe('TelegramService', () => {
       // Mock axios.get to throw string error
       const mockError = 'String error';
       (mockedAxios.get as jest.Mock) = jest.fn().mockRejectedValue(mockError);
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
       // Act & Assert
       await expect(telegramService.downloadFile(testFileId, testDestinationPath)).rejects.toBe(
         mockError
       );
 
-      // Verify error was logged
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Error downloading file from URL: String error');
-      expect(consoleErrorSpy).toHaveBeenCalledWith('');
-
-      // Cleanup
-      consoleErrorSpy.mockRestore();
+      // Verify error was logged (logger converts non-Error to Error)
+      expect(getMockLogger().error).toHaveBeenCalledWith('Error downloading file from URL:', expect.any(Error));
     });
   });
 });

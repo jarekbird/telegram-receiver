@@ -4,6 +4,7 @@ import { promises as fs } from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import FormData from 'form-data';
+import logger from '@/utils/logger';
 
 /**
  * Service for interacting with Telegram Bot API
@@ -105,10 +106,8 @@ class TelegramService {
 
       return response.data;
     } catch (error: any) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const stackTrace = error instanceof Error ? error.stack : '';
-      console.error(`Error sending Telegram message: ${errorMessage}`);
-      console.error(stackTrace);
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      logger.error('Error sending Telegram message:', errorObj);
       throw error;
     }
   }
@@ -149,10 +148,8 @@ class TelegramService {
 
       return response.data;
     } catch (error: any) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const stackTrace = error instanceof Error ? error.stack : '';
-      console.error(`Error setting Telegram webhook: ${errorMessage}`);
-      console.error(stackTrace);
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      logger.error('Error setting Telegram webhook:', errorObj);
       throw error;
     }
   }
@@ -178,10 +175,8 @@ class TelegramService {
 
       return response.data;
     } catch (error: any) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const stackTrace = error instanceof Error ? error.stack : '';
-      console.error(`Error deleting Telegram webhook: ${errorMessage}`);
-      console.error(stackTrace);
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      logger.error('Error deleting Telegram webhook:', errorObj);
       throw error;
     }
   }
@@ -206,10 +201,8 @@ class TelegramService {
 
       return response.data;
     } catch (error: any) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const stackTrace = error instanceof Error ? error.stack : '';
-      console.error(`Error getting Telegram webhook info: ${errorMessage}`);
-      console.error(stackTrace);
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      logger.error('Error getting Telegram webhook info:', errorObj);
       throw error;
     }
   }
@@ -236,8 +229,17 @@ class TelegramService {
     }
 
     try {
-      // Validate that the voice file exists
-      await fs.access(voicePath);
+      // Validate that the voice file exists (matching Rails File.exist? pattern)
+      try {
+        await fs.access(voicePath);
+      } catch (accessError: any) {
+        if (accessError.code === 'ENOENT') {
+          const fileNotFoundError = new Error('Voice file does not exist');
+          logger.error('Error sending Telegram voice:', fileNotFoundError);
+          throw fileNotFoundError;
+        }
+        throw accessError;
+      }
       
       // Read file content from disk using binary read
       const fileContent = await fs.readFile(voicePath);
@@ -290,19 +292,13 @@ class TelegramService {
       
       return response.data;
     } catch (error: any) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const stackTrace = error instanceof Error ? error.stack : '';
-      
-      // Check if error is due to file not existing
-      if (error.code === 'ENOENT') {
-        const fileNotFoundError = new Error('Voice file does not exist');
-        console.error(`Error sending Telegram voice: ${fileNotFoundError.message}`);
-        console.error(stackTrace);
-        throw fileNotFoundError;
+      // If error is already the file not found error we threw, re-throw it
+      if (error.message === 'Voice file does not exist') {
+        throw error;
       }
       
-      console.error(`Error sending Telegram voice: ${errorMessage}`);
-      console.error(stackTrace);
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      logger.error('Error sending Telegram voice:', errorObj);
       throw error;
     }
   }
@@ -349,17 +345,15 @@ class TelegramService {
       }
 
       // Log download start
-      console.log(`Downloading Telegram file ${fileId} to ${finalDestinationPath}`);
+      logger.info(`Downloading Telegram file ${fileId} to ${finalDestinationPath}`);
 
       // Download the file
       await this.downloadFileFromUrl(downloadUrl, finalDestinationPath);
 
       return finalDestinationPath;
     } catch (error: any) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const stackTrace = error instanceof Error ? error.stack : '';
-      console.error(`Error downloading Telegram file: ${errorMessage}`);
-      console.error(stackTrace);
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      logger.error('Error downloading Telegram file:', errorObj);
       throw error;
     }
   }
@@ -381,9 +375,10 @@ class TelegramService {
         timeout: 30000, // 30 second timeout
       });
 
-      // Check HTTP status code
+      // Check HTTP status code (matching Rails response.is_a?(Net::HTTPSuccess) pattern)
       if (response.status < 200 || response.status >= 300) {
-        throw new Error(`Failed to download file: HTTP ${response.status} ${response.statusText}`);
+        const statusText = response.statusText || 'Unknown';
+        throw new Error(`Failed to download file: HTTP ${response.status} ${statusText}`);
       }
 
       // Ensure destination directory exists
@@ -395,23 +390,19 @@ class TelegramService {
 
       // Log success message with file size
       const fileSize = Buffer.from(response.data).length;
-      console.log(`Downloaded file to ${destinationPath} (${fileSize} bytes)`);
+      logger.info(`Downloaded file to ${destinationPath} (${fileSize} bytes)`);
     } catch (error: any) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const stackTrace = error instanceof Error ? error.stack : '';
-      
-      // If it's an axios error with response, format it properly
+      // If it's an axios error with response, format it properly to match Rails pattern
       if (error.response) {
         const statusCode = error.response.status;
         const statusText = error.response.statusText || 'Unknown';
         const httpError = new Error(`Failed to download file: HTTP ${statusCode} ${statusText}`);
-        console.error(`Error downloading file from URL: ${httpError.message}`);
-        console.error(stackTrace);
+        logger.error('Error downloading file from URL:', httpError);
         throw httpError;
       }
       
-      console.error(`Error downloading file from URL: ${errorMessage}`);
-      console.error(stackTrace);
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      logger.error('Error downloading file from URL:', errorObj);
       throw error;
     }
   }
