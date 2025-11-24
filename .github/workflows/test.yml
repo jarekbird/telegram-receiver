@@ -15,6 +15,17 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -96,75 +107,128 @@ jobs:
       - name: Run TypeScript type check
         run: npm run type-check
 
-      - name: Run Jest tests with changed file detection and coverage
-        id: test
+      - name: Run unit tests with changed file detection
+        id: unit-tests
         run: |
           if [ "${{ steps.changed-files.outputs.has_changes }}" == "true" ]; then
-            echo "Running tests for changed files with coverage..."
+            echo "Running unit tests for changed files..."
             CHANGED_FILES="${{ steps.changed-files.outputs.changed_files }}"
-            # Get changed test files
-            CHANGED_TESTS=$(echo "$CHANGED_FILES" | grep -E '^tests/.*\.(test|spec)\.(ts|js)$' || echo "")
+            # Get changed unit test files
+            CHANGED_UNIT_TESTS=$(echo "$CHANGED_FILES" | grep -E '^tests/unit/.*\.(test|spec)\.(ts|js)$' || echo "")
             
             # Get changed source files (excluding test files)
             CHANGED_SOURCE=$(echo "$CHANGED_FILES" | grep -E '^src/.*\.(ts|js)$' || echo "")
             
-            # Collect all test files to run:
-            # 1. Changed test files
-            # 2. Related test files for changed source files
-            ALL_TESTS="$CHANGED_TESTS"
+            # Collect unit test files to run:
+            # 1. Changed unit test files
+            # 2. Related unit test files for changed source files
+            ALL_UNIT_TESTS="$CHANGED_UNIT_TESTS"
             
-            # Find related test files for changed source files
+            # Find related unit test files for changed source files
             if [ -n "$CHANGED_SOURCE" ]; then
-              echo "Finding related test files for changed source files..."
+              echo "Finding related unit test files for changed source files..."
               while IFS= read -r source_file; do
                 [ -z "$source_file" ] && continue
-                # Map src/**/*.ts to tests/unit/**/*.test.ts or tests/integration/**/*.test.ts
+                # Map src/**/*.ts to tests/unit/**/*.test.ts
                 # Example: src/services/telegramService.ts -> tests/unit/services/telegramService.test.ts
-                # Example: src/services/telegramService.ts -> tests/integration/services/telegramService.test.ts
                 # Remove src/ prefix and file extension
                 base_name=$(echo "$source_file" | sed 's|^src/||' | sed 's|\.ts$||' | sed 's|\.js$||')
                 
                 # Check unit test file (.test.ts)
                 unit_test="tests/unit/${base_name}.test.ts"
                 if [ -f "$unit_test" ]; then
-                  ALL_TESTS="${ALL_TESTS}${unit_test} "
-                fi
-                
-                # Check integration test file
-                integration_test="tests/integration/${base_name}.test.ts"
-                if [ -f "$integration_test" ]; then
-                  ALL_TESTS="${ALL_TESTS}${integration_test} "
+                  ALL_UNIT_TESTS="${ALL_UNIT_TESTS}${unit_test} "
                 fi
                 
                 # Also check for .spec.ts files
                 unit_spec="tests/unit/${base_name}.spec.ts"
                 if [ -f "$unit_spec" ]; then
-                  ALL_TESTS="${ALL_TESTS}${unit_spec} "
-                fi
-                
-                integration_spec="tests/integration/${base_name}.spec.ts"
-                if [ -f "$integration_spec" ]; then
-                  ALL_TESTS="${ALL_TESTS}${integration_spec} "
+                  ALL_UNIT_TESTS="${ALL_UNIT_TESTS}${unit_spec} "
                 fi
               done <<< "$CHANGED_SOURCE"
             fi
             
             # Remove duplicates and empty entries
-            ALL_TESTS=$(echo "$ALL_TESTS" | tr ' ' '\n' | sort -u | grep -v '^$' | tr '\n' ' ')
+            ALL_UNIT_TESTS=$(echo "$ALL_UNIT_TESTS" | tr ' ' '\n' | sort -u | grep -v '^$' | tr '\n' ' ')
             
-            if [ -n "$ALL_TESTS" ]; then
-              echo "Running tests for changed test files and related specs with coverage..."
-              npm run test:coverage -- $ALL_TESTS
+            if [ -n "$ALL_UNIT_TESTS" ]; then
+              echo "Running unit tests for changed test files and related specs..."
+              npm run test:unit -- $ALL_UNIT_TESTS
             else
-              echo "No test files found, running all tests with coverage..."
-              npm run test:coverage
+              echo "No unit test files found, running all unit tests..."
+              npm run test:unit
             fi
           else
-            echo "No files changed, running all tests with coverage..."
-            npm run test:coverage
+            echo "No files changed, running all unit tests..."
+            npm run test:unit
           fi
         env:
           NODE_ENV: test
+
+      - name: Run integration tests with changed file detection
+        id: integration-tests
+        run: |
+          if [ "${{ steps.changed-files.outputs.has_changes }}" == "true" ]; then
+            echo "Running integration tests for changed files..."
+            CHANGED_FILES="${{ steps.changed-files.outputs.changed_files }}"
+            # Get changed integration test files
+            CHANGED_INTEGRATION_TESTS=$(echo "$CHANGED_FILES" | grep -E '^tests/integration/.*\.(test|spec)\.(ts|js)$' || echo "")
+            
+            # Get changed source files (excluding test files)
+            CHANGED_SOURCE=$(echo "$CHANGED_FILES" | grep -E '^src/.*\.(ts|js)$' || echo "")
+            
+            # Collect integration test files to run:
+            # 1. Changed integration test files
+            # 2. Related integration test files for changed source files
+            ALL_INTEGRATION_TESTS="$CHANGED_INTEGRATION_TESTS"
+            
+            # Find related integration test files for changed source files
+            if [ -n "$CHANGED_SOURCE" ]; then
+              echo "Finding related integration test files for changed source files..."
+              while IFS= read -r source_file; do
+                [ -z "$source_file" ] && continue
+                # Map src/**/*.ts to tests/integration/**/*.test.ts
+                # Example: src/services/telegramService.ts -> tests/integration/services/telegramService.test.ts
+                # Remove src/ prefix and file extension
+                base_name=$(echo "$source_file" | sed 's|^src/||' | sed 's|\.ts$||' | sed 's|\.js$||')
+                
+                # Check integration test file (.test.ts)
+                integration_test="tests/integration/${base_name}.test.ts"
+                if [ -f "$integration_test" ]; then
+                  ALL_INTEGRATION_TESTS="${ALL_INTEGRATION_TESTS}${integration_test} "
+                fi
+                
+                # Also check for .spec.ts files
+                integration_spec="tests/integration/${base_name}.spec.ts"
+                if [ -f "$integration_spec" ]; then
+                  ALL_INTEGRATION_TESTS="${ALL_INTEGRATION_TESTS}${integration_spec} "
+                fi
+              done <<< "$CHANGED_SOURCE"
+            fi
+            
+            # Remove duplicates and empty entries
+            ALL_INTEGRATION_TESTS=$(echo "$ALL_INTEGRATION_TESTS" | tr ' ' '\n' | sort -u | grep -v '^$' | tr '\n' ' ')
+            
+            if [ -n "$ALL_INTEGRATION_TESTS" ]; then
+              echo "Running integration tests for changed test files and related specs..."
+              npm run test:integration -- $ALL_INTEGRATION_TESTS
+            else
+              echo "No integration test files found, running all integration tests..."
+              npm run test:integration
+            fi
+          else
+            echo "No files changed, running all integration tests..."
+            npm run test:integration
+          fi
+        env:
+          NODE_ENV: test
+          REDIS_URL: redis://localhost:6379/0
+
+      - name: Generate coverage report
+        run: npm run test:coverage
+        env:
+          NODE_ENV: test
+          REDIS_URL: redis://localhost:6379/0
 
       - name: Test result summary
         if: always()
