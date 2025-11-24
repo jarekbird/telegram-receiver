@@ -185,6 +185,76 @@ describe('CursorRunnerCallbackService', () => {
       );
     });
 
+    it('should accept TTL at minimum bound (1 second)', async () => {
+      const key = `cursor_runner_callback:${requestId}`;
+      const jsonString = JSON.stringify(testData);
+      const minTtl = 1;
+
+      await service.storePendingRequest(requestId, testData, minTtl);
+
+      expect(mockRedis.setex).toHaveBeenCalledWith(key, minTtl, jsonString);
+    });
+
+    it('should accept TTL at maximum bound (86400 seconds = 24 hours)', async () => {
+      const key = `cursor_runner_callback:${requestId}`;
+      const jsonString = JSON.stringify(testData);
+      const maxTtl = 86400;
+
+      await service.storePendingRequest(requestId, testData, maxTtl);
+
+      expect(mockRedis.setex).toHaveBeenCalledWith(key, maxTtl, jsonString);
+    });
+
+    it('should reject TTL of zero', async () => {
+      await expect(
+        service.storePendingRequest(requestId, testData, 0)
+      ).rejects.toThrow(RangeError);
+      await expect(
+        service.storePendingRequest(requestId, testData, 0)
+      ).rejects.toThrow('TTL must be a positive integer');
+      expect(mockRedis.setex).not.toHaveBeenCalled();
+    });
+
+    it('should reject negative TTL', async () => {
+      await expect(
+        service.storePendingRequest(requestId, testData, -1)
+      ).rejects.toThrow(RangeError);
+      await expect(
+        service.storePendingRequest(requestId, testData, -1)
+      ).rejects.toThrow('TTL must be a positive integer');
+      expect(mockRedis.setex).not.toHaveBeenCalled();
+    });
+
+    it('should reject TTL greater than 86400 seconds', async () => {
+      await expect(
+        service.storePendingRequest(requestId, testData, 86401)
+      ).rejects.toThrow(RangeError);
+      await expect(
+        service.storePendingRequest(requestId, testData, 86401)
+      ).rejects.toThrow('TTL must be between 1 and 86400 seconds');
+      expect(mockRedis.setex).not.toHaveBeenCalled();
+    });
+
+    it('should reject non-integer TTL', async () => {
+      await expect(
+        service.storePendingRequest(requestId, testData, 1.5)
+      ).rejects.toThrow(TypeError);
+      await expect(
+        service.storePendingRequest(requestId, testData, 1.5)
+      ).rejects.toThrow('TTL must be an integer');
+      expect(mockRedis.setex).not.toHaveBeenCalled();
+    });
+
+    it('should reject non-number TTL', async () => {
+      await expect(
+        service.storePendingRequest(requestId, testData, '3600' as unknown as number)
+      ).rejects.toThrow(TypeError);
+      await expect(
+        service.storePendingRequest(requestId, testData, '3600' as unknown as number)
+      ).rejects.toThrow('TTL must be an integer');
+      expect(mockRedis.setex).not.toHaveBeenCalled();
+    });
+
     it('should handle partial data objects', async () => {
       const partialData: PendingRequestData = {
         chat_id: 123456,
@@ -199,16 +269,22 @@ describe('CursorRunnerCallbackService', () => {
     });
 
     it('should handle Redis connection errors', async () => {
-      const redisError = new Error('Redis connection failed');
+      const redisError = new Error('ECONNREFUSED: Redis connection failed');
       mockRedis.setex.mockRejectedValue(redisError);
 
       await expect(
         service.storePendingRequest(requestId, testData)
-      ).rejects.toThrow('Redis connection failed');
+      ).rejects.toThrow('ECONNREFUSED: Redis connection failed');
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        `Failed to store pending cursor-runner request: ${requestId}`,
-        redisError
+        'Failed to store pending cursor-runner request',
+        expect.objectContaining({
+          operation: 'storePendingRequest',
+          request_id: requestId,
+          ttl: 3600,
+          error_type: 'connection',
+          error: 'ECONNREFUSED: Redis connection failed',
+        })
       );
     });
 
@@ -221,10 +297,36 @@ describe('CursorRunnerCallbackService', () => {
       ).rejects.toThrow('SETEX operation failed');
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        `Failed to store pending cursor-runner request: ${requestId}`,
-        redisError
+        'Failed to store pending cursor-runner request',
+        expect.objectContaining({
+          operation: 'storePendingRequest',
+          request_id: requestId,
+          ttl: 1800,
+          error_type: 'operation',
+          error: 'SETEX operation failed',
+        })
       );
       expect(consoleLogSpy).not.toHaveBeenCalled();
+    });
+
+    it('should handle timeout errors as connection errors', async () => {
+      const redisError = new Error('Connection timeout');
+      mockRedis.setex.mockRejectedValue(redisError);
+
+      await expect(
+        service.storePendingRequest(requestId, testData)
+      ).rejects.toThrow('Connection timeout');
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Failed to store pending cursor-runner request',
+        expect.objectContaining({
+          operation: 'storePendingRequest',
+          request_id: requestId,
+          ttl: 3600,
+          error_type: 'connection',
+          error: 'Connection timeout',
+        })
+      );
     });
   });
 
@@ -265,10 +367,11 @@ describe('CursorRunnerCallbackService', () => {
       expect(result).toBeNull();
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         'Failed to parse pending request data',
-        {
+        expect.objectContaining({
+          operation: 'getPendingRequest',
           request_id: requestId,
           error: expect.any(String),
-        }
+        })
       );
     });
 
@@ -298,7 +401,7 @@ describe('CursorRunnerCallbackService', () => {
 
     it('should handle Redis connection errors gracefully', async () => {
       const key = `cursor_runner_callback:${requestId}`;
-      const redisError = new Error('Redis connection failed');
+      const redisError = new Error('ECONNREFUSED: Redis connection failed');
       mockRedis.get.mockRejectedValue(redisError);
 
       const result = await service.getPendingRequest(requestId);
@@ -307,10 +410,12 @@ describe('CursorRunnerCallbackService', () => {
       expect(result).toBeNull();
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         'Failed to retrieve pending request from Redis',
-        {
+        expect.objectContaining({
+          operation: 'getPendingRequest',
           request_id: requestId,
-          error: 'Redis connection failed',
-        }
+          error_type: 'connection',
+          error: 'ECONNREFUSED: Redis connection failed',
+        })
       );
     });
 
@@ -325,10 +430,12 @@ describe('CursorRunnerCallbackService', () => {
       expect(result).toBeNull();
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         'Failed to retrieve pending request from Redis',
-        {
+        expect.objectContaining({
+          operation: 'getPendingRequest',
           request_id: requestId,
+          error_type: 'operation',
           error: 'GET operation failed',
-        }
+        })
       );
     });
   });
@@ -360,36 +467,48 @@ describe('CursorRunnerCallbackService', () => {
       );
     });
 
-    it('should handle Redis connection errors', async () => {
+    it('should handle Redis connection errors gracefully without throwing', async () => {
       const key = `cursor_runner_callback:${requestId}`;
-      const redisError = new Error('Redis connection failed');
+      const redisError = new Error('ECONNREFUSED: Redis connection failed');
       mockRedis.del.mockRejectedValue(redisError);
 
+      // Should not throw (cleanup operation)
       await expect(
         service.removePendingRequest(requestId)
-      ).rejects.toThrow('Redis connection failed');
+      ).resolves.not.toThrow();
 
       expect(mockRedis.del).toHaveBeenCalledWith(key);
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        `Failed to remove pending cursor-runner request: ${requestId}`,
-        redisError
+        'Failed to remove pending cursor-runner request',
+        expect.objectContaining({
+          operation: 'removePendingRequest',
+          request_id: requestId,
+          error_type: 'connection',
+          error: 'ECONNREFUSED: Redis connection failed',
+        })
       );
       expect(consoleLogSpy).not.toHaveBeenCalled();
     });
 
-    it('should handle Redis operation errors', async () => {
+    it('should handle Redis operation errors gracefully without throwing', async () => {
       const key = `cursor_runner_callback:${requestId}`;
       const redisError = new Error('DEL operation failed');
       mockRedis.del.mockRejectedValue(redisError);
 
+      // Should not throw (cleanup operation)
       await expect(
         service.removePendingRequest(requestId)
-      ).rejects.toThrow('DEL operation failed');
+      ).resolves.not.toThrow();
 
       expect(mockRedis.del).toHaveBeenCalledWith(key);
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        `Failed to remove pending cursor-runner request: ${requestId}`,
-        redisError
+        'Failed to remove pending cursor-runner request',
+        expect.objectContaining({
+          operation: 'removePendingRequest',
+          request_id: requestId,
+          error_type: 'operation',
+          error: 'DEL operation failed',
+        })
       );
       expect(consoleLogSpy).not.toHaveBeenCalled();
     });

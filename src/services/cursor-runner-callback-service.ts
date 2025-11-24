@@ -61,16 +61,60 @@ class CursorRunnerCallbackService {
   }
 
   /**
+   * Validates TTL value
+   * @param ttl - Time to live in seconds
+   * @throws {TypeError} If TTL is not a number
+   * @throws {RangeError} If TTL is not within valid bounds (1-86400 seconds)
+   */
+  private validateTTL(ttl: number): void {
+    if (typeof ttl !== 'number' || !Number.isInteger(ttl)) {
+      throw new TypeError(`TTL must be an integer, got: ${typeof ttl}`);
+    }
+    if (ttl <= 0) {
+      throw new RangeError(`TTL must be a positive integer, got: ${ttl}`);
+    }
+    if (ttl > 86400) {
+      throw new RangeError(`TTL must be between 1 and 86400 seconds (24 hours), got: ${ttl}`);
+    }
+  }
+
+  /**
+   * Checks if an error is a Redis connection error
+   * @param error - Error to check
+   * @returns True if error is a connection error
+   */
+  private isRedisConnectionError(error: unknown): boolean {
+    if (!(error instanceof Error)) {
+      return false;
+    }
+    const message = error.message.toLowerCase();
+    return (
+      message.includes('econnrefused') ||
+      message.includes('connection refused') ||
+      message.includes('timeout') ||
+      message.includes('connect econnrefused') ||
+      message.includes('connection closed') ||
+      message.includes('socket closed')
+    );
+  }
+
+  /**
    * Stores pending request information in Redis with TTL
    * @param requestId - Unique request ID
    * @param data - Data to store (chat_id, message_id, etc.)
-   * @param ttl - Time to live in seconds (default: 1 hour)
+   * @param ttl - Time to live in seconds (default: 1 hour, must be between 1 and 86400)
+   * @throws {TypeError} If TTL is not a number
+   * @throws {RangeError} If TTL is not within valid bounds
+   * @throws {Error} If Redis operation fails
    */
   async storePendingRequest(
     requestId: string,
     data: PendingRequestData,
     ttl: number = CursorRunnerCallbackService.DEFAULT_TTL
   ): Promise<void> {
+    // Validate TTL before attempting Redis operation
+    this.validateTTL(ttl);
+
     try {
       const key = this.redisKey(requestId);
       const jsonString = JSON.stringify(data);
@@ -78,7 +122,20 @@ class CursorRunnerCallbackService {
       await this.redis.setex(key, ttl, jsonString);
       console.log(`Stored pending cursor-runner request: ${requestId}, TTL: ${ttl}s`);
     } catch (error) {
-      console.error(`Failed to store pending cursor-runner request: ${requestId}`, error);
+      // Distinguish between connection errors and operation errors
+      const isConnectionError = this.isRedisConnectionError(error);
+      const errorType = isConnectionError ? 'connection' : 'operation';
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      console.error('Failed to store pending cursor-runner request', {
+        operation: 'storePendingRequest',
+        request_id: requestId,
+        ttl: ttl,
+        error_type: errorType,
+        error: errorMessage,
+      });
+
+      // Re-throw error for critical operation
       throw error;
     }
   }
@@ -100,9 +157,10 @@ class CursorRunnerCallbackService {
       try {
         return JSON.parse(data) as PendingRequestData;
       } catch (error) {
-        // Handle JSON parsing errors gracefully
+        // Handle JSON parsing errors gracefully (preserved from PHASE2-041)
         if (error instanceof SyntaxError) {
           console.error('Failed to parse pending request data', {
+            operation: 'getPendingRequest',
             request_id: requestId,
             error: error.message,
           });
@@ -113,9 +171,15 @@ class CursorRunnerCallbackService {
       }
     } catch (error) {
       // Handle Redis connection and operation errors gracefully
+      const isConnectionError = this.isRedisConnectionError(error);
+      const errorType = isConnectionError ? 'connection' : 'operation';
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
       console.error('Failed to retrieve pending request from Redis', {
+        operation: 'getPendingRequest',
         request_id: requestId,
-        error: error instanceof Error ? error.message : String(error),
+        error_type: errorType,
+        error: errorMessage,
       });
       return null;
     }
@@ -123,6 +187,7 @@ class CursorRunnerCallbackService {
 
   /**
    * Removes pending request from Redis (called after processing callback)
+   * This is a cleanup operation, so errors are logged but not thrown
    * @param requestId - Request ID
    */
   async removePendingRequest(requestId: string): Promise<void> {
@@ -131,8 +196,18 @@ class CursorRunnerCallbackService {
       await this.redis.del(key);
       console.log(`Removed pending cursor-runner request: ${requestId}`);
     } catch (error) {
-      console.error(`Failed to remove pending cursor-runner request: ${requestId}`, error);
-      throw error;
+      // Log errors but don't throw (cleanup operation, non-critical)
+      const isConnectionError = this.isRedisConnectionError(error);
+      const errorType = isConnectionError ? 'connection' : 'operation';
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      console.error('Failed to remove pending cursor-runner request', {
+        operation: 'removePendingRequest',
+        request_id: requestId,
+        error_type: errorType,
+        error: errorMessage,
+      });
+      // Don't throw - this is a cleanup operation
     }
   }
 }
