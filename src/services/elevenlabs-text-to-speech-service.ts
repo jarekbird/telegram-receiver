@@ -8,8 +8,12 @@
  */
 
 import { URL } from 'url';
-// logger will be used in method implementations
-// import logger from '@/utils/logger';
+import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
+import { promises as fs } from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+import * as crypto from 'crypto';
+import logger from '@/utils/logger';
 
 // Custom error classes for ElevenLabs Text-to-Speech Service
 /**
@@ -78,19 +82,26 @@ const DEFAULT_VOICE_ID = 'vfaqCOvlrKi4Zp7C2IAm'; // Default voice ID
 const DEFAULT_OUTPUT_FORMAT = 'mp3_44100_128'; // MP3 format, 44.1kHz, 128kbps (will be used in method implementations)
 
 /**
- * HTTP client type (to be implemented - can use axios or Node.js http/https)
+ * HTTP client type - Axios instance
  */
-type HttpClient = unknown;
+type HttpClient = AxiosInstance;
 
 /**
- * HTTP request type (to be implemented)
+ * HTTP request type - Axios request config
  */
-type HttpRequest = unknown;
+type HttpRequest = {
+  method: string;
+  url: string;
+  headers: Record<string, string>;
+  data?: unknown;
+  responseType: 'arraybuffer' | 'json' | 'text' | 'blob' | 'document' | 'stream';
+  timeout: number;
+};
 
 /**
- * HTTP response type (to be implemented)
+ * HTTP response type - Axios response with arraybuffer body
  */
-type HttpResponse = unknown;
+type HttpResponse = AxiosResponse<ArrayBuffer>;
 
 /**
  * Service for converting text to speech using ElevenLabs API
@@ -181,20 +192,98 @@ class ElevenLabsTextToSpeechService {
    */
   async synthesize(
     text: string,
-    _options?: { outputPath?: string; voiceSettings?: object }
+    options?: { outputPath?: string; voiceSettings?: object }
   ): Promise<string> {
-    // Validate text parameter is not blank
-    if (!text || text.trim().length === 0) {
-      throw new ElevenLabsTextToSpeechServiceError('Text is required');
-    }
+    try {
+      // Validate text parameter is not blank
+      if (!text || text.trim().length === 0) {
+        throw new ElevenLabsTextToSpeechServiceError('Text is required');
+      }
 
-    // Validate voice_id is configured
-    if (!this.voiceIdConfigured()) {
-      throw new ElevenLabsTextToSpeechServiceError('ElevenLabs voice_id is not configured');
-    }
+      // Validate voice_id is configured
+      if (!this.voiceIdConfigured()) {
+        throw new ElevenLabsTextToSpeechServiceError('ElevenLabs voice_id is not configured');
+      }
 
-    // Method implementation will be added in subsequent tasks
-    throw new Error('Method not yet implemented');
+      // Build URI with voice_id in path
+      const uri = new URL(`${API_BASE_URL}${TEXT_TO_SPEECH_ENDPOINT}/${this._voiceId}`);
+      const http = this.buildHttp(uri);
+
+      // Determine output path
+      let outputPath: string;
+      if (options?.outputPath) {
+        outputPath = options.outputPath;
+      } else {
+        // Generate temp file path using random filename
+        const randomHex = crypto.randomBytes(8).toString('hex');
+        outputPath = path.join(os.tmpdir(), `elevenlabs_tts_${randomHex}.mp3`);
+      }
+
+      // Build request body JSON
+      const body: {
+        text: string;
+        model_id: string;
+        output_format: string;
+        voice_settings?: object;
+      } = {
+        text: text,
+        model_id: this._modelId,
+        output_format: DEFAULT_OUTPUT_FORMAT,
+      };
+      if (options?.voiceSettings) {
+        body.voice_settings = options.voiceSettings;
+      }
+
+      // Create POST request with headers
+      const request: HttpRequest = {
+        method: 'POST',
+        url: uri.toString(),
+        headers: {
+          'xi-api-key': this._apiKey,
+          'Content-Type': 'application/json',
+          'Accept': 'audio/mpeg',
+        },
+        data: body,
+        responseType: 'arraybuffer',
+        timeout: this._timeout * 1000, // Convert seconds to milliseconds
+      };
+
+      // Log request info
+      const textPreview = text.length > 50 ? `${text.substring(0, 50)}...` : text;
+      logger.info(`Sending text to ElevenLabs for synthesis: ${textPreview}`);
+
+      // Execute HTTP request
+      let response: HttpResponse;
+      try {
+        response = await this.executeRequest(http, request, uri);
+      } catch (error) {
+        // Connection/timeout errors are handled in executeRequest
+        // HTTP error responses are handled in executeRequest (raises SynthesisError)
+        throw error;
+      }
+
+      // Save audio file to output path using binary write
+      try {
+        await fs.writeFile(outputPath, Buffer.from(response.data));
+      } catch (error) {
+        throw new ElevenLabsTextToSpeechServiceError(
+          `Failed to write audio file to ${outputPath}: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+
+      // Log success
+      logger.info(`Generated audio file: ${outputPath} (${response.data.byteLength} bytes)`);
+
+      // Return output path string
+      return outputPath;
+    } catch (error) {
+      // Catch JSON parsing errors and raise InvalidResponseError
+      if (error instanceof SyntaxError && error.message.includes('JSON')) {
+        throw new InvalidResponseError(`Failed to parse response: ${error.message}`);
+      }
+      // Re-throw other errors
+      throw error;
+    }
   }
 
   /**
@@ -236,11 +325,32 @@ class ElevenLabsTextToSpeechService {
    * @throws ConnectionError for connection failures (ECONNREFUSED, EHOSTUNREACH, SocketError)
    * @throws TimeoutError for timeout errors (OpenTimeout, ReadTimeout)
    */
-  private buildHttp(_uri: URL): HttpClient {
-    // Method implementation will be added in subsequent tasks
-    // Should catch connection errors (ECONNREFUSED, EHOSTUNREACH, SocketError) and throw ConnectionError
-    // Should catch timeout errors (OpenTimeout, ReadTimeout) and throw TimeoutError
-    throw new Error('Method not yet implemented');
+  private buildHttp(uri: URL): HttpClient {
+    try {
+      const http = axios.create({
+        baseURL: `${uri.protocol}//${uri.host}`,
+        timeout: this._timeout * 1000, // Convert seconds to milliseconds
+        httpsAgent: uri.protocol === 'https:' ? undefined : undefined, // Axios handles SSL automatically
+      });
+      return http;
+    } catch (error) {
+      // Handle connection errors
+      if (
+        error instanceof Error &&
+        (error.message.includes('ECONNREFUSED') ||
+          error.message.includes('EHOSTUNREACH') ||
+          error.message.includes('ENOTFOUND') ||
+          error.message.includes('getaddrinfo'))
+      ) {
+        throw new ConnectionError(`Failed to connect to ElevenLabs: ${error.message}`);
+      }
+      // Handle timeout errors
+      if (error instanceof Error && error.message.includes('timeout')) {
+        throw new TimeoutError(`Request to ElevenLabs timed out: ${error.message}`);
+      }
+      // Re-throw other errors
+      throw error;
+    }
   }
 
   /**
@@ -267,17 +377,179 @@ class ElevenLabsTextToSpeechService {
    * - Logs error details: "ElevenLabs API error: {code} - Response body: {body[0..500]}"
    */
   private async executeRequest(
-    _http: HttpClient,
-    _request: HttpRequest,
-    _uri: URL
+    http: HttpClient,
+    request: HttpRequest,
+    uri: URL
   ): Promise<HttpResponse> {
-    // Method implementation will be added in subsequent tasks
-    // Should handle HTTP error responses, parsing JSON error bodies and extracting error messages
-    // Should handle both array and hash error response formats from ElevenLabs API
-    // Should throw SynthesisError for non-success HTTP responses
-    // Should catch timeout and connection errors and re-throw as TimeoutError and ConnectionError respectively
-    // Should include logging for request/response (log request path, response code, and error details)
-    throw new Error('Method not yet implemented');
+    // Log request path
+    logger.info(`ElevenLabsTextToSpeechService: POST ${uri.pathname}`);
+
+    try {
+      const response = await http.request<ArrayBuffer>({
+        method: request.method as 'POST',
+        url: request.url,
+        headers: request.headers,
+        data: request.data,
+        responseType: 'arraybuffer',
+        timeout: request.timeout,
+      });
+
+      // Log response code
+      logger.info(`ElevenLabsTextToSpeechService: Response ${response.status} ${response.statusText}`);
+
+      // Check if response is successful (status 200-299)
+      if (response.status >= 200 && response.status < 300) {
+        return response;
+      }
+
+      // Handle non-success HTTP responses
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      const responseBody = response.data ? Buffer.from(response.data).toString('utf-8') : '';
+      const responseBodyPreview = responseBody.length > 500 ? responseBody.substring(0, 500) : responseBody;
+      logger.error(`ElevenLabs API error: ${response.status} - Response body: ${responseBodyPreview}`);
+
+      // Try to parse error response as JSON
+      try {
+        const errorBody = JSON.parse(responseBody);
+        // Handle both array and hash error responses
+        if (Array.isArray(errorBody)) {
+          const errorMessages = errorBody
+            .map((error) => {
+              if (typeof error === 'object' && error !== null) {
+                return (error as { msg?: string }).msg || String(error);
+              }
+              return String(error);
+            })
+            .filter((msg) => msg);
+          if (errorMessages.length > 0) {
+            errorMessage = errorMessages.join('; ');
+          }
+        } else if (typeof errorBody === 'object' && errorBody !== null) {
+          // Try to extract error message from various fields
+          const detail = (errorBody as { detail?: unknown }).detail;
+          const error = (errorBody as { error?: string }).error;
+          const message = (errorBody as { message?: string }).message;
+
+          if (Array.isArray(detail)) {
+            const errorMessages = detail
+              .map((error) => {
+                if (typeof error === 'object' && error !== null) {
+                  return (error as { msg?: string }).msg || String(error);
+                }
+                return String(error);
+              })
+              .filter((msg) => msg);
+            if (errorMessages.length > 0) {
+              errorMessage = errorMessages.join('; ');
+            }
+          } else if (typeof detail === 'string') {
+            errorMessage = detail;
+          } else if (error) {
+            errorMessage = error;
+          } else if (message) {
+            errorMessage = message;
+          }
+        }
+      } catch (parseError) {
+        // Failed to parse error response as JSON - use default error message
+        logger.error('Failed to parse error response as JSON');
+      }
+
+      throw new SynthesisError(errorMessage);
+    } catch (error) {
+      // Handle JSON parsing errors first (before checking if it's an Axios error)
+      if (error instanceof SyntaxError && error.message.includes('JSON')) {
+        throw new InvalidResponseError(`Failed to parse response: ${error.message}`);
+      }
+
+      // Handle Axios errors
+      if (axios.isAxiosError(error)) {
+        const axiosError = error as AxiosError;
+
+        // Handle timeout errors
+        if (axiosError.code === 'ECONNABORTED' || axiosError.message.includes('timeout')) {
+          throw new TimeoutError(`Request to ElevenLabs timed out: ${axiosError.message}`);
+        }
+
+        // Handle connection errors
+        if (
+          axiosError.code === 'ECONNREFUSED' ||
+          axiosError.code === 'EHOSTUNREACH' ||
+          axiosError.code === 'ENOTFOUND' ||
+          axiosError.message.includes('getaddrinfo')
+        ) {
+          throw new ConnectionError(`Failed to connect to ElevenLabs: ${axiosError.message}`);
+        }
+
+        // Handle HTTP error responses (already handled above, but catch here for safety)
+        if (axiosError.response) {
+          const response = axiosError.response;
+          let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+          const responseBody = response.data
+            ? Buffer.isBuffer(response.data)
+              ? response.data.toString('utf-8')
+              : typeof response.data === 'string'
+                ? response.data
+                : JSON.stringify(response.data)
+            : '';
+          const responseBodyPreview = responseBody.length > 500 ? responseBody.substring(0, 500) : responseBody;
+          logger.error(`ElevenLabs API error: ${response.status} - Response body: ${responseBodyPreview}`);
+
+          // Try to parse error response as JSON
+          try {
+            const errorBody = JSON.parse(responseBody);
+            if (Array.isArray(errorBody)) {
+              const errorMessages = errorBody
+                .map((error) => {
+                  if (typeof error === 'object' && error !== null) {
+                    return (error as { msg?: string }).msg || String(error);
+                  }
+                  return String(error);
+                })
+                .filter((msg) => msg);
+              if (errorMessages.length > 0) {
+                errorMessage = errorMessages.join('; ');
+              }
+            } else if (typeof errorBody === 'object' && errorBody !== null) {
+              const detail = (errorBody as { detail?: unknown }).detail;
+              const error = (errorBody as { error?: string }).error;
+              const message = (errorBody as { message?: string }).message;
+
+              if (Array.isArray(detail)) {
+                const errorMessages = detail
+                  .map((error) => {
+                    if (typeof error === 'object' && error !== null) {
+                      return (error as { msg?: string }).msg || String(error);
+                    }
+                    return String(error);
+                  })
+                  .filter((msg) => msg);
+                if (errorMessages.length > 0) {
+                  errorMessage = errorMessages.join('; ');
+                }
+              } else if (typeof detail === 'string') {
+                errorMessage = detail;
+              } else if (error) {
+                errorMessage = error;
+              } else if (message) {
+                errorMessage = message;
+              }
+            }
+          } catch (parseError) {
+            // Failed to parse error response as JSON - use default error message
+            logger.error('Failed to parse error response as JSON');
+          }
+
+          throw new SynthesisError(errorMessage);
+        }
+
+        // Re-throw as connection error for other network errors
+        throw new ConnectionError(`Failed to connect to ElevenLabs: ${axiosError.message}`);
+      }
+
+      // Re-throw other errors
+      throw error;
+    }
   }
 }
 
