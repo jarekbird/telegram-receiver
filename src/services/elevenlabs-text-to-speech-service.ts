@@ -287,6 +287,93 @@ class ElevenLabsTextToSpeechService {
   }
 
   /**
+   * Convert text to speech and return as Buffer (Node.js equivalent of Ruby's StringIO)
+   * 
+   * @param text - Text to convert to speech
+   * @param options - Optional parameters: voiceSettings (voice configuration)
+   * @returns Promise resolving to a Buffer containing audio data
+   * @throws ElevenLabsTextToSpeechServiceError if text is blank
+   * @throws ElevenLabsTextToSpeechServiceError if voice_id is not configured
+   * @throws SynthesisError if HTTP response is not successful
+   * @throws InvalidResponseError if response cannot be parsed
+   * @throws ConnectionError for network connection issues
+   * @throws TimeoutError for request timeouts
+   */
+  async synthesizeToIo(
+    text: string,
+    options?: { voiceSettings?: object }
+  ): Promise<Buffer> {
+    try {
+      // Validate text parameter is not blank
+      if (!text || text.trim().length === 0) {
+        throw new ElevenLabsTextToSpeechServiceError('Text is required');
+      }
+
+      // Validate voice_id is configured
+      if (!this.voiceIdConfigured()) {
+        throw new ElevenLabsTextToSpeechServiceError('ElevenLabs voice_id is not configured');
+      }
+
+      // Build URI with voice_id in path
+      const uri = new URL(`${API_BASE_URL}${TEXT_TO_SPEECH_ENDPOINT}/${this._voiceId}`);
+      const http = this.buildHttp(uri);
+
+      // Build request body JSON
+      const body: {
+        text: string;
+        model_id: string;
+        output_format: string;
+        voice_settings?: object;
+      } = {
+        text: text,
+        model_id: this._modelId,
+        output_format: DEFAULT_OUTPUT_FORMAT,
+      };
+      if (options?.voiceSettings) {
+        body.voice_settings = options.voiceSettings;
+      }
+
+      // Create POST request with headers
+      const request: HttpRequest = {
+        method: 'POST',
+        url: uri.toString(),
+        headers: {
+          'xi-api-key': this._apiKey,
+          'Content-Type': 'application/json',
+          'Accept': 'audio/mpeg',
+        },
+        data: body,
+        responseType: 'arraybuffer',
+        timeout: this._timeout * 1000, // Convert seconds to milliseconds
+      };
+
+      // Log request info
+      const textPreview = text.length > 50 ? `${text.substring(0, 50)}...` : text;
+      logger.info(`Sending text to ElevenLabs for synthesis: ${textPreview}`);
+
+      // Execute HTTP request
+      let response: HttpResponse;
+      try {
+        response = await this.executeRequest(http, request, uri);
+      } catch (error) {
+        // Connection/timeout errors are handled in executeRequest
+        // HTTP error responses are handled in executeRequest (raises SynthesisError)
+        throw error;
+      }
+
+      // Return audio as Buffer (Node.js equivalent of StringIO)
+      return Buffer.from(response.data);
+    } catch (error) {
+      // Catch JSON parsing errors and raise InvalidResponseError
+      if (error instanceof SyntaxError && error.message.includes('JSON')) {
+        throw new InvalidResponseError(`Failed to parse response: ${error.message}`);
+      }
+      // Re-throw other errors
+      throw error;
+    }
+  }
+
+  /**
    * Convert text to speech and return as stream
    * 
    * @param text - Text to convert to speech

@@ -555,4 +555,301 @@ describe('ElevenLabsTextToSpeechService', () => {
       });
     });
   });
+
+  describe('synthesizeToIo', () => {
+    describe('parameter validation', () => {
+      it('should throw Error if text is blank', async () => {
+        await expect(service.synthesizeToIo('')).rejects.toThrow(ElevenLabsTextToSpeechServiceError);
+        await expect(service.synthesizeToIo('   ')).rejects.toThrow(ElevenLabsTextToSpeechServiceError);
+      });
+
+      it('should throw Error if text is null', async () => {
+        await expect(service.synthesizeToIo(null as any)).rejects.toThrow(ElevenLabsTextToSpeechServiceError);
+      });
+
+      it('should throw Error if text is undefined', async () => {
+        await expect(service.synthesizeToIo(undefined as any)).rejects.toThrow(ElevenLabsTextToSpeechServiceError);
+      });
+
+      it('should throw Error if voice_id is not configured', async () => {
+        // Create service with undefined voice_id and clear env var to ensure no default is used
+        delete process.env.ELEVENLABS_VOICE_ID;
+        // Mock the default voice_id to be empty by creating a service that would normally use default
+        // but we'll manually set _voiceId to empty after construction
+        const serviceWithoutVoiceId = new ElevenLabsTextToSpeechService(mockApiKey, mockTimeout, mockModelId, undefined);
+        // Manually set voice_id to empty string to test validation
+        (serviceWithoutVoiceId as any)._voiceId = '';
+        await expect(serviceWithoutVoiceId.synthesizeToIo(mockText)).rejects.toThrow(
+          ElevenLabsTextToSpeechServiceError
+        );
+        await expect(serviceWithoutVoiceId.synthesizeToIo(mockText)).rejects.toThrow(
+          'ElevenLabs voice_id is not configured'
+        );
+      });
+    });
+
+    describe('request building', () => {
+      let mockAxiosInstance: jest.Mocked<AxiosInstance>;
+
+      beforeEach(() => {
+        mockAxiosInstance = mockedAxios.create() as jest.Mocked<AxiosInstance>;
+        (mockAxiosInstance.request as jest.Mock).mockResolvedValue({
+          status: 200,
+          statusText: 'OK',
+          data: mockAudioData,
+          headers: {},
+          config: {},
+        });
+      });
+
+      it('should build URI with voice_id in path', async () => {
+        await service.synthesizeToIo(mockText);
+
+        expect(mockedAxios.create).toHaveBeenCalled();
+        const requestCall = (mockAxiosInstance.request as jest.Mock).mock.calls[0][0];
+        expect(requestCall.url).toContain(`/v1/text-to-speech/${mockVoiceId}`);
+      });
+
+      it('should include correct headers in request', async () => {
+        await service.synthesizeToIo(mockText);
+
+        const requestCall = (mockAxiosInstance.request as jest.Mock).mock.calls[0][0];
+        expect(requestCall.headers['xi-api-key']).toBe(mockApiKey);
+        expect(requestCall.headers['Content-Type']).toBe('application/json');
+        expect(requestCall.headers['Accept']).toBe('audio/mpeg');
+      });
+
+      it('should include text in request body', async () => {
+        await service.synthesizeToIo(mockText);
+
+        const requestCall = (mockAxiosInstance.request as jest.Mock).mock.calls[0][0];
+        expect(requestCall.data.text).toBe(mockText);
+        expect(requestCall.data.model_id).toBe(mockModelId);
+        expect(requestCall.data.output_format).toBe('mp3_44100_128');
+      });
+
+      it('should include voice_settings in request body when provided', async () => {
+        const voiceSettings = { stability: 0.5, similarity_boost: 0.75 };
+        await service.synthesizeToIo(mockText, { voiceSettings });
+
+        const requestCall = (mockAxiosInstance.request as jest.Mock).mock.calls[0][0];
+        expect(requestCall.data.voice_settings).toEqual(voiceSettings);
+      });
+
+      it('should not include voice_settings in request body when not provided', async () => {
+        await service.synthesizeToIo(mockText);
+
+        const requestCall = (mockAxiosInstance.request as jest.Mock).mock.calls[0][0];
+        expect(requestCall.data.voice_settings).toBeUndefined();
+      });
+
+      it('should use arraybuffer response type', async () => {
+        await service.synthesizeToIo(mockText);
+
+        const requestCall = (mockAxiosInstance.request as jest.Mock).mock.calls[0][0];
+        expect(requestCall.responseType).toBe('arraybuffer');
+      });
+
+      it('should log request info with text preview', async () => {
+        await service.synthesizeToIo(mockText);
+
+        expect(getMockLogger().info).toHaveBeenCalledWith(
+          expect.stringContaining('Sending text to ElevenLabs for synthesis:')
+        );
+        expect(getMockLogger().info).toHaveBeenCalledWith(expect.stringContaining(mockText.substring(0, 50)));
+      });
+
+      it('should truncate long text in log message', async () => {
+        const longText = 'a'.repeat(100);
+        await service.synthesizeToIo(longText);
+
+        expect(getMockLogger().info).toHaveBeenCalledWith(
+          expect.stringContaining('Sending text to ElevenLabs for synthesis:')
+        );
+        expect(getMockLogger().info).toHaveBeenCalledWith(expect.stringContaining('...'));
+      });
+    });
+
+    describe('response handling', () => {
+      let mockAxiosInstance: jest.Mocked<AxiosInstance>;
+
+      beforeEach(() => {
+        mockAxiosInstance = mockedAxios.create() as jest.Mocked<AxiosInstance>;
+      });
+
+      it('should return Buffer containing audio data', async () => {
+        (mockAxiosInstance.request as jest.Mock).mockResolvedValue({
+          status: 200,
+          statusText: 'OK',
+          data: mockAudioData,
+          headers: {},
+          config: {},
+        });
+
+        const result = await service.synthesizeToIo(mockText);
+
+        expect(Buffer.isBuffer(result)).toBe(true);
+        expect(result).toEqual(mockAudioData);
+      });
+
+      it('should return Buffer from response data', async () => {
+        const audioBuffer = Buffer.from('test audio data');
+        (mockAxiosInstance.request as jest.Mock).mockResolvedValue({
+          status: 200,
+          statusText: 'OK',
+          data: audioBuffer,
+          headers: {},
+          config: {},
+        });
+
+        const result = await service.synthesizeToIo(mockText);
+
+        expect(Buffer.isBuffer(result)).toBe(true);
+        expect(result).toEqual(audioBuffer);
+      });
+    });
+
+    describe('error handling', () => {
+      let mockAxiosInstance: jest.Mocked<AxiosInstance>;
+
+      beforeEach(() => {
+        mockAxiosInstance = mockedAxios.create() as jest.Mocked<AxiosInstance>;
+      });
+
+      it('should throw SynthesisError for HTTP 400 error', async () => {
+        const errorResponse = {
+          response: {
+            status: 400,
+            statusText: 'Bad Request',
+            data: Buffer.from(JSON.stringify({ detail: 'Invalid request' })),
+            headers: {},
+            config: {},
+          },
+        };
+        const axiosError = new Error('Request failed') as AxiosError;
+        Object.assign(axiosError, errorResponse);
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow(SynthesisError);
+      });
+
+      it('should throw SynthesisError for HTTP 401 error', async () => {
+        const errorResponse = {
+          response: {
+            status: 401,
+            statusText: 'Unauthorized',
+            data: Buffer.from(JSON.stringify({ detail: 'Invalid API key' })),
+            headers: {},
+            config: {},
+          },
+        };
+        const axiosError = new Error('Request failed') as AxiosError;
+        Object.assign(axiosError, errorResponse);
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow(SynthesisError);
+      });
+
+      it('should throw TimeoutError for timeout errors', async () => {
+        const axiosError = new Error('timeout of 60000ms exceeded') as AxiosError;
+        axiosError.code = 'ECONNABORTED';
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow(TimeoutError);
+      });
+
+      it('should throw ConnectionError for connection refused errors', async () => {
+        const axiosError = new Error('connect ECONNREFUSED') as AxiosError;
+        axiosError.code = 'ECONNREFUSED';
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow(ConnectionError);
+      });
+
+      it('should throw ConnectionError for host unreachable errors', async () => {
+        const axiosError = new Error('EHOSTUNREACH') as AxiosError;
+        axiosError.code = 'EHOSTUNREACH';
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow(ConnectionError);
+      });
+
+      it('should throw InvalidResponseError for JSON parsing errors', async () => {
+        const syntaxError = new SyntaxError('Unexpected token in JSON at position 0');
+        // Make sure it's not treated as an Axios error
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(false);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(syntaxError);
+
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow(InvalidResponseError);
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow('Failed to parse response');
+      });
+    });
+
+    describe('logging', () => {
+      let mockAxiosInstance: jest.Mocked<AxiosInstance>;
+
+      beforeEach(() => {
+        mockAxiosInstance = mockedAxios.create() as jest.Mocked<AxiosInstance>;
+      });
+
+      it('should log request path', async () => {
+        (mockAxiosInstance.request as jest.Mock).mockResolvedValue({
+          status: 200,
+          statusText: 'OK',
+          data: mockAudioData,
+          headers: {},
+          config: {},
+        });
+
+        await service.synthesizeToIo(mockText);
+
+        expect(getMockLogger().info).toHaveBeenCalledWith(
+          expect.stringContaining('ElevenLabsTextToSpeechService: POST')
+        );
+      });
+
+      it('should log response code', async () => {
+        (mockAxiosInstance.request as jest.Mock).mockResolvedValue({
+          status: 200,
+          statusText: 'OK',
+          data: mockAudioData,
+          headers: {},
+          config: {},
+        });
+
+        await service.synthesizeToIo(mockText);
+
+        expect(getMockLogger().info).toHaveBeenCalledWith(
+          expect.stringContaining('ElevenLabsTextToSpeechService: Response 200')
+        );
+      });
+
+      it('should log error details for HTTP errors', async () => {
+        const errorResponse = {
+          response: {
+            status: 400,
+            statusText: 'Bad Request',
+            data: Buffer.from(JSON.stringify({ detail: 'Invalid request' })),
+            headers: {},
+            config: {},
+          },
+        };
+        const axiosError = new Error('Request failed') as AxiosError;
+        Object.assign(axiosError, errorResponse);
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow();
+
+        expect(getMockLogger().error).toHaveBeenCalledWith(
+          expect.stringContaining('ElevenLabs API error: 400')
+        );
+      });
+    });
+  });
 });
