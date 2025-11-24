@@ -5,11 +5,24 @@
 
 import TelegramService from '../../../src/services/telegram-service';
 import axios from 'axios';
-import { TelegramApiResponse, WebhookInfo } from '../../../src/types/telegram';
+import { TelegramApiResponse, WebhookInfo, TelegramMessage } from '../../../src/types/telegram';
+import { promises as fs } from 'fs';
+import FormData from 'form-data';
 
 // Mock axios
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
+
+// Mock fs
+jest.mock('fs', () => ({
+  promises: {
+    access: jest.fn(),
+    readFile: jest.fn(),
+  },
+}));
+
+// Mock form-data
+jest.mock('form-data');
 
 describe('TelegramService', () => {
   let telegramService: TelegramService;
@@ -568,6 +581,500 @@ describe('TelegramService', () => {
       expect(result).toEqual(mockResponse);
       expect(result).not.toHaveProperty('status');
       expect(result).not.toHaveProperty('statusText');
+    });
+  });
+
+  describe('sendVoice', () => {
+    const testChatId = 12345;
+    const testVoicePath = '/path/to/voice.ogg';
+    const testReplyToMessageId = 67890;
+    const testCaption = 'Test voice caption';
+    const mockFileContent = Buffer.from('mock audio content');
+
+    beforeEach(() => {
+      // Reset fs mocks
+      jest.clearAllMocks();
+      (fs.access as jest.Mock).mockResolvedValue(undefined);
+      (fs.readFile as jest.Mock).mockResolvedValue(mockFileContent);
+      
+      // Reset FormData mock
+      (FormData as jest.Mock).mockImplementation(() => {
+        const append = jest.fn();
+        const getHeaders = jest.fn().mockReturnValue({ 'content-type': 'multipart/form-data' });
+        return { append, getHeaders };
+      });
+    });
+
+    it('should return undefined if bot token is blank', async () => {
+      // Arrange
+      const originalToken = process.env.TELEGRAM_BOT_TOKEN;
+      delete process.env.TELEGRAM_BOT_TOKEN;
+      const blankTokenMockAxiosInstance = {
+        post: jest.fn(),
+      };
+      mockedAxios.create = jest.fn().mockReturnValue(blankTokenMockAxiosInstance as any);
+      const serviceWithBlankToken = new TelegramService('');
+
+      // Act
+      const result = await serviceWithBlankToken.sendVoice(testChatId, testVoicePath);
+
+      // Assert
+      expect(result).toBeUndefined();
+      expect(blankTokenMockAxiosInstance.post).not.toHaveBeenCalled();
+      expect(fs.access).not.toHaveBeenCalled();
+
+      // Cleanup
+      if (originalToken) {
+        process.env.TELEGRAM_BOT_TOKEN = originalToken;
+      }
+    });
+
+    it('should return undefined if bot token is not provided and env var is not set', async () => {
+      // Arrange
+      const originalToken = process.env.TELEGRAM_BOT_TOKEN;
+      delete process.env.TELEGRAM_BOT_TOKEN;
+      const serviceWithoutToken = new TelegramService();
+
+      // Act
+      const result = await serviceWithoutToken.sendVoice(testChatId, testVoicePath);
+
+      // Assert
+      expect(result).toBeUndefined();
+      expect(mockAxiosInstance.post).not.toHaveBeenCalled();
+      expect(fs.access).not.toHaveBeenCalled();
+
+      // Cleanup
+      if (originalToken) {
+        process.env.TELEGRAM_BOT_TOKEN = originalToken;
+      }
+    });
+
+    it('should throw error if voice file does not exist', async () => {
+      // Arrange
+      (fs.access as jest.Mock).mockRejectedValue({ code: 'ENOENT' });
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      // Act & Assert
+      await expect(telegramService.sendVoice(testChatId, testVoicePath)).rejects.toThrow(
+        'Voice file does not exist'
+      );
+
+      // Verify error was logged
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Error sending Telegram voice: Voice file does not exist'
+      );
+
+      // Cleanup
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should send voice with required parameters only', async () => {
+      // Arrange
+      const mockMessage: TelegramMessage = {
+        message_id: 123,
+        chat: { id: testChatId },
+      };
+      const mockResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: true,
+        result: mockMessage,
+      };
+      const mockFormData = {
+        append: jest.fn(),
+        getHeaders: jest.fn().mockReturnValue({ 'content-type': 'multipart/form-data' }),
+      };
+      (FormData as jest.Mock).mockReturnValue(mockFormData);
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      // Act
+      const result = await telegramService.sendVoice(testChatId, testVoicePath);
+
+      // Assert
+      expect(fs.access).toHaveBeenCalledWith(testVoicePath);
+      expect(fs.readFile).toHaveBeenCalledWith(testVoicePath);
+      expect(mockFormData.append).toHaveBeenCalledWith('voice', mockFileContent, {
+        filename: 'voice.ogg',
+        contentType: 'audio/ogg',
+      });
+      expect(mockFormData.append).toHaveBeenCalledWith('chat_id', String(testChatId));
+      expect(mockFormData.append).not.toHaveBeenCalledWith('reply_to_message_id', expect.anything());
+      expect(mockFormData.append).not.toHaveBeenCalledWith('caption', expect.anything());
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/sendVoice',
+        mockFormData,
+        {
+          headers: { 'content-type': 'multipart/form-data' },
+        }
+      );
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should send voice with all optional parameters', async () => {
+      // Arrange
+      const mockMessage: TelegramMessage = {
+        message_id: 123,
+        chat: { id: testChatId },
+      };
+      const mockResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: true,
+        result: mockMessage,
+      };
+      const mockFormData = {
+        append: jest.fn(),
+        getHeaders: jest.fn().mockReturnValue({ 'content-type': 'multipart/form-data' }),
+      };
+      (FormData as jest.Mock).mockReturnValue(mockFormData);
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      // Act
+      const result = await telegramService.sendVoice(
+        testChatId,
+        testVoicePath,
+        testReplyToMessageId,
+        testCaption
+      );
+
+      // Assert
+      expect(mockFormData.append).toHaveBeenCalledWith('voice', mockFileContent, {
+        filename: 'voice.ogg',
+        contentType: 'audio/ogg',
+      });
+      expect(mockFormData.append).toHaveBeenCalledWith('chat_id', String(testChatId));
+      expect(mockFormData.append).toHaveBeenCalledWith('reply_to_message_id', String(testReplyToMessageId));
+      expect(mockFormData.append).toHaveBeenCalledWith('caption', testCaption);
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should detect MIME type for .ogg file', async () => {
+      // Arrange
+      const mockMessage: TelegramMessage = {
+        message_id: 123,
+        chat: { id: testChatId },
+      };
+      const mockResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: true,
+        result: mockMessage,
+      };
+      const mockFormData = {
+        append: jest.fn(),
+        getHeaders: jest.fn().mockReturnValue({ 'content-type': 'multipart/form-data' }),
+      };
+      (FormData as jest.Mock).mockReturnValue(mockFormData);
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      // Act
+      await telegramService.sendVoice(testChatId, '/path/to/voice.ogg');
+
+      // Assert
+      expect(mockFormData.append).toHaveBeenCalledWith('voice', mockFileContent, {
+        filename: 'voice.ogg',
+        contentType: 'audio/ogg',
+      });
+    });
+
+    it('should detect MIME type for .oga file', async () => {
+      // Arrange
+      const mockMessage: TelegramMessage = {
+        message_id: 123,
+        chat: { id: testChatId },
+      };
+      const mockResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: true,
+        result: mockMessage,
+      };
+      const mockFormData = {
+        append: jest.fn(),
+        getHeaders: jest.fn().mockReturnValue({ 'content-type': 'multipart/form-data' }),
+      };
+      (FormData as jest.Mock).mockReturnValue(mockFormData);
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      // Act
+      await telegramService.sendVoice(testChatId, '/path/to/voice.oga');
+
+      // Assert
+      expect(mockFormData.append).toHaveBeenCalledWith('voice', mockFileContent, {
+        filename: 'voice.oga',
+        contentType: 'audio/ogg',
+      });
+    });
+
+    it('should detect MIME type for .wav file', async () => {
+      // Arrange
+      const mockMessage: TelegramMessage = {
+        message_id: 123,
+        chat: { id: testChatId },
+      };
+      const mockResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: true,
+        result: mockMessage,
+      };
+      const mockFormData = {
+        append: jest.fn(),
+        getHeaders: jest.fn().mockReturnValue({ 'content-type': 'multipart/form-data' }),
+      };
+      (FormData as jest.Mock).mockReturnValue(mockFormData);
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      // Act
+      await telegramService.sendVoice(testChatId, '/path/to/voice.wav');
+
+      // Assert
+      expect(mockFormData.append).toHaveBeenCalledWith('voice', mockFileContent, {
+        filename: 'voice.wav',
+        contentType: 'audio/wav',
+      });
+    });
+
+    it('should detect MIME type for .mp3 file (default)', async () => {
+      // Arrange
+      const mockMessage: TelegramMessage = {
+        message_id: 123,
+        chat: { id: testChatId },
+      };
+      const mockResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: true,
+        result: mockMessage,
+      };
+      const mockFormData = {
+        append: jest.fn(),
+        getHeaders: jest.fn().mockReturnValue({ 'content-type': 'multipart/form-data' }),
+      };
+      (FormData as jest.Mock).mockReturnValue(mockFormData);
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      // Act
+      await telegramService.sendVoice(testChatId, '/path/to/voice.mp3');
+
+      // Assert
+      expect(mockFormData.append).toHaveBeenCalledWith('voice', mockFileContent, {
+        filename: 'voice.mp3',
+        contentType: 'audio/mpeg',
+      });
+    });
+
+    it('should detect MIME type for file with unknown extension (default)', async () => {
+      // Arrange
+      const mockMessage: TelegramMessage = {
+        message_id: 123,
+        chat: { id: testChatId },
+      };
+      const mockResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: true,
+        result: mockMessage,
+      };
+      const mockFormData = {
+        append: jest.fn(),
+        getHeaders: jest.fn().mockReturnValue({ 'content-type': 'multipart/form-data' }),
+      };
+      (FormData as jest.Mock).mockReturnValue(mockFormData);
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      // Act
+      await telegramService.sendVoice(testChatId, '/path/to/voice.unknown');
+
+      // Assert
+      expect(mockFormData.append).toHaveBeenCalledWith('voice', mockFileContent, {
+        filename: 'voice.unknown',
+        contentType: 'audio/mpeg',
+      });
+    });
+
+    it('should handle case-insensitive file extension', async () => {
+      // Arrange
+      const mockMessage: TelegramMessage = {
+        message_id: 123,
+        chat: { id: testChatId },
+      };
+      const mockResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: true,
+        result: mockMessage,
+      };
+      const mockFormData = {
+        append: jest.fn(),
+        getHeaders: jest.fn().mockReturnValue({ 'content-type': 'multipart/form-data' }),
+      };
+      (FormData as jest.Mock).mockReturnValue(mockFormData);
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      // Act
+      await telegramService.sendVoice(testChatId, '/path/to/voice.OGG');
+
+      // Assert
+      expect(mockFormData.append).toHaveBeenCalledWith('voice', mockFileContent, {
+        filename: 'voice.OGG',
+        contentType: 'audio/ogg',
+      });
+    });
+
+    it('should not include caption if caption is null', async () => {
+      // Arrange
+      const mockMessage: TelegramMessage = {
+        message_id: 123,
+        chat: { id: testChatId },
+      };
+      const mockResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: true,
+        result: mockMessage,
+      };
+      const mockFormData = {
+        append: jest.fn(),
+        getHeaders: jest.fn().mockReturnValue({ 'content-type': 'multipart/form-data' }),
+      };
+      (FormData as jest.Mock).mockReturnValue(mockFormData);
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      // Act
+      await telegramService.sendVoice(testChatId, testVoicePath, undefined, null as any);
+
+      // Assert
+      expect(mockFormData.append).not.toHaveBeenCalledWith('caption', expect.anything());
+    });
+
+    it('should return API response with ok: false when Telegram API returns error', async () => {
+      // Arrange
+      const mockErrorResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: false,
+        description: 'Bad Request: invalid file format',
+        error_code: 400,
+      };
+      const mockFormData = {
+        append: jest.fn(),
+        getHeaders: jest.fn().mockReturnValue({ 'content-type': 'multipart/form-data' }),
+      };
+      (FormData as jest.Mock).mockReturnValue(mockFormData);
+      mockAxiosInstance.post.mockResolvedValue({ data: mockErrorResponse });
+
+      // Act
+      const result = await telegramService.sendVoice(testChatId, testVoicePath);
+
+      // Assert
+      expect(result).toEqual(mockErrorResponse);
+      expect(result?.ok).toBe(false);
+    });
+
+    it('should log error and re-throw exception when axios request fails', async () => {
+      // Arrange
+      const mockFormData = {
+        append: jest.fn(),
+        getHeaders: jest.fn().mockReturnValue({ 'content-type': 'multipart/form-data' }),
+      };
+      (FormData as jest.Mock).mockReturnValue(mockFormData);
+      const mockError = new Error('Network error');
+      mockAxiosInstance.post.mockRejectedValue(mockError);
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      // Act & Assert
+      await expect(telegramService.sendVoice(testChatId, testVoicePath)).rejects.toThrow('Network error');
+
+      // Verify error was logged
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Error sending Telegram voice: Network error'
+      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(mockError.stack);
+
+      // Cleanup
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should log error and re-throw exception when file read fails', async () => {
+      // Arrange
+      const readError = new Error('Permission denied');
+      (fs.readFile as jest.Mock).mockRejectedValue(readError);
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      // Act & Assert
+      await expect(telegramService.sendVoice(testChatId, testVoicePath)).rejects.toThrow('Permission denied');
+
+      // Verify error was logged
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Error sending Telegram voice: Permission denied'
+      );
+
+      // Cleanup
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should handle axios errors that are not Error instances', async () => {
+      // Arrange
+      const mockFormData = {
+        append: jest.fn(),
+        getHeaders: jest.fn().mockReturnValue({ 'content-type': 'multipart/form-data' }),
+      };
+      (FormData as jest.Mock).mockReturnValue(mockFormData);
+      const mockError = 'String error';
+      mockAxiosInstance.post.mockRejectedValue(mockError);
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      // Act & Assert
+      await expect(telegramService.sendVoice(testChatId, testVoicePath)).rejects.toBe(mockError);
+
+      // Verify error was logged
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Error sending Telegram voice: String error'
+      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith('');
+
+      // Cleanup
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should return response data from axios response', async () => {
+      // Arrange
+      const mockMessage: TelegramMessage = {
+        message_id: 123,
+        chat: { id: testChatId },
+      };
+      const mockResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: true,
+        result: mockMessage,
+      };
+      const mockFormData = {
+        append: jest.fn(),
+        getHeaders: jest.fn().mockReturnValue({ 'content-type': 'multipart/form-data' }),
+      };
+      (FormData as jest.Mock).mockReturnValue(mockFormData);
+      mockAxiosInstance.post.mockResolvedValue({
+        data: mockResponse,
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: {} as any,
+      });
+
+      // Act
+      const result = await telegramService.sendVoice(testChatId, testVoicePath);
+
+      // Assert
+      expect(result).toEqual(mockResponse);
+      expect(result).not.toHaveProperty('status');
+      expect(result).not.toHaveProperty('statusText');
+    });
+
+    it('should extract filename correctly from path with subdirectories', async () => {
+      // Arrange
+      const mockMessage: TelegramMessage = {
+        message_id: 123,
+        chat: { id: testChatId },
+      };
+      const mockResponse: TelegramApiResponse<TelegramMessage> = {
+        ok: true,
+        result: mockMessage,
+      };
+      const mockFormData = {
+        append: jest.fn(),
+        getHeaders: jest.fn().mockReturnValue({ 'content-type': 'multipart/form-data' }),
+      };
+      (FormData as jest.Mock).mockReturnValue(mockFormData);
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      // Act
+      await telegramService.sendVoice(testChatId, '/path/to/subdir/voice.ogg');
+
+      // Assert
+      expect(mockFormData.append).toHaveBeenCalledWith('voice', mockFileContent, {
+        filename: 'voice.ogg',
+        contentType: 'audio/ogg',
+      });
     });
   });
 });

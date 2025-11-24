@@ -1,10 +1,8 @@
 import axios, { AxiosInstance } from 'axios';
 import { TelegramApiResponse, TelegramMessage, WebhookInfo } from '../types/telegram';
-// Dependencies for future implementation (PHASE2-023, PHASE2-024)
-// import { promises as fs } from 'fs';
-// import * as path from 'path';
-// import * as os from 'os';
-// import FormData from 'form-data';
+import { promises as fs } from 'fs';
+import * as path from 'path';
+import FormData from 'form-data';
 
 /**
  * Service for interacting with Telegram Bot API
@@ -222,34 +220,86 @@ class TelegramService {
    * @param voicePath - Path to the voice/audio file
    * @param replyToMessageId - Optional message ID to reply to
    * @param caption - Optional caption for the voice message
-   * @returns Promise resolving to Telegram API response
+   * @returns Promise resolving to Telegram API response, or undefined if bot token is blank
    * 
-   * @throws Error if bot token is blank, file doesn't exist, or if API request fails
-   * 
-   * Implementation will be added in PHASE2-023
+   * @throws Error if file doesn't exist or if API request fails
    */
   async sendVoice(
-    _chatId: number | string,
-    _voicePath: string,
-    _replyToMessageId?: number,
-    _caption?: string
-  ): Promise<any> {
+    chatId: number | string,
+    voicePath: string,
+    replyToMessageId?: number,
+    caption?: string
+  ): Promise<TelegramApiResponse<TelegramMessage> | undefined> {
     if (!this.isTokenValid()) {
-      return;
+      return undefined;
     }
 
     try {
-      // TODO: Implement in PHASE2-023
-      // - Check if file exists using fs.access
-      // - Read file content as binary using fs.readFile
-      // - Determine MIME type based on file extension (.ogg/.oga → 'audio/ogg', .wav → 'audio/wav', default → 'audio/mpeg')
-      // - Create FormData with file, chat_id, and optional reply_to_message_id and caption
-      // - Make POST request to /sendVoice endpoint with multipart/form-data
-      // - Return API response
-      throw new Error('Method not yet implemented');
+      // Validate that the voice file exists
+      await fs.access(voicePath);
+      
+      // Read file content from disk using binary read
+      const fileContent = await fs.readFile(voicePath);
+      
+      // Extract filename from voice_path using basename
+      const filename = path.basename(voicePath);
+      
+      // Extract file extension and convert to lowercase for case-insensitive matching
+      const fileExtension = path.extname(voicePath).toLowerCase();
+      
+      // Determine MIME type based on file extension
+      let mimeType: string;
+      if (fileExtension === '.ogg' || fileExtension === '.oga') {
+        mimeType = 'audio/ogg';
+      } else if (fileExtension === '.wav') {
+        mimeType = 'audio/wav';
+      } else {
+        // Default (including .mp3) → 'audio/mpeg'
+        mimeType = 'audio/mpeg';
+      }
+      
+      // Create multipart form data with file upload
+      const formData = new FormData();
+      formData.append('voice', fileContent, {
+        filename: filename,
+        contentType: mimeType,
+      });
+      
+      // Build request parameters
+      formData.append('chat_id', String(chatId));
+      
+      // Add optional parameters if provided
+      if (replyToMessageId !== undefined) {
+        formData.append('reply_to_message_id', String(replyToMessageId));
+      }
+      
+      if (caption !== undefined && caption !== null) {
+        formData.append('caption', caption);
+      }
+      
+      // Call Telegram Bot API sendVoice endpoint
+      // Use POST request with multipart/form-data content type
+      const response = await this.axiosInstance.post<TelegramApiResponse<TelegramMessage>>(
+        '/sendVoice',
+        formData,
+        {
+          headers: formData.getHeaders(),
+        }
+      );
+      
+      return response.data;
     } catch (error: any) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const stackTrace = error instanceof Error ? error.stack : '';
+      
+      // Check if error is due to file not existing
+      if (error.code === 'ENOENT') {
+        const fileNotFoundError = new Error('Voice file does not exist');
+        console.error(`Error sending Telegram voice: ${fileNotFoundError.message}`);
+        console.error(stackTrace);
+        throw fileNotFoundError;
+      }
+      
       console.error(`Error sending Telegram voice: ${errorMessage}`);
       console.error(stackTrace);
       throw error;
