@@ -1,5 +1,4 @@
 import { Redis } from 'ioredis';
-import logger from '@/utils/logger';
 
 /**
  * Interface for pending request data stored in Redis
@@ -127,9 +126,14 @@ class CursorRunnerCallbackService {
    * @param requestId - Request ID
    */
   async removePendingRequest(requestId: string): Promise<void> {
-    const key = this.redisKey(requestId);
-    await this.redis.del(key);
-    logger.info(`Removed pending cursor-runner request: ${requestId}`);
+    try {
+      const key = this.redisKey(requestId);
+      await this.redis.del(key);
+      console.log(`Removed pending cursor-runner request: ${requestId}`);
+    } catch (error) {
+      console.error(`Failed to remove pending cursor-runner request: ${requestId}`, error);
+      throw error;
+    }
   }
 }
 

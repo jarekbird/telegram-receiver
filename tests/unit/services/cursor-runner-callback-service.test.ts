@@ -344,7 +344,7 @@ describe('CursorRunnerCallbackService', () => {
       await service.removePendingRequest(requestId);
 
       expect(mockRedis.del).toHaveBeenCalledWith(key);
-      expect(getMockLogger().info).toHaveBeenCalledWith(
+      expect(consoleLogSpy).toHaveBeenCalledWith(
         `Removed pending cursor-runner request: ${requestId}`
       );
     });
@@ -355,9 +355,43 @@ describe('CursorRunnerCallbackService', () => {
       await service.removePendingRequest(uuidRequestId);
 
       expect(mockRedis.del).toHaveBeenCalledWith(key);
-      expect(getMockLogger().info).toHaveBeenCalledWith(
+      expect(consoleLogSpy).toHaveBeenCalledWith(
         `Removed pending cursor-runner request: ${uuidRequestId}`
       );
+    });
+
+    it('should handle Redis connection errors', async () => {
+      const key = `cursor_runner_callback:${requestId}`;
+      const redisError = new Error('Redis connection failed');
+      mockRedis.del.mockRejectedValue(redisError);
+
+      await expect(
+        service.removePendingRequest(requestId)
+      ).rejects.toThrow('Redis connection failed');
+
+      expect(mockRedis.del).toHaveBeenCalledWith(key);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        `Failed to remove pending cursor-runner request: ${requestId}`,
+        redisError
+      );
+      expect(consoleLogSpy).not.toHaveBeenCalled();
+    });
+
+    it('should handle Redis operation errors', async () => {
+      const key = `cursor_runner_callback:${requestId}`;
+      const redisError = new Error('DEL operation failed');
+      mockRedis.del.mockRejectedValue(redisError);
+
+      await expect(
+        service.removePendingRequest(requestId)
+      ).rejects.toThrow('DEL operation failed');
+
+      expect(mockRedis.del).toHaveBeenCalledWith(key);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        `Failed to remove pending cursor-runner request: ${requestId}`,
+        redisError
+      );
+      expect(consoleLogSpy).not.toHaveBeenCalled();
     });
   });
 
