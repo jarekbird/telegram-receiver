@@ -119,24 +119,36 @@ class TelegramService {
    * 
    * @param url - Webhook URL to set
    * @param secretToken - Optional secret token for webhook verification
-   * @returns Promise resolving to Telegram API response
+   * @returns Promise resolving to Telegram API response, or undefined if bot token is blank
    * 
-   * @throws Error if bot token is blank or if API request fails
-   * 
-   * Implementation will be added in PHASE2-020
+   * @throws Error if API request fails
    */
-  async setWebhook(_url: string, _secretToken?: string): Promise<any> {
+  async setWebhook(url: string, secretToken?: string): Promise<TelegramApiResponse<boolean> | undefined> {
     if (!this.isTokenValid()) {
-      return;
+      return undefined;
     }
 
     try {
-      // TODO: Implement in PHASE2-020
-      // - Build params object with url
-      // - Add secretToken to params if provided
-      // - Make POST request to /setWebhook endpoint
-      // - Return API response
-      throw new Error('Method not yet implemented');
+      // Build params object with url
+      const params: {
+        url: string;
+        secret_token?: string;
+      } = {
+        url: url,
+      };
+
+      // Conditionally add secret_token to params only if provided and not empty
+      if (secretToken && secretToken.trim().length > 0) {
+        params.secret_token = secretToken;
+      }
+
+      // Make POST request to Telegram Bot API setWebhook endpoint
+      const response = await this.axiosInstance.post<TelegramApiResponse<boolean>>(
+        '/setWebhook',
+        params
+      );
+
+      return response.data;
     } catch (error: any) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const stackTrace = error instanceof Error ? error.stack : '';
