@@ -11,7 +11,7 @@ import { Request, Response } from 'express';
 export function getHealth(_req: Request, res: Response): void {
   res.status(200).json({
     status: 'healthy',
-    service: process.env.APP_NAME || 'Virtual Assistant API',
+    service: process.env.APP_NAME || 'telegram-receiver',
     version: process.env.APP_VERSION || '1.0.0',
   });
 }
