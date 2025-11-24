@@ -1,0 +1,183 @@
+import { Request, Response } from 'express';
+import TelegramService from '../services/telegram-service';
+import { TelegramUpdate } from '../types/telegram';
+import { BaseAsyncHandler } from '../handlers/base-async-handler';
+
+/**
+ * TelegramController class (PHASE2-055)
+ * 
+ * Controller for handling Telegram webhook requests and admin endpoints.
+ * This is the foundational class structure - method implementations will be added
+ * in subsequent tasks (PHASE2-056 through PHASE2-063).
+ * 
+ * Matches Rails implementation in jarek-va/app/controllers/telegram_controller.rb
+ * 
+ * Key features:
+ * - Webhook endpoint for receiving Telegram updates
+ * - Admin endpoints for webhook management (set, get info, delete)
+ * - Authentication middleware for webhook and admin endpoints
+ * - Error handling that sends error messages to Telegram users when possible
+ * - Always returns 200 OK to Telegram to avoid retries
+ */
+class TelegramController {
+  // These will be used in method implementations (PHASE2-056 through PHASE2-063)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private telegramService: TelegramService;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private telegramMessageHandler: BaseAsyncHandler<TelegramUpdate, void>;
+
+  /**
+   * Creates a new TelegramController instance
+   * 
+   * @param telegramService - TelegramService instance for Telegram API interactions
+   * @param telegramMessageHandler - Handler for processing Telegram updates asynchronously
+   */
+  constructor(
+    telegramService: TelegramService,
+    telegramMessageHandler: BaseAsyncHandler<TelegramUpdate, void>
+  ) {
+    this.telegramService = telegramService;
+    this.telegramMessageHandler = telegramMessageHandler;
+  }
+
+  /**
+   * Webhook endpoint for Telegram updates
+   * 
+   * Receives updates from Telegram Bot API, filters out Express-specific params,
+   * and executes the async handler to process the update.
+   * 
+   * Implementation will be added in PHASE2-056
+   * 
+   * @param req - Express request object
+   * @param res - Express response object
+   * @returns Promise that resolves when the response is sent
+   */
+  async webhook(_req: Request, _res: Response): Promise<void> {
+    // Implementation will be added in PHASE2-056
+    // - Filter out Express-specific params before processing
+    // - Execute async handler to process update (equivalent to Rails TelegramMessageJob.perform_later)
+    // - Return 200 OK immediately to Telegram
+    // - Error handling that sends error messages to Telegram users when chat info is available
+    // - Always return 200 OK to Telegram to avoid retries
+    throw new Error('Not implemented: webhook method implementation in PHASE2-056');
+  }
+
+  /**
+   * Endpoint to set webhook (for setup/management)
+   * 
+   * Sets the Telegram webhook URL and optional secret token.
+   * Requires admin authentication.
+   * 
+   * Implementation will be added in PHASE2-058
+   * 
+   * @param req - Express request object
+   * @param res - Express response object
+   * @returns Promise that resolves when the response is sent
+   */
+  async setWebhook(_req: Request, _res: Response): Promise<void> {
+    // Implementation will be added in PHASE2-058
+    // - Check admin authentication
+    // - Get webhook URL from params or use default
+    // - Get secret token from params or config
+    // - Call TelegramService.setWebhook
+    // - Return JSON with { ok: true/false, ... } format
+    throw new Error('Not implemented: setWebhook method implementation in PHASE2-058');
+  }
+
+  /**
+   * Endpoint to get webhook info
+   * 
+   * Gets information about the current webhook configuration.
+   * Requires admin authentication.
+   * 
+   * Implementation will be added in PHASE2-059
+   * 
+   * @param req - Express request object
+   * @param res - Express response object
+   * @returns Promise that resolves when the response is sent
+   */
+  async getWebhookInfo(_req: Request, _res: Response): Promise<void> {
+    // Implementation will be added in PHASE2-059
+    // - Check admin authentication
+    // - Call TelegramService.getWebhookInfo
+    // - Return JSON with { ok: true/false, webhook_info: ... } format
+    throw new Error('Not implemented: getWebhookInfo method implementation in PHASE2-059');
+  }
+
+  /**
+   * Endpoint to delete webhook
+   * 
+   * Deletes the current webhook configuration.
+   * Requires admin authentication.
+   * 
+   * Implementation will be added in PHASE2-060
+   * 
+   * @param req - Express request object
+   * @param res - Express response object
+   * @returns Promise that resolves when the response is sent
+   */
+  async deleteWebhook(_req: Request, _res: Response): Promise<void> {
+    // Implementation will be added in PHASE2-060
+    // - Check admin authentication
+    // - Call TelegramService.deleteWebhook
+    // - Return JSON with { ok: true/false, message: ... } format
+    throw new Error('Not implemented: deleteWebhook method implementation in PHASE2-060');
+  }
+
+  /**
+   * Authenticates admin requests
+   * 
+   * Checks X-Admin-Secret header or admin_secret query/body param
+   * against the expected WEBHOOK_SECRET configuration.
+   * 
+   * Implementation will be added in PHASE2-061
+   * 
+   * @param req - Express request object
+   * @returns true if authenticated, false otherwise
+   */
+  protected authenticateAdmin(_req: Request): boolean {
+    // Implementation will be added in PHASE2-061
+    // - Check X-Admin-Secret header or admin_secret query/body param
+    // - Compare against WEBHOOK_SECRET environment variable
+    // - Return true if authenticated, false otherwise
+    return false;
+  }
+
+  /**
+   * Gets the default webhook URL from configuration
+   * 
+   * Uses TELEGRAM_WEBHOOK_BASE_URL environment variable or config value,
+   * appends /telegram/webhook path.
+   * 
+   * @returns Default webhook URL string
+   */
+  protected defaultWebhookUrl(): string {
+    const baseUrl =
+      process.env.TELEGRAM_WEBHOOK_BASE_URL || 'http://localhost:3000';
+    return `${baseUrl}/telegram/webhook`;
+  }
+
+  /**
+   * Extracts chat info from Telegram update
+   * 
+   * Helper method for error handling - extracts chat_id and message_id
+   * from update. Handles three update types: message, edited_message, and callback_query.
+   * 
+   * Implementation will be added in PHASE2-063
+   * 
+   * @param update - Telegram update object
+   * @returns Tuple of [chat_id, message_id] or [null, null] if not found
+   */
+  protected extractChatInfoFromUpdate(
+    _update: TelegramUpdate
+  ): [number | null, number | null] {
+    // Implementation will be added in PHASE2-063
+    // - Handle message update type
+    // - Handle edited_message update type
+    // - Handle callback_query update type (extract from nested message)
+    // - Return [chat_id, message_id] or [null, null] if not found
+    return [null, null];
+  }
+}
+
+export default TelegramController;
