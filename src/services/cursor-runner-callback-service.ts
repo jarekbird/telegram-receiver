@@ -90,26 +90,35 @@ class CursorRunnerCallbackService {
    * @returns Stored data or null if not found
    */
   async getPendingRequest(requestId: string): Promise<PendingRequestData | null> {
-    const key = this.redisKey(requestId);
-    const data = await this.redis.get(key);
-    
-    if (data === null) {
-      return null;
-    }
-
     try {
-      return JSON.parse(data) as PendingRequestData;
-    } catch (error) {
-      // Handle JSON parsing errors gracefully
-      if (error instanceof SyntaxError) {
-        logger.error('Failed to parse pending request data', {
-          request_id: requestId,
-          error: error.message,
-        });
+      const key = this.redisKey(requestId);
+      const data = await this.redis.get(key);
+      
+      if (data === null) {
         return null;
       }
-      // Re-throw non-parsing errors
-      throw error;
+
+      try {
+        return JSON.parse(data) as PendingRequestData;
+      } catch (error) {
+        // Handle JSON parsing errors gracefully
+        if (error instanceof SyntaxError) {
+          console.error('Failed to parse pending request data', {
+            request_id: requestId,
+            error: error.message,
+          });
+          return null;
+        }
+        // Re-throw non-parsing errors
+        throw error;
+      }
+    } catch (error) {
+      // Handle Redis connection and operation errors gracefully
+      console.error('Failed to retrieve pending request from Redis', {
+        request_id: requestId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return null;
     }
   }
 

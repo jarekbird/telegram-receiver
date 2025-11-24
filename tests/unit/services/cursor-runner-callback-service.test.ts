@@ -263,7 +263,7 @@ describe('CursorRunnerCallbackService', () => {
 
       expect(mockRedis.get).toHaveBeenCalledWith(key);
       expect(result).toBeNull();
-      expect(getMockLogger().error).toHaveBeenCalledWith(
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
         'Failed to parse pending request data',
         {
           request_id: requestId,
@@ -294,6 +294,42 @@ describe('CursorRunnerCallbackService', () => {
 
       expect(mockRedis.get).toHaveBeenCalledWith(key);
       expect(result).toEqual(testData);
+    });
+
+    it('should handle Redis connection errors gracefully', async () => {
+      const key = `cursor_runner_callback:${requestId}`;
+      const redisError = new Error('Redis connection failed');
+      mockRedis.get.mockRejectedValue(redisError);
+
+      const result = await service.getPendingRequest(requestId);
+
+      expect(mockRedis.get).toHaveBeenCalledWith(key);
+      expect(result).toBeNull();
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Failed to retrieve pending request from Redis',
+        {
+          request_id: requestId,
+          error: 'Redis connection failed',
+        }
+      );
+    });
+
+    it('should handle Redis operation errors gracefully', async () => {
+      const key = `cursor_runner_callback:${requestId}`;
+      const redisError = new Error('GET operation failed');
+      mockRedis.get.mockRejectedValue(redisError);
+
+      const result = await service.getPendingRequest(requestId);
+
+      expect(mockRedis.get).toHaveBeenCalledWith(key);
+      expect(result).toBeNull();
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Failed to retrieve pending request from Redis',
+        {
+          request_id: requestId,
+          error: 'GET operation failed',
+        }
+      );
     });
   });
 
