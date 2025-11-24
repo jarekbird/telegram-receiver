@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import { randomBytes } from 'crypto';
 import logger from '@/utils/logger';
-import { CursorExecuteResponse, CursorIterateResponse, GitCloneResponse, GitListRepositoriesResponse, GitCheckoutResponse, GitPushResponse } from '@/types/cursor-runner';
+import { CursorExecuteResponse, CursorIterateResponse, GitCloneResponse, GitListRepositoriesResponse, GitCheckoutResponse, GitPushResponse, GitPullBranchResponse } from '@/types/cursor-runner';
 
 /**
  * Base error class for CursorRunnerService
@@ -539,6 +539,37 @@ class CursorRunnerService {
 
     // Return parsed response as GitPushResponse
     return parsedResponse as GitPushResponse;
+  }
+
+  /**
+   * Pulls a Git branch from origin by calling the cursor-runner API's /git/pull endpoint
+   * @param params - Pull parameters
+   * @param params.repository - Repository name
+   * @param params.branch - Branch name to pull
+   * @returns Promise resolving to GitPullBranchResponse with success, message, etc.
+   * @throws {ConnectionError} When connection to cursor-runner fails
+   * @throws {TimeoutError} When request times out
+   * @throws {InvalidResponseError} When response cannot be parsed
+   * @throws {CursorRunnerServiceError} When HTTP error occurs (non-2xx, except 422)
+   */
+  async pullBranch(params: {
+    repository: string;
+    branch: string;
+  }): Promise<GitPullBranchResponse> {
+    // Build request body with repository and branch (both lowercase strings)
+    const requestBody = {
+      repository: params.repository,
+      branch: params.branch,
+    };
+
+    // POST to /git/pull endpoint using helper method
+    const response = await this.post('/git/pull', requestBody);
+
+    // Parse JSON response body using helper method
+    const parsedResponse = this.parseResponse(response);
+
+    // Return parsed response as GitPullBranchResponse
+    return parsedResponse as GitPullBranchResponse;
   }
 }
 
