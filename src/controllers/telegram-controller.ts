@@ -3,6 +3,7 @@ import TelegramService from '../services/telegram-service';
 import { TelegramUpdate } from '../types/telegram';
 import { BaseAsyncHandler } from '../handlers/base-async-handler';
 import logger from '../utils/logger';
+import { extractChatInfoFromUpdate } from '../utils/extractChatInfoFromUpdate';
 
 /**
  * TelegramController class (PHASE2-055)
@@ -108,11 +109,9 @@ class TelegramController {
       logger.error(`Error handling Telegram webhook: ${errorMessage}`, errorObj);
 
       // Try to send error message if we have chat info
-      // Convert update to plain object if needed (handle Hash/object conversion like Rails: update.is_a?(Hash) ? update : update.to_h)
       // In TypeScript, update is already a plain object, but we ensure it's not undefined
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const updateHash: any = update || {};
-      const [chatId, messageId] = this.extractChatInfoFromUpdate(updateHash);
+      const updateForExtraction: TelegramUpdate = update || {};
+      const [chatId, messageId] = extractChatInfoFromUpdate(updateForExtraction);
 
       if (chatId !== null) {
         try {
@@ -361,48 +360,6 @@ class TelegramController {
     return `${baseUrl}/telegram/webhook`;
   }
 
-  /**
-   * Extracts chat info from Telegram update
-   * 
-   * Helper method for error handling - extracts chat_id and message_id
-   * from update. Handles three update types: message, edited_message, and callback_query.
-   * 
-   * Basic implementation for error handling in webhook method.
-   * Full implementation will be added in PHASE2-063.
-   * 
-   * @param update - Telegram update object
-   * @returns Tuple of [chat_id, message_id] or [null, null] if not found
-   */
-  protected extractChatInfoFromUpdate(
-    update: TelegramUpdate
-  ): [number | null, number | null] {
-    // Handle message update type
-    if (update.message) {
-      return [
-        update.message.chat?.id || null,
-        update.message.message_id || null,
-      ];
-    }
-
-    // Handle edited_message update type
-    if (update.edited_message) {
-      return [
-        update.edited_message.chat?.id || null,
-        update.edited_message.message_id || null,
-      ];
-    }
-
-    // Handle callback_query update type (extract from nested message)
-    if (update.callback_query?.message) {
-      return [
-        update.callback_query.message.chat?.id || null,
-        update.callback_query.message.message_id || null,
-      ];
-    }
-
-    // Return [null, null] if not found
-    return [null, null];
-  }
 }
 
 export default TelegramController;
