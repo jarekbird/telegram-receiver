@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import TelegramService from '../services/telegram-service';
 import { TelegramUpdate } from '../types/telegram';
 import { BaseAsyncHandler } from '../handlers/base-async-handler';
+import logger from '../utils/logger';
 
 /**
  * TelegramController class (PHASE2-055)
@@ -46,20 +47,114 @@ class TelegramController {
    * Receives updates from Telegram Bot API, filters out Express-specific params,
    * and executes the async handler to process the update.
    * 
-   * Implementation will be added in PHASE2-056
+   * Matches Rails implementation in jarek-va/app/controllers/telegram_controller.rb (lines 12-48)
    * 
    * @param req - Express request object
    * @param res - Express response object
    * @returns Promise that resolves when the response is sent
    */
-  async webhook(_req: Request, _res: Response): Promise<void> {
-    // Implementation will be added in PHASE2-056
-    // - Filter out Express-specific params before processing
-    // - Execute async handler to process update (equivalent to Rails TelegramMessageJob.perform_later)
-    // - Return 200 OK immediately to Telegram
-    // - Error handling that sends error messages to Telegram users when chat info is available
-    // - Always return 200 OK to Telegram to avoid retries
-    throw new Error('Not implemented: webhook method implementation in PHASE2-056');
+  async webhook(req: Request, res: Response): Promise<void> {
+    let update: TelegramUpdate;
+
+    try {
+      // Parse request body as TelegramUpdate
+      // Express automatically parses JSON when Content-Type is application/json
+      // Express automatically parses form-encoded when Content-Type is application/x-www-form-urlencoded
+      // Both populate req.body, so we can use it directly
+      // Get update from request body (Express middleware has already parsed it)
+      // For JSON: req.body contains parsed JSON
+      // For form-encoded: req.body contains parsed form data
+      const bodyData = req.body || {};
+
+      // Remove framework-specific parameters (similar to Rails update.except(:controller, :action, :format, :telegram))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { controller, action, format, telegram, ...updateData } = bodyData as any;
+
+      // Convert to TelegramUpdate type
+      update = updateData as TelegramUpdate;
+
+      // Log the received Telegram update (equivalent to Rails.logger.info("Received Telegram update: #{update.inspect}"))
+      logger.info(
+        {
+          update: JSON.stringify(update),
+        },
+        'Received Telegram update',
+      );
+
+      // Execute async handler to process update asynchronously
+      // This is equivalent to Rails TelegramMessageJob.perform_later(update.to_json)
+      // We call execute() which starts the async processing but don't await it
+      // This allows us to return 200 OK immediately to Telegram
+      this.telegramMessageHandler.execute(update).catch((error) => {
+        // Log handler execution errors (these are separate from webhook errors)
+        logger.error(
+          {
+            err: error instanceof Error ? error : new Error(String(error)),
+          },
+          'Error in async handler execution',
+        );
+      });
+
+      // Return 200 OK immediately to Telegram (before handler processing completes)
+      // This prevents Telegram from retrying the webhook
+      res.status(200).send('OK');
+    } catch (error) {
+      // Comprehensive error handling (equivalent to Rails rescue StandardError)
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      const errorStack =
+        error instanceof Error ? error.stack : undefined;
+
+      // Log error message and stack trace (equivalent to Rails error logging)
+      logger.error(
+        {
+          err: error instanceof Error ? error : new Error(String(error)),
+        },
+        `Error handling Telegram webhook: ${errorMessage}`,
+      );
+
+      if (errorStack) {
+        logger.error(
+          {
+            stack: errorStack,
+          },
+          'Error stack trace',
+        );
+      }
+
+      // Try to send error message if we have chat info
+      // Convert update to plain object if needed (handle both object and plain types)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const updateHash: any = update || {};
+      const [chatId, messageId] = this.extractChatInfoFromUpdate(updateHash);
+
+      if (chatId !== null) {
+        try {
+          // Send error message to user via TelegramService
+          // Use parse_mode: 'HTML' and reply_to_message_id if available
+          await this.telegramService.sendMessage(
+            chatId,
+            `Sorry, I encountered an error processing your message: ${errorMessage}`,
+            'HTML',
+            messageId || undefined,
+          );
+        } catch (sendError) {
+          // Log errors from sending error message (but don't re-raise)
+          logger.error(
+            {
+              err:
+                sendError instanceof Error
+                  ? sendError
+                  : new Error(String(sendError)),
+            },
+            'Error sending error message',
+          );
+        }
+      }
+
+      // Always return 200 OK even on error (to prevent Telegram from retrying)
+      res.status(200).send('OK');
+    }
   }
 
   /**
@@ -163,19 +258,40 @@ class TelegramController {
    * Helper method for error handling - extracts chat_id and message_id
    * from update. Handles three update types: message, edited_message, and callback_query.
    * 
-   * Implementation will be added in PHASE2-063
+   * Basic implementation for error handling in webhook method.
+   * Full implementation will be added in PHASE2-063.
    * 
    * @param update - Telegram update object
    * @returns Tuple of [chat_id, message_id] or [null, null] if not found
    */
   protected extractChatInfoFromUpdate(
-    _update: TelegramUpdate
+    update: TelegramUpdate
   ): [number | null, number | null] {
-    // Implementation will be added in PHASE2-063
-    // - Handle message update type
-    // - Handle edited_message update type
-    // - Handle callback_query update type (extract from nested message)
-    // - Return [chat_id, message_id] or [null, null] if not found
+    // Handle message update type
+    if (update.message) {
+      return [
+        update.message.chat?.id || null,
+        update.message.message_id || null,
+      ];
+    }
+
+    // Handle edited_message update type
+    if (update.edited_message) {
+      return [
+        update.edited_message.chat?.id || null,
+        update.edited_message.message_id || null,
+      ];
+    }
+
+    // Handle callback_query update type (extract from nested message)
+    if (update.callback_query?.message) {
+      return [
+        update.callback_query.message.chat?.id || null,
+        update.callback_query.message.message_id || null,
+      ];
+    }
+
+    // Return [null, null] if not found
     return [null, null];
   }
 }
