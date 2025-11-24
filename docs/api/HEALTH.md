@@ -39,7 +39,7 @@ The health endpoint is publicly accessible and does not require authentication. 
 ```json
 {
   "status": "healthy",
-  "service": "telegram-receiver",
+  "service": "Virtual Assistant API",
   "version": "1.0.0"
 }
 ```
@@ -47,8 +47,8 @@ The health endpoint is publicly accessible and does not require authentication. 
 **Response Fields**:
 
 - `status` (string): Always `"healthy"` when the service is running. This field indicates the service is operational and responding to requests.
-- `service` (string): Service name from `APP_NAME` environment variable. If `APP_NAME` is not set, defaults to the `name` field from `package.json` (default: `"telegram-receiver"`).
-- `version` (string): Service version from `APP_VERSION` environment variable. If `APP_VERSION` is not set, defaults to the `version` field from `package.json` (default: `"1.0.0"`).
+- `service` (string): Service name from `APP_NAME` environment variable (default: `"Virtual Assistant API"`).
+- `version` (string): Service version from `APP_VERSION` environment variable (default: `"1.0.0"`).
 
 ## Status Codes
 
@@ -84,7 +84,7 @@ http GET http://localhost:3000/
 ```json
 {
   "status": "healthy",
-  "service": "telegram-receiver",
+  "service": "Virtual Assistant API",
   "version": "1.0.0"
 }
 ```
@@ -104,8 +104,8 @@ Content-Length: 65
 - **Controller**: `src/controllers/health.controller.ts`
   - Function: `getHealth()`
   - Returns JSON response with status, service name, and version
-  - Reads service name and version from `package.json` first, then checks `APP_NAME` and `APP_VERSION` environment variables
-  - Falls back to defaults (`"telegram-receiver"` and `"1.0.0"`) if package.json cannot be read
+  - Reads service name and version from `APP_NAME` and `APP_VERSION` environment variables
+  - Falls back to defaults (`"Virtual Assistant API"` and `"1.0.0"`) if environment variables are not set
 
 - **Routes**:
   - `src/routes/health.routes.ts` - Defines `GET /health` route
@@ -113,10 +113,9 @@ Content-Length: 65
   - Both `/health` and `/` endpoints use the same controller function
 
 - **Configuration**: 
-  - Service name and version are read from `package.json` first
-  - Can be overridden by environment variables:
-    - `APP_NAME` (overrides package.json `name` field, default: `"telegram-receiver"`)
-    - `APP_VERSION` (overrides package.json `version` field, default: `"1.0.0"`)
+  - Service name and version are read from environment variables:
+    - `APP_NAME` (default: `"Virtual Assistant API"`)
+    - `APP_VERSION` (default: `"1.0.0"`)
 
 ### Rails Reference Implementation
 
