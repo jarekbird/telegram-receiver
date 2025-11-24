@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { TelegramApiResponse, TelegramMessage } from '../types/telegram';
+import { TelegramApiResponse, TelegramMessage, WebhookInfo } from '../types/telegram';
 // Dependencies for future implementation (PHASE2-023, PHASE2-024)
 // import { promises as fs } from 'fs';
 // import * as path from 'path';
@@ -190,22 +190,22 @@ class TelegramService {
   /**
    * Gets information about the current webhook
    * 
-   * @returns Promise resolving to Telegram API response with webhook info
+   * @returns Promise resolving to Telegram API response with webhook info, or undefined if bot token is blank
    * 
-   * @throws Error if bot token is blank or if API request fails
-   * 
-   * Implementation will be added in PHASE2-022
+   * @throws Error if API request fails
    */
-  async getWebhookInfo(): Promise<any> {
+  async getWebhookInfo(): Promise<TelegramApiResponse<WebhookInfo> | undefined> {
     if (!this.isTokenValid()) {
-      return;
+      return undefined;
     }
 
     try {
-      // TODO: Implement in PHASE2-022
-      // - Make GET request to /getWebhookInfo endpoint
-      // - Return API response
-      throw new Error('Method not yet implemented');
+      // Make GET request to Telegram Bot API getWebhookInfo endpoint
+      const response = await this.axiosInstance.get<TelegramApiResponse<WebhookInfo>>(
+        '/getWebhookInfo'
+      );
+
+      return response.data;
     } catch (error: any) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const stackTrace = error instanceof Error ? error.stack : '';
