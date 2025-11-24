@@ -1,6 +1,6 @@
 /**
  * Unit tests for TelegramService
- * Tests the setWebhook method implementation
+ * Tests the setWebhook and deleteWebhook method implementations
  */
 
 import TelegramService from '../../../src/services/telegram-service';
@@ -236,6 +236,149 @@ describe('TelegramService', () => {
 
       // Act
       const result = await telegramService.setWebhook(testUrl);
+
+      // Assert
+      expect(result).toEqual(mockResponse);
+      expect(result).not.toHaveProperty('status');
+      expect(result).not.toHaveProperty('statusText');
+    });
+  });
+
+  describe('deleteWebhook', () => {
+    it('should return undefined if bot token is blank', async () => {
+      // Arrange
+      // Delete env var and pass empty string to ensure blank token
+      const originalToken = process.env.TELEGRAM_BOT_TOKEN;
+      delete process.env.TELEGRAM_BOT_TOKEN;
+      // Create a new mock instance for this test to avoid interference
+      const blankTokenMockAxiosInstance = {
+        post: jest.fn(),
+      };
+      mockedAxios.create = jest.fn().mockReturnValue(blankTokenMockAxiosInstance as any);
+      const serviceWithBlankToken = new TelegramService('');
+
+      // Act
+      const result = await serviceWithBlankToken.deleteWebhook();
+
+      // Assert
+      expect(result).toBeUndefined();
+      expect(blankTokenMockAxiosInstance.post).not.toHaveBeenCalled();
+
+      // Cleanup
+      if (originalToken) {
+        process.env.TELEGRAM_BOT_TOKEN = originalToken;
+      }
+    });
+
+    it('should return undefined if bot token is not provided and env var is not set', async () => {
+      // Arrange
+      const originalToken = process.env.TELEGRAM_BOT_TOKEN;
+      delete process.env.TELEGRAM_BOT_TOKEN;
+      const serviceWithoutToken = new TelegramService();
+
+      // Act
+      const result = await serviceWithoutToken.deleteWebhook();
+
+      // Assert
+      expect(result).toBeUndefined();
+      expect(mockAxiosInstance.post).not.toHaveBeenCalled();
+
+      // Cleanup
+      if (originalToken) {
+        process.env.TELEGRAM_BOT_TOKEN = originalToken;
+      }
+    });
+
+    it('should delete webhook successfully', async () => {
+      // Arrange
+      const mockResponse: TelegramApiResponse<boolean> = {
+        ok: true,
+        result: true,
+      };
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      // Act
+      const result = await telegramService.deleteWebhook();
+
+      // Assert
+      expect(mockAxiosInstance.post).toHaveBeenCalledTimes(1);
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/deleteWebhook',
+        {}
+      );
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should return API response with ok: false when Telegram API returns error', async () => {
+      // Arrange
+      const mockErrorResponse: TelegramApiResponse<boolean> = {
+        ok: false,
+        description: 'Bad Request: invalid bot token',
+        error_code: 401,
+      };
+      mockAxiosInstance.post.mockResolvedValue({ data: mockErrorResponse });
+
+      // Act
+      const result = await telegramService.deleteWebhook();
+
+      // Assert
+      expect(result).toEqual(mockErrorResponse);
+    });
+
+    it('should log error and re-throw exception when axios request fails', async () => {
+      // Arrange
+      const mockError = new Error('Network error');
+      mockAxiosInstance.post.mockRejectedValue(mockError);
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      // Act & Assert
+      await expect(telegramService.deleteWebhook()).rejects.toThrow('Network error');
+
+      // Verify error was logged
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Error deleting Telegram webhook: Network error'
+      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(mockError.stack);
+
+      // Cleanup
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should handle axios errors that are not Error instances', async () => {
+      // Arrange
+      const mockError = 'String error';
+      mockAxiosInstance.post.mockRejectedValue(mockError);
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      // Act & Assert
+      await expect(telegramService.deleteWebhook()).rejects.toBe(mockError);
+
+      // Verify error was logged
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Error deleting Telegram webhook: String error'
+      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith('');
+
+      // Cleanup
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should return response data from axios response', async () => {
+      // Arrange
+      const mockResponse: TelegramApiResponse<boolean> = {
+        ok: true,
+        result: true,
+      };
+      mockAxiosInstance.post.mockResolvedValue({
+        data: mockResponse,
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: {} as any,
+      });
+
+      // Act
+      const result = await telegramService.deleteWebhook();
 
       // Assert
       expect(result).toEqual(mockResponse);

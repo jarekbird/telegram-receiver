@@ -161,22 +161,23 @@ class TelegramService {
   /**
    * Deletes the current webhook
    * 
-   * @returns Promise resolving to Telegram API response
+   * @returns Promise resolving to Telegram API response, or undefined if bot token is blank
    * 
-   * @throws Error if bot token is blank or if API request fails
-   * 
-   * Implementation will be added in PHASE2-021
+   * @throws Error if API request fails
    */
-  async deleteWebhook(): Promise<any> {
+  async deleteWebhook(): Promise<TelegramApiResponse<boolean> | undefined> {
     if (!this.isTokenValid()) {
-      return;
+      return undefined;
     }
 
     try {
-      // TODO: Implement in PHASE2-021
-      // - Make POST request to /deleteWebhook endpoint
-      // - Return API response
-      throw new Error('Method not yet implemented');
+      // Make POST request to Telegram Bot API deleteWebhook endpoint
+      const response = await this.axiosInstance.post<TelegramApiResponse<boolean>>(
+        '/deleteWebhook',
+        {}
+      );
+
+      return response.data;
     } catch (error: any) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const stackTrace = error instanceof Error ? error.stack : '';
