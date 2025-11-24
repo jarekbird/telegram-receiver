@@ -167,6 +167,26 @@ describe('ElevenLabsTextToSpeechService', () => {
     });
   });
 
+  describe('voiceIdConfigured', () => {
+    it('should return true when voiceId is configured', () => {
+      expect(service.voiceIdConfigured()).toBe(true);
+    });
+
+    it('should return false when voiceId is not configured/blank', () => {
+      const serviceWithoutVoiceId = new ElevenLabsTextToSpeechService(mockApiKey, mockTimeout, mockModelId, undefined);
+      // Manually set voice_id to empty string to test validation
+      (serviceWithoutVoiceId as any)._voiceId = '';
+      expect(serviceWithoutVoiceId.voiceIdConfigured()).toBe(false);
+    });
+
+    it('should return false when voiceId is whitespace only', () => {
+      const serviceWithoutVoiceId = new ElevenLabsTextToSpeechService(mockApiKey, mockTimeout, mockModelId, undefined);
+      // Manually set voice_id to whitespace to test validation
+      (serviceWithoutVoiceId as any)._voiceId = '   ';
+      expect(serviceWithoutVoiceId.voiceIdConfigured()).toBe(false);
+    });
+  });
+
   describe('synthesize', () => {
     describe('parameter validation', () => {
       it('should throw Error if text is blank', async () => {
@@ -413,7 +433,7 @@ describe('ElevenLabsTextToSpeechService', () => {
         });
       });
 
-      it('should throw SynthesisError for HTTP 400 error', async () => {
+      it('should throw SynthesisError for HTTP 400 error (as AxiosError)', async () => {
         const errorResponse = {
           response: {
             status: 400,
@@ -429,6 +449,45 @@ describe('ElevenLabsTextToSpeechService', () => {
         (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
 
         await expect(service.synthesize(mockText)).rejects.toThrow(SynthesisError);
+      });
+
+
+      it('should handle error response with string data (not Buffer)', async () => {
+        const errorResponse = {
+          response: {
+            status: 400,
+            statusText: 'Bad Request',
+            data: JSON.stringify({ detail: 'String error' }),
+            headers: {},
+            config: {},
+          },
+        };
+        const axiosError = new Error('Request failed') as AxiosError;
+        Object.assign(axiosError, errorResponse);
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesize(mockText)).rejects.toThrow(SynthesisError);
+        await expect(service.synthesize(mockText)).rejects.toThrow('String error');
+      });
+
+      it('should handle error response with object data (not Buffer/string)', async () => {
+        const errorResponse = {
+          response: {
+            status: 400,
+            statusText: 'Bad Request',
+            data: { detail: 'Object error' },
+            headers: {},
+            config: {},
+          },
+        };
+        const axiosError = new Error('Request failed') as AxiosError;
+        Object.assign(axiosError, errorResponse);
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesize(mockText)).rejects.toThrow(SynthesisError);
+        await expect(service.synthesize(mockText)).rejects.toThrow('Object error');
       });
 
       it('should throw SynthesisError for HTTP 401 error', async () => {
@@ -449,9 +508,27 @@ describe('ElevenLabsTextToSpeechService', () => {
         await expect(service.synthesize(mockText)).rejects.toThrow(SynthesisError);
       });
 
-      it('should throw TimeoutError for timeout errors', async () => {
+      it('should throw TimeoutError for timeout errors (ECONNABORTED)', async () => {
         const axiosError = new Error('timeout of 60000ms exceeded') as AxiosError;
         axiosError.code = 'ECONNABORTED';
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesize(mockText)).rejects.toThrow(TimeoutError);
+      });
+
+      it('should throw TimeoutError for timeout errors (ETIMEDOUT)', async () => {
+        const axiosError = new Error('ETIMEDOUT') as AxiosError;
+        axiosError.code = 'ETIMEDOUT';
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesize(mockText)).rejects.toThrow(TimeoutError);
+      });
+
+      it('should throw TimeoutError for timeout errors (message includes timeout)', async () => {
+        const axiosError = new Error('Request timeout occurred') as AxiosError;
+        axiosError.code = 'UNKNOWN';
         mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
         (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
 
@@ -474,6 +551,254 @@ describe('ElevenLabsTextToSpeechService', () => {
         (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
 
         await expect(service.synthesize(mockText)).rejects.toThrow(ConnectionError);
+      });
+
+      it('should throw ConnectionError for ENOTFOUND errors', async () => {
+        const axiosError = new Error('getaddrinfo ENOTFOUND api.elevenlabs.io') as AxiosError;
+        axiosError.code = 'ENOTFOUND';
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesize(mockText)).rejects.toThrow(ConnectionError);
+      });
+
+      it('should throw ConnectionError for getaddrinfo errors', async () => {
+        const axiosError = new Error('getaddrinfo failed') as AxiosError;
+        axiosError.message = 'getaddrinfo failed';
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesize(mockText)).rejects.toThrow(ConnectionError);
+      });
+
+      it('should throw SynthesisError for HTTP 500 error', async () => {
+        const errorResponse = {
+          response: {
+            status: 500,
+            statusText: 'Internal Server Error',
+            data: Buffer.from(JSON.stringify({ error: 'Server error' })),
+            headers: {},
+            config: {},
+          },
+        };
+        const axiosError = new Error('Request failed') as AxiosError;
+        Object.assign(axiosError, errorResponse);
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesize(mockText)).rejects.toThrow(SynthesisError);
+        await expect(service.synthesize(mockText)).rejects.toThrow('Server error');
+      });
+
+      it('should throw SynthesisError for HTTP 404 error', async () => {
+        const errorResponse = {
+          response: {
+            status: 404,
+            statusText: 'Not Found',
+            data: Buffer.from(JSON.stringify({ message: 'Voice not found' })),
+            headers: {},
+            config: {},
+          },
+        };
+        const axiosError = new Error('Request failed') as AxiosError;
+        Object.assign(axiosError, errorResponse);
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesize(mockText)).rejects.toThrow(SynthesisError);
+        await expect(service.synthesize(mockText)).rejects.toThrow('Voice not found');
+      });
+
+      it('should extract error message from array format', async () => {
+        const errorResponse = {
+          response: {
+            status: 400,
+            statusText: 'Bad Request',
+            data: Buffer.from(JSON.stringify([{ msg: 'error1' }, { msg: 'error2' }])),
+            headers: {},
+            config: {},
+          },
+        };
+        const axiosError = new Error('Request failed') as AxiosError;
+        Object.assign(axiosError, errorResponse);
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesize(mockText)).rejects.toThrow(SynthesisError);
+        await expect(service.synthesize(mockText)).rejects.toThrow('error1; error2');
+      });
+
+      it('should extract error message from hash format with detail field', async () => {
+        const errorResponse = {
+          response: {
+            status: 400,
+            statusText: 'Bad Request',
+            data: Buffer.from(JSON.stringify({ detail: 'Invalid request detail' })),
+            headers: {},
+            config: {},
+          },
+        };
+        const axiosError = new Error('Request failed') as AxiosError;
+        Object.assign(axiosError, errorResponse);
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesize(mockText)).rejects.toThrow(SynthesisError);
+        await expect(service.synthesize(mockText)).rejects.toThrow('Invalid request detail');
+      });
+
+      it('should extract error message from hash format with error field', async () => {
+        const errorResponse = {
+          response: {
+            status: 400,
+            statusText: 'Bad Request',
+            data: Buffer.from(JSON.stringify({ error: 'Invalid request error' })),
+            headers: {},
+            config: {},
+          },
+        };
+        const axiosError = new Error('Request failed') as AxiosError;
+        Object.assign(axiosError, errorResponse);
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesize(mockText)).rejects.toThrow(SynthesisError);
+        await expect(service.synthesize(mockText)).rejects.toThrow('Invalid request error');
+      });
+
+      it('should extract error message from hash format with message field', async () => {
+        const errorResponse = {
+          response: {
+            status: 400,
+            statusText: 'Bad Request',
+            data: Buffer.from(JSON.stringify({ message: 'Invalid request message' })),
+            headers: {},
+            config: {},
+          },
+        };
+        const axiosError = new Error('Request failed') as AxiosError;
+        Object.assign(axiosError, errorResponse);
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesize(mockText)).rejects.toThrow(SynthesisError);
+        await expect(service.synthesize(mockText)).rejects.toThrow('Invalid request message');
+      });
+
+      it('should extract error message from nested array in detail field', async () => {
+        const errorResponse = {
+          response: {
+            status: 400,
+            statusText: 'Bad Request',
+            data: Buffer.from(JSON.stringify({ detail: [{ msg: 'nested error1' }, { msg: 'nested error2' }] })),
+            headers: {},
+            config: {},
+          },
+        };
+        const axiosError = new Error('Request failed') as AxiosError;
+        Object.assign(axiosError, errorResponse);
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesize(mockText)).rejects.toThrow(SynthesisError);
+        await expect(service.synthesize(mockText)).rejects.toThrow('nested error1; nested error2');
+      });
+
+      it('should join multiple error messages with semicolon separator', async () => {
+        const errorResponse = {
+          response: {
+            status: 400,
+            statusText: 'Bad Request',
+            data: Buffer.from(JSON.stringify([{ msg: 'First error' }, { msg: 'Second error' }, { msg: 'Third error' }])),
+            headers: {},
+            config: {},
+          },
+        };
+        const axiosError = new Error('Request failed') as AxiosError;
+        Object.assign(axiosError, errorResponse);
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesize(mockText)).rejects.toThrow(SynthesisError);
+        await expect(service.synthesize(mockText)).rejects.toThrow('First error; Second error; Third error');
+      });
+
+      it('should fall back to default message when JSON parsing fails for error response', async () => {
+        const errorResponse = {
+          response: {
+            status: 400,
+            statusText: 'Bad Request',
+            data: Buffer.from('invalid json response'),
+            headers: {},
+            config: {},
+          },
+        };
+        const axiosError = new Error('Request failed') as AxiosError;
+        Object.assign(axiosError, errorResponse);
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesize(mockText)).rejects.toThrow(SynthesisError);
+        await expect(service.synthesize(mockText)).rejects.toThrow('HTTP 400: Bad Request');
+        expect(getMockLogger().error).toHaveBeenCalledWith('Failed to parse error response as JSON');
+      });
+
+      it('should handle missing error fields gracefully', async () => {
+        const errorResponse = {
+          response: {
+            status: 400,
+            statusText: 'Bad Request',
+            data: Buffer.from(JSON.stringify({})),
+            headers: {},
+            config: {},
+          },
+        };
+        const axiosError = new Error('Request failed') as AxiosError;
+        Object.assign(axiosError, errorResponse);
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesize(mockText)).rejects.toThrow(SynthesisError);
+        await expect(service.synthesize(mockText)).rejects.toThrow('HTTP 400: Bad Request');
+      });
+
+      it('should handle non-Axios network errors', async () => {
+        const networkError = new Error('Network error');
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(false);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(networkError);
+
+        await expect(service.synthesize(mockText)).rejects.toThrow('Network error');
+      });
+
+      it('should truncate error response body to 500 chars in log', async () => {
+        const longErrorBody = 'x'.repeat(600);
+        const errorResponse = {
+          response: {
+            status: 400,
+            statusText: 'Bad Request',
+            data: Buffer.from(JSON.stringify({ detail: longErrorBody })),
+            headers: {},
+            config: {},
+          },
+        };
+        const axiosError = new Error('Request failed') as AxiosError;
+        Object.assign(axiosError, errorResponse);
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesize(mockText)).rejects.toThrow();
+
+        const errorLogCall = getMockLogger().error.mock.calls.find((call) =>
+          call[0].includes('ElevenLabs API error: 400')
+        );
+        expect(errorLogCall).toBeDefined();
+        if (errorLogCall) {
+          const logMessage = errorLogCall[0] as string;
+          const bodyMatch = logMessage.match(/Response body: (.+)/);
+          if (bodyMatch) {
+            expect(bodyMatch[1].length).toBeLessThanOrEqual(500);
+          }
+        }
       });
 
       it('should throw InvalidResponseError for JSON parsing errors', async () => {
@@ -552,6 +877,26 @@ describe('ElevenLabsTextToSpeechService', () => {
         expect(getMockLogger().error).toHaveBeenCalledWith(
           expect.stringContaining('ElevenLabs API error: 400')
         );
+      });
+
+      it('should log error when JSON parsing fails for error response', async () => {
+        const errorResponse = {
+          response: {
+            status: 400,
+            statusText: 'Bad Request',
+            data: Buffer.from('invalid json'),
+            headers: {},
+            config: {},
+          },
+        };
+        const axiosError = new Error('Request failed') as AxiosError;
+        Object.assign(axiosError, errorResponse);
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesize(mockText)).rejects.toThrow();
+
+        expect(getMockLogger().error).toHaveBeenCalledWith('Failed to parse error response as JSON');
       });
     });
   });
@@ -716,7 +1061,7 @@ describe('ElevenLabsTextToSpeechService', () => {
         mockAxiosInstance = mockedAxios.create() as jest.Mocked<AxiosInstance>;
       });
 
-      it('should throw SynthesisError for HTTP 400 error', async () => {
+      it('should throw SynthesisError for HTTP 400 error (as AxiosError)', async () => {
         const errorResponse = {
           response: {
             status: 400,
@@ -732,6 +1077,53 @@ describe('ElevenLabsTextToSpeechService', () => {
         (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
 
         await expect(service.synthesizeToIo(mockText)).rejects.toThrow(SynthesisError);
+      });
+
+
+      it('should handle error response with string data (not Buffer)', async () => {
+        const errorResponse = {
+          response: {
+            status: 400,
+            statusText: 'Bad Request',
+            data: JSON.stringify({ detail: 'String error' }),
+            headers: {},
+            config: {},
+          },
+        };
+        const axiosError = new Error('Request failed') as AxiosError;
+        Object.assign(axiosError, errorResponse);
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow(SynthesisError);
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow('String error');
+      });
+
+      it('should handle error response with object data (not Buffer/string)', async () => {
+        const errorResponse = {
+          response: {
+            status: 400,
+            statusText: 'Bad Request',
+            data: { detail: 'Object error' },
+            headers: {},
+            config: {},
+          },
+        };
+        const axiosError = new Error('Request failed') as AxiosError;
+        Object.assign(axiosError, errorResponse);
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow(SynthesisError);
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow('Object error');
+      });
+
+      it('should handle non-Axios network errors', async () => {
+        const networkError = new Error('Network error');
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(false);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(networkError);
+
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow('Network error');
       });
 
       it('should throw SynthesisError for HTTP 401 error', async () => {
@@ -752,9 +1144,27 @@ describe('ElevenLabsTextToSpeechService', () => {
         await expect(service.synthesizeToIo(mockText)).rejects.toThrow(SynthesisError);
       });
 
-      it('should throw TimeoutError for timeout errors', async () => {
+      it('should throw TimeoutError for timeout errors (ECONNABORTED)', async () => {
         const axiosError = new Error('timeout of 60000ms exceeded') as AxiosError;
         axiosError.code = 'ECONNABORTED';
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow(TimeoutError);
+      });
+
+      it('should throw TimeoutError for timeout errors (ETIMEDOUT)', async () => {
+        const axiosError = new Error('ETIMEDOUT') as AxiosError;
+        axiosError.code = 'ETIMEDOUT';
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow(TimeoutError);
+      });
+
+      it('should throw TimeoutError for timeout errors (message includes timeout)', async () => {
+        const axiosError = new Error('Request timeout occurred') as AxiosError;
+        axiosError.code = 'UNKNOWN';
         mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
         (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
 
@@ -777,6 +1187,177 @@ describe('ElevenLabsTextToSpeechService', () => {
         (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
 
         await expect(service.synthesizeToIo(mockText)).rejects.toThrow(ConnectionError);
+      });
+
+      it('should throw ConnectionError for ENOTFOUND errors', async () => {
+        const axiosError = new Error('getaddrinfo ENOTFOUND api.elevenlabs.io') as AxiosError;
+        axiosError.code = 'ENOTFOUND';
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow(ConnectionError);
+      });
+
+      it('should throw ConnectionError for getaddrinfo errors', async () => {
+        const axiosError = new Error('getaddrinfo failed') as AxiosError;
+        axiosError.message = 'getaddrinfo failed';
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow(ConnectionError);
+      });
+
+      it('should throw SynthesisError for HTTP 500 error', async () => {
+        const errorResponse = {
+          response: {
+            status: 500,
+            statusText: 'Internal Server Error',
+            data: Buffer.from(JSON.stringify({ error: 'Server error' })),
+            headers: {},
+            config: {},
+          },
+        };
+        const axiosError = new Error('Request failed') as AxiosError;
+        Object.assign(axiosError, errorResponse);
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow(SynthesisError);
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow('Server error');
+      });
+
+      it('should extract error message from array format', async () => {
+        const errorResponse = {
+          response: {
+            status: 400,
+            statusText: 'Bad Request',
+            data: Buffer.from(JSON.stringify([{ msg: 'error1' }, { msg: 'error2' }])),
+            headers: {},
+            config: {},
+          },
+        };
+        const axiosError = new Error('Request failed') as AxiosError;
+        Object.assign(axiosError, errorResponse);
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow(SynthesisError);
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow('error1; error2');
+      });
+
+      it('should extract error message from hash format with detail field', async () => {
+        const errorResponse = {
+          response: {
+            status: 400,
+            statusText: 'Bad Request',
+            data: Buffer.from(JSON.stringify({ detail: 'Invalid request detail' })),
+            headers: {},
+            config: {},
+          },
+        };
+        const axiosError = new Error('Request failed') as AxiosError;
+        Object.assign(axiosError, errorResponse);
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow(SynthesisError);
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow('Invalid request detail');
+      });
+
+      it('should extract error message from hash format with error field', async () => {
+        const errorResponse = {
+          response: {
+            status: 400,
+            statusText: 'Bad Request',
+            data: Buffer.from(JSON.stringify({ error: 'Invalid request error' })),
+            headers: {},
+            config: {},
+          },
+        };
+        const axiosError = new Error('Request failed') as AxiosError;
+        Object.assign(axiosError, errorResponse);
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow(SynthesisError);
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow('Invalid request error');
+      });
+
+      it('should extract error message from hash format with message field', async () => {
+        const errorResponse = {
+          response: {
+            status: 400,
+            statusText: 'Bad Request',
+            data: Buffer.from(JSON.stringify({ message: 'Invalid request message' })),
+            headers: {},
+            config: {},
+          },
+        };
+        const axiosError = new Error('Request failed') as AxiosError;
+        Object.assign(axiosError, errorResponse);
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow(SynthesisError);
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow('Invalid request message');
+      });
+
+      it('should extract error message from nested array in detail field', async () => {
+        const errorResponse = {
+          response: {
+            status: 400,
+            statusText: 'Bad Request',
+            data: Buffer.from(JSON.stringify({ detail: [{ msg: 'nested error1' }, { msg: 'nested error2' }] })),
+            headers: {},
+            config: {},
+          },
+        };
+        const axiosError = new Error('Request failed') as AxiosError;
+        Object.assign(axiosError, errorResponse);
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow(SynthesisError);
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow('nested error1; nested error2');
+      });
+
+      it('should fall back to default message when JSON parsing fails for error response', async () => {
+        const errorResponse = {
+          response: {
+            status: 400,
+            statusText: 'Bad Request',
+            data: Buffer.from('invalid json response'),
+            headers: {},
+            config: {},
+          },
+        };
+        const axiosError = new Error('Request failed') as AxiosError;
+        Object.assign(axiosError, errorResponse);
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow(SynthesisError);
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow('HTTP 400: Bad Request');
+        expect(getMockLogger().error).toHaveBeenCalledWith('Failed to parse error response as JSON');
+      });
+
+      it('should handle missing error fields gracefully', async () => {
+        const errorResponse = {
+          response: {
+            status: 400,
+            statusText: 'Bad Request',
+            data: Buffer.from(JSON.stringify({})),
+            headers: {},
+            config: {},
+          },
+        };
+        const axiosError = new Error('Request failed') as AxiosError;
+        Object.assign(axiosError, errorResponse);
+        mockedAxios.isAxiosError = jest.fn().mockReturnValue(true);
+        (mockAxiosInstance.request as jest.Mock).mockRejectedValue(axiosError);
+
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow(SynthesisError);
+        await expect(service.synthesizeToIo(mockText)).rejects.toThrow('HTTP 400: Bad Request');
       });
 
       it('should throw InvalidResponseError for JSON parsing errors', async () => {
@@ -849,6 +1430,20 @@ describe('ElevenLabsTextToSpeechService', () => {
         expect(getMockLogger().error).toHaveBeenCalledWith(
           expect.stringContaining('ElevenLabs API error: 400')
         );
+      });
+
+      it('should not save file to disk (only returns Buffer)', async () => {
+        (mockAxiosInstance.request as jest.Mock).mockResolvedValue({
+          status: 200,
+          statusText: 'OK',
+          data: mockAudioData,
+          headers: {},
+          config: {},
+        });
+
+        await service.synthesizeToIo(mockText);
+
+        expect(fs.writeFile).not.toHaveBeenCalled();
       });
     });
   });
