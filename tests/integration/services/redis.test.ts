@@ -463,6 +463,30 @@ describe('Redis Integration Tests', () => {
   });
 
   describe('Error Handling', () => {
+    it('should handle connection failure scenario (invalid Redis URL)', async () => {
+      // Test connection failure with invalid URL
+      // Create a separate Redis client with invalid URL to test error handling
+      // This doesn't interfere with the singleton client used in other tests
+      const invalidRedis = new Redis('redis://invalid-host:9999/0', {
+        connectTimeout: 1000, // Short timeout for faster test
+        retryStrategy: () => null, // Disable retries for faster failure
+        enableOfflineQueue: false, // Disable offline queue
+      });
+
+      // Wait a bit for connection attempt
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      // Verify that operations fail gracefully
+      // The client should be in an error state
+      const status = invalidRedis.status;
+      expect(['end', 'close', 'error']).toContain(status);
+
+      // Clean up
+      await invalidRedis.quit().catch(() => {
+        // Ignore errors during cleanup
+      });
+    });
+
     it('should handle operation on non-existent key gracefully', async () => {
       const key = generateTestKey();
       // Don't add to testKeys since it doesn't exist
