@@ -29,6 +29,9 @@ services:
       - "traefik.enable=true"
 
   # Redis service for BullMQ job queue
+  # Note: Redis must run as a master (not replica) for BullMQ to work
+  # If you see "READONLY" errors, the shared_redis_data volume may contain replica config
+  # In that case, remove the volume: docker volume rm shared_redis_data
   redis:
     image: redis:7-alpine
     container_name: telegram-receiver-redis
@@ -62,8 +65,18 @@ services:
       - CURSOR_RUNNER_TIMEOUT=${CURSOR_RUNNER_TIMEOUT:-300}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - LOG_LEVEL=info
+      - APP_NAME=${APP_NAME:-Virtual Assistant API}
+      - APP_VERSION=${APP_VERSION:-1.0.0}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET:-changeme}
+      - TELEGRAM_WEBHOOK_SECRET=${TELEGRAM_WEBHOOK_SECRET:-changeme}
+      - TELEGRAM_WEBHOOK_BASE_URL=${TELEGRAM_WEBHOOK_BASE_URL}
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
+      - ELEVENLABS_STT_MODEL_ID=${ELEVENLABS_STT_MODEL_ID}
+      - ELEVENLABS_TTS_MODEL_ID=${ELEVENLABS_TTS_MODEL_ID}
+      - ELEVENLABS_VOICE_ID=${ELEVENLABS_VOICE_ID}
+      - DEFAULT_NOTES_REPOSITORY=${DEFAULT_NOTES_REPOSITORY}
     volumes:
-      # Mount shared SQLite database for cross-service database access
+      # Mount shared SQLite database for cross-service access
       - shared_sqlite_db:/app/shared_db
       # Mount logs for debugging (optional)
       - ./log:/app/log
@@ -101,10 +114,9 @@ services:
       dockerfile: Dockerfile
     container_name: telegram-receiver-worker
     restart: unless-stopped
-    # Worker command - assumes worker script/entry point exists
     # Note: The worker script/entry point must be created separately
-    # (e.g., add "worker": "node dist/worker.js" to package.json scripts, or create dist/worker.js entry point)
-    command: npm run worker
+    # For now, using placeholder command - update when worker.js is implemented
+    command: node dist/worker.js
     environment:
       - NODE_ENV=production
       - REDIS_URL=redis://redis:6379/0
@@ -112,8 +124,18 @@ services:
       - CURSOR_RUNNER_TIMEOUT=${CURSOR_RUNNER_TIMEOUT:-300}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - LOG_LEVEL=info
+      - APP_NAME=${APP_NAME:-Virtual Assistant API}
+      - APP_VERSION=${APP_VERSION:-1.0.0}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET:-changeme}
+      - TELEGRAM_WEBHOOK_SECRET=${TELEGRAM_WEBHOOK_SECRET:-changeme}
+      - TELEGRAM_WEBHOOK_BASE_URL=${TELEGRAM_WEBHOOK_BASE_URL}
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
+      - ELEVENLABS_STT_MODEL_ID=${ELEVENLABS_STT_MODEL_ID}
+      - ELEVENLABS_TTS_MODEL_ID=${ELEVENLABS_TTS_MODEL_ID}
+      - ELEVENLABS_VOICE_ID=${ELEVENLABS_VOICE_ID}
+      - DEFAULT_NOTES_REPOSITORY=${DEFAULT_NOTES_REPOSITORY}
     volumes:
-      # Mount shared SQLite database for cross-service database access
+      # Mount shared SQLite database for cross-service access
       - shared_sqlite_db:/app/shared_db
       # Mount logs for debugging (optional)
       - ./log:/app/log
