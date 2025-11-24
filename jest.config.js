@@ -7,13 +7,7 @@ const config = {
   // Tests should be run after building with: npm run build && npm test
   // For development, use ts-jest preset when available
   transform: {
-    '^.+\\.ts$': ['ts-jest', {
-      tsconfig: {
-        esModuleInterop: true,
-        allowSyntheticDefaultImports: true,
-        types: ['node', 'jest'],
-      },
-    }],
+    '^.+\\.ts$': 'ts-jest',
   },
   collectCoverageFrom: [
     'src/**/*.ts',

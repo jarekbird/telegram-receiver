@@ -13,11 +13,11 @@
     "lint:fix": "echo 'Linting not yet configured' && exit 0",
     "format": "echo 'Formatting not yet configured' && exit 0",
     "format:check": "echo 'Formatting not yet configured' && exit 0",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "test:unit": "jest --testPathPatterns=tests/unit",
-    "test:integration": "jest --testPathPatterns=tests/integration"
+    "test": "npx jest",
+    "test:watch": "npx jest --watch",
+    "test:coverage": "npx jest --coverage",
+    "test:unit": "npx jest --testPathPatterns=tests/unit",
+    "test:integration": "npx jest --testPathPatterns=tests/integration"
   },
   "keywords": [
     "telegram",
@@ -57,6 +57,7 @@
     "dotenv": "^16.6.1",
     "express": "^4.21.2",
     "ioredis": "^5.8.2",
-    "pino": "^10.1.0"
+    "pino": "^10.1.0",
+    "redis": "^4.6.10"
   }
 }
