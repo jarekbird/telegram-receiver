@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import { randomBytes } from 'crypto';
 import logger from '@/utils/logger';
-import { CursorExecuteResponse } from '@/types/cursor-runner';
+import { CursorExecuteResponse, CursorIterateResponse } from '@/types/cursor-runner';
 
 /**
  * Base error class for CursorRunnerService
@@ -373,6 +373,56 @@ class CursorRunnerService {
 
     // Return parsed response as CursorExecuteResponse
     return parsedResponse as CursorExecuteResponse;
+  }
+
+  /**
+   * Executes a cursor command iteratively until completion by calling the cursor-runner API's /cursor/iterate endpoint
+   * @param params - Iteration parameters
+   * @param params.repository - Repository name (must be locally cloned)
+   * @param params.branchName - Branch name to checkout (camelCase)
+   * @param params.prompt - Prompt text for cursor to execute
+   * @param params.maxIterations - Optional maximum number of iterations (default: 25)
+   * @param params.requestId - Optional request ID for tracking. If not provided, will be auto-generated
+   * @param params.callbackUrl - Optional callback URL for async completion notification. If provided, the response will be immediate and the actual result will be sent to the callback URL when complete
+   * @returns Promise resolving to CursorIterateResponse with success, output, iterations, maxIterations, error, exitCode, duration, etc.
+   * @throws {ConnectionError} When connection to cursor-runner fails
+   * @throws {TimeoutError} When request times out
+   * @throws {InvalidResponseError} When response cannot be parsed
+   * @throws {CursorRunnerServiceError} When HTTP error occurs (non-2xx, except 422)
+   */
+  async iterate(params: {
+    repository: string;
+    branchName: string;
+    prompt: string;
+    maxIterations?: number;
+    requestId?: string;
+    callbackUrl?: string;
+  }): Promise<CursorIterateResponse> {
+    // Generate requestId if not provided
+    const requestId = params.requestId || this.generateRequestId();
+
+    // Build request body with correct structure
+    const requestBody: Record<string, unknown> = {
+      repository: params.repository,
+      branchName: params.branchName,
+      prompt: params.prompt,
+      maxIterations: params.maxIterations ?? 25,
+      id: requestId,
+    };
+
+    // Conditionally add callbackUrl to request body only if provided
+    if (params.callbackUrl) {
+      requestBody.callbackUrl = params.callbackUrl;
+    }
+
+    // POST to /cursor/iterate endpoint (NOT /cursor/iterate/async)
+    const response = await this.post('/cursor/iterate', requestBody);
+
+    // Parse JSON response body using helper method
+    const parsedResponse = this.parseResponse(response);
+
+    // Return parsed response as CursorIterateResponse
+    return parsedResponse as CursorIterateResponse;
   }
 }
 
