@@ -277,9 +277,12 @@ class ElevenLabsTextToSpeechService {
       // Return output path string
       return outputPath;
     } catch (error) {
-      // Catch JSON parsing errors and raise InvalidResponseError
-      if (error instanceof SyntaxError && error.message.includes('JSON')) {
-        throw new InvalidResponseError(`Failed to parse response: ${error.message}`);
+      // Catch JSON parsing errors (JSON::ParserError equivalent) and raise InvalidResponseError
+      if (error instanceof SyntaxError) {
+        // Check if it's a JSON parsing error
+        if (error.message.includes('JSON') || error.message.includes('Unexpected token')) {
+          throw new InvalidResponseError(`Failed to parse response: ${error.message}`);
+        }
       }
       // Re-throw other errors
       throw error;
@@ -364,9 +367,12 @@ class ElevenLabsTextToSpeechService {
       // Return audio as Buffer (Node.js equivalent of StringIO)
       return Buffer.from(response.data);
     } catch (error) {
-      // Catch JSON parsing errors and raise InvalidResponseError
-      if (error instanceof SyntaxError && error.message.includes('JSON')) {
-        throw new InvalidResponseError(`Failed to parse response: ${error.message}`);
+      // Catch JSON parsing errors (JSON::ParserError equivalent) and raise InvalidResponseError
+      if (error instanceof SyntaxError) {
+        // Check if it's a JSON parsing error
+        if (error.message.includes('JSON') || error.message.includes('Unexpected token')) {
+          throw new InvalidResponseError(`Failed to parse response: ${error.message}`);
+        }
       }
       // Re-throw other errors
       throw error;
@@ -409,8 +415,8 @@ class ElevenLabsTextToSpeechService {
    * 
    * @param uri - URL object for the request
    * @returns HTTP client instance
-   * @throws ConnectionError for connection failures (ECONNREFUSED, EHOSTUNREACH, SocketError)
-   * @throws TimeoutError for timeout errors (OpenTimeout, ReadTimeout)
+   * @throws ConnectionError for connection failures (ECONNREFUSED, EHOSTUNREACH, ENOTFOUND)
+   * @throws TimeoutError for timeout errors (ETIMEDOUT)
    */
   private buildHttp(uri: URL): HttpClient {
     try {
@@ -421,19 +427,21 @@ class ElevenLabsTextToSpeechService {
       });
       return http;
     } catch (error) {
-      // Handle connection errors
-      if (
-        error instanceof Error &&
-        (error.message.includes('ECONNREFUSED') ||
-          error.message.includes('EHOSTUNREACH') ||
-          error.message.includes('ENOTFOUND') ||
-          error.message.includes('getaddrinfo'))
-      ) {
-        throw new ConnectionError(`Failed to connect to ElevenLabs: ${error.message}`);
-      }
-      // Handle timeout errors
-      if (error instanceof Error && error.message.includes('timeout')) {
-        throw new TimeoutError(`Request to ElevenLabs timed out: ${error.message}`);
+      // Handle connection errors (ECONNREFUSED, EHOSTUNREACH, ENOTFOUND equivalents)
+      if (error instanceof Error) {
+        const errorCode = (error as NodeJS.ErrnoException).code;
+        if (
+          errorCode === 'ECONNREFUSED' ||
+          errorCode === 'EHOSTUNREACH' ||
+          errorCode === 'ENOTFOUND' ||
+          error.message.includes('getaddrinfo')
+        ) {
+          throw new ConnectionError(`Failed to connect to ElevenLabs: ${error.message}`);
+        }
+        // Handle timeout errors (ETIMEDOUT equivalent)
+        if (errorCode === 'ETIMEDOUT' || error.message.includes('timeout')) {
+          throw new TimeoutError(`Request to ElevenLabs timed out: ${error.message}`);
+        }
       }
       // Re-throw other errors
       throw error;
@@ -544,21 +552,20 @@ class ElevenLabsTextToSpeechService {
 
       throw new SynthesisError(errorMessage);
     } catch (error) {
-      // Handle JSON parsing errors first (before checking if it's an Axios error)
-      if (error instanceof SyntaxError && error.message.includes('JSON')) {
-        throw new InvalidResponseError(`Failed to parse response: ${error.message}`);
-      }
-
       // Handle Axios errors
       if (axios.isAxiosError(error)) {
         const axiosError = error as AxiosError;
 
-        // Handle timeout errors
-        if (axiosError.code === 'ECONNABORTED' || axiosError.message.includes('timeout')) {
+        // Handle timeout errors (Net::OpenTimeout, Net::ReadTimeout equivalents)
+        if (
+          axiosError.code === 'ECONNABORTED' ||
+          axiosError.code === 'ETIMEDOUT' ||
+          axiosError.message.includes('timeout')
+        ) {
           throw new TimeoutError(`Request to ElevenLabs timed out: ${axiosError.message}`);
         }
 
-        // Handle connection errors
+        // Handle connection errors (Errno::ECONNREFUSED, Errno::EHOSTUNREACH, SocketError equivalents)
         if (
           axiosError.code === 'ECONNREFUSED' ||
           axiosError.code === 'EHOSTUNREACH' ||
