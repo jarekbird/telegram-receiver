@@ -13,7 +13,10 @@
     "format": "echo 'Formatting not yet configured' && exit 0",
     "format:check": "echo 'Formatting not yet configured' && exit 0",
     "test": "jest",
-    "test:coverage": "jest --coverage"
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest --testPathPattern=tests/unit",
+    "test:integration": "jest --testPathPattern=tests/integration"
   },
   "keywords": [
     "telegram",
