@@ -34,8 +34,8 @@ describe('Health Endpoint', () => {
 
       const response = await request(app).get('/health');
       const body = response.body as HealthResponse;
-      // Service name should default to 'telegram-receiver' when APP_NAME is not set
-      expect(body.service).toBe('telegram-receiver');
+      // Service name should default to 'Virtual Assistant API' when APP_NAME is not set (matches Rails)
+      expect(body.service).toBe('Virtual Assistant API');
 
       if (originalAppName) {
         process.env.APP_NAME = originalAppName;
