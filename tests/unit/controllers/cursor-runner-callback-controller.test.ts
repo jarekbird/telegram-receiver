@@ -52,7 +52,20 @@ jest.mock('../../../src/models/system-setting', () => {
   };
 });
 
+// Mock fs
+jest.mock('fs', () => {
+  const actualFs = jest.requireActual('fs');
+  return {
+    ...actualFs,
+    promises: {
+      access: jest.fn(),
+      unlink: jest.fn(),
+    },
+  };
+});
+
 import SystemSetting from '../../../src/models/system-setting';
+import { promises as fs } from 'fs';
 
 // Type for accessing private methods in tests
 type ControllerWithPrivateMethods = CursorRunnerCallbackController & {
@@ -73,6 +86,11 @@ type ControllerWithPrivateMethods = CursorRunnerCallbackController & {
     cursorDebug: boolean
   ) => string;
   cleanAnsiEscapeSequences: (text: string) => string;
+  sendTextAsAudio: (
+    chatId: number,
+    text: string,
+    messageId: number | undefined
+  ) => Promise<void>;
 };
 
 describe('CursorRunnerCallbackController - formatErrorMessage', () => {
@@ -242,6 +260,231 @@ describe('CursorRunnerCallbackController - formatErrorMessage', () => {
       const formatted = controller.formatErrorMessage(result, false);
 
       expect(formatted).toBe('❌ Unknown error occurred');
+    });
+  });
+
+  describe('sendTextAsAudio', () => {
+    const testChatId = 12345;
+    const testText = 'Test message';
+    const testMessageId = 67890;
+    const testAudioPath = '/tmp/test-audio.mp3';
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      (fs.access as jest.Mock).mockResolvedValue(undefined);
+      (fs.unlink as jest.Mock).mockResolvedValue(undefined);
+    });
+
+    it('should successfully generate audio and send as voice message', async () => {
+      // Mock synthesize to return audio file path
+      const mockSynthesize = jest.fn().mockResolvedValue(testAudioPath);
+      (ElevenLabsTextToSpeechService as jest.MockedClass<typeof ElevenLabsTextToSpeechService>).mockImplementation(() => {
+        return {
+          synthesize: mockSynthesize,
+        } as any;
+      });
+
+      // Mock sendVoice to succeed
+      mockTelegramService.sendVoice.mockResolvedValue({ ok: true } as any);
+
+      await controller.sendTextAsAudio(testChatId, testText, testMessageId);
+
+      // Verify synthesize was called with correct text
+      expect(mockSynthesize).toHaveBeenCalledWith(testText);
+
+      // Verify sendVoice was called with correct parameters
+      expect(mockTelegramService.sendVoice).toHaveBeenCalledWith(
+        testChatId,
+        testAudioPath,
+        testMessageId
+      );
+
+      // Verify cleanup was attempted
+      expect(fs.access).toHaveBeenCalledWith(testAudioPath);
+      expect(fs.unlink).toHaveBeenCalledWith(testAudioPath);
+    });
+
+    it('should successfully generate audio and send as voice message without messageId', async () => {
+      // Mock synthesize to return audio file path
+      const mockSynthesize = jest.fn().mockResolvedValue(testAudioPath);
+      (ElevenLabsTextToSpeechService as jest.MockedClass<typeof ElevenLabsTextToSpeechService>).mockImplementation(() => {
+        return {
+          synthesize: mockSynthesize,
+        } as any;
+      });
+
+      // Mock sendVoice to succeed
+      mockTelegramService.sendVoice.mockResolvedValue({ ok: true } as any);
+
+      await controller.sendTextAsAudio(testChatId, testText, undefined);
+
+      // Verify sendVoice was called without messageId
+      expect(mockTelegramService.sendVoice).toHaveBeenCalledWith(
+        testChatId,
+        testAudioPath,
+        undefined
+      );
+    });
+
+    it('should fallback to text message when audio generation fails', async () => {
+      const testError = new Error('Audio generation failed');
+      
+      // Mock synthesize to throw error
+      const mockSynthesize = jest.fn().mockRejectedValue(testError);
+      (ElevenLabsTextToSpeechService as jest.MockedClass<typeof ElevenLabsTextToSpeechService>).mockImplementation(() => {
+        return {
+          synthesize: mockSynthesize,
+        } as any;
+      });
+
+      // Mock sendMessage to succeed
+      mockTelegramService.sendMessage.mockResolvedValue({ ok: true } as any);
+
+      await controller.sendTextAsAudio(testChatId, testText, testMessageId);
+
+      // Verify synthesize was called
+      expect(mockSynthesize).toHaveBeenCalledWith(testText);
+
+      // Verify sendVoice was NOT called
+      expect(mockTelegramService.sendVoice).not.toHaveBeenCalled();
+
+      // Verify fallback to sendMessage with Markdown parse mode
+      expect(mockTelegramService.sendMessage).toHaveBeenCalledWith(
+        testChatId,
+        testText,
+        'Markdown',
+        testMessageId
+      );
+    });
+
+    it('should fallback to text message when sendVoice fails', async () => {
+      const testError = new Error('Send voice failed');
+      
+      // Mock synthesize to succeed
+      const mockSynthesize = jest.fn().mockResolvedValue(testAudioPath);
+      (ElevenLabsTextToSpeechService as jest.MockedClass<typeof ElevenLabsTextToSpeechService>).mockImplementation(() => {
+        return {
+          synthesize: mockSynthesize,
+        } as any;
+      });
+
+      // Mock sendVoice to throw error
+      mockTelegramService.sendVoice.mockRejectedValue(testError);
+
+      // Mock sendMessage to succeed
+      mockTelegramService.sendMessage.mockResolvedValue({ ok: true } as any);
+
+      await controller.sendTextAsAudio(testChatId, testText, testMessageId);
+
+      // Verify synthesize was called
+      expect(mockSynthesize).toHaveBeenCalledWith(testText);
+
+      // Verify sendVoice was called
+      expect(mockTelegramService.sendVoice).toHaveBeenCalledWith(
+        testChatId,
+        testAudioPath,
+        testMessageId
+      );
+
+      // Verify fallback to sendMessage
+      expect(mockTelegramService.sendMessage).toHaveBeenCalledWith(
+        testChatId,
+        testText,
+        'Markdown',
+        testMessageId
+      );
+
+      // Verify cleanup was attempted
+      expect(fs.access).toHaveBeenCalledWith(testAudioPath);
+      expect(fs.unlink).toHaveBeenCalledWith(testAudioPath);
+    });
+
+    it('should clean up audio file after successful send', async () => {
+      // Mock synthesize to return audio file path
+      const mockSynthesize = jest.fn().mockResolvedValue(testAudioPath);
+      (ElevenLabsTextToSpeechService as jest.MockedClass<typeof ElevenLabsTextToSpeechService>).mockImplementation(() => {
+        return {
+          synthesize: mockSynthesize,
+        } as any;
+      });
+
+      // Mock sendVoice to succeed
+      mockTelegramService.sendVoice.mockResolvedValue({ ok: true } as any);
+
+      await controller.sendTextAsAudio(testChatId, testText, testMessageId);
+
+      // Verify cleanup was attempted
+      expect(fs.access).toHaveBeenCalledWith(testAudioPath);
+      expect(fs.unlink).toHaveBeenCalledWith(testAudioPath);
+    });
+
+    it('should handle cleanup when file does not exist gracefully', async () => {
+      // Mock synthesize to return audio file path
+      const mockSynthesize = jest.fn().mockResolvedValue(testAudioPath);
+      (ElevenLabsTextToSpeechService as jest.MockedClass<typeof ElevenLabsTextToSpeechService>).mockImplementation(() => {
+        return {
+          synthesize: mockSynthesize,
+        } as any;
+      });
+
+      // Mock sendVoice to succeed
+      mockTelegramService.sendVoice.mockResolvedValue({ ok: true } as any);
+
+      // Mock fs.access to throw ENOENT error (file doesn't exist)
+      const enoentError = new Error('File not found') as any;
+      enoentError.code = 'ENOENT';
+      (fs.access as jest.Mock).mockRejectedValue(enoentError);
+
+      await controller.sendTextAsAudio(testChatId, testText, testMessageId);
+
+      // Verify cleanup was attempted
+      expect(fs.access).toHaveBeenCalledWith(testAudioPath);
+      // unlink should not be called if access fails with ENOENT
+      expect(fs.unlink).not.toHaveBeenCalled();
+    });
+
+    it('should handle cleanup errors gracefully and log warning', async () => {
+      // Mock synthesize to return audio file path
+      const mockSynthesize = jest.fn().mockResolvedValue(testAudioPath);
+      (ElevenLabsTextToSpeechService as jest.MockedClass<typeof ElevenLabsTextToSpeechService>).mockImplementation(() => {
+        return {
+          synthesize: mockSynthesize,
+        } as any;
+      });
+
+      // Mock sendVoice to succeed
+      mockTelegramService.sendVoice.mockResolvedValue({ ok: true } as any);
+
+      // Mock fs.unlink to throw error
+      const deleteError = new Error('Permission denied');
+      (fs.unlink as jest.Mock).mockRejectedValue(deleteError);
+
+      await controller.sendTextAsAudio(testChatId, testText, testMessageId);
+
+      // Verify cleanup was attempted
+      expect(fs.access).toHaveBeenCalledWith(testAudioPath);
+      expect(fs.unlink).toHaveBeenCalledWith(testAudioPath);
+    });
+
+    it('should handle cleanup when audioPath is null', async () => {
+      const testError = new Error('Audio generation failed');
+      
+      // Mock synthesize to throw error before setting audioPath
+      const mockSynthesize = jest.fn().mockRejectedValue(testError);
+      (ElevenLabsTextToSpeechService as jest.MockedClass<typeof ElevenLabsTextToSpeechService>).mockImplementation(() => {
+        return {
+          synthesize: mockSynthesize,
+        } as any;
+      });
+
+      // Mock sendMessage to succeed
+      mockTelegramService.sendMessage.mockResolvedValue({ ok: true } as any);
+
+      await controller.sendTextAsAudio(testChatId, testText, testMessageId);
+
+      // Verify cleanup was NOT attempted (audioPath is null)
+      expect(fs.access).not.toHaveBeenCalled();
+      expect(fs.unlink).not.toHaveBeenCalled();
     });
   });
 });

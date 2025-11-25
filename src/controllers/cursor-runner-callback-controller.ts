@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { promises as fs } from 'fs';
 import CursorRunnerCallbackService, { PendingRequestData } from '../services/cursor-runner-callback-service';
 import TelegramService from '../services/telegram-service';
 import ElevenLabsTextToSpeechService from '../services/elevenlabs-text-to-speech-service';
@@ -336,8 +337,53 @@ class CursorRunnerCallbackController {
     text: string,
     messageId: number | undefined
   ): Promise<void> {
-    // Placeholder implementation - will be implemented in later tasks
-    logger.info(`Sending text as audio (chat_id: ${chatId})`);
+    let audioPath: string | null = null;
+    
+    try {
+      // Generate audio from text using ElevenLabs
+      const textToSpeechService = new ElevenLabsTextToSpeechService();
+      audioPath = await textToSpeechService.synthesize(text);
+
+      // Send as voice message
+      await this.telegramService.sendVoice(
+        chatId,
+        audioPath,
+        messageId
+      );
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error && error.stack ? error.stack : '';
+      
+      logger.error(`Error converting text to speech: ${errorMessage}`);
+      logger.error(errorStack);
+      
+      // Fallback to text message if audio generation fails
+      await this.telegramService.sendMessage(
+        chatId,
+        text,
+        'Markdown',
+        messageId
+      );
+    } finally {
+      // Clean up generated audio file
+      if (audioPath) {
+        try {
+          // Check if file exists before attempting deletion
+          await fs.access(audioPath);
+          await fs.unlink(audioPath);
+          logger.info(`Cleaned up audio file: ${audioPath}`);
+        } catch (cleanupError: any) {
+          // Only log warning if file exists but deletion failed
+          // If file doesn't exist (ENOENT), that's fine - just skip logging
+          if (cleanupError.code !== 'ENOENT') {
+            const cleanupErrorMessage = cleanupError instanceof Error 
+              ? cleanupError.message 
+              : String(cleanupError);
+            logger.warn(`Could not delete audio file ${audioPath}: ${cleanupErrorMessage}`);
+          }
+        }
+      }
+    }
   }
 
   /**

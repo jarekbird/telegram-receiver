@@ -5,7 +5,8 @@ const config = {
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
   // Note: TypeScript compilation is handled by tsc build step
   // Tests should be run after building with: npm run build && npm test
-  // For development, use ts-jest preset when available
+  // Using preset for TypeScript transformation
+  preset: 'ts-jest',
   transform: {
     '^.+\\.ts$': 'ts-jest',
   },
