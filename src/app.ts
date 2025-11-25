@@ -1,11 +1,10 @@
 // PHASE1-010: Create Express application instance
 import express from 'express';
-import healthRoutes from './routes/health.routes';
-import { getHealth } from './controllers/health.controller';
 import { corsMiddleware } from './middleware/cors';
 import { requestLoggerMiddleware } from './middleware/request-logger.middleware';
 import { notFoundMiddleware } from './middleware/not-found.middleware';
 import { errorHandlerMiddleware } from './middleware/error-handler.middleware';
+import { setupRoutes } from './routes';
 
 const app = express();
 
@@ -40,19 +39,18 @@ app.use(corsMiddleware);
 // This ensures all requests are logged, including those that fail CORS checks.
 app.use(requestLoggerMiddleware);
 
-// PHASE1-015: Register health routes
-// Register health routes with app.use('/', healthRoutes) for /health endpoint
-// (route file already defines /health path)
-app.use('/', healthRoutes);
-
-// Register root route with app.get('/', getHealth) for root / endpoint
-// (to match Rails root 'health#show')
-app.get('/', getHealth);
-
-// PHASE2-060: Register telegram routes
-// Register telegram routes with app.use('/telegram', telegramRoutes) for /telegram/* endpoints
-import telegramRoutes from './routes/telegram.routes';
-app.use('/telegram', telegramRoutes);
+// PHASE2-089: Register all routes via routes index
+// All routes are now registered through the setupRoutes function from routes/index.ts
+// This centralizes route registration and makes it easier to manage routes.
+// Routes registered:
+// - Health routes: GET /health, GET /
+// - Agent tools routes: POST /agent-tools
+// - Cursor runner routes: POST /cursor-runner/cursor/execute, POST /cursor-runner/cursor/iterate,
+//   POST /cursor-runner/callback, POST /cursor-runner/git/clone, GET /cursor-runner/git/repositories,
+//   POST /cursor-runner/git/checkout, POST /cursor-runner/git/push, POST /cursor-runner/git/pull
+// - Telegram routes: POST /telegram/webhook, POST /telegram/set_webhook, GET /telegram/webhook_info,
+//   DELETE /telegram/webhook
+setupRoutes(app);
 
 // PHASE1-022: 404 Not Found handler middleware
 // Catches all requests that don't match any registered routes and returns

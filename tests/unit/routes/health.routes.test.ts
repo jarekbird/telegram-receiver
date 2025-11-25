@@ -88,4 +88,24 @@ describe('Health Routes', () => {
       }
     });
   });
+
+  describe('GET /', () => {
+    it('should return 200 status code', async () => {
+      const response = await request(app).get('/');
+      expect(response.status).toBe(200);
+    });
+
+    it('should return JSON response with status, service, and version', async () => {
+      const response = await request(app).get('/');
+      expect(response.body).toHaveProperty('status');
+      expect(response.body).toHaveProperty('service');
+      expect(response.body).toHaveProperty('version');
+    });
+
+    it('should return healthy status', async () => {
+      const response = await request(app).get('/');
+      const body = response.body as HealthResponse;
+      expect(body.status).toBe('healthy');
+    });
+  });
 });
