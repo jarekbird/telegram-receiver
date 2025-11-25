@@ -381,8 +381,18 @@ class CursorRunnerCallbackController {
     result: NormalizedCallbackResult,
     cursorDebug: boolean
   ): string {
-    // Placeholder implementation - will be implemented in later tasks
-    return '❌ Cursor command failed';
+    // Extract error message with fallback
+    const errorText = result?.error || 'Unknown error occurred';
+    
+    // Clean ANSI escape sequences from error message
+    const errorMsg = this.cleanAnsiEscapeSequences(errorText);
+    
+    // Format based on debug mode
+    if (cursorDebug) {
+      return `❌ Cursor command failed\n\nError: ${errorMsg}`;
+    } else {
+      return `❌ ${errorMsg}`;
+    }
   }
 
   /**
