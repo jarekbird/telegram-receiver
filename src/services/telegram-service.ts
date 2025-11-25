@@ -408,6 +408,58 @@ class TelegramService {
   }
 
   /**
+   * Answers a callback query from an inline keyboard button
+   * 
+   * @param callbackQueryId - Callback query ID from the callback query
+   * @param text - Optional text to show to the user
+   * @param showAlert - Optional flag to show an alert instead of a notification
+   * @returns Promise resolving to Telegram API response, or undefined if bot token is blank
+   * 
+   * @throws Error if API request fails
+   */
+  async answerCallbackQuery(
+    callbackQueryId: string,
+    text?: string,
+    showAlert?: boolean
+  ): Promise<TelegramApiResponse<boolean> | undefined> {
+    if (!this.isTokenValid()) {
+      return undefined;
+    }
+
+    try {
+      // Build request body
+      const requestBody: {
+        callback_query_id: string;
+        text?: string;
+        show_alert?: boolean;
+      } = {
+        callback_query_id: callbackQueryId,
+      };
+
+      // Only include optional parameters if provided
+      if (text !== undefined) {
+        requestBody.text = text;
+      }
+
+      if (showAlert !== undefined) {
+        requestBody.show_alert = showAlert;
+      }
+
+      // Make POST request to Telegram Bot API answerCallbackQuery endpoint
+      const response = await this.axiosInstance.post<TelegramApiResponse<boolean>>(
+        '/answerCallbackQuery',
+        requestBody
+      );
+
+      return response.data;
+    } catch (error: any) {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      logger.error('Error answering Telegram callback query:', errorObj);
+      throw error;
+    }
+  }
+
+  /**
    * Escapes HTML special characters to prevent Telegram from trying to parse them as HTML tags
    * 
    * Must escape & first to avoid double-escaping existing entities.

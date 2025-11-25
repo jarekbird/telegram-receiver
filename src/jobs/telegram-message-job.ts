@@ -10,7 +10,7 @@
  */
 
 import { BaseAsyncHandler } from '../handlers/base-async-handler';
-import { TelegramUpdate, TelegramMessage } from '../types/telegram';
+import { TelegramUpdate, TelegramMessage, TelegramCallbackQuery } from '../types/telegram';
 import TelegramService from '../services/telegram-service';
 import CursorRunnerService, { CursorRunnerServiceError } from '../services/cursorRunnerService';
 import CursorRunnerCallbackService from '../services/cursor-runner-callback-service';
@@ -18,6 +18,7 @@ import ElevenLabsSpeechToTextService from '../services/elevenlabs-speech-to-text
 import ElevenLabsTextToSpeechService from '../services/elevenlabs-text-to-speech-service';
 import SystemSetting from '../models/system-setting';
 import logger from '../utils/logger';
+import { extractChatInfoFromUpdate } from '../utils/extractChatInfoFromUpdate';
 import { randomBytes } from 'crypto';
 import { promises as fs } from 'fs';
 
@@ -68,8 +69,7 @@ class TelegramMessageHandler extends BaseAsyncHandler<TelegramUpdate, void> {
       } else if (update.edited_message) {
         await this.handleMessage(update.edited_message);
       } else if (update.callback_query) {
-        // handle_callback_query will be implemented in a future task
-        logger.info({ callbackQuery: update.callback_query }, 'Unhandled update type: callback_query');
+        await this.handleCallbackQuery(update.callback_query);
       } else {
         logger.info({ updateKeys: Object.keys(update) }, 'Unhandled update type');
       }
@@ -81,8 +81,8 @@ class TelegramMessageHandler extends BaseAsyncHandler<TelegramUpdate, void> {
       logger.error(errorStack);
 
       // Try to send error message if we have chat info
-      const chatId = this.extractChatIdFromUpdate(update);
-      const messageId = this.extractMessageIdFromUpdate(update);
+      // Use extractChatInfoFromUpdate helper (PHASE2-063)
+      const [chatId, messageId] = extractChatInfoFromUpdate(update);
       
       if (chatId !== null) {
         try {
@@ -109,14 +109,18 @@ class TelegramMessageHandler extends BaseAsyncHandler<TelegramUpdate, void> {
    * 
    * Reference: jarek-va/app/jobs/telegram_message_job.rb (lines 59-133)
    * 
+   * PHASE2-086: Added comprehensive error handling wrapper around entire method
+   * (Rails has NO overall try-catch wrapper, only for transcription)
+   * 
    * @param message - Telegram message object
    */
   private async handleMessage(message: TelegramMessage): Promise<void> {
-    // Extract message data
+    // Extract message data for error handling
     const chatId = message.chat?.id;
-    const text = message.text;
     const messageId = message.message_id;
 
+    try {
+      const text = message.text;
     logger.info({ chatId, text }, 'Processing Telegram message from chat');
 
     // Track if original message was audio/voice BEFORE checking for audio
@@ -154,7 +158,7 @@ class TelegramMessageHandler extends BaseAsyncHandler<TelegramUpdate, void> {
         
         logger.info({ transcribedText: transcribedText.substring(0, 50) }, 'Transcribed audio to text');
       } catch (error) {
-        // Handle transcription exceptions
+          // Handle transcription exceptions (preserve existing error handling from Rails lines 90-104)
         const errorMessage = error instanceof Error ? error.message : String(error);
         const errorStack = error instanceof Error && error.stack ? error.stack : '';
         
@@ -182,7 +186,34 @@ class TelegramMessageHandler extends BaseAsyncHandler<TelegramUpdate, void> {
     // Try to forward to cursor-runner first
     // Returns true if message was forwarded, false otherwise
     // Pass original_was_audio flag so callback can respond with audio
-    const forwarded = await this.forwardToCursorRunner(message, chatId, messageId, originalWasAudio);
+      // PHASE2-086: Added error handling for forwardToCursorRunner call (not handled in Rails)
+      let forwarded = false;
+      try {
+        forwarded = await this.forwardToCursorRunner(message, chatId, messageId, originalWasAudio);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error && error.stack ? error.stack : '';
+        
+        logger.error(`Error forwarding to cursor-runner: ${errorMessage}`);
+        logger.error(errorStack);
+        
+        // Send error message to user
+        if (chatId) {
+          try {
+            await this.telegramService.sendMessage(
+              chatId,
+              `Sorry, I encountered an error forwarding your message: ${errorMessage}`,
+              'HTML',
+              messageId
+            );
+          } catch (sendError) {
+            const sendErrorObj = sendError instanceof Error ? sendError : new Error(String(sendError));
+            logger.error(`Error sending error message: ${sendErrorObj.message}`);
+          }
+        }
+        // Re-throw error so it can be caught at handle() level for job tracking
+        throw error;
+      }
 
     // Only handle locally if not forwarded to cursor-runner
     // Local commands like /start, /help, /status are handled here
@@ -191,16 +222,61 @@ class TelegramMessageHandler extends BaseAsyncHandler<TelegramUpdate, void> {
     }
 
     // Process local commands
-    const result = this.processLocalMessage(message.text, chatId, messageId);
+      // PHASE2-086: Added error handling for processLocalMessage call (not handled in Rails)
+      let result: ProcessLocalMessageResult;
+      try {
+        result = this.processLocalMessage(message.text, chatId, messageId);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error && error.stack ? error.stack : '';
+        
+        logger.error(`Error processing local message: ${errorMessage}`);
+        logger.error(errorStack);
+        
+        // Send error message to user
+        if (chatId) {
+          try {
+            await this.telegramService.sendMessage(
+              chatId,
+              `Sorry, I encountered an error processing your command: ${errorMessage}`,
+              'HTML',
+              messageId
+            );
+          } catch (sendError) {
+            const sendErrorObj = sendError instanceof Error ? sendError : new Error(String(sendError));
+            logger.error(`Error sending error message: ${sendErrorObj.message}`);
+          }
+        }
+        return;
+      }
 
     // Send response back to Telegram
     if (!result.say || !chatId) {
       return;
     }
 
+      // PHASE2-086: Added error handling for sending responses (not handled in Rails)
+      try {
     // If original message was audio, respond with audio (unless audio output is disabled)
     if (originalWasAudio && !SystemSetting.disabled('allow_audio_output')) {
+          // PHASE2-086: Added error handling for sendTextAsAudio call (not handled in Rails)
+          try {
       await this.sendTextAsAudio(chatId, result.say, messageId);
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error && error.stack ? error.stack : '';
+            
+            logger.error(`Error sending text as audio: ${errorMessage}`);
+            logger.error(errorStack);
+            
+            // Fallback to text message
+            await this.telegramService.sendMessage(
+              chatId,
+              result.say,
+              'HTML',
+              messageId
+            );
+          }
     } else {
       await this.telegramService.sendMessage(
         chatId,
@@ -208,6 +284,166 @@ class TelegramMessageHandler extends BaseAsyncHandler<TelegramUpdate, void> {
         'HTML',
         messageId
       );
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error && error.stack ? error.stack : '';
+        
+        logger.error(`Error sending response to Telegram: ${errorMessage}`);
+        logger.error(errorStack);
+        
+        // Don't send another error message to avoid spam
+        // The error is already logged for debugging
+      }
+    } catch (error) {
+      // Overall error handling wrapper (Rails has NO overall try-catch wrapper)
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error && error.stack ? error.stack : '';
+      
+      logger.error(`Error in handleMessage: ${errorMessage}`);
+      logger.error(errorStack);
+      
+      // Send error message to Telegram user
+      if (chatId) {
+        try {
+          await this.telegramService.sendMessage(
+            chatId,
+            `Sorry, I encountered an error processing your message: ${errorMessage}`,
+            'HTML',
+            messageId
+          );
+        } catch (sendError) {
+          const sendErrorObj = sendError instanceof Error ? sendError : new Error(String(sendError));
+          logger.error(`Error sending error message: ${sendErrorObj.message}`);
+        }
+      }
+      
+      // Re-throw to allow caller to handle if needed
+      throw error;
+    }
+  }
+
+  /**
+   * Handle callback query from inline keyboard button
+   * 
+   * Reference: jarek-va/app/jobs/telegram_message_job.rb (lines 135-171)
+   * 
+   * PHASE2-086: Added comprehensive error handling wrapper around entire method
+   * (Rails has NO overall try-catch wrapper, only for answering callback query)
+   * 
+   * @param callbackQuery - Telegram callback query object
+   */
+  private async handleCallbackQuery(callbackQuery: TelegramCallbackQuery): Promise<void> {
+    // Extract callback query data for error handling
+    const message = callbackQuery.message;
+    const chatId = message?.chat?.id;
+    const messageId = message?.message_id;
+    const data = callbackQuery.data;
+
+    try {
+      logger.info({ data }, 'Received callback query');
+
+      // Answer the callback query with "Processing..." status
+      // PHASE2-086: Preserve existing error handling for answerCallbackQuery (Rails lines 142-149)
+      try {
+        await this.telegramService.answerCallbackQuery(
+          callbackQuery.id,
+          'Processing...'
+        );
+      } catch (error) {
+        // Log error but don't fail the entire method (matching Rails behavior)
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.error(`Error answering callback query: ${errorMessage}`);
+      }
+
+      // Validate that message and message.chat exist (return early if not)
+      if (!message || !message.chat) {
+        return;
+      }
+
+      // PHASE2-086: Add error handling for forwardToCursorRunner call (not handled in Rails, line 158)
+      let forwarded = false;
+      try {
+        // Create a message-like object with callback data as text
+        const messageObject: TelegramMessage = {
+          text: data,
+          message_id: messageId!,
+          chat: message.chat,
+        };
+
+        // Forward callback data to cursor-runner as a prompt
+        forwarded = await this.forwardToCursorRunner(messageObject, chatId!, messageId!, false);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error && error.stack ? error.stack : '';
+        
+        logger.error(`Error forwarding callback query to cursor-runner: ${errorMessage}`);
+        logger.error(errorStack);
+        
+        // Send error message to user
+        if (chatId) {
+          try {
+            await this.telegramService.sendMessage(
+              chatId,
+              `Sorry, I encountered an error processing your callback: ${errorMessage}`,
+              'HTML',
+              messageId
+            );
+          } catch (sendError) {
+            const sendErrorObj = sendError instanceof Error ? sendError : new Error(String(sendError));
+            logger.error(`Error sending error message: ${sendErrorObj.message}`);
+          }
+        }
+        return;
+      }
+
+      // If not forwarded, send a simple response
+      if (forwarded) {
+        return;
+      }
+
+      // PHASE2-086: Add error handling for TelegramService.sendMessage call (not handled in Rails, line 167)
+      try {
+        await this.telegramService.sendMessage(
+          chatId!,
+          `You selected: ${data}`,
+          'HTML'
+        );
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error && error.stack ? error.stack : '';
+        
+        logger.error(`Error sending callback query response: ${errorMessage}`);
+        logger.error(errorStack);
+        
+        // Don't send another error message to avoid spam
+        // The error is already logged for debugging
+      }
+    } catch (error) {
+      // Overall error handling wrapper (Rails has NO overall try-catch wrapper)
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error && error.stack ? error.stack : '';
+      
+      logger.error(`Error in handleCallbackQuery: ${errorMessage}`);
+      logger.error(errorStack);
+      
+      // Send error message to Telegram user
+      if (chatId) {
+        try {
+          await this.telegramService.sendMessage(
+            chatId,
+            `Sorry, I encountered an error processing your callback: ${errorMessage}`,
+            'HTML',
+            messageId
+          );
+        } catch (sendError) {
+          const sendErrorObj = sendError instanceof Error ? sendError : new Error(String(sendError));
+          logger.error(`Error sending error message: ${sendErrorObj.message}`);
+        }
+      }
+      
+      // Re-throw to allow caller to handle if needed
+      throw error;
     }
   }
 
@@ -389,32 +625,44 @@ class TelegramMessageHandler extends BaseAsyncHandler<TelegramUpdate, void> {
 
       return true; // Return true to indicate message was forwarded
     } catch (error) {
-      // Log error and send error message to Telegram
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.warn(`Failed to send Telegram message to cursor-runner: ${errorMessage}`);
-      
-      // Clean up pending request if it was created
-      try {
-        this.callbackService.removePendingRequest(requestId);
-      } catch (cleanupError) {
-        // Ignore cleanup errors
-      }
-      
-      if (chatId) {
+      // PHASE2-086: Error handling for CursorRunnerService errors (matching Rails lines 235-251)
+      // Only catch CursorRunnerServiceError - let other errors propagate
+      if (error instanceof CursorRunnerServiceError) {
+        const errorMessage = error.message;
+        
+        // Log error appropriately (Rails uses logger.warn for CursorRunnerService::Error)
+        logger.warn(`Failed to send Telegram message to cursor-runner: ${errorMessage}`);
+        
+        // Clean up pending request in Redis on error
         try {
-          await this.telegramService.sendMessage(
-            chatId,
-            `❌ Error: Failed to execute cursor command. ${errorMessage}`,
-            'HTML',
-            messageId
-          );
-        } catch (sendError) {
-          // Ignore send errors
+          this.callbackService.removePendingRequest(requestId);
+        } catch (cleanupError) {
+          // Ignore cleanup errors (already logged in removePendingRequest)
+          logger.warn(`Error cleaning up pending request: ${cleanupError instanceof Error ? cleanupError.message : String(cleanupError)}`);
         }
+        
+        // Send error message to Telegram user
+        if (chatId) {
+          try {
+            await this.telegramService.sendMessage(
+              chatId,
+              `❌ Error: Failed to execute cursor command. ${errorMessage}`,
+              'HTML',
+              messageId
+            );
+          } catch (sendError) {
+            // Log error when sending error message fails
+            const sendErrorObj = sendError instanceof Error ? sendError : new Error(String(sendError));
+            logger.error(`Error sending error message to Telegram: ${sendErrorObj.message}`);
+          }
+        }
+        
+        // Return true even on error to prevent duplicate processing (matching Rails line 251)
+        return true;
+      } else {
+        // Re-throw non-CursorRunnerServiceError errors so they can be handled at a higher level
+        throw error;
       }
-      
-      // Return true even on error to prevent duplicate processing
-      return true;
     }
   }
 
@@ -422,6 +670,8 @@ class TelegramMessageHandler extends BaseAsyncHandler<TelegramUpdate, void> {
    * Process local message (commands like /start, /help, /status)
    * 
    * Reference: jarek-va/app/jobs/telegram_message_job.rb (lines 253-277)
+   * 
+   * PHASE2-086: Added comprehensive error handling (Rails has NO error handling for this method)
    * 
    * @param text - Message text
    * @param chatId - Chat ID
@@ -433,6 +683,7 @@ class TelegramMessageHandler extends BaseAsyncHandler<TelegramUpdate, void> {
     chatId: number | undefined,
     messageId: number
   ): ProcessLocalMessageResult {
+    try {
     // Simple command parsing
     const normalizedText = text?.toLowerCase().trim() || '';
     
@@ -457,6 +708,20 @@ class TelegramMessageHandler extends BaseAsyncHandler<TelegramUpdate, void> {
       say: `I received your message: ${text}\n\n` +
            "I'm still learning how to process messages. More features coming soon!"
     };
+    } catch (error) {
+      // PHASE2-086: Error handling for command parsing logic (Rails has NO error handling)
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error && error.stack ? error.stack : '';
+      
+      logger.error(`Error in processLocalMessage: ${errorMessage}`);
+      logger.error(errorStack);
+      
+      // Return error response object (don't crash the job)
+      return {
+        ok: false,
+        say: `Sorry, I encountered an error processing your command: ${errorMessage}`
+      };
+    }
   }
 
   /**
@@ -530,43 +795,6 @@ class TelegramMessageHandler extends BaseAsyncHandler<TelegramUpdate, void> {
     return SystemSetting.enabled('debug');
   }
 
-  /**
-   * Extract chat ID from update
-   * 
-   * @param update - Telegram update
-   * @returns Chat ID or null
-   */
-  private extractChatIdFromUpdate(update: TelegramUpdate): number | null {
-    if (update.message?.chat?.id) {
-      return update.message.chat.id;
-    }
-    if (update.edited_message?.chat?.id) {
-      return update.edited_message.chat.id;
-    }
-    if (update.callback_query?.message?.chat?.id) {
-      return update.callback_query.message.chat.id;
-    }
-    return null;
-  }
-
-  /**
-   * Extract message ID from update
-   * 
-   * @param update - Telegram update
-   * @returns Message ID or null
-   */
-  private extractMessageIdFromUpdate(update: TelegramUpdate): number | null {
-    if (update.message?.message_id) {
-      return update.message.message_id;
-    }
-    if (update.edited_message?.message_id) {
-      return update.edited_message.message_id;
-    }
-    if (update.callback_query?.message?.message_id) {
-      return update.callback_query.message.message_id;
-    }
-    return null;
-  }
 }
 
 export default TelegramMessageHandler;

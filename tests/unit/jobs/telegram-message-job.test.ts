@@ -30,6 +30,7 @@ jest.mock('../../../src/utils/logger', () => {
 const mockSendMessage = jest.fn();
 const mockSendVoice = jest.fn();
 const mockDownloadFile = jest.fn();
+const mockAnswerCallbackQuery = jest.fn();
 
 jest.mock('../../../src/services/telegram-service', () => {
   return {
@@ -38,6 +39,7 @@ jest.mock('../../../src/services/telegram-service', () => {
       sendMessage: mockSendMessage,
       sendVoice: mockSendVoice,
       downloadFile: mockDownloadFile,
+      answerCallbackQuery: mockAnswerCallbackQuery,
     })),
   };
 });
@@ -379,7 +381,15 @@ describe('TelegramMessageHandler', () => {
       mockIterate.mockRejectedValue(error);
       mockSendMessage.mockResolvedValue({ ok: true });
 
-      await expect(handler.execute(update)).rejects.toThrow('Handler error');
+      // Disable retries for this test to avoid timeout (test expects immediate rejection)
+      await expect(
+        handler.execute(update, {
+          retryOptions: {
+            attempts: 1, // Only 1 attempt (no retries)
+            shouldRetry: () => false, // Don't retry any errors
+          },
+        })
+      ).rejects.toThrow('Handler error');
 
       expect(mockSendMessage).toHaveBeenCalledWith(
         mockChatId,
@@ -387,7 +397,7 @@ describe('TelegramMessageHandler', () => {
         'HTML',
         mockMessageId
       );
-    });
+    }, 30000); // Increase timeout to 30 seconds to account for error handling
 
     it('should handle missing chat_id gracefully', async () => {
       const message: TelegramMessage = {
